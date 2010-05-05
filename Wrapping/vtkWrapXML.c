@@ -365,7 +365,7 @@ void classMethod(FILE *fp, FunctionInfo *func, int indentation)
   char temp[500];
   const char *cp;
 
-  if (func->ArrayFailure || func->IsOperator)
+  if (func->ArrayFailure)
     {
     return;
     }
@@ -527,6 +527,7 @@ void classVariable(FILE *fp, VariableAttributes *var, int indentation)
 void vtkParseOutput(FILE *fp, FileInfo *data)
 {
   int i, n;
+  char *cp;
   int numFunctions;
   int *idList;
   int indentation = 0;
@@ -546,10 +547,27 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
   for (i = 0; i < numFunctions; i++)
     {
     if (data->Functions[i].Name &&
-        !data->Functions[i].ArrayFailure &&
-        !data->Functions[i].IsOperator)
+        !data->Functions[i].ArrayFailure)
       {
       idList[n++] = i;
+
+      /* if destructor found, fix function name */
+      if (strcmp(data->Functions[i].Name, data->ClassName) == 0)
+        {
+        cp = data->Functions[i].Signature;
+        for (; *cp != '\0' && *cp != '('; cp++)
+          {
+          if (*cp == '~')
+            {
+            data->Functions[i].Name =
+              (char *)malloc(strlen(data->ClassName) + 2);
+            data->Functions[i].Name[0] = '~';
+            strcpy(&data->Functions[i].Name[1], data->ClassName);
+
+            break;
+            }
+          }
+        }
       }
     }
 
