@@ -765,7 +765,7 @@ int methodMatchesVariable(
   /* remove "const" and "static" */
   if (typeHasDecorator(methType))
     {
-    methType = (methType & ~VTK_PARSE_DECORATOR);
+    methType = (methType & ~VTK_PARSE_QUALIFIER);
     }
 
   /* check for RemoveAll method matching an Add method*/
