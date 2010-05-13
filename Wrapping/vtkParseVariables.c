@@ -763,9 +763,9 @@ int methodMatchesVariable(
   varType = var->Type;
 
   /* remove "const" and "static" */
-  if (typeHasDecorator(methType))
+  if (typeHasQualifier(methType))
     {
-    methType = (methType & ~VTK_PARSE_QUALIFIER);
+    methType = (methType & VTK_PARSE_UNQUALIFIED_TYPE);
     }
 
   /* check for RemoveAll method matching an Add method*/

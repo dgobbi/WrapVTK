@@ -29,12 +29,14 @@
 #define typeIsReference(x) (typeIndirection(x) == VTK_PARSE_REF || \
                             typeIndirection(x) == VTK_PARSE_POINTER_REF)
 
-#define typeDecorator(x)    (((x) & 0x4000) ? 0 : ((x) & VTK_PARSE_QUALIFIER))
-#define typeHasDecorator(x) (typeDecorator(x) != 0)
-#define typeIsStatic(x)     ((typeDecorator(x) & VTK_PARSE_STATIC) != 0)
-#define typeIsConst(x)      ((typeDecorator(x) & VTK_PARSE_CONST) != 0)
-
 #define typeIsFunction(x)   ((x) == VTK_PARSE_FUNCTION)
+
+#define typeQualifier(x)    (typeIsFunction(x) ? 0 : \
+                             ((x) & VTK_PARSE_QUALIFIER))
+#define typeHasQualifier(x) (typeQualifier(x) != 0)
+#define typeIsStatic(x)     ((typeQualifier(x) & VTK_PARSE_STATIC) != 0)
+#define typeIsConst(x)      ((typeQualifier(x) & VTK_PARSE_CONST) != 0)
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,7 +60,7 @@ const char *parseIndirectionAsString(int type);
  * return empty string for impossible types */
 const char *parseBaseTypeAsString(int type, const char *vtkname);
 
-/* return the base type constant name as a string, i.e. 
+/* return the base type constant name as a string, i.e.
  * VTK_PARSE_INT -> "INT" */
 const char *parseTypeConstAsString(int type);
 
