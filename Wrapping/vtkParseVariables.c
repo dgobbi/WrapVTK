@@ -422,12 +422,12 @@ int isValidSuffix(
     }
 
   else if (isGetMethod(methName) &&
-      (suffix[0] == 'A' && suffix[1] == 's' &&
+      ((suffix[0] == 'A' && suffix[1] == 's' &&
        (isupper(suffix[2]) || isdigit(suffix[2]))) ||
       (((suffix[0] == 'M' && suffix[1] == 'a' && suffix[2] == 'x') ||
         (suffix[0] == 'M' && suffix[1] == 'i' && suffix[2] == 'n')) &&
        (suffix[3] == 'V' && suffix[4] == 'a' && suffix[5] == 'l' &&
-        suffix[6] == 'u' && suffix[7] == 'e' && suffix[8] == '\0')))
+        suffix[6] == 'u' && suffix[7] == 'e' && suffix[8] == '\0'))))
     {
     return 1;
     }
@@ -676,7 +676,7 @@ int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
 int methodMatchesVariable(
   VariableAttributes *var, MethodAttributes *meth, int *longMatch)
 {
-  size_t i, n;
+  size_t n;
   int varType, methType;
   const char *varName;
   const char *name;
@@ -884,9 +884,9 @@ void initializeVariableAttributes(
   if ((!meth->IsMultiValue &&
        (typeIndirection(type) == VTK_PARSE_POINTER ||
         typeIndirection(type) == VTK_PARSE_POINTER_REF)) ||
-      (meth->IsMultiValue) &&
+      (meth->IsMultiValue &&
        (typeIndirection(type) == 0 ||
-        typeIndirection(type) == VTK_PARSE_REF))
+        typeIndirection(type) == VTK_PARSE_REF)))
     {
     var->Type = (var->Type | VTK_PARSE_POINTER);
     }
@@ -1021,7 +1021,6 @@ void categorizeVariables(
   ClassVariableMethods *methods, ClassVariables *variables)
 {
   int i, n;
-  int methodId;
   int *matchedMethods;
   MethodAttributes *meth;
   VariableAttributes *var;
@@ -1153,7 +1152,7 @@ int searchForRepeatedMethods(
            typeBaseType(meth->Type) == VTK_PARSE_DOUBLE) ||
           (typeBaseType(attrs->Type) == typeBaseType(meth->Type) &&
            attrs->Count < meth->Count) ||
-          attrs->IsLegacy && !meth->IsLegacy)
+          (attrs->IsLegacy && !meth->IsLegacy))
         {
         /* keep existing method */
         return 0;
@@ -1163,7 +1162,7 @@ int searchForRepeatedMethods(
            typeBaseType(meth->Type) == VTK_PARSE_FLOAT) ||
           (typeBaseType(attrs->Type) == typeBaseType(meth->Type) &&
            attrs->Count > meth->Count) ||
-          !attrs->IsLegacy && meth->IsLegacy)
+          (!attrs->IsLegacy && meth->IsLegacy))
         {
         /* replace existing method */
         meth->IsLegacy = attrs->IsLegacy;
@@ -1184,7 +1183,7 @@ int searchForRepeatedMethods(
 
 void categorizeVariableMethods(FileInfo *data, ClassVariableMethods *methods)
 {
-  int i, n, methodId;
+  int i, n;
   int *functionIds;
   FunctionInfo *func;
   MethodAttributes *attrs;

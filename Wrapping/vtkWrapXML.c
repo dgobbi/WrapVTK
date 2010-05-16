@@ -49,7 +49,9 @@ static void swapArrayItems(int arr[], int i, int j)
 static void sortFunctionsByName(
   FileInfo *data, int functionList[], int start, int ends)
 {
-  int i, tmp, location = start;
+  int i;
+  int location = start;
+
   if (ends <= start)
     {
     return;
@@ -249,7 +251,7 @@ void classFooter(FILE *fp, FileInfo *data, int indentation)
 /* Write out the documentation for the class */
 void classDocumentation(FILE *fp, FileInfo *data, int indentation)
 {
-  size_t i, j, n;
+  size_t n;
   char temp[500];
   const char *cp;
 
@@ -464,7 +466,7 @@ void classVariableMethods(
 /* Print out a variable in XML format */
 void classVariable(FILE *fp, VariableAttributes *var, int indentation)
 {
-  int i, n;
+  int i;
 
   fprintf(fp, "%s<Variable>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
