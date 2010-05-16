@@ -671,7 +671,6 @@ type_primitive:
       $<integer>$ = VTK_PARSE_VTK_OBJECT;
       currentFunction->ArgClasses[currentFunction->NumberOfArguments] =
         vtkstrdup($<str>1);
-      currentFunction->ArgExternals[currentFunction->NumberOfArguments] = 0;
       /* store the string into the return value just in case we need it */
       /* this is a parsing hack because the first "type" parser will */
       /* possibly be ht ereturn type of the first argument */
@@ -679,7 +678,6 @@ type_primitive:
           (!currentFunction->NumberOfArguments))
         {
         currentFunction->ReturnClass = vtkstrdup($<str>1);
-        currentFunction->ReturnExternal = 0;
         }
     } |
   IdType { postSig("vtkIdType "); $<integer>$ = VTK_PARSE_ID_TYPE;} |
