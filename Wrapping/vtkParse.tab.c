@@ -2869,7 +2869,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 504 "vtkParse.y"
-    { postSig((yyvsp[(1) - (2)].str)); postSig(" (");}
+    { postSig((yyvsp[(1) - (2)].str)); postSig("(");}
     break;
 
   case 95:
@@ -2896,7 +2896,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 515 "vtkParse.y"
-    { postSig((yyvsp[(1) - (2)].str)); postSig(" (");}
+    { postSig((yyvsp[(1) - (2)].str)); postSig("(");}
     break;
 
   case 99:

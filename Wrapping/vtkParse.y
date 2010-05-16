@@ -501,7 +501,7 @@ constructor: constructor_sig { postSig(");"); openSig = 0; }
       vtkParseDebug("Parsed func", $<str>1);
     }
 
-constructor_sig: VTK_ID '(' { postSig($<str>1); postSig(" (");} args_list ')';
+constructor_sig: VTK_ID '(' { postSig($<str>1); postSig("(");} args_list ')';
 
 destructor: destructor_sig { postSig(");"); openSig = 0; }
     {
@@ -512,7 +512,7 @@ destructor: destructor_sig { postSig(");"); openSig = 0; }
       vtkParseDebug("Parsed func", currentFunction->Name);
     }
 
-destructor_sig: VTK_ID '(' { postSig($<str>1); postSig(" (");} args_list ')';
+destructor_sig: VTK_ID '(' { postSig($<str>1); postSig("(");} args_list ')';
 
 const_mod: CONST {postSig("const ");};
 
