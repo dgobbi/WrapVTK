@@ -415,14 +415,14 @@ function: '~' destructor { preSig("~"); }
          {
          preSig("virtual ");
          currentFunction->ReturnType = $<integer>2;
-         }
-      | VIRTUAL func
-         {
-         preSig("virtual ");
          };
 
 operator:
-        type op_func
+        typecast_op_func
+         {
+         currentFunction->ReturnType = $<integer>1;
+         }
+      | type op_func
          {
          currentFunction->ReturnType = $<integer>1;
          }
@@ -439,11 +439,19 @@ operator:
          {
          preSig("virtual ");
          currentFunction->ReturnType = $<integer>2;
-         }
-      | VIRTUAL op_func
-         {
-         preSig("virtual ");
          };
+
+typecast_op_func: OPERATOR type '(' { postSig("("); }
+                  args_list ')' { postSig(")"); }
+                  maybe_const { postSig(";"); openSig = 0; }
+    {
+      $<integer>$ = $<integer>2;
+      openSig = 1;
+      currentFunction->IsOperator = 1;
+      currentFunction->Name = "operator typecast";
+      preSig("operator ");
+      vtkParseDebug("Parsed operator", "operator typecast");
+    };
 
 op_func: op_sig { postSig(")"); } maybe_const { postSig(";"); openSig = 0; }
     {
