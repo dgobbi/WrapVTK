@@ -60,6 +60,26 @@ Modify lex.yy.c:
          }
      };
 
+^[\t ]*"//BWX".*$ {
+       int c1 = 0, c2 = 0, c3 = 0, c4 = 0, c5 = input();
+       for (;;)
+         {
+         if (c5 == 0)
+           {
+           fprintf(yyout,"Cannot find matching //EWX.\n");
+           break;
+           }
+         if (c1 == '/' && c2 == '/' && c3 == 'E' && c4 == 'W' && c5 == 'X') break;
+         c1 = c2; c2 = c3; c3 = c4; c4 = c5; c5 = input();
+         }
+       for (;;)
+         {
+         if (c5 == 0) break;
+         if (c5 == '\n') break;
+         c5 = input();
+         }
+     };
+
 ^[\t ]*"//BTX".*$ {
        int c1 = 0, c2 = 0, c3 = 0, c4 = 0, c5 = input();
        for (;;)
@@ -152,8 +172,8 @@ Modify lex.yy.c:
 "["[\t\n\r\ ]*[1-9][0-9]*[\t\n\r ]*"]"  {
    sscanf(yytext+1,"%d",&yylval.integer); return(ARRAY_NUM);}
 
-"struct "[\t\n\r ]*"vtk"[a-zA-Z0-9_]*[\t\n\r ]*";"  return(CLASS_REF);
-"class "[\t\n\r ]*"vtk"[a-zA-Z0-9_]*[\t\n\r ]*";"  return(CLASS_REF);
+("friend"[\t\n\r ]+)?("template"[\t\n\r ]+"<"[^>]*">"[\t\n\r ]+)?"class"[\t\n\r ]+[a-zA-Z_][a-zA-Z0-9_]*("::"[a-zA-Z_][a-zA-Z0-9_]*)*[\t\n\r ]*";" return(CLASS_REF);
+("friend"[\t\n\r ]+)?("template"[\t\n\r ]+"<"[^>]*">"[\t\n\r ]+)?"struct"[\t\n\r ]+[a-zA-Z_][a-zA-Z0-9_]*("::"[a-zA-Z_][a-zA-Z0-9_]*)*[\t\n\r ]*";" return(CLASS_REF);
 
 "void"[\t\n\r ]*"("[\t\n\r ]*"*"[a-zA-Z0-9_]*[\t\n\r ]*")"[\t\n\r ]*"("[\t\n\r ]*"void"[\t\n\r ]*"*"[\n\t ]*")" return(VAR_FUNCTION);
 
@@ -170,25 +190,39 @@ Modify lex.yy.c:
 
 "signed"[\t\n\r ]*"char"  return(SIGNED_CHAR);
 
-"class"                return(CLASS);
-"public"          return(PUBLIC);
-"private"          return(PRIVATE);
-"protected"         return(PROTECTED);
-"int"                 return(INT);
+"ostream"       return(OSTREAM);
+"istream"       return(ISTREAM);
+
+"class"         return(CLASS);
+"struct"        return(CLASS);
+"public"        return(PUBLIC);
+"private"       return(PRIVATE);
+"protected"     return(PROTECTED);
+"int"           return(INT);
 "float"         return(FLOAT);
 "short"         return(SHORT);
 "long"          return(LONG);
-"double"         return(DOUBLE);
-"void"                 return(VOID);
-"char"                 return(CHAR);
-"bool"                 return(BOOL);
+"double"        return(DOUBLE);
+"void"          return(VOID);
+"char"          return(CHAR);
+"bool"          return(BOOL);
+"enum"          return(ENUM);
+"union"         return(UNION);
 "virtual"       return(VIRTUAL);
 "const"         return(CONST);
+"mutable"       return(MUTABLE);
 "operator"      return(OPERATOR);
 "unsigned"      return(UNSIGNED);
 "friend"        return(FRIEND);
 "inline"        return(INLINE);
 "static"        return(STATIC);
+"template"      return(TEMPLATE);
+"typename"      return(TYPENAME);
+"typedef"       return(TYPEDEF);
+"namespace"     return(NAMESPACE);
+"using"         return(USING);
+"new"           return(NEW);
+"delete"        return(DELETE);
 
 "vtkFloatingPointType" return(DOUBLE);
 "vtkIdType"            return(IdType);
@@ -219,7 +253,8 @@ Modify lex.yy.c:
 "vtkTypeMacro"         return(TypeMacro);
 "vtkTypeRevisionMacro" return(TypeMacro);
 "VTK_LEGACY"           return(VTK_LEGACY);
-"VTK_WRAP_EXTERN"      return(VTK_WRAP_EXTERN);
+"VTK_WRAP_EXTERN"      ;
+"VTK_BYTE_SWAP_DECL"   return(VTK_BYTE_SWAP_DECL);
 "vtkTypeInt8"          return(TypeInt8);
 "vtkTypeUInt8"         return(TypeUInt8);
 "vtkTypeInt16"         return(TypeInt16);
@@ -240,7 +275,7 @@ Modify lex.yy.c:
                 return(STRING);
                 }
 
-^"#"[^\n]*$     ;
+^"#"(\\\n|\\\r\n|[^\n])*$     ;
 
 
 "vtk"[0-9a-zA-Z_]*  { yylval.str = (char *)malloc(yyleng + 1);
@@ -257,12 +292,38 @@ Modify lex.yy.c:
 
 [\t\n\r ] ;
 
+"<<="             return(OP_LSHIFT_EQ);
+">>="             return(OP_RSHIFT_EQ);
+"<<"              return(OP_LSHIFT);
+"->"              return(OP_ARROW);
+">>"              return(OP_RSHIFT);
+"++"              return(OP_INCR);
+"--"              return(OP_DECR);
+"+="              return(OP_PLUS_EQ);
+"-="              return(OP_MINUS_EQ);
+"*="              return(OP_TIMES_EQ);
+"/="              return(OP_DIVIDE_EQ);
+"%="              return(OP_REMAINDER_EQ);
+"&="              return(OP_AND_EQ);
+"|="              return(OP_OR_EQ);
+"^="              return(OP_XOR_EQ);
+"&&="             return(OP_LOGIC_AND_EQ);
+"||="             return(OP_LOGIC_OR_EQ);
+"&&"              return(OP_LOGIC_AND);
+"||"              return(OP_LOGIC_OR);
+"=="              return(OP_LOGIC_EQ);
+"!="              return(OP_LOGIC_NEQ);
+"<="              return(OP_LOGIC_LEQ);
+">="              return(OP_LOGIC_GEQ);
+"..."             return(ELLIPSIS);
+"::"              return(DOUBLE_COLON);
 
-"["        return(yytext[0]);
-"]"        return(yytext[0]);
+"("[\t\n\r ]*"*"  return(FUNCPOINTER_LPAREN); 
 
+"[" { return(yytext[0]); }
+"]" { return(yytext[0]); }
 
-[~{}():;*=,&.\-] {        return(yytext[0]); }
+[~{}()<>:;*=,&.!|+\-] { return(yytext[0]); }
 
 .                return(OTHER);
 %%

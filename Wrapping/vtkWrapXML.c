@@ -382,7 +382,7 @@ void classMethod(FILE *fp, FunctionInfo *func, int indentation)
 
   fprintf(fp, "%s<Method>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          func->Name);
+          quoteForXML(func->Name, 500));
   fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation),
           accessLevel[access]);
 

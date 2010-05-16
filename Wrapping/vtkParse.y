@@ -60,7 +60,7 @@ static int vtkParseTypeMap[] =
    VTK_PARSE_FLOAT,              /* VTK_FLOAT              10 */
    VTK_PARSE_DOUBLE,             /* VTK_DOUBLE             11 */
    VTK_PARSE_ID_TYPE,            /* VTK_ID_TYPE            12 */
-   0,                            /* VTK_STRING             13 */
+   VTK_PARSE_STRING,             /* VTK_STRING             13 */
    0,                            /* VTK_OPAQUE             14 */
    VTK_PARSE_SIGNED_CHAR,        /* VTK_SIGNED_CHAR        15 */
    VTK_PARSE_LONG_LONG,          /* VTK_LONG_LONG          16 */
@@ -203,10 +203,6 @@ char *vtkstrdup(const char *in)
 %union{
   char *str;
   int   integer;
-  struct {
-    char* name;
-    int external;
-  } vtkid;
 }
 
 %token CLASS
@@ -228,6 +224,10 @@ char *vtkstrdup(const char *in)
 %token CHAR
 %token SIGNED_CHAR
 %token BOOL
+%token OSTREAM
+%token ISTREAM
+%token ENUM
+%token UNION
 %token CLASS_REF
 %token OTHER
 %token CONST
@@ -235,11 +235,46 @@ char *vtkstrdup(const char *in)
 %token UNSIGNED
 %token FRIEND
 %token INLINE
+%token MUTABLE
+%token TEMPLATE
+%token TYPENAME
+%token TYPEDEF
+%token NAMESPACE
+%token USING
 %token <str> VTK_ID
 %token STATIC
 %token VAR_FUNCTION
 %token ARRAY_NUM
 %token VTK_LEGACY
+%token NEW
+%token DELETE
+%token FUNCPOINTER_LPAREN
+%token OP_LSHIFT_EQ
+%token OP_RSHIFT_EQ
+%token OP_LSHIFT
+%token OP_RSHIFT
+%token OP_ARROW
+%token OP_INCR
+%token OP_DECR
+%token OP_PLUS_EQ
+%token OP_MINUS_EQ
+%token OP_TIMES_EQ
+%token OP_DIVIDE_EQ
+%token OP_REMAINDER_EQ
+%token OP_AND_EQ
+%token OP_OR_EQ
+%token OP_XOR_EQ
+%token OP_LOGIC_AND_EQ
+%token OP_LOGIC_OR_EQ
+%token OP_LOGIC_AND
+%token OP_LOGIC_OR
+%token OP_LOGIC_EQ
+%token OP_LOGIC_NEQ
+%token OP_LOGIC_LEQ
+%token OP_LOGIC_GEQ
+%token ELLIPSIS
+%token DOUBLE_COLON
+
 %token TypeInt8
 %token TypeUInt8
 %token TypeInt16
@@ -276,7 +311,7 @@ char *vtkstrdup(const char *in)
 %token ViewportCoordinateMacro
 %token WorldCoordinateMacro
 %token TypeMacro
-%token VTK_WRAP_EXTERN
+%token VTK_BYTE_SWAP_DECL
 
 %%
 /*
@@ -284,18 +319,15 @@ char *vtkstrdup(const char *in)
  */
 strt: maybe_other class_def maybe_other;
 
-vtk_id : VTK_ID VTK_WRAP_EXTERN
-         {
-           ($<vtkid>$).name = $<str>1;
-           ($<vtkid>$).external = 1;
-         }
-       | VTK_ID
-         {
-           ($<vtkid>$).name = $<str>1;
-           ($<vtkid>$).external = 0;
-         };
+class_def : template_class_def | non_template_class_def;
 
-class_def : CLASS VTK_ID
+template_class_def : template CLASS VTK_ID
+      {
+      data.ClassName = vtkstrdup($3);
+      }
+    optional_scope '{' class_def_body '}';
+
+non_template_class_def : CLASS VTK_ID
       {
       data.ClassName = vtkstrdup($2);
       }
@@ -303,22 +335,69 @@ class_def : CLASS VTK_ID
 
 class_def_body: class_def_item | class_def_item class_def_body;
 
-class_def_item: scope_type ':' | var
-   | operator
-   | FRIEND operator
-   | INLINE operator
+class_def_item: scope_type ':'
+   | var
+   | MUTABLE var
+   | enum
+   | named_enum
+   | union
+   | named_union
+   | using
+   | typedef
+   | internal_class
+   | FRIEND internal_class
+   | template_internal_class
+   | CLASS_REF
+   | operator func_body { output_function(); }
+   | FRIEND operator func_body { output_function(); }
+   | INLINE operator func_body { output_function(); }
    | function func_body { output_function(); }
    | FRIEND function func_body { output_function(); }
    | INLINE function func_body { output_function(); }
+   | template_function func_body { output_function(); }
+   | INLINE template_function func_body { output_function(); }
    | legacy_function func_body { legacySig(); output_function(); }
+   | VTK_BYTE_SWAP_DECL '(' maybe_other ')' ';'
    | macro ';'
    | macro;
 
-legacy_function: VTK_LEGACY '(' function ')'
+named_enum: ENUM any_id '{' maybe_other '}' maybe_other_no_semi ';';
 
-function: '~' func { preSig("~"); }
-      | VIRTUAL '~' func { preSig("virtual ~"); }
-      | func
+enum: ENUM '{' maybe_other '}' maybe_other_no_semi ';';
+
+named_union: UNION any_id '{' maybe_other '}' maybe_other_no_semi ';';
+
+union: UNION '{' maybe_other '}' maybe_other_no_semi ';';
+
+using: USING maybe_other_no_semi ';';
+
+template_internal_class: template internal_class;
+
+internal_class: CLASS any_id internal_class_body;
+
+internal_class_body: ';'
+    | '{' maybe_other '}' ';'
+    | ':' maybe_other_no_semi ';';
+
+typedef: TYPEDEF type var_id ';'
+ | TYPEDEF CLASS_REF
+ | TYPEDEF CLASS any_id '{' maybe_other '}' any_id ';';
+ | TYPEDEF CLASS '{' maybe_other '}' any_id ';';
+ | TYPEDEF type FUNCPOINTER_LPAREN any_id ')' '(' maybe_other_no_semi ')' ';'
+ | TYPEDEF VAR_FUNCTION ';';
+
+template_function: template function;
+
+template: TEMPLATE '<' '>' | TEMPLATE '<' template_args '>';
+
+template_args: CLASS ID | CLASS ID ',' template_args
+             | TYPENAME ID | TYPENAME ID ',' template_args;
+
+legacy_function: VTK_LEGACY '(' function ')' ;
+
+function: '~' destructor { preSig("~"); }
+      | VIRTUAL '~' destructor { preSig("virtual ~"); }
+      | constructor
       | type func
          {
          currentFunction->ReturnType = $<integer>1;
@@ -342,45 +421,51 @@ function: '~' func { preSig("~"); }
          preSig("virtual ");
          };
 
-
 operator:
-        operator_sig
-         {
-         output_function();
-         }
-      | type operator_sig
+        type op_func
          {
          currentFunction->ReturnType = $<integer>1;
-         output_function();
          }
-      | type CONST operator_sig
+      | type CONST op_func
          {
          currentFunction->ReturnType = $<integer>1;
-         output_function();
          }
-      | VIRTUAL type CONST operator_sig
+      | VIRTUAL type CONST op_func
          {
          preSig("virtual ");
          currentFunction->ReturnType = $<integer>2;
-         output_function();
          }
-      | VIRTUAL type operator_sig
+      | VIRTUAL type op_func
          {
          preSig("virtual ");
          currentFunction->ReturnType = $<integer>2;
-         output_function();
          }
-      | VIRTUAL operator_sig
+      | VIRTUAL op_func
          {
          preSig("virtual ");
-         output_function();
          };
 
-operator_sig: OPERATOR maybe_other_no_semi ';'
+op_func: op_sig { postSig(")"); } maybe_const { postSig(";"); openSig = 0; }
     {
-      currentFunction->IsOperator = 1;
-      vtkParseDebug("Converted operator", 0);
+      openSig = 1;
+      currentFunction->Name = $<str>2;
+      vtkParseDebug("Parsed operator", $<str>2);
     }
+  | op_sig '=' NUM
+    {
+      postSig(") = 0;");
+      currentFunction->Name = $<str>2;
+      vtkParseDebug("Parsed operator", $<str>2);
+      currentFunction->IsPureVirtual = 1;
+      data.IsAbstract = 1;
+    };
+
+op_sig: OPERATOR op_token {postSig($<str>2);} '('
+    {
+      postSig("(");
+      currentFunction->IsOperator = 1;
+    }
+    args_list ')';
 
 func: func_sig { postSig(")"); } maybe_const { postSig(";"); openSig = 0; }
     {
@@ -399,13 +484,34 @@ func: func_sig { postSig(")"); } maybe_const { postSig(";"); openSig = 0; }
 
 maybe_const: | CONST {postSig(" const");};
 
-func_sig: any_id '('  {postSig(" ("); } args_list ')';
+func_sig: any_id '(' {postSig("("); } args_list ')';
+
+constructor: constructor_sig { postSig(");"); openSig = 0; }
+    {
+      openSig = 1;
+      currentFunction->Name = $<str>1;
+      vtkParseDebug("Parsed func", $<str>1);
+    }
+
+constructor_sig: VTK_ID '(' { postSig($<str>1); postSig(" (");} args_list ')';
+
+destructor: destructor_sig { postSig(");"); openSig = 0; }
+    {
+      openSig = 1;
+      currentFunction->Name = (char *)malloc(strlen($<str>1) + 2);
+      currentFunction->Name[0] = '~';
+      strcpy(&currentFunction->Name[1], $<str>1);
+      vtkParseDebug("Parsed func", currentFunction->Name);
+    }
+
+destructor_sig: VTK_ID '(' { postSig($<str>1); postSig(" (");} args_list ')';
 
 const_mod: CONST {postSig("const ");};
 
-static_mod: STATIC {postSig("static ");};
+static_mod: STATIC {postSig("static ");}
+           | STATIC INLINE {postSig("static ");} 
 
-any_id: vtk_id {postSig(($<vtkid>1).name);} | ID {postSig($<str>1);};
+any_id: VTK_ID {postSig($<str>1);} | ID {postSig($<str>1);};
 
 func_body: ';'
     | '{' maybe_other '}' ';'
@@ -414,14 +520,16 @@ func_body: ';'
 
 args_list: | more_args;
 
-more_args: arg { currentFunction->NumberOfArguments++;}
+more_args: ELLIPSIS | arg { currentFunction->NumberOfArguments++;}
   | arg { currentFunction->NumberOfArguments++; postSig(", ");} ',' more_args;
 
-arg: type
+arg: type var_array
     {
-      currentFunction->ArgCounts[currentFunction->NumberOfArguments] = 0;
+      currentFunction->ArgCounts[currentFunction->NumberOfArguments] =
+        $<integer>2 / VTK_PARSE_COUNT_START;
       currentFunction->ArgTypes[currentFunction->NumberOfArguments] =
-        $<integer>1;}
+        $<integer>1 + $<integer>2 % VTK_PARSE_COUNT_START;
+    }
   | type var_id
     {
       currentFunction->ArgCounts[currentFunction->NumberOfArguments] =
@@ -434,11 +542,22 @@ arg: type
       postSig("void (*func)(void *) ");
       currentFunction->ArgCounts[currentFunction->NumberOfArguments] = 0;
       currentFunction->ArgTypes[currentFunction->NumberOfArguments] = VTK_PARSE_FUNCTION;
-    };
+    }
+  | type FUNCPOINTER_LPAREN any_id ')' '(' args_list ')';
 
 opt_var_assign: | '=' float_num;
 
-var:  type var_id ';' {delSig();} | VAR_FUNCTION ';' {delSig();};
+var:  type var_ids ';' {delSig();}
+     | type CONST var_ids ';' {delSig();}
+     | VAR_FUNCTION ';' {delSig();}
+     | type FUNCPOINTER_LPAREN any_id ')' '(' args_list ')' ';' {delSig();};
+
+var_ids: var_id | var_id ',' maybe_indirect_var_ids;
+
+maybe_indirect_var_ids: var_id
+                | var_id ',' maybe_indirect_var_ids;
+                | type_indirection var_id
+                | type_indirection var_id ',' maybe_indirect_var_ids;
 
 var_id: any_id var_array { $<integer>$ = $<integer>2; };
 
@@ -463,7 +582,24 @@ type: const_mod type_red1 {$<integer>$ = VTK_PARSE_CONST + $<integer>2;}
 type_red1: type_red2 {$<integer>$ = $<integer>1;}
          | type_red2 type_indirection
            {$<integer>$ = $<integer>1 + $<integer>2;}
-         | type_string1 {$<integer>$ = $<integer>1;};
+         | type_string1 {$<integer>$ = $<integer>1;}
+         | type_templated
+         | type_templated type_indirection
+         | ID DOUBLE_COLON scoped_id
+         | ID DOUBLE_COLON scoped_id type_indirection
+         | VTK_ID DOUBLE_COLON scoped_id
+         | VTK_ID DOUBLE_COLON scoped_id type_indirection
+         | VTK_ID DOUBLE_COLON vtk_scoped_id
+         | VTK_ID DOUBLE_COLON vtk_scoped_id type_indirection;
+
+type_templated: vtk_scoped_id '<' types '>'
+               | scoped_id '<' types '>';
+
+types: type | type ',' types;
+
+scoped_id: ID | ID DOUBLE_COLON scoped_id;
+vtk_scoped_id: VTK_ID | VTK_ID DOUBLE_COLON scoped_id
+              | VTK_ID DOUBLE_COLON vtk_scoped_id;
 
 type_string1: type_string2 {$<integer>$ = $<integer>1;}
          | type_string2 '&' { postSig("&"); $<integer>$ = $<integer>1;}
@@ -510,29 +646,32 @@ type_primitive:
   SHORT  { postSig("short "); $<integer>$ = VTK_PARSE_SHORT;} |
   LONG   { postSig("long "); $<integer>$ = VTK_PARSE_LONG;} |
   DOUBLE { postSig("double "); $<integer>$ = VTK_PARSE_DOUBLE;} |
-  ID     {
+  OSTREAM { postSig("ostream "); $<integer>$ = VTK_PARSE_UNKNOWN;} |
+  ISTREAM { postSig("ostream "); $<integer>$ = VTK_PARSE_UNKNOWN;} |
+  ID
+    {
       char ctmpid[2048];
       sprintf(ctmpid,"%s ",$<str>1);
       postSig(ctmpid);
-      $<integer>$ = VTK_PARSE_UNKNOWN;} |
-  vtk_id
+      $<integer>$ = VTK_PARSE_UNKNOWN;
+    } |
+  VTK_ID
     {
       char ctmpid[2048];
-      sprintf(ctmpid,"%s ",($<vtkid>1).name);
+      sprintf(ctmpid,"%s ",$<str>1);
       postSig(ctmpid);
       $<integer>$ = VTK_PARSE_VTK_OBJECT;
       currentFunction->ArgClasses[currentFunction->NumberOfArguments] =
-        vtkstrdup(($<vtkid>1).name);
-      currentFunction->ArgExternals[currentFunction->NumberOfArguments] =
-        ($<vtkid>1).external;
+        vtkstrdup($<str>1);
+      currentFunction->ArgExternals[currentFunction->NumberOfArguments] = 0;
       /* store the string into the return value just in case we need it */
       /* this is a parsing hack because the first "type" parser will */
       /* possibly be ht ereturn type of the first argument */
       if ((!currentFunction->ReturnClass) &&
           (!currentFunction->NumberOfArguments))
         {
-        currentFunction->ReturnClass = vtkstrdup(($<vtkid>1).name);
-        currentFunction->ReturnExternal = ($<vtkid>1).external;
+        currentFunction->ReturnClass = vtkstrdup($<str>1);
+        currentFunction->ReturnExternal = 0;
         }
     } |
   IdType { postSig("vtkIdType "); $<integer>$ = VTK_PARSE_ID_TYPE;} |
@@ -565,7 +704,7 @@ float_prim: NUM {$<integer>$ = $1;}
 
 macro:
   SetMacro '(' any_id ','
-           {preSig("void Set"); postSig(" ("); } type_red2 ')'
+           {preSig("void Set"); postSig(" ("); } type_red1 ')'
    {
    postSig(");");
    sprintf(temps,"Set%s",$<str>3);
@@ -577,7 +716,7 @@ macro:
    output_function();
    }
 | GetMacro '('{postSig("Get");} any_id ',' {postSig(" ();"); invertSig = 1;}
-    type_red2 ')'
+    type_red1 ')'
    {
    sprintf(temps,"Get%s",$<str>4);
    currentFunction->Name = vtkstrdup(temps);
@@ -1113,20 +1252,73 @@ macro:
 ;
 
 /*
+ * Operators
+ */
+
+op_token: '(' ')' { $<str>$ = "operator()"; }
+        | '[' ']' { $<str>$ = "operator[]"; }
+        | NEW '[' ']' { $<str>$ = "operator new[]"; }
+        | DELETE '[' ']' { $<str>$ = "operator delete[]"; } 
+        | op_token_no_delim;
+
+op_token_no_delim: '=' { $<str>$ = "operator="; }
+   | '*' { $<str>$ = "operator*"; } | '/' { $<str>$ = "operator/"; } 
+   | '-' { $<str>$ = "operator-"; } | '+' { $<str>$ = "operator+"; }
+   | '!' { $<str>$ = "operator!"; } | '~' { $<str>$ = "operator~"; }
+   | ',' { $<str>$ = "operator,"; } | '<' { $<str>$ = "operator<"; }
+   | '>' { $<str>$ = "operator>"; } | '&' { $<str>$ = "operator&"; }
+   | '|' { $<str>$ = "operator|"; } | '^' { $<str>$ = "operator^"; }
+   | '%' { $<str>$ = "operator%"; }
+   | NEW { $<str>$ = "operator new"; }
+   | DELETE { $<str>$ = "operator delete"; } 
+   | OP_LSHIFT_EQ { $<str>$ = "operator<<="; }
+   | OP_RSHIFT_EQ { $<str>$ = "operator>>="; }
+   | OP_LSHIFT { $<str>$ = "operator<<"; }
+   | OP_RSHIFT { $<str>$ = "operator>>"; }
+   | OP_ARROW { $<str>$ = "operator->"; } 
+   | OP_PLUS_EQ { $<str>$ = "operator+="; }
+   | OP_MINUS_EQ { $<str>$ = "operator-="; } 
+   | OP_TIMES_EQ { $<str>$ = "operator*="; }
+   | OP_DIVIDE_EQ { $<str>$ = "operator/="; } 
+   | OP_REMAINDER_EQ { $<str>$ = "operator%="; } 
+   | OP_INCR { $<str>$ = "operator++"; }
+   | OP_DECR { $<str>$ = "operator--"; } 
+   | OP_AND_EQ { $<str>$ = "operator&="; }
+   | OP_OR_EQ { $<str>$ = "operator|="; } 
+   | OP_XOR_EQ { $<str>$ = "operator^="; }
+   | OP_LOGIC_AND_EQ {$<str>$ = "operator&&=";} 
+   | OP_LOGIC_OR_EQ {$<str>$ = "operator||=";}
+   | OP_LOGIC_AND { $<str>$ = "operator&&"; } 
+   | OP_LOGIC_OR { $<str>$ = "operator||"; }
+   | OP_LOGIC_EQ { $<str>$ = "operator=="; } 
+   | OP_LOGIC_NEQ { $<str>$ = "operator!="; }
+   | OP_LOGIC_LEQ { $<str>$ = "operator<="; } 
+   | OP_LOGIC_GEQ { $<str>$ = "operator>="; };
+
+/*
  * These just eat up misc garbage
  */
 maybe_other : | other_stuff maybe_other;
 maybe_other_no_semi : | other_stuff_no_semi maybe_other_no_semi;
+maybe_other_class : | other_stuff_or_class maybe_other_class;
 
-other_stuff : ';' | other_stuff_no_semi;
+other_stuff_or_class : CLASS | TEMPLATE | other_stuff;
 
-other_stuff_no_semi : OTHER | braces | parens | '*' | '=' | ':' | ',' | '.'
-   | STRING | type_red2 | type_string2 | NUM | CLASS_REF | '&' | brackets
-   | CONST | OPERATOR | '-' | '~' | STATIC | INLINE | ARRAY_NUM;
+other_stuff : ';' | other_stuff_no_semi | typedef_ignore;
 
-braces: '{' maybe_other '}';
-parens: '(' maybe_other ')';
+other_stuff_no_semi : OTHER | braces | parens | brackets | op_token_no_delim
+   | ':' | '.' | STRING | type_red2 | type_string2 | DOUBLE_COLON
+   | NUM | CLASS_REF | CONST | OPERATOR | STATIC | INLINE | VIRTUAL
+   | ENUM | UNION | TYPENAME | ARRAY_NUM | VAR_FUNCTION | ELLIPSIS
+   | PUBLIC | PROTECTED | PRIVATE | NAMESPACE | USING;
+
+braces: '{' maybe_other_class '}';
+parens: '(' maybe_other ')' | FUNCPOINTER_LPAREN maybe_other ')';
 brackets: '[' maybe_other ']';
+typedef_ignore: TYPEDEF typedef_ignore_body ';';
+
+typedef_ignore_body : | CLASS typedef_ignore_body
+                      | other_stuff_no_semi typedef_ignore_body;
 
 %%
 #include <string.h>
