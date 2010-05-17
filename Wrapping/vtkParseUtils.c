@@ -54,7 +54,7 @@ const char *parseIndirectionAsString(int type)
    return "vtkname" if base type is vtkObject */
 const char *parseBaseTypeAsString(int type, const char *vtkname)
 {
-  static const char *vtkParseTypeNameMap[34] = {
+  static const char *vtkParseTypeNameMap[36] = {
     "",             "float",          "void",          "char",
     "int",          "short",          "long",          "double",
     "",             "vtkObject",      "vtkIdType",     "long long",
@@ -63,7 +63,7 @@ const char *parseBaseTypeAsString(int type, const char *vtkname)
     "unsigned int", "unsigned short", "unsigned long", "",
     "",             "",               "",              "unsigned long long",
     "unsigned __int64", "",           "",              "",
-    "vtkStdString", "vtkUnicodeString"
+    "",             "vtkStdString",   "vtkUnicodeString", ""
     };
 
   int baseType;
@@ -74,7 +74,7 @@ const char *parseBaseTypeAsString(int type, const char *vtkname)
     }
 
   baseType = typeBaseType(type);
-  if (baseType > 33 || baseType < 0)
+  if (baseType > 35 || baseType < 0)
     {
     baseType = 0;
     }
@@ -92,7 +92,7 @@ const char *parseBaseTypeAsString(int type, const char *vtkname)
 
 const char *parseTypeConstAsString(int type)
 {
-  static const char *vtkParseTypeStringMap[34] = {
+  static const char *vtkParseTypeStringMap[36] = {
     "",             "FLOAT",          "VOID",          "CHAR",
     "INT",          "SHORT",          "LONG",          "DOUBLE",
     "",             "VTK_OBJECT",     "ID_TYPE",       "LONG_LONG",
@@ -101,11 +101,11 @@ const char *parseTypeConstAsString(int type)
     "UNSIGNED_INT", "UNSIGNED_SHORT", "UNSIGNED_LONG", "",
     "",             "",               "",              "UNSIGNED_LONG_LONG",
     "UNSIGNED___INT64", "",           "",              "",
-    "STRING",       "UNICODE_STRING"
+    "",             "STRING",         "UNICODE_STRING",""
     };
 
   int baseType = typeBaseType(type);
-  if (baseType > 33 || baseType < 0)
+  if (baseType > 35 || baseType < 0)
     {
     baseType = 0;
     }
@@ -116,20 +116,20 @@ const char *parseTypeConstAsString(int type)
 /* return the base type as a VTK type constant */
 int parseBaseTypeAsVTKType(int type)
 {
-  static const int vtkParseTypeMap[34] = {
+  static const int vtkParseTypeMap[36] = {
     0,                VTK_FLOAT,        VTK_VOID,       VTK_CHAR,
     VTK_INT,          VTK_SHORT,        VTK_LONG,       VTK_DOUBLE,
     0,                VTK_OBJECT,       VTK_ID_TYPE,    VTK_LONG_LONG,
     VTK___INT64,      VTK_SIGNED_CHAR,  VTK_BIT,        0,
     0,                0,                0,              VTK_UNSIGNED_CHAR,
     VTK_UNSIGNED_INT, VTK_UNSIGNED_SHORT, VTK_UNSIGNED_LONG, 0,
-    0,             0,              0,               VTK_UNSIGNED_LONG_LONG,
+    0,                0,                0,              VTK_UNSIGNED_LONG_LONG,
     VTK_UNSIGNED___INT64,  0,           0,              0,
-    VTK_STRING,       VTK_UNICODE_STRING
+    0,                VTK_STRING,       VTK_UNICODE_STRING, 0
     };
 
   int baseType = typeBaseType(type);
-  if (baseType > 33 || baseType < 0)
+  if (baseType > 35 || baseType < 0)
     {
     baseType = 0;
     }
