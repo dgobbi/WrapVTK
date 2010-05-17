@@ -3499,7 +3499,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 713 "vtkParse.y"
-    {preSig("void Set"); postSig(" ("); }
+    {preSig("void Set"); postSig("("); }
     break;
 
   case 214:
@@ -3529,7 +3529,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 724 "vtkParse.y"
-    {postSig(" ();"); invertSig = 1;}
+    {postSig("();"); invertSig = 1;}
     break;
 
   case 217:
@@ -3557,7 +3557,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 734 "vtkParse.y"
     {
-   postSig(" (char *);");
+   postSig("(char *);");
    sprintf(temps,"Set%s",(yyvsp[(4) - (5)].str));
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 1;
@@ -3580,7 +3580,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 745 "vtkParse.y"
     {
-   postSig(" ();");
+   postSig("();");
    sprintf(temps,"Get%s",(yyvsp[(4) - (5)].str));
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
@@ -3593,7 +3593,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 754 "vtkParse.y"
-    {preSig("void Set"); postSig(" ("); }
+    {preSig("void Set"); postSig("("); }
     break;
 
   case 223:
@@ -3609,7 +3609,7 @@ yyreduce:
 #line 756 "vtkParse.y"
     {
    char *local = vtkstrdup(currentFunction->Signature);
-   sscanf (currentFunction->Signature, "%*s %*s (%s);", local);
+   sscanf(currentFunction->Signature, "%*s %*s(%s);", local);
    sprintf(temps,"Set%s",(yyvsp[(3) - (10)].str));
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 1;
@@ -3620,7 +3620,7 @@ yyreduce:
 
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature,"%s Get%sMinValue ();",local,(yyvsp[(3) - (10)].str));
+   sprintf(currentFunction->Signature,"%s Get%sMinValue();",local,(yyvsp[(3) - (10)].str));
    sprintf(temps,"Get%sMinValue",(yyvsp[(3) - (10)].str));
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
@@ -3629,7 +3629,7 @@ yyreduce:
 
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature,"%s Get%sMaxValue ();",local,(yyvsp[(3) - (10)].str));
+   sprintf(currentFunction->Signature,"%s Get%sMaxValue();",local,(yyvsp[(3) - (10)].str));
    sprintf(temps,"Get%sMaxValue",(yyvsp[(3) - (10)].str));
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
@@ -3642,7 +3642,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 786 "vtkParse.y"
-    {preSig("void Set"); postSig(" ("); }
+    {preSig("void Set"); postSig("("); }
     break;
 
   case 226:
@@ -3672,7 +3672,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 798 "vtkParse.y"
-    {postSig(" ();"); invertSig = 1;}
+    {postSig("();"); invertSig = 1;}
     break;
 
   case 229:
@@ -3692,7 +3692,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 807 "vtkParse.y"
-    {preSig("void "); postSig("On ();"); openSig = 0; }
+    {preSig("void "); postSig("On();"); openSig = 0; }
     break;
 
   case 231:
@@ -3707,7 +3707,7 @@ yyreduce:
    output_function();
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature,"void %sOff ();",(yyvsp[(3) - (7)].str));
+   sprintf(currentFunction->Signature,"void %sOff();",(yyvsp[(3) - (7)].str));
    sprintf(temps,"%sOff",(yyvsp[(3) - (7)].str));
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
@@ -3720,7 +3720,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 824 "vtkParse.y"
     {
-     free (currentFunction->Signature);
+     free(currentFunction->Signature);
      currentFunction->Signature = NULL;
      }
     break;
@@ -3731,7 +3731,7 @@ yyreduce:
 #line 829 "vtkParse.y"
     {
    char *local = vtkstrdup(currentFunction->Signature);
-   sprintf(currentFunction->Signature,"void Set%s (%s, %s);",(yyvsp[(3) - (7)].str),
+   sprintf(currentFunction->Signature,"void Set%s(%s, %s);",(yyvsp[(3) - (7)].str),
      local, local);
    sprintf(temps,"Set%s",(yyvsp[(3) - (7)].str));
    currentFunction->Name = vtkstrdup(temps);
@@ -3745,7 +3745,7 @@ yyreduce:
 
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature,"void Set%s (%s a[2]);",(yyvsp[(3) - (7)].str),
+   sprintf(currentFunction->Signature,"void Set%s(%s a[2]);",(yyvsp[(3) - (7)].str),
      local);
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 1;
@@ -3760,7 +3760,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 854 "vtkParse.y"
     {
-     free (currentFunction->Signature);
+     free(currentFunction->Signature);
      currentFunction->Signature = NULL;
      }
     break;
@@ -3771,7 +3771,7 @@ yyreduce:
 #line 859 "vtkParse.y"
     {
    char *local = vtkstrdup(currentFunction->Signature);
-   sprintf(currentFunction->Signature,"%s *Get%s ();",local, (yyvsp[(3) - (7)].str));
+   sprintf(currentFunction->Signature,"%s *Get%s();",local, (yyvsp[(3) - (7)].str));
    sprintf(temps,"Get%s",(yyvsp[(3) - (7)].str));
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
@@ -3787,7 +3787,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 871 "vtkParse.y"
     {
-     free (currentFunction->Signature);
+     free(currentFunction->Signature);
      currentFunction->Signature = NULL;
      }
     break;
@@ -3798,7 +3798,7 @@ yyreduce:
 #line 876 "vtkParse.y"
     {
    char *local = vtkstrdup(currentFunction->Signature);
-   sprintf(currentFunction->Signature,"void Set%s (%s, %s, %s);",
+   sprintf(currentFunction->Signature,"void Set%s(%s, %s, %s);",
      (yyvsp[(3) - (7)].str), local, local, local);
    sprintf(temps,"Set%s",(yyvsp[(3) - (7)].str));
    currentFunction->Name = vtkstrdup(temps);
@@ -3814,7 +3814,7 @@ yyreduce:
 
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature,"void Set%s (%s a[3]);",(yyvsp[(3) - (7)].str),
+   sprintf(currentFunction->Signature,"void Set%s(%s a[3]);",(yyvsp[(3) - (7)].str),
      local);
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 1;
@@ -3829,7 +3829,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 903 "vtkParse.y"
     {
-     free (currentFunction->Signature);
+     free(currentFunction->Signature);
      currentFunction->Signature = NULL;
      }
     break;
@@ -3840,7 +3840,7 @@ yyreduce:
 #line 908 "vtkParse.y"
     {
    char *local = vtkstrdup(currentFunction->Signature);
-   sprintf(currentFunction->Signature,"%s *Get%s ();",local, (yyvsp[(3) - (7)].str));
+   sprintf(currentFunction->Signature,"%s *Get%s();",local, (yyvsp[(3) - (7)].str));
    sprintf(temps,"Get%s",(yyvsp[(3) - (7)].str));
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
@@ -3856,7 +3856,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 920 "vtkParse.y"
     {
-     free (currentFunction->Signature);
+     free(currentFunction->Signature);
      currentFunction->Signature = NULL;
      }
     break;
@@ -3867,7 +3867,7 @@ yyreduce:
 #line 925 "vtkParse.y"
     {
    char *local = vtkstrdup(currentFunction->Signature);
-   sprintf(currentFunction->Signature,"void Set%s (%s, %s, %s, %s);",
+   sprintf(currentFunction->Signature,"void Set%s(%s, %s, %s, %s);",
      (yyvsp[(3) - (7)].str), local, local, local, local);
    sprintf(temps,"Set%s",(yyvsp[(3) - (7)].str));
    currentFunction->Name = vtkstrdup(temps);
@@ -3885,7 +3885,7 @@ yyreduce:
 
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature,"void Set%s (%s a[4]);",(yyvsp[(3) - (7)].str),
+   sprintf(currentFunction->Signature,"void Set%s(%s a[4]);",(yyvsp[(3) - (7)].str),
      local);
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 1;
@@ -3900,7 +3900,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 954 "vtkParse.y"
     {
-     free (currentFunction->Signature);
+     free(currentFunction->Signature);
      currentFunction->Signature = NULL;
      }
     break;
@@ -3911,7 +3911,7 @@ yyreduce:
 #line 959 "vtkParse.y"
     {
    char *local = vtkstrdup(currentFunction->Signature);
-   sprintf(currentFunction->Signature,"%s *Get%s ();",local, (yyvsp[(3) - (7)].str));
+   sprintf(currentFunction->Signature,"%s *Get%s();",local, (yyvsp[(3) - (7)].str));
    sprintf(temps,"Get%s",(yyvsp[(3) - (7)].str));
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
@@ -3927,7 +3927,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 971 "vtkParse.y"
     {
-     free (currentFunction->Signature);
+     free(currentFunction->Signature);
      currentFunction->Signature = NULL;
      }
     break;
@@ -3938,7 +3938,7 @@ yyreduce:
 #line 976 "vtkParse.y"
     {
    char *local = vtkstrdup(currentFunction->Signature);
-   sprintf(currentFunction->Signature,"void Set%s (%s, %s, %s, %s, %s, %s);",
+   sprintf(currentFunction->Signature,"void Set%s(%s, %s, %s, %s, %s, %s);",
      (yyvsp[(3) - (7)].str), local, local, local, local, local, local);
    sprintf(temps,"Set%s",(yyvsp[(3) - (7)].str));
    currentFunction->Name = vtkstrdup(temps);
@@ -3960,7 +3960,7 @@ yyreduce:
 
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature,"void Set%s (%s a[6]);",(yyvsp[(3) - (7)].str),
+   sprintf(currentFunction->Signature,"void Set%s(%s a[6]);",(yyvsp[(3) - (7)].str),
      local);
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 1;
@@ -3975,7 +3975,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 1009 "vtkParse.y"
     {
-     free (currentFunction->Signature);
+     free(currentFunction->Signature);
      currentFunction->Signature = NULL;
      }
     break;
@@ -3986,7 +3986,7 @@ yyreduce:
 #line 1014 "vtkParse.y"
     {
    char *local = vtkstrdup(currentFunction->Signature);
-   sprintf(currentFunction->Signature,"%s *Get%s ();",local, (yyvsp[(3) - (7)].str));
+   sprintf(currentFunction->Signature,"%s *Get%s();",local, (yyvsp[(3) - (7)].str));
    sprintf(temps,"Get%s",(yyvsp[(3) - (7)].str));
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
@@ -4002,7 +4002,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 1026 "vtkParse.y"
     {
-      free (currentFunction->Signature);
+      free(currentFunction->Signature);
       currentFunction->Signature = NULL;
       }
     break;
@@ -4013,7 +4013,7 @@ yyreduce:
 #line 1031 "vtkParse.y"
     {
    char *local = vtkstrdup(currentFunction->Signature);
-   sprintf(currentFunction->Signature,"void Set%s (%s [%i]);",(yyvsp[(3) - (9)].str),
+   sprintf(currentFunction->Signature,"void Set%s(%s [%i]);",(yyvsp[(3) - (9)].str),
       local, (yyvsp[(8) - (9)].integer));
      sprintf(temps,"Set%s",(yyvsp[(3) - (9)].str));
      currentFunction->Name = vtkstrdup(temps);
@@ -4030,7 +4030,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 1044 "vtkParse.y"
     {
-     free (currentFunction->Signature);
+     free(currentFunction->Signature);
      currentFunction->Signature = NULL;
      }
     break;
@@ -4041,7 +4041,7 @@ yyreduce:
 #line 1049 "vtkParse.y"
     {
    char *local = vtkstrdup(currentFunction->Signature);
-   sprintf(currentFunction->Signature,"%s *Get%s ();",local, (yyvsp[(3) - (9)].str));
+   sprintf(currentFunction->Signature,"%s *Get%s();",local, (yyvsp[(3) - (9)].str));
    sprintf(temps,"Get%s",(yyvsp[(3) - (9)].str));
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
@@ -4057,7 +4057,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 1061 "vtkParse.y"
     {
-     sprintf(currentFunction->Signature,"vtkCoordinate *Get%sCoordinate ();",
+     sprintf(currentFunction->Signature,"vtkCoordinate *Get%sCoordinate();",
        (yyvsp[(3) - (4)].str));
 
      sprintf(temps,"Get%sCoordinate",(yyvsp[(3) - (4)].str));
@@ -4069,7 +4069,7 @@ yyreduce:
 
      currentFunction->Signature = (char *)malloc(2048);
      sigAllocatedLength = 2048;
-     sprintf(currentFunction->Signature,"void Set%s (double, double);",
+     sprintf(currentFunction->Signature,"void Set%s(double, double);",
        (yyvsp[(3) - (4)].str));
      sprintf(temps,"Set%s",(yyvsp[(3) - (4)].str));
      currentFunction->Name = vtkstrdup(temps);
@@ -4083,7 +4083,7 @@ yyreduce:
 
      currentFunction->Signature = (char *)malloc(2048);
      sigAllocatedLength = 2048;
-     sprintf(currentFunction->Signature,"void Set%s (double a[2]);",
+     sprintf(currentFunction->Signature,"void Set%s(double a[2]);",
        (yyvsp[(3) - (4)].str));
      currentFunction->Name = vtkstrdup(temps);
      currentFunction->NumberOfArguments = 1;
@@ -4093,7 +4093,7 @@ yyreduce:
 
      currentFunction->Signature = (char *)malloc(2048);
      sigAllocatedLength = 2048;
-     sprintf(currentFunction->Signature,"double *Get%s ();", (yyvsp[(3) - (4)].str));
+     sprintf(currentFunction->Signature,"double *Get%s();", (yyvsp[(3) - (4)].str));
      sprintf(temps,"Get%s",(yyvsp[(3) - (4)].str));
      currentFunction->Name = vtkstrdup(temps);
      currentFunction->NumberOfArguments = 0;
@@ -4109,7 +4109,7 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 1108 "vtkParse.y"
     {
-     sprintf(currentFunction->Signature,"vtkCoordinate *Get%sCoordinate ();",
+     sprintf(currentFunction->Signature,"vtkCoordinate *Get%sCoordinate();",
        (yyvsp[(3) - (4)].str));
 
      sprintf(temps,"Get%sCoordinate",(yyvsp[(3) - (4)].str));
@@ -4121,7 +4121,7 @@ yyreduce:
 
      currentFunction->Signature = (char *)malloc(2048);
      sigAllocatedLength = 2048;
-     sprintf(currentFunction->Signature,"void Set%s (double, double, double);",
+     sprintf(currentFunction->Signature,"void Set%s(double, double, double);",
        (yyvsp[(3) - (4)].str));
      sprintf(temps,"Set%s",(yyvsp[(3) - (4)].str));
      currentFunction->Name = vtkstrdup(temps);
@@ -4137,7 +4137,7 @@ yyreduce:
 
      currentFunction->Signature = (char *)malloc(2048);
      sigAllocatedLength = 2048;
-     sprintf(currentFunction->Signature,"void Set%s (double a[3]);",
+     sprintf(currentFunction->Signature,"void Set%s(double a[3]);",
        (yyvsp[(3) - (4)].str));
      currentFunction->Name = vtkstrdup(temps);
      currentFunction->NumberOfArguments = 1;
@@ -4147,7 +4147,7 @@ yyreduce:
 
      currentFunction->Signature = (char *)malloc(2048);
      sigAllocatedLength = 2048;
-     sprintf(currentFunction->Signature,"double *Get%s ();", (yyvsp[(3) - (4)].str));
+     sprintf(currentFunction->Signature,"double *Get%s();", (yyvsp[(3) - (4)].str));
      sprintf(temps,"Get%s",(yyvsp[(3) - (4)].str));
      currentFunction->Name = vtkstrdup(temps);
      currentFunction->NumberOfArguments = 0;
@@ -4165,7 +4165,7 @@ yyreduce:
     {
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature, "const char *GetClassName ();");
+   sprintf(currentFunction->Signature, "const char *GetClassName();");
    sprintf(temps,"GetClassName");
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
@@ -4175,7 +4175,7 @@ yyreduce:
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
    sprintf(currentFunction->Signature,
-           "int IsA (const char *name);");
+           "int IsA(const char *name);");
    sprintf(temps,"IsA");
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 1;
@@ -4186,7 +4186,7 @@ yyreduce:
 
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature, "%s *NewInstance ();",
+   sprintf(currentFunction->Signature, "%s *NewInstance();",
            (yyvsp[(3) - (6)].str));
    sprintf(temps,"NewInstance");
    currentFunction->Name = vtkstrdup(temps);
@@ -4199,7 +4199,7 @@ yyreduce:
      {
      currentFunction->Signature = (char *)malloc(2048);
      sigAllocatedLength = 2048;
-     sprintf(currentFunction->Signature, "%s *SafeDownCast (vtkObject* o);",
+     sprintf(currentFunction->Signature, "%s *SafeDownCast(vtkObject* o);",
              (yyvsp[(3) - (6)].str));
      sprintf(temps,"SafeDownCast");
      currentFunction->Name = vtkstrdup(temps);
@@ -4221,7 +4221,7 @@ yyreduce:
     {
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature, "const char *GetClassName ();");
+   sprintf(currentFunction->Signature, "const char *GetClassName();");
    sprintf(temps,"GetClassName");
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
@@ -4231,7 +4231,7 @@ yyreduce:
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
    sprintf(currentFunction->Signature,
-           "int IsA (const char *name);");
+           "int IsA(const char *name);");
    sprintf(temps,"IsA");
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 1;
@@ -4242,7 +4242,7 @@ yyreduce:
 
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature, "%s *NewInstance ();",
+   sprintf(currentFunction->Signature, "%s *NewInstance();",
            (yyvsp[(3) - (7)].str));
    sprintf(temps,"NewInstance");
    currentFunction->Name = vtkstrdup(temps);
@@ -4255,7 +4255,7 @@ yyreduce:
      {
      currentFunction->Signature = (char *)malloc(2048);
      sigAllocatedLength = 2048;
-     sprintf(currentFunction->Signature, "%s *SafeDownCast (vtkObject* o);",
+     sprintf(currentFunction->Signature, "%s *SafeDownCast(vtkObject* o);",
              (yyvsp[(3) - (7)].str));
      sprintf(temps,"SafeDownCast");
      currentFunction->Name = vtkstrdup(temps);
