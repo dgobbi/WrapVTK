@@ -823,18 +823,21 @@ int methodMatchesVariable(
       }
     }
 
-  /* promote "void" to "int" for e.g. boolean methods */
-  if (meth->IsBoolean || meth->IsEnumerated)
+  /* promote "void" to enumerated type for e.g. boolean methods, and */
+  /* check for GetValueAsString method, assume it has matching enum */
+  if (meth->IsBoolean || meth->IsEnumerated ||
+      (isAsStringMethod(meth->Name) &&
+       typeBaseType(methType) == VTK_PARSE_CHAR &&
+       typeIndirection(methType) == VTK_PARSE_POINTER))
     {
-    methType = VTK_PARSE_INT;
-    }
-
-  /* check for GetValueAsString method, assume it has matching int enum  */
-  if (isAsStringMethod(meth->Name) &&
-      typeBaseType(methType) == VTK_PARSE_CHAR &&
-      typeIndirection(methType) == VTK_PARSE_POINTER)
-    {
-    methType = VTK_PARSE_INT;
+    if (!typeIsIndirect(varType) &&
+        (varType == VTK_PARSE_INT ||
+         varType == VTK_PARSE_UNSIGNED_INT ||
+         varType == VTK_PARSE_UNSIGNED_CHAR ||
+         (meth->IsBoolean && varType == VTK_PARSE_BOOL)))
+      {
+      methType = varType;
+      }
     }
 
   /* check for matched type and count */
