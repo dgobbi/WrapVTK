@@ -267,7 +267,7 @@ unsigned int methodCategory(MethodAttributes *meth, int shortForm)
       {
       return VTKVAR_MULTI_SET;
       }
-    else if (isSetNumberOfMethod(name) && shortForm)
+    else if (shortForm && isSetNumberOfMethod(name))
       {
       return VTKVAR_SET_NUM;
       }
@@ -290,17 +290,17 @@ unsigned int methodCategory(MethodAttributes *meth, int shortForm)
     }
   else if (isGetMethod(name))
     {
-    if (isGetMinValueMethod(name) && shortForm)
+    if (shortForm && isGetMinValueMethod(name))
       {
       return VTKVAR_MIN_GET;
       }
-    else if (isGetMaxValueMethod(name) && shortForm)
+    else if (shortForm && isGetMaxValueMethod(name))
       {
       return VTKVAR_MAX_GET;
       }
-    else if (isAsStringMethod(name) && shortForm)
+    else if (shortForm && isAsStringMethod(name))
       {
-      return VTKVAR_ENUM_GET;
+      return VTKVAR_STRING_GET;
       }
     else if (meth->IsIndexed && meth->Count > 0 && !meth->IsHinted)
       {
@@ -332,7 +332,7 @@ unsigned int methodCategory(MethodAttributes *meth, int shortForm)
       {
       return VTKVAR_RHS_GET;
       }
-    else if (isGetNumberOfMethod(name) && shortForm)
+    else if (shortForm && isGetNumberOfMethod(name))
       {
       return VTKVAR_GET_NUM;
       }
@@ -725,21 +725,21 @@ int methodMatchesVariable(
     }
   else if (isGetMinValueMethod(meth->Name))
     {
-    if (n >= 8 && strcmp(varName-8, "MinValue") == 0)
+    if (n >= 8 && strcmp(&varName[n-8], "MinValue") == 0)
       {
       *longMatch = 1;
       } 
     }
   else if (isGetMaxValueMethod(meth->Name))
     {
-    if (n >= 8 && strcmp(varName-8, "MaxValue") == 0)
+    if (n >= 8 && strcmp(&varName[n-8], "MaxValue") == 0)
       {
       *longMatch = 1;
       } 
     }
   else if (isAsStringMethod(meth->Name))
     {
-    if (n >= 8 && strcmp(varName-8, "AsString") == 0)
+    if (n >= 8 && strcmp(&varName[n-8], "AsString") == 0)
       {
       *longMatch = 1;
       } 
@@ -829,7 +829,7 @@ int methodMatchesVariable(
     methType = VTK_PARSE_INT;
     }
 
-  /* check for GetValueAsString method, assume it has matching enum  */
+  /* check for GetValueAsString method, assume it has matching int enum  */
   if (isAsStringMethod(meth->Name) &&
       typeBaseType(methType) == VTK_PARSE_CHAR &&
       typeIndirection(methType) == VTK_PARSE_POINTER)
@@ -1290,8 +1290,8 @@ const char *methodTypeString(unsigned int methodType)
       return "INDEX_RHS_GET";
     case VTKVAR_NTH_RHS_GET:
       return "NTH_RHS_GET";
-    case VTKVAR_ENUM_GET:
-      return "ENUM_GET";
+    case VTKVAR_STRING_GET:
+      return "STRING_GET";
     case VTKVAR_ENUM_SET:
       return "ENUM_SET";
     case VTKVAR_BOOL_ON:

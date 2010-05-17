@@ -32,7 +32,7 @@
  * RHS_GET is "void GetValue(type *)"
  * INDEX_RHS_GET is "void GetValue(int, type [])"
  * NTH_RHS_GET is "void GetNthValue(int, type [])"
- * ENUM_GET  is "const char *GetValueAsString()"
+ * STRING_GET is "const char *GetValueAsString()"
  * ENUM_SET  is "void SetValueToEnumVal()"
  * BOOL_ON   is "void ValueOn()"
  * BOOL_OFF  is "void ValueOff()"
@@ -62,7 +62,7 @@
 #define VTKVAR_RHS_GET    0x00000100
 #define VTKVAR_INDEX_RHS_GET 0x00000200
 #define VTKVAR_NTH_RHS_GET 0x000000400
-#define VTKVAR_ENUM_GET   0x00001000
+#define VTKVAR_STRING_GET 0x00001000
 #define VTKVAR_ENUM_SET   0x00002000
 #define VTKVAR_BOOL_ON    0x00004000
 #define VTKVAR_BOOL_OFF   0x00008000
