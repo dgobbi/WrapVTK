@@ -80,26 +80,6 @@ Modify lex.yy.c:
          }
      };
 
-^[\t ]*"//BTX".*$ {
-       int c1 = 0, c2 = 0, c3 = 0, c4 = 0, c5 = input();
-       for (;;)
-         {
-         if (c5 == 0)
-           {
-           fprintf(yyout,"Cannot find matching //ETX.\n");
-           break;
-           }
-         if (c1 == '/' && c2 == '/' && c3 == 'E' && c4 == 'T' && c5 == 'X') break;
-         c1 = c2; c2 = c3; c3 = c4; c4 = c5; c5 = input();
-         }
-       for (;;)
-         {
-         if (c5 == 0) break;
-         if (c5 == '\n') break;
-         c5 = input();
-         }
-     };
-
 ^[\t ]*"// .NAME".* {
      int pos = 1;
      while (yytext[pos-1] != 'M' || yytext[pos] != 'E')
@@ -266,10 +246,14 @@ Modify lex.yy.c:
 "vtkTypeFloat32"       return(TypeFloat32);
 "vtkTypeFloat64"       return(TypeFloat64);
 
+"const"[\r\n\t ]*"*"   return(CONST_PTR);
+"const"[\r\n\t ]*"&"   return(CONST_REF);
 
-[0-9]+                { sscanf(yytext,"%d",&yylval.integer); return(NUM);}
+[0-9]+"."[0-9]*([eE][+-]?[0-9]+)?[fFlL]? return(FLOAT_LITERAL);
+Ox[0-9a-fA-f]+[ulUL]? return(HEX_LITERAL);
+[0-9]+[ulUL]?  { sscanf(yytext,"%d",&yylval.integer); return(INT_LITERAL);}
 
-\"[^\"]+\"        {
+\"[^\"]+\"      {
                 yylval.str =  vtkstrdup(yytext + 1);
                 yylval.str[strlen(yytext)-2] = '\0';
                 return(STRING);
@@ -290,11 +274,15 @@ Modify lex.yy.c:
                           return(ID);
                         }
 
+"("[\t\n\r ]*"&"  return(LPAREN_AMPERSAND); 
+"("[\t\n\r ]*([a-zA-Z_][a-zA-Z0-9_]*::)*"*"  return(LPAREN_POINTER); 
+
 [\t\n\r ] ;
 
 "<<="             return(OP_LSHIFT_EQ);
 ">>="             return(OP_RSHIFT_EQ);
 "<<"              return(OP_LSHIFT);
+"->*"             return(OP_ARROW_POINTER);
 "->"              return(OP_ARROW);
 ">>"              return(OP_RSHIFT);
 "++"              return(OP_INCR);
@@ -317,8 +305,6 @@ Modify lex.yy.c:
 ">="              return(OP_LOGIC_GEQ);
 "..."             return(ELLIPSIS);
 "::"              return(DOUBLE_COLON);
-
-"("[\t\n\r ]*"*"  return(FUNCPOINTER_LPAREN); 
 
 "[" { return(yytext[0]); }
 "]" { return(yytext[0]); }

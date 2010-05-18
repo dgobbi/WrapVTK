@@ -107,7 +107,9 @@ static void vtkParseDebug(const char* s1, const char* s2);
 #endif
 
 int yylex(void);
+void start_class(const char *classname);
 void output_function(void);
+void reject_function(void);
 
 /* vtkstrdup is not part of POSIX so we create our own */
 char *vtkstrdup(const char *in)
@@ -120,6 +122,7 @@ char *vtkstrdup(const char *in)
 #include "vtkParse.h"
 
   FileInfo data;
+  FunctionInfo throwAwayFunction;
   FunctionInfo *currentFunction;
 
   FILE *fhint;
@@ -132,6 +135,7 @@ char *vtkstrdup(const char *in)
   int openSig;
   int invertSig;
   unsigned int sigAllocatedLength;
+  int mainClass;
 
 #define YYMAXDEPTH 1000
 
@@ -211,8 +215,10 @@ char *vtkstrdup(const char *in)
 %token PROTECTED
 %token VIRTUAL
 %token <str> STRING
-%token <integer> NUM
+%token <integer> INT_LITERAL
 %token <str> ID
+%token HEX_LITERAL
+%token FLOAT_LITERAL
 %token INT
 %token FLOAT
 %token SHORT
@@ -231,6 +237,8 @@ char *vtkstrdup(const char *in)
 %token CLASS_REF
 %token OTHER
 %token CONST
+%token CONST_PTR
+%token CONST_REF
 %token OPERATOR
 %token UNSIGNED
 %token FRIEND
@@ -248,11 +256,13 @@ char *vtkstrdup(const char *in)
 %token VTK_LEGACY
 %token NEW
 %token DELETE
-%token FUNCPOINTER_LPAREN
+%token LPAREN_POINTER
+%token LPAREN_AMPERSAND
 %token OP_LSHIFT_EQ
 %token OP_RSHIFT_EQ
 %token OP_LSHIFT
 %token OP_RSHIFT
+%token OP_ARROW_POINTER
 %token OP_ARROW
 %token OP_INCR
 %token OP_DECR
@@ -317,23 +327,21 @@ char *vtkstrdup(const char *in)
 /*
  * Here is the start of the grammer
  */
-strt: maybe_other class_def maybe_other;
+strt: maybe_other maybe_template_class_def maybe_other more_classes;
 
-class_def : template_class_def | non_template_class_def;
+more_classes: | maybe_template_class_def maybe_other more_classes;
 
-template_class_def : template CLASS VTK_ID
+maybe_template_class_def: template type_red2 | template type_string2
+              | template INLINE type_red2 | template INLINE type_string2
+              | template class_def | class_def;
+
+class_def: CLASS any_id
       {
-      data.ClassName = vtkstrdup($3);
+        start_class($<str>2);
       }
     optional_scope '{' class_def_body '}';
 
-non_template_class_def : CLASS VTK_ID
-      {
-      data.ClassName = vtkstrdup($2);
-      }
-    optional_scope '{' class_def_body '}';
-
-class_def_body: class_def_item | class_def_item class_def_body;
+class_def_body: | class_def_item class_def_body;
 
 class_def_item: scope_type ':'
    | var
@@ -349,13 +357,13 @@ class_def_item: scope_type ':'
    | template_internal_class
    | CLASS_REF
    | operator func_body { output_function(); }
-   | FRIEND operator func_body { output_function(); }
+   | FRIEND operator func_body { reject_function(); }
    | INLINE operator func_body { output_function(); }
    | function func_body { output_function(); }
-   | FRIEND function func_body { output_function(); }
+   | FRIEND function func_body { reject_function(); }
    | INLINE function func_body { output_function(); }
-   | template_function func_body { output_function(); }
-   | INLINE template_function func_body { output_function(); }
+   | template_function func_body { reject_function(); }
+   | INLINE template_function func_body { reject_function(); }
    | legacy_function func_body { legacySig(); output_function(); }
    | VTK_BYTE_SWAP_DECL '(' maybe_other ')' ';'
    | macro ';'
@@ -383,7 +391,12 @@ typedef: TYPEDEF type var_id ';'
  | TYPEDEF CLASS_REF
  | TYPEDEF CLASS any_id '{' maybe_other '}' any_id ';';
  | TYPEDEF CLASS '{' maybe_other '}' any_id ';';
- | TYPEDEF type FUNCPOINTER_LPAREN any_id ')' '(' maybe_other_no_semi ')' ';'
+ | TYPEDEF type LPAREN_POINTER any_id ')' '(' maybe_other_no_semi ')' ';'
+ | TYPEDEF type LPAREN_AMPERSAND any_id ')' '(' maybe_other_no_semi ')' ';'
+ | TYPEDEF enum
+ | TYPEDEF named_enum
+ | TYPEDEF union
+ | TYPEDEF named_union
  | TYPEDEF VAR_FUNCTION ';';
 
 template_function: template function;
@@ -459,13 +472,16 @@ op_func: op_sig { postSig(")"); } maybe_const { postSig(";"); openSig = 0; }
       currentFunction->Name = $<str>2;
       vtkParseDebug("Parsed operator", $<str>2);
     }
-  | op_sig '=' NUM
+  | op_sig '=' INT_LITERAL
     {
       postSig(") = 0;");
       currentFunction->Name = $<str>2;
       vtkParseDebug("Parsed operator", $<str>2);
       currentFunction->IsPureVirtual = 1;
-      data.IsAbstract = 1;
+      if (mainClass)
+        {
+        data.IsAbstract = 1;
+        }
     };
 
 op_sig: OPERATOR op_token {postSig($<str>2);} '('
@@ -481,27 +497,37 @@ func: func_sig { postSig(")"); } maybe_const { postSig(";"); openSig = 0; }
       currentFunction->Name = $<str>1;
       vtkParseDebug("Parsed func", $<str>1);
     }
-  | func_sig '=' NUM
+  | func_sig '=' INT_LITERAL
     {
       postSig(") = 0;");
       currentFunction->Name = $<str>1;
       vtkParseDebug("Parsed func", $<str>1);
       currentFunction->IsPureVirtual = 1;
-      data.IsAbstract = 1;
+      if (mainClass)
+        {
+        data.IsAbstract = 1;
+        }
     };
 
 maybe_const: | CONST {postSig(" const");};
 
 func_sig: any_id '(' {postSig("("); } args_list ')';
 
-constructor: constructor_sig { postSig(");"); openSig = 0; }
+constructor: constructor_sig { postSig(")"); } maybe_initializers
+    { postSig(";"); openSig = 0; }
     {
       openSig = 1;
       currentFunction->Name = $<str>1;
       vtkParseDebug("Parsed func", $<str>1);
     }
 
-constructor_sig: any_id '(' { postSig("(");} args_list ')';
+constructor_sig: any_id '(' { postSig("("); } args_list ')';
+
+maybe_initializers: | ':' initializer more_initializers;
+
+more_initializers: | ',' initializer more_initializers;
+
+initializer: any_id '(' maybe_other ')';
 
 destructor: destructor_sig { postSig(");"); openSig = 0; }
     {
@@ -523,8 +549,7 @@ any_id: VTK_ID {postSig($<str>1);} | ID {postSig($<str>1);};
 
 func_body: ';'
     | '{' maybe_other '}' ';'
-    | '{' maybe_other '}'
-    | ':' maybe_other_no_semi ';';
+    | '{' maybe_other '}';
 
 args_list: | more_args;
 
@@ -551,14 +576,25 @@ arg: type var_array
       currentFunction->ArgCounts[currentFunction->NumberOfArguments] = 0;
       currentFunction->ArgTypes[currentFunction->NumberOfArguments] = VTK_PARSE_FUNCTION;
     }
-  | type FUNCPOINTER_LPAREN any_id ')' '(' args_list ')';
+  | type LPAREN_AMPERSAND any_id ')';
+  | type LPAREN_POINTER any_id ')' '(' args_list ')';
 
 opt_var_assign: | '=' float_num;
 
-var:  type var_ids ';' {delSig();}
+var: CLASS any_id var_ids ';' {delSig();}
+     | CLASS any_id type_indirection var_ids ';' {delSig();}
+     | ENUM any_id var_ids ';' {delSig();}
+     | ENUM any_id type_indirection var_ids ';' {delSig();}
+     | UNION any_id var_ids ';' {delSig();}
+     | UNION any_id type_indirection var_ids ';' {delSig();}
+     | type var_ids ';' {delSig();}
      | type CONST var_ids ';' {delSig();}
      | VAR_FUNCTION ';' {delSig();}
-     | type FUNCPOINTER_LPAREN any_id ')' '(' args_list ')' ';' {delSig();};
+     | STATIC VAR_FUNCTION ';' {delSig();}
+     | type LPAREN_AMPERSAND any_id ')' ';' {delSig();}
+     | type LPAREN_POINTER any_id ')' ';' {delSig();}
+     | type LPAREN_POINTER any_id ')' ARRAY_NUM ';' {delSig();}
+     | type LPAREN_POINTER any_id ')' '(' args_list ')' ';' {delSig();};
 
 var_ids: var_id | var_id ',' maybe_indirect_var_ids;
 
@@ -591,8 +627,8 @@ type_red1: type_red2 {$<integer>$ = $<integer>1;}
          | type_red2 type_indirection
            {$<integer>$ = $<integer>1 + $<integer>2;}
          | type_string1 {$<integer>$ = $<integer>1;}
-         | type_templated
-         | type_templated type_indirection
+         | templated_id
+         | templated_id type_indirection
          | ID DOUBLE_COLON scoped_id
          | ID DOUBLE_COLON scoped_id type_indirection
          | VTK_ID DOUBLE_COLON scoped_id
@@ -600,12 +636,15 @@ type_red1: type_red2 {$<integer>$ = $<integer>1;}
          | VTK_ID DOUBLE_COLON vtk_scoped_id
          | VTK_ID DOUBLE_COLON vtk_scoped_id type_indirection;
 
-type_templated: vtk_scoped_id '<' types '>'
-               | scoped_id '<' types '>';
+templated_id: vtk_scoped_id '<' types '>'
+               | scoped_id '<' types '>'
+               | TYPENAME vtk_scoped_id '<' types '>' DOUBLE_COLON scoped_id
+               | TYPENAME scoped_id '<' types '>' DOUBLE_COLON scoped_id;
 
 types: type | type ',' types;
 
 scoped_id: ID | ID DOUBLE_COLON scoped_id;
+
 vtk_scoped_id: VTK_ID | VTK_ID DOUBLE_COLON scoped_id
               | VTK_ID DOUBLE_COLON vtk_scoped_id;
 
@@ -621,16 +660,20 @@ type_string3: StdString { postSig("vtkStdString "); $<integer>$ = (VTK_PARSE_STR
 type_string4: UnicodeString { postSig("vtkUnicodeString "); $<integer>$ = (VTK_PARSE_UNICODE_STRING); };
 
 /* &   is VTK_PARSE_REF
-   &&  is VTK_PARSE_REF + VTK_PARSE_REF
    *   is VTK_PARSE_POINTER
-   &*  is VTK_PARSE_POINTER + VTK_PARSE_REF
-   *&  is VTK_PARSE_POINTER + VTK_PARSE_REF + VTK_PARSE_REF
-   **  is VTK_PARSE_POINTER + VTK_PARSE_POINTER + VTK_PARSE_REF
+   *&  is VTK_PARSE_POINTER_REF
+   * const&  is VTK_PARSE_POINTER_CONST_REF
+   **  is VTK_PARSE_POINTER_POINTER
+   * const*  is VTK_PARSE_POINTER_CONST_POINTER
    */
 type_indirection: '&' { postSig("&"); $<integer>$ = VTK_PARSE_REF;}
                 | '*' { postSig("*"); $<integer>$ = VTK_PARSE_POINTER;}
-                | '&' type_indirection { $<integer>$ = VTK_PARSE_REF + $<integer>2;}
-                | '*' type_indirection { $<integer>$ = (VTK_PARSE_REF + VTK_PARSE_POINTER) + $<integer>2;};
+                | '*' '&' { postSig("*&"); $<integer>$ = VTK_PARSE_POINTER_REF;}
+                | '*' CONST_REF { postSig("* const&"); $<integer>$ = VTK_PARSE_POINTER_CONST_REF;}
+                | '*' '*' { postSig("**"); $<integer>$ = VTK_PARSE_POINTER_POINTER;}
+                | '*' CONST_PTR { postSig("* const*"); $<integer>$ = VTK_PARSE_POINTER_CONST_POINTER;}
+                | '*' '*' '&' { postSig("**&"); $<integer>$ = VTK_PARSE_BAD_INDIRECT;}
+                | '*' '*' '*' { postSig("***"); $<integer>$ = VTK_PARSE_BAD_INDIRECT;};
 
 type_red2: UNSIGNED {postSig("unsigned ");}
              type_primitive { $<integer>$ = VTK_PARSE_UNSIGNED + $<integer>3;}
@@ -688,25 +731,36 @@ type_primitive:
 
 optional_scope: | ':' scope_list;
 
-scope_list: scope_type VTK_ID
+scope_list: scope_type superclass_id
     {
-      data.SuperClasses[data.NumberOfSuperClasses] = vtkstrdup($2);
-      data.NumberOfSuperClasses++;
+      if (mainClass)
+        {
+        data.SuperClasses[data.NumberOfSuperClasses] = vtkstrdup($<str>2);
+        data.NumberOfSuperClasses++;
+        }
     }
-  | scope_type VTK_ID
+  | scope_type superclass_id
     {
-      data.SuperClasses[data.NumberOfSuperClasses] = vtkstrdup($2);
-      data.NumberOfSuperClasses++;
+      if (mainClass)
+        {
+        data.SuperClasses[data.NumberOfSuperClasses] = vtkstrdup($<str>2);
+        data.NumberOfSuperClasses++;
+        }
     } ',' scope_list;
 
-scope_type: PUBLIC {in_public = 1; in_protected = 0;}
+scope_type: {in_public = 0; in_protected = 0;}
+          | PUBLIC {in_public = 1; in_protected = 0;}
           | PRIVATE {in_public = 0; in_protected = 0;}
           | PROTECTED {in_public = 0; in_protected = 1;};
 
+superclass_id: scoped_id | vtk_scoped_id | templated_id;
+
 float_num: '-' float_prim | float_prim;
 
-float_prim: NUM {$<integer>$ = $1;}
-         | NUM '.' NUM {$<integer>$ = -1;} | any_id {$<integer>$ = -1;};
+float_prim: INT_LITERAL {$<integer>$ = $1;}
+          | HEX_LITERAL {$<integer>$ = -1;}
+          | FLOAT_LITERAL {$<integer>$ = -1;}
+          | any_id {$<integer>$ = -1;};
 
 macro:
   SetMacro '(' any_id ','
@@ -1281,6 +1335,7 @@ op_token_no_delim: '=' { $<str>$ = "operator="; }
    | OP_RSHIFT_EQ { $<str>$ = "operator>>="; }
    | OP_LSHIFT { $<str>$ = "operator<<"; }
    | OP_RSHIFT { $<str>$ = "operator>>"; }
+   | OP_ARROW_POINTER { $<str>$ = "operator->*"; } 
    | OP_ARROW { $<str>$ = "operator->"; } 
    | OP_PLUS_EQ { $<str>$ = "operator+="; }
    | OP_MINUS_EQ { $<str>$ = "operator-="; } 
@@ -1314,12 +1369,14 @@ other_stuff : ';' | other_stuff_no_semi | typedef_ignore;
 
 other_stuff_no_semi : OTHER | braces | parens | brackets | op_token_no_delim
    | ':' | '.' | STRING | type_red2 | type_string2 | DOUBLE_COLON
-   | NUM | CLASS_REF | CONST | OPERATOR | STATIC | INLINE | VIRTUAL
-   | ENUM | UNION | TYPENAME | ARRAY_NUM | VAR_FUNCTION | ELLIPSIS
-   | PUBLIC | PROTECTED | PRIVATE | NAMESPACE | USING;
+   | INT_LITERAL | FLOAT_LITERAL | CLASS_REF | CONST | OPERATOR | STATIC
+   | INLINE | VIRTUAL | ENUM | UNION | TYPENAME | ARRAY_NUM | VAR_FUNCTION
+   | ELLIPSIS | PUBLIC | PROTECTED | PRIVATE | NAMESPACE | USING;
 
 braces: '{' maybe_other_class '}';
-parens: '(' maybe_other ')' | FUNCPOINTER_LPAREN maybe_other ')';
+parens: '(' maybe_other ')'
+       | LPAREN_POINTER maybe_other ')'
+       | LPAREN_AMPERSAND maybe_other ')';
 brackets: '[' maybe_other ']';
 typedef_ignore: TYPEDEF typedef_ignore_body ';';
 
@@ -1364,6 +1421,23 @@ void InitFunction(FunctionInfo *func)
   invertSig = 0;
 }
 
+/* check whether this is the class we are looking for */
+void start_class(const char *classname)
+{
+  if (!strcmp(data.ClassName, classname))
+    {
+    mainClass = 1;
+    currentFunction = data.Functions;
+    data.NumberOfFunctions = 0;
+    }
+  else
+    {
+    mainClass = 0;
+    currentFunction = &throwAwayFunction;
+    }
+  InitFunction(currentFunction);
+}
+
 /* when the cpp file doesn't have enough info use the hint file */
 void look_for_hint(void)
 {
@@ -1391,6 +1465,12 @@ void look_for_hint(void)
       currentFunction->HintSize = h_value;
       }
     }
+}
+
+/* reject the function, do not output it */
+void reject_function()
+{
+  InitFunction(currentFunction);
 }
 
 /* a simple routine that updates a few variables */
@@ -1425,7 +1505,10 @@ void output_function()
   /* is it a delete function */
   if (currentFunction->Name && !strcmp("Delete",currentFunction->Name))
     {
-    data.HasDelete = 1;
+    if (mainClass)
+      {
+      data.HasDelete = 1;
+      }
     }
 
 
@@ -1453,10 +1536,13 @@ void output_function()
   /* reject multi-dimensional arrays from wrappers */
   for (i = 0; i < currentFunction->NumberOfArguments; i++)
     {
-    if ((currentFunction->ArgTypes[i] & VTK_PARSE_INDIRECT) == 2*VTK_PARSE_POINTER ||
-        (currentFunction->ArgTypes[i] & VTK_PARSE_INDIRECT) == 3*VTK_PARSE_POINTER)
+    switch (currentFunction->ArgTypes[i] & VTK_PARSE_INDIRECT)
       {
-      currentFunction->ArrayFailure = 1;
+      case VTK_PARSE_ARRAY_2D:
+      case VTK_PARSE_ARRAY_3D:
+      case VTK_PARSE_BAD_INDIRECT:
+        currentFunction->ArrayFailure = 1;
+        break;
       }
     }
 
@@ -1465,8 +1551,12 @@ void output_function()
     currentFunction->Comment = vtkstrdup(CommentText);
     }
 
-  data.NumberOfFunctions++;
-  currentFunction = data.Functions + data.NumberOfFunctions;
+  if (mainClass)
+    {
+    data.NumberOfFunctions++;
+    currentFunction = data.Functions + data.NumberOfFunctions;
+    }
+
   InitFunction(currentFunction);
 }
 
@@ -1474,6 +1564,7 @@ extern void vtkParseOutput(FILE *,FileInfo *);
 
 int main(int argc,char *argv[])
 {
+  int i, j;
   FILE *fin;
   int ret;
   FILE *fout;
@@ -1499,6 +1590,31 @@ int main(int argc,char *argv[])
   data.SeeAlso = NULL;
   CommentState = 0;
 
+  /* The class name should be the file name */
+  i = strlen(data.FileName);
+  j = i;
+  while (i > 0)
+    {
+    --i;
+    if (data.FileName[i] == '.')
+      {
+      j = i;
+      }
+    if (data.FileName[i] == '/' || data.FileName[i] == '\\')
+      {
+      i++;
+      break;
+      }
+    } 
+  data.ClassName = (char *)malloc(j-i + 1);
+  strncpy(data.ClassName, &data.FileName[i], j-i);
+  data.ClassName[j-i] = '\0';
+
+  /* This will be set to 1 while parsing the main class */
+  mainClass = 0;
+
+  currentFunction = &throwAwayFunction;
+
   if (argc == 5)
     {
     if (!(fhint = fopen(argv[2],"r")))
@@ -1512,9 +1628,6 @@ int main(int argc,char *argv[])
     {
     data.IsConcrete = atoi(argv[2]);
     }
-
-  currentFunction = data.Functions;
-  InitFunction(currentFunction);
 
   yyin = fin;
   yyout = stdout;
