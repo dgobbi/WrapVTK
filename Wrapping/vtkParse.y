@@ -551,6 +551,10 @@ func_body: ';'
     | '{' maybe_other '}' ';'
     | '{' maybe_other '}';
 
+ignore_args_list: | ignore_more_args;
+
+ignore_more_args: arg | arg { postSig(", ");} ',' ignore_more_args;
+
 args_list: | more_args;
 
 more_args: ELLIPSIS | arg { currentFunction->NumberOfArguments++;}
@@ -576,8 +580,19 @@ arg: type var_array
       currentFunction->ArgCounts[currentFunction->NumberOfArguments] = 0;
       currentFunction->ArgTypes[currentFunction->NumberOfArguments] = VTK_PARSE_FUNCTION;
     }
-  | type LPAREN_AMPERSAND any_id ')';
-  | type LPAREN_POINTER any_id ')' '(' args_list ')';
+  | type LPAREN_AMPERSAND { postSig("(&"); } any_id ')'
+    {
+      postSig(") ");
+      currentFunction->ArgCounts[currentFunction->NumberOfArguments] = 0;
+      currentFunction->ArgTypes[currentFunction->NumberOfArguments] = VTK_PARSE_UNKNOWN;
+    }
+  | type LPAREN_POINTER { postSig("(*"); } any_id ')' '('
+    { postSig(")("); } ignore_args_list ')'
+    {
+      postSig(")");
+      currentFunction->ArgCounts[currentFunction->NumberOfArguments] = 0;
+      currentFunction->ArgTypes[currentFunction->NumberOfArguments] = VTK_PARSE_UNKNOWN;
+    };
 
 opt_var_assign: | '=' float_num;
 
@@ -594,7 +609,7 @@ var: CLASS any_id var_ids ';' {delSig();}
      | type LPAREN_AMPERSAND any_id ')' ';' {delSig();}
      | type LPAREN_POINTER any_id ')' ';' {delSig();}
      | type LPAREN_POINTER any_id ')' ARRAY_NUM ';' {delSig();}
-     | type LPAREN_POINTER any_id ')' '(' args_list ')' ';' {delSig();};
+     | type LPAREN_POINTER any_id ')' '(' ignore_args_list ')' ';' {delSig();};
 
 var_ids: var_id | var_id ',' maybe_indirect_var_ids;
 
