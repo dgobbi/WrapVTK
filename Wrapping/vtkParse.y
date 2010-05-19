@@ -141,7 +141,7 @@ char *vtkstrdup(const char *in)
 
   void checkSigSize(const char *arg)
     {
-    if (strlen(currentFunction->Signature) + strlen(arg) + 3 >
+    if (strlen(currentFunction->Signature) + strlen(arg) + 5 >
         sigAllocatedLength)
       {
       currentFunction->Signature = (char *)
@@ -155,15 +155,18 @@ char *vtkstrdup(const char *in)
       {
       currentFunction->Signature = (char*)malloc(2048);
       sigAllocatedLength = 2048;
-      sprintf(currentFunction->Signature,"%s",arg);
+      strcpy(currentFunction->Signature, arg);
       }
     else if (openSig)
       {
-      char *tmp;
+      int m, n;
+      char *cp;
       checkSigSize(arg);
-      tmp = vtkstrdup(currentFunction->Signature);
-      sprintf(currentFunction->Signature,"%s%s",arg,tmp);
-      free(tmp);
+      cp = currentFunction->Signature;
+      m = strlen(cp);
+      n = strlen(arg);
+      memmove(&cp[n], cp, m+1);
+      strncpy(cp, arg, n);
       }
     }
   void postSig(const char *arg)
@@ -172,22 +175,55 @@ char *vtkstrdup(const char *in)
       {
       currentFunction->Signature = (char*)malloc(2048);
       sigAllocatedLength = 2048;
-      sprintf(currentFunction->Signature,"%s",arg);
+      strcpy(currentFunction->Signature, arg);
       }
     else if (openSig)
       {
-      char *tmp;
+      int m, n;
+      char *cp;
       checkSigSize(arg);
-      tmp = vtkstrdup(currentFunction->Signature);
+      cp = currentFunction->Signature;
+      m = strlen(cp);
+      n = strlen(arg);
       if (invertSig)
         {
-        sprintf(currentFunction->Signature,"%s%s",arg,tmp);
+        memmove(&cp[n], cp, m+1);
+        strncpy(cp, arg, n);
         }
       else
         {
-        sprintf(currentFunction->Signature,"%s%s",tmp,arg);
+        strncpy(&cp[m], arg, n+1);
         }
-      free(tmp);
+      }
+    }
+  void preScopeSig(const char *arg)
+    {
+    if (!currentFunction->Signature)
+      {
+      currentFunction->Signature = (char*)malloc(2048);
+      sigAllocatedLength = 2048;
+      strcpy(currentFunction->Signature, arg);
+      }
+    else if (openSig)
+      {
+      int i, m, n;
+      char *cp;
+      checkSigSize(arg);
+      cp = currentFunction->Signature;
+      m = strlen(cp);
+      n = strlen(arg);
+      i = m - 1;
+      while (i > 0 &&
+            ((cp[i] >= 'a' && cp[i] <= 'z') ||
+             (cp[i] >= 'A' && cp[i] <= 'Z') ||
+             (cp[i] >= '0' && cp[i] <= '9') ||
+             cp[i] == '_' || cp[i] == ':'))
+        {
+        i--;
+        }
+      memmove(&cp[i+n+2], &cp[i], m+1);
+      strncpy(&cp[i], arg, n);
+      strncpy(&cp[i+n], "::", 2);
       }
     }
   void delSig(void)
@@ -543,7 +579,7 @@ destructor_sig: any_id '(' { postSig("(");} args_list ')';
 const_mod: CONST {postSig("const ");};
 
 static_mod: STATIC {postSig("static ");}
-           | STATIC INLINE {postSig("static ");} 
+           | STATIC INLINE {postSig("static ");}
 
 any_id: VTK_ID {postSig($<str>1);} | ID {postSig($<str>1);};
 
@@ -642,26 +678,47 @@ type_red1: type_red2 {$<integer>$ = $<integer>1;}
          | type_red2 type_indirection
            {$<integer>$ = $<integer>1 + $<integer>2;}
          | type_string1 {$<integer>$ = $<integer>1;}
-         | templated_id
-         | templated_id type_indirection
+         | templated_id {postSig(" "); $<integer>$ = VTK_PARSE_UNKNOWN;}
+         | templated_id {postSig(" ");} type_indirection
+           {$<integer>$ = VTK_PARSE_UNKNOWN;}
          | ID DOUBLE_COLON scoped_id
-         | ID DOUBLE_COLON scoped_id type_indirection
+           {preScopeSig($<str>1); postSig(" ");
+            $<integer>$ = VTK_PARSE_UNKNOWN;}
+         | ID DOUBLE_COLON scoped_id
+           {preScopeSig($<str>1); postSig(" ");}
+           type_indirection {$<integer>$ = VTK_PARSE_UNKNOWN;}
          | VTK_ID DOUBLE_COLON scoped_id
-         | VTK_ID DOUBLE_COLON scoped_id type_indirection
+           {preScopeSig($<str>1); postSig(" ");
+            $<integer>$ = VTK_PARSE_UNKNOWN;}
+         | VTK_ID DOUBLE_COLON scoped_id
+           {preScopeSig($<str>1); postSig(" ");}
+           type_indirection {$<integer>$ = VTK_PARSE_UNKNOWN;}
          | VTK_ID DOUBLE_COLON vtk_scoped_id
-         | VTK_ID DOUBLE_COLON vtk_scoped_id type_indirection;
+           {preScopeSig($<str>1); postSig(" ");
+            $<integer>$ = VTK_PARSE_UNKNOWN;}
+         | VTK_ID DOUBLE_COLON vtk_scoped_id
+           {preScopeSig($<str>1); postSig(" ");}
+           type_indirection {$<integer>$ = VTK_PARSE_UNKNOWN;};
 
-templated_id: vtk_scoped_id '<' types '>'
-               | scoped_id '<' types '>'
-               | TYPENAME vtk_scoped_id '<' types '>' DOUBLE_COLON scoped_id
-               | TYPENAME scoped_id '<' types '>' DOUBLE_COLON scoped_id;
+templated_id: vtk_scoped_id '<' {postSig("<");} types '>' {postSig(">");}
+            | scoped_id '<' {postSig("<");} types '>' {postSig(">");}
+            | TYPENAME {postSig("typename ");}
+              vtk_scoped_id '<' {postSig("<");}
+              types '>' {postSig(">");}
+              DOUBLE_COLON {postSig("::");} scoped_id
+            | TYPENAME {postSig("typename ");}
+              scoped_id '<' {postSig("<");}
+              types '>' {postSig(">");}
+              DOUBLE_COLON {postSig("::");} scoped_id;
 
-types: type | type ',' types;
+types: type | type ',' {postSig(", ");} types;
 
-scoped_id: ID | ID DOUBLE_COLON scoped_id;
+scoped_id: ID {postSig($<str>1);} |
+           ID DOUBLE_COLON scoped_id {preScopeSig($<str>1);};
 
-vtk_scoped_id: VTK_ID | VTK_ID DOUBLE_COLON scoped_id
-              | VTK_ID DOUBLE_COLON vtk_scoped_id;
+vtk_scoped_id: VTK_ID {postSig($<str>1);}
+             | VTK_ID DOUBLE_COLON scoped_id {preScopeSig($<str>1);}
+             | VTK_ID DOUBLE_COLON vtk_scoped_id {preScopeSig($<str>1);};
 
 type_string1: type_string2 {$<integer>$ = $<integer>1;}
          | type_string2 '&' { postSig("&"); $<integer>$ = $<integer>1;}
@@ -1333,11 +1390,11 @@ macro:
 op_token: '(' ')' { $<str>$ = "operator()"; }
         | '[' ']' { $<str>$ = "operator[]"; }
         | NEW '[' ']' { $<str>$ = "operator new[]"; }
-        | DELETE '[' ']' { $<str>$ = "operator delete[]"; } 
+        | DELETE '[' ']' { $<str>$ = "operator delete[]"; }
         | op_token_no_delim;
 
 op_token_no_delim: '=' { $<str>$ = "operator="; }
-   | '*' { $<str>$ = "operator*"; } | '/' { $<str>$ = "operator/"; } 
+   | '*' { $<str>$ = "operator*"; } | '/' { $<str>$ = "operator/"; }
    | '-' { $<str>$ = "operator-"; } | '+' { $<str>$ = "operator+"; }
    | '!' { $<str>$ = "operator!"; } | '~' { $<str>$ = "operator~"; }
    | ',' { $<str>$ = "operator,"; } | '<' { $<str>$ = "operator<"; }
@@ -1345,30 +1402,30 @@ op_token_no_delim: '=' { $<str>$ = "operator="; }
    | '|' { $<str>$ = "operator|"; } | '^' { $<str>$ = "operator^"; }
    | '%' { $<str>$ = "operator%"; }
    | NEW { $<str>$ = "operator new"; }
-   | DELETE { $<str>$ = "operator delete"; } 
+   | DELETE { $<str>$ = "operator delete"; }
    | OP_LSHIFT_EQ { $<str>$ = "operator<<="; }
    | OP_RSHIFT_EQ { $<str>$ = "operator>>="; }
    | OP_LSHIFT { $<str>$ = "operator<<"; }
    | OP_RSHIFT { $<str>$ = "operator>>"; }
-   | OP_ARROW_POINTER { $<str>$ = "operator->*"; } 
-   | OP_ARROW { $<str>$ = "operator->"; } 
+   | OP_ARROW_POINTER { $<str>$ = "operator->*"; }
+   | OP_ARROW { $<str>$ = "operator->"; }
    | OP_PLUS_EQ { $<str>$ = "operator+="; }
-   | OP_MINUS_EQ { $<str>$ = "operator-="; } 
+   | OP_MINUS_EQ { $<str>$ = "operator-="; }
    | OP_TIMES_EQ { $<str>$ = "operator*="; }
-   | OP_DIVIDE_EQ { $<str>$ = "operator/="; } 
-   | OP_REMAINDER_EQ { $<str>$ = "operator%="; } 
+   | OP_DIVIDE_EQ { $<str>$ = "operator/="; }
+   | OP_REMAINDER_EQ { $<str>$ = "operator%="; }
    | OP_INCR { $<str>$ = "operator++"; }
-   | OP_DECR { $<str>$ = "operator--"; } 
+   | OP_DECR { $<str>$ = "operator--"; }
    | OP_AND_EQ { $<str>$ = "operator&="; }
-   | OP_OR_EQ { $<str>$ = "operator|="; } 
+   | OP_OR_EQ { $<str>$ = "operator|="; }
    | OP_XOR_EQ { $<str>$ = "operator^="; }
-   | OP_LOGIC_AND_EQ {$<str>$ = "operator&&=";} 
+   | OP_LOGIC_AND_EQ {$<str>$ = "operator&&=";}
    | OP_LOGIC_OR_EQ {$<str>$ = "operator||=";}
-   | OP_LOGIC_AND { $<str>$ = "operator&&"; } 
+   | OP_LOGIC_AND { $<str>$ = "operator&&"; }
    | OP_LOGIC_OR { $<str>$ = "operator||"; }
-   | OP_LOGIC_EQ { $<str>$ = "operator=="; } 
+   | OP_LOGIC_EQ { $<str>$ = "operator=="; }
    | OP_LOGIC_NEQ { $<str>$ = "operator!="; }
-   | OP_LOGIC_LEQ { $<str>$ = "operator<="; } 
+   | OP_LOGIC_LEQ { $<str>$ = "operator<="; }
    | OP_LOGIC_GEQ { $<str>$ = "operator>="; };
 
 /*
@@ -1620,7 +1677,7 @@ int main(int argc,char *argv[])
       i++;
       break;
       }
-    } 
+    }
   data.ClassName = (char *)malloc(j-i + 1);
   strncpy(data.ClassName, &data.FileName[i], j-i);
   data.ClassName[j-i] = '\0';
@@ -1676,5 +1733,4 @@ int main(int argc,char *argv[])
 
   return 0;
 }
-
 
