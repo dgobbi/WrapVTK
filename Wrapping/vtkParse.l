@@ -268,6 +268,7 @@ Modify lex.yy.c:
 
 "const"[\r\n\t ]*"*"   return(CONST_PTR);
 "const"[\r\n\t ]*"&"   return(CONST_REF);
+"const"[\r\n\t ]*"="   return(CONST_EQUAL);
 
 [0-9]+"."[0-9]*([eE][+-]?[0-9]+)?[fFlL]? return(FLOAT_LITERAL);
 Ox[0-9a-fA-f]+[ulUL]? return(HEX_LITERAL);
@@ -294,8 +295,8 @@ Ox[0-9a-fA-f]+[ulUL]? return(HEX_LITERAL);
                           return(ID);
                         }
 
-"("[\t\n\r ]*"&"  return(LPAREN_AMPERSAND); 
-"("[\t\n\r ]*([a-zA-Z_][a-zA-Z0-9_]*::)*"*"  return(LPAREN_POINTER); 
+"("[\t\n\r ]*"&"  return(LPAREN_AMPERSAND);
+"("[\t\n\r ]*([a-zA-Z_][a-zA-Z0-9_]*::)*"*"  return(LPAREN_POINTER);
 
 [\t\n\r ] ;
 

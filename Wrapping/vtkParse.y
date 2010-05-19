@@ -275,6 +275,7 @@ char *vtkstrdup(const char *in)
 %token CONST
 %token CONST_PTR
 %token CONST_REF
+%token CONST_EQUAL
 %token OPERATOR
 %token UNSIGNED
 %token FRIEND
@@ -508,9 +509,8 @@ op_func: op_sig { postSig(")"); } maybe_const { postSig(";"); openSig = 0; }
       currentFunction->Name = $<str>2;
       vtkParseDebug("Parsed operator", $<str>2);
     }
-  | op_sig '=' INT_LITERAL
+  | op_sig pure_virtual
     {
-      postSig(") = 0;");
       currentFunction->Name = $<str>2;
       vtkParseDebug("Parsed operator", $<str>2);
       currentFunction->IsPureVirtual = 1;
@@ -533,9 +533,8 @@ func: func_sig { postSig(")"); } maybe_const { postSig(";"); openSig = 0; }
       currentFunction->Name = $<str>1;
       vtkParseDebug("Parsed func", $<str>1);
     }
-  | func_sig '=' INT_LITERAL
+  | func_sig pure_virtual
     {
-      postSig(") = 0;");
       currentFunction->Name = $<str>1;
       vtkParseDebug("Parsed func", $<str>1);
       currentFunction->IsPureVirtual = 1;
@@ -544,6 +543,9 @@ func: func_sig { postSig(")"); } maybe_const { postSig(";"); openSig = 0; }
         data.IsAbstract = 1;
         }
     };
+
+pure_virtual: '=' INT_LITERAL {postSig(") = 0;");}
+            | CONST_EQUAL INT_LITERAL {postSig(") const = 0;");}
 
 maybe_const: | CONST {postSig(" const");};
 
