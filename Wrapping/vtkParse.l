@@ -172,8 +172,8 @@ Modify lex.yy.c:
 "["[\t\n\r\ ]*[1-9][0-9]*[\t\n\r ]*"]"  {
    sscanf(yytext+1,"%d",&yylval.integer); return(ARRAY_NUM);}
 
-("friend"[\t\n\r ]+)?("template"[\t\n\r ]+"<"[^>]*">"[\t\n\r ]+)?"class"[\t\n\r ]+[a-zA-Z_][a-zA-Z0-9_]*("::"[a-zA-Z_][a-zA-Z0-9_]*)*[\t\n\r ]*";" return(CLASS_REF);
-("friend"[\t\n\r ]+)?("template"[\t\n\r ]+"<"[^>]*">"[\t\n\r ]+)?"struct"[\t\n\r ]+[a-zA-Z_][a-zA-Z0-9_]*("::"[a-zA-Z_][a-zA-Z0-9_]*)*[\t\n\r ]*";" return(CLASS_REF);
+("friend"[\t\n\r ]+)?("template"[\t\n\r ]*"<"[^>]*">"[\t\n\r ]*)?"class"[\t\n\r ]+[a-zA-Z_][a-zA-Z0-9_]*("::"[a-zA-Z_][a-zA-Z0-9_]*)*[\t\n\r ]*";" return(CLASS_REF);
+("friend"[\t\n\r ]+)?("template"[\t\n\r ]*"<"[^>]*">"[\t\n\r ]*)?"struct"[\t\n\r ]+[a-zA-Z_][a-zA-Z0-9_]*("::"[a-zA-Z_][a-zA-Z0-9_]*)*[\t\n\r ]*";" return(CLASS_REF);
 
 "void"[\t\n\r ]*"("[\t\n\r ]*"*"[a-zA-Z0-9_]*[\t\n\r ]*")"[\t\n\r ]*"("[\t\n\r ]*"void"[\t\n\r ]*"*"[\n\t ]*")" return(VAR_FUNCTION);
 
@@ -330,7 +330,7 @@ Ox[0-9a-fA-f]+[ulUL]? return(HEX_LITERAL);
 "[" { return(yytext[0]); }
 "]" { return(yytext[0]); }
 
-[~{}()<>:;*=,&.!|+\-] { return(yytext[0]); }
+[~{}()<>:;*/%=,&.!+|^\-] { return(yytext[0]); }
 
 .                return(OTHER);
 %%
