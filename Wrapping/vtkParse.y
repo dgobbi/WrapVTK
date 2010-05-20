@@ -615,14 +615,14 @@ arg: type maybe_var_array
       currentFunction->ArgCounts[currentFunction->NumberOfArguments] =
         $<integer>2 / VTK_PARSE_COUNT_START;
       currentFunction->ArgTypes[currentFunction->NumberOfArguments] =
-        $<integer>1 + $<integer>2 % VTK_PARSE_COUNT_START;
+        $<integer>1 + ($<integer>2 % VTK_PARSE_COUNT_START);
     }
   | type var_id
     {
       currentFunction->ArgCounts[currentFunction->NumberOfArguments] =
         $<integer>2 / VTK_PARSE_COUNT_START;
       currentFunction->ArgTypes[currentFunction->NumberOfArguments] =
-        $<integer>1 + $<integer>2 % VTK_PARSE_COUNT_START;
+        $<integer>1 + ($<integer>2 % VTK_PARSE_COUNT_START);
     } maybe_var_assign
   | VAR_FUNCTION
     {
@@ -664,7 +664,7 @@ var: CLASS any_id var_ids ';' {delSig();}
      | type LPAREN_POINTER any_id ')' ';' {delSig();}
      | type LPAREN_POINTER any_id ')' ARRAY_NUM ';' {delSig();}
      | type LPAREN_POINTER any_id ')' '[' maybe_other ']' ';' {delSig();}
-     | type LPAREN_POINTER any_id ')' '(' args_list ')' ';' {delSig();};
+     | type LPAREN_POINTER any_id ')' '(' ignore_args_list ')' ';' {delSig();};
 
 var_ids: var_id_maybe_assign
        | var_id_maybe_assign ',' maybe_indirect_var_ids;
@@ -677,7 +677,7 @@ maybe_indirect_var_ids: var_id_maybe_assign
 
 var_id_maybe_assign: var_id maybe_var_assign;
 
-var_id: any_id maybe_var_array;
+var_id: any_id maybe_var_array {$<integer>$ = $<integer>2;};
 
 /*
  [n]       = VTK_PARSE_POINTER
@@ -690,24 +690,25 @@ maybe_var_array: {$<integer>$ = 0;} | var_array {$<integer>$ = $<integer>1;};
 var_array:
        ARRAY_NUM { char temp[100]; sprintf(temp,"[%i]",$<integer>1);
                    postSig(temp); }
-       maybe_var_array { $<integer>$ = VTK_PARSE_POINTER +
-                         (VTK_PARSE_COUNT_START * $<integer>1) +
-                          ($<integer>3 & VTK_PARSE_UNQUALIFIED_TYPE); }
+       maybe_var_array { $<integer>$ =
+                         ((VTK_PARSE_COUNT_START * $<integer>1) |
+                          ((VTK_PARSE_POINTER + $<integer>3) &
+                           VTK_PARSE_UNQUALIFIED_TYPE)); }
      | '[' maybe_other_no_semi ']' maybe_var_array
             { postSig("[]");
-              $<integer>$ = VTK_PARSE_POINTER +
-                ($<integer>4 & VTK_PARSE_UNQUALIFIED_TYPE); };
+              $<integer>$ = ((VTK_PARSE_POINTER + $<integer>4) &
+                             VTK_PARSE_UNQUALIFIED_TYPE); };
 
-type: const_mod type_red1 {$<integer>$ = VTK_PARSE_CONST + $<integer>2;}
+type: const_mod type_red1 {$<integer>$ = (VTK_PARSE_CONST | $<integer>2);}
           | type_red1 {$<integer>$ = $<integer>1;}
           | static_mod type_red1
-            {$<integer>$ = VTK_PARSE_STATIC + $<integer>2;}
+            {$<integer>$ = (VTK_PARSE_STATIC | $<integer>2);}
           | static_mod const_mod type_red1
-            {$<integer>$ = (VTK_PARSE_CONST|VTK_PARSE_STATIC) + $<integer>3;};
+            {$<integer>$ = (VTK_PARSE_CONST|VTK_PARSE_STATIC | $<integer>3);};
 
 type_red1: type_red2 {$<integer>$ = $<integer>1;}
          | type_red2 type_indirection
-           {$<integer>$ = $<integer>1 + $<integer>2;}
+           {$<integer>$ = ($<integer>1 | $<integer>2);}
          | templated_id {postSig(" "); $<integer>$ = VTK_PARSE_UNKNOWN;}
          | templated_id {postSig(" ");} type_indirection
            {$<integer>$ = VTK_PARSE_UNKNOWN;}
@@ -778,24 +779,21 @@ type_indirection: '&' { postSig("&"); $<integer>$ = VTK_PARSE_REF;}
     { $<integer>$ = VTK_PARSE_BAD_INDIRECT;};
 
 type_red2:  type_primitive { $<integer>$ = $<integer>1;}
- | OSTREAM { postSig("ostream "); $<integer>$ = VTK_PARSE_UNKNOWN;} 
- | ISTREAM { postSig("istream "); $<integer>$ = VTK_PARSE_UNKNOWN;}
  | StdString { postSig("vtkStdString "); $<integer>$ = VTK_PARSE_STRING;} 
  | UnicodeString
    { postSig("vtkUnicodeString "); $<integer>$ = VTK_PARSE_UNICODE_STRING;}
+ | OSTREAM { postSig("ostream "); $<integer>$ = VTK_PARSE_UNKNOWN;} 
+ | ISTREAM { postSig("istream "); $<integer>$ = VTK_PARSE_UNKNOWN;}
  | ID
     {
-      char ctmpid[2048];
-      sprintf(ctmpid,"%s ",$<str>1);
-      postSig(ctmpid);
+      postSig($<str>1);
+      postSig(" ");
       $<integer>$ = VTK_PARSE_UNKNOWN;
     }
  | VTK_ID
     {
-      char ctmpid[2048];
-      sprintf(ctmpid,"%s ",$<str>1);
-      postSig(ctmpid);
-      $<integer>$ = VTK_PARSE_VTK_OBJECT;
+      postSig($<str>1);
+      postSig(" ");
       currentFunction->ArgClasses[currentFunction->NumberOfArguments] =
         vtkstrdup($<str>1);
       if ((!currentFunction->ReturnClass) &&
@@ -803,6 +801,7 @@ type_red2:  type_primitive { $<integer>$ = $<integer>1;}
         {
         currentFunction->ReturnClass = vtkstrdup($<str>1);
         }
+      $<integer>$ = VTK_PARSE_VTK_OBJECT;
     };
 
 type_primitive:
@@ -811,11 +810,6 @@ type_primitive:
   DOUBLE { postSig("double "); $<integer>$ = VTK_PARSE_DOUBLE;} |
   BOOL { postSig("bool "); $<integer>$ = VTK_PARSE_BOOL;} |
   SIGNED_CHAR {postSig("signed char "); $<integer>$ = VTK_PARSE_SIGNED_CHAR;} |
-  UNSIGNED {postSig("unsigned ");}
-   type_integer { $<integer>$ = VTK_PARSE_UNSIGNED + $<integer>3;} |
-  type_integer { $<integer>$ = $<integer>1;};
-
-type_integer:
   TypeInt8 { postSig("vtkTypeInt8 "); $<integer>$ = VTK_PARSE_INT8; } |
   TypeUInt8 { postSig("vtkTypeUInt8 "); $<integer>$ = VTK_PARSE_UINT8; } |
   TypeInt16 { postSig("vtkTypeInt16 "); $<integer>$ = VTK_PARSE_INT16; } |
@@ -826,6 +820,11 @@ type_integer:
   TypeUInt64 { postSig("vtkTypeUInt64 "); $<integer>$ = VTK_PARSE_UINT64; } |
   TypeFloat32 { postSig("vtkTypeFloat32 "); $<integer>$ = VTK_PARSE_FLOAT32; } |
   TypeFloat64 { postSig("vtkTypeFloat64 "); $<integer>$ = VTK_PARSE_FLOAT64; } |
+  UNSIGNED {postSig("unsigned ");}
+   type_integer { $<integer>$ = (VTK_PARSE_UNSIGNED | $<integer>3);} |
+  type_integer { $<integer>$ = $<integer>1;};
+
+type_integer:
   CHAR   { postSig("char "); $<integer>$ = VTK_PARSE_CHAR;} |
   INT    { postSig("int "); $<integer>$ = VTK_PARSE_INT;} |
   SHORT  { postSig("short "); $<integer>$ = VTK_PARSE_SHORT;} |
@@ -1010,7 +1009,7 @@ macro:
      local);
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 1;
-   currentFunction->ArgTypes[0] = VTK_PARSE_POINTER + $<integer>6;
+   currentFunction->ArgTypes[0] = (VTK_PARSE_POINTER | $<integer>6);
    currentFunction->ArgCounts[0] = 2;
    output_function();
    }
@@ -1026,7 +1025,7 @@ macro:
    sprintf(temps,"Get%s",$<str>3);
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
-   currentFunction->ReturnType = VTK_PARSE_POINTER + $<integer>6;
+   currentFunction->ReturnType = (VTK_PARSE_POINTER | $<integer>6);
    currentFunction->HaveHint = 1;
    currentFunction->HintSize = 2;
    output_function();
@@ -1059,7 +1058,7 @@ macro:
      local);
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 1;
-   currentFunction->ArgTypes[0] = VTK_PARSE_POINTER + $<integer>6;
+   currentFunction->ArgTypes[0] = (VTK_PARSE_POINTER | $<integer>6);
    currentFunction->ArgCounts[0] = 3;
    output_function();
    }
@@ -1075,7 +1074,7 @@ macro:
    sprintf(temps,"Get%s",$<str>3);
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
-   currentFunction->ReturnType = VTK_PARSE_POINTER + $<integer>6;
+   currentFunction->ReturnType = (VTK_PARSE_POINTER | $<integer>6);
    currentFunction->HaveHint = 1;
    currentFunction->HintSize = 3;
    output_function();
@@ -1110,7 +1109,7 @@ macro:
      local);
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 1;
-   currentFunction->ArgTypes[0] = VTK_PARSE_POINTER + $<integer>6;
+   currentFunction->ArgTypes[0] = (VTK_PARSE_POINTER | $<integer>6);
    currentFunction->ArgCounts[0] = 4;
    output_function();
    }
@@ -1126,7 +1125,7 @@ macro:
    sprintf(temps,"Get%s",$<str>3);
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
-   currentFunction->ReturnType = VTK_PARSE_POINTER + $<integer>6;
+   currentFunction->ReturnType = (VTK_PARSE_POINTER | $<integer>6);
    currentFunction->HaveHint = 1;
    currentFunction->HintSize = 4;
    output_function();
@@ -1165,7 +1164,7 @@ macro:
      local);
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 1;
-   currentFunction->ArgTypes[0] = VTK_PARSE_POINTER + $<integer>6;
+   currentFunction->ArgTypes[0] = (VTK_PARSE_POINTER | $<integer>6);
    currentFunction->ArgCounts[0] = 6;
    output_function();
    }
@@ -1181,7 +1180,7 @@ macro:
    sprintf(temps,"Get%s",$<str>3);
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
-   currentFunction->ReturnType = VTK_PARSE_POINTER + $<integer>6;
+   currentFunction->ReturnType = (VTK_PARSE_POINTER | $<integer>6);
    currentFunction->HaveHint = 1;
    currentFunction->HintSize = 6;
    output_function();
@@ -1200,7 +1199,7 @@ macro:
      currentFunction->Name = vtkstrdup(temps);
      currentFunction->ReturnType = VTK_PARSE_VOID;
      currentFunction->NumberOfArguments = 1;
-     currentFunction->ArgTypes[0] = VTK_PARSE_POINTER + $<integer>6;
+     currentFunction->ArgTypes[0] = (VTK_PARSE_POINTER | $<integer>6);
      currentFunction->ArgCounts[0] = atol($<str>8);
      output_function();
    }
@@ -1216,7 +1215,7 @@ macro:
    sprintf(temps,"Get%s",$<str>3);
    currentFunction->Name = vtkstrdup(temps);
    currentFunction->NumberOfArguments = 0;
-   currentFunction->ReturnType = VTK_PARSE_POINTER + $<integer>6;
+   currentFunction->ReturnType = (VTK_PARSE_POINTER | $<integer>6);
    currentFunction->HaveHint = 1;
    currentFunction->HintSize = atol($<str>8);
    output_function();
