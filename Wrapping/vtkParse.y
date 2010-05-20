@@ -359,6 +359,7 @@ char *vtkstrdup(const char *in)
 %token ViewportCoordinateMacro
 %token WorldCoordinateMacro
 %token TypeMacro
+%token VTK_CONSTANT_DEF
 %token VTK_BYTE_SWAP_DECL
 
 %%
@@ -413,9 +414,51 @@ class_def_item: scope_type ':'
    | macro ';'
    | macro;
 
-named_enum: ENUM any_id '{' maybe_other '}' maybe_other_no_semi ';';
+/*
+ * Enum constants should be handled as strings, so that IDs can be used.
+ * The text can be dropped into the generated .cxx file and evaluated there,
+ * just make sure that the IDs are properly scoped.
+ */
 
-enum: ENUM '{' maybe_other '}' maybe_other_no_semi ';';
+named_enum: ENUM any_id '{' enum_list '}' maybe_other_no_semi ';';
+
+enum: ENUM '{' enum_list '}' maybe_other_no_semi ';';
+
+enum_list: | enum_item | enum_item ',' enum_list;
+
+enum_item: any_id | any_id '=' enum_math;
+
+/* "any_id" -> "vtkClass::any_id" if it's a previously defined enum const */
+
+enum_value: enum_literal | any_id | scoped_id | templated_id;
+
+enum_literal: INT_LITERAL | HEX_LITERAL | CHAR_LITERAL;
+
+enum_math: enum_value { $<str>$ = $<str>1; }
+     | math_unary_op enum_math
+       {
+         $<str>$ = (char *)malloc(strlen($<str>1) + strlen($<str>2) + 1);
+         sprintf($<str>$, "%s%s", $<str>1, $<str>2);
+       }
+     | enum_value math_binary_op enum_math
+       {
+         $<str>$ = (char *)malloc(strlen($<str>1) + strlen($<str>2) +
+                                  strlen($<str>3) + 3);
+         sprintf($<str>$, "%s %s %s", $<str>1, $<str>2, $<str>3);
+       }
+     | '(' enum_math ')'
+       {
+         $<str>$ = (char *)malloc(strlen($<str>2) + 3);
+         sprintf($<str>$, "(%s)", $<str>2);
+       };
+
+math_unary_op:   '-' { $<str>$ = "-"; } | '+' { $<str>$ = "+"; }
+               | '~' { $<str>$ = "~"; };
+
+math_binary_op:  '-' { $<str>$ = "-"; } | '+' { $<str>$ = "+"; }
+               | '*' { $<str>$ = "*"; } | '/' { $<str>$ = "/"; }
+               | '%' { $<str>$ = "%"; } | '&' { $<str>$ = "&"; }
+               | '|' { $<str>$ = "|"; } | '^' { $<str>$ = "^"; };
 
 named_union: UNION any_id '{' maybe_other '}' maybe_other_no_semi ';';
 
@@ -685,7 +728,7 @@ var_id: any_id maybe_var_array {$<integer>$ = $<integer>2;};
  [n][m][l] = 3*VTK_PARSE_POINTER
 */
 
-maybe_var_array: {$<integer>$ = 0;} | var_array {$<integer>$ = $<integer>1;}; 
+maybe_var_array: {$<integer>$ = 0;} | var_array {$<integer>$ = $<integer>1;};
 
 var_array:
        ARRAY_NUM { char temp[100]; sprintf(temp,"[%i]",$<integer>1);
@@ -728,7 +771,7 @@ types: type | type ',' {postSig(", ");} types;
 
 maybe_scoped_id: ID {$<str>$ = $<str>1; postSig($<str>1);}
                | VTK_ID {$<str>$ = $<str>1; postSig($<str>1);}
-               | templated_id {$<str>$ = $<str>1;}; 
+               | templated_id {$<str>$ = $<str>1;};
                | scoped_id {$<str>$ = $<str>1;};
 
 scoped_id: ID DOUBLE_COLON maybe_scoped_id
@@ -779,10 +822,10 @@ type_indirection: '&' { postSig("&"); $<integer>$ = VTK_PARSE_REF;}
     { $<integer>$ = VTK_PARSE_BAD_INDIRECT;};
 
 type_red2:  type_primitive { $<integer>$ = $<integer>1;}
- | StdString { postSig("vtkStdString "); $<integer>$ = VTK_PARSE_STRING;} 
+ | StdString { postSig("vtkStdString "); $<integer>$ = VTK_PARSE_STRING;}
  | UnicodeString
    { postSig("vtkUnicodeString "); $<integer>$ = VTK_PARSE_UNICODE_STRING;}
- | OSTREAM { postSig("ostream "); $<integer>$ = VTK_PARSE_UNKNOWN;} 
+ | OSTREAM { postSig("ostream "); $<integer>$ = VTK_PARSE_UNKNOWN;}
  | ISTREAM { postSig("istream "); $<integer>$ = VTK_PARSE_UNKNOWN;}
  | ID
     {
@@ -1466,6 +1509,12 @@ op_token_no_delim: '=' { $<str>$ = "operator="; }
    | OP_LOGIC_GEQ { $<str>$ = "operator>="; };
 
 /*
+ * "VTK_CONSTANT some_value"
+ */
+
+vtk_constant_def: VTK_CONSTANT_DEF;
+
+/*
  * These just eat up misc garbage
  */
 maybe_other : | other_stuff maybe_other;
@@ -1482,7 +1531,7 @@ other_stuff_no_semi : OTHER | braces | parens | brackets
    | STRING_LITERAL | CLASS_REF | CONST | CONST_PTR | CONST_REF | CONST_EQUAL
    | OPERATOR | STATIC | INLINE | VIRTUAL | ENUM | UNION | TYPENAME
    | ARRAY_NUM | VAR_FUNCTION | ELLIPSIS | PUBLIC | PROTECTED | PRIVATE
-   | NAMESPACE | USING;
+   | NAMESPACE | USING | vtk_constant_def;
 
 braces: '{' maybe_other_class '}';
 parens: '(' maybe_other ')'

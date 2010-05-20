@@ -276,31 +276,39 @@ Modify lex.yy.c:
                      yylval.str[yyleng] = '\0';
                      return(FLOAT_LITERAL);
                     }
-Ox[0-9a-fA-f]+[ulUL]?      {
+"0x"[0-9a-fA-F]+[uU]?[lL]?      {
                      yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
                      return(HEX_LITERAL);
                     }
-[0-9]+[ulUL]?      { yylval.str = (char *)malloc(yyleng + 1);
+[0-9]+[uU]?[lL]?      { yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
                      return(INT_LITERAL);
                     }
 
-\"[^\"]+\"      {
+\"([^\"]|\\\")+\"      {
                 yylval.str = (char *)malloc(yyleng + 1);
                 memcpy(yylval.str,yytext,yyleng);
                 yylval.str[yyleng] = '\0';
                 return(STRING_LITERAL);
                 }
 
-\'[^\']+\'      {
+\'([^\']|\\\')+\'      {
                 yylval.str = (char *)malloc(yyleng + 1);
                 memcpy(yylval.str,yytext,yyleng);
                 yylval.str[yyleng] = '\0';
                 return(CHAR_LITERAL);
                 }
+
+^"#"[\t ]*"define"[\t ]+"VTK_"[a-zA-Z0-9_]+.*$ {
+                int i;
+                for (i = 0; i < yyleng && yytext[i] != 'V'; i++) { ; };
+                yylval.str = (char *)malloc(yyleng - i + 1);
+                memcpy(yylval.str, &yytext[i], yyleng-i);
+                yylval.str[yyleng-i] = '\0';
+                return (VTK_CONSTANT_DEF); }
 
 ^"#"(\\\n|\\\r\n|[^\n])*$     ;
 
