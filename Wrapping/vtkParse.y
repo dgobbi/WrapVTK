@@ -212,12 +212,12 @@ char *vtkstrdup(const char *in)
       cp = currentFunction->Signature;
       m = strlen(cp);
       n = strlen(arg);
-      i = m - 1;
+      i = m;
       while (i > 0 &&
-            ((cp[i] >= 'a' && cp[i] <= 'z') ||
-             (cp[i] >= 'A' && cp[i] <= 'Z') ||
-             (cp[i] >= '0' && cp[i] <= '9') ||
-             cp[i] == '_' || cp[i] == ':'))
+            ((cp[i-1] >= 'a' && cp[i-1] <= 'z') ||
+             (cp[i-1] >= 'A' && cp[i-1] <= 'Z') ||
+             (cp[i-1] >= '0' && cp[i-1] <= '9') ||
+             cp[i-1] == '_' || cp[i-1] == ':'))
         {
         i--;
         }
@@ -250,11 +250,12 @@ char *vtkstrdup(const char *in)
 %token PRIVATE
 %token PROTECTED
 %token VIRTUAL
-%token <str> STRING
-%token <integer> INT_LITERAL
 %token <str> ID
-%token HEX_LITERAL
-%token FLOAT_LITERAL
+%token <str> STRING_LITERAL
+%token <str> INT_LITERAL
+%token <str> HEX_LITERAL
+%token <str> FLOAT_LITERAL
+%token <str> CHAR_LITERAL
 %token INT
 %token FLOAT
 %token SHORT
@@ -293,7 +294,7 @@ char *vtkstrdup(const char *in)
 %token VTK_LEGACY
 %token NEW
 %token DELETE
-%token LPAREN_POINTER
+%token <str> LPAREN_POINTER
 %token LPAREN_AMPERSAND
 %token OP_LSHIFT_EQ
 %token OP_RSHIFT_EQ
@@ -609,7 +610,7 @@ args_list: | more_args;
 more_args: ELLIPSIS | arg { currentFunction->NumberOfArguments++;}
   | arg { currentFunction->NumberOfArguments++; postSig(", ");} ',' more_args;
 
-arg: type var_array
+arg: type maybe_var_array
     {
       currentFunction->ArgCounts[currentFunction->NumberOfArguments] =
         $<integer>2 / VTK_PARSE_COUNT_START;
@@ -622,7 +623,7 @@ arg: type var_array
         $<integer>2 / VTK_PARSE_COUNT_START;
       currentFunction->ArgTypes[currentFunction->NumberOfArguments] =
         $<integer>1 + $<integer>2 % VTK_PARSE_COUNT_START;
-    } opt_var_assign
+    } maybe_var_assign
   | VAR_FUNCTION
     {
       postSig("void (*func)(void *) ");
@@ -635,8 +636,8 @@ arg: type var_array
       currentFunction->ArgCounts[currentFunction->NumberOfArguments] = 0;
       currentFunction->ArgTypes[currentFunction->NumberOfArguments] = VTK_PARSE_UNKNOWN;
     }
-  | type LPAREN_POINTER { postSig("(*"); } maybe_id ')' '('
-    { postSig(")("); } ignore_args_list ')'
+  | type LPAREN_POINTER { postSig("("); postSig($<str>2); postSig("*"); }
+    maybe_id ')' '(' { postSig(")("); } ignore_args_list ')'
     {
       postSig(")");
       currentFunction->ArgCounts[currentFunction->NumberOfArguments] = 0;
@@ -645,7 +646,9 @@ arg: type var_array
 
 maybe_id: | any_id;
 
-opt_var_assign: | '=' float_num;
+maybe_var_assign: | var_assign;
+
+var_assign: '=' literal {postSig("="); postSig($<str>2);};
 
 var: CLASS any_id var_ids ';' {delSig();}
      | CLASS any_id type_indirection var_ids ';' {delSig();}
@@ -660,16 +663,21 @@ var: CLASS any_id var_ids ';' {delSig();}
      | type LPAREN_AMPERSAND any_id ')' ';' {delSig();}
      | type LPAREN_POINTER any_id ')' ';' {delSig();}
      | type LPAREN_POINTER any_id ')' ARRAY_NUM ';' {delSig();}
-     | type LPAREN_POINTER any_id ')' '(' ignore_args_list ')' ';' {delSig();};
+     | type LPAREN_POINTER any_id ')' '[' maybe_other ']' ';' {delSig();}
+     | type LPAREN_POINTER any_id ')' '(' args_list ')' ';' {delSig();};
 
-var_ids: var_id | var_id ',' maybe_indirect_var_ids;
+var_ids: var_id_maybe_assign
+       | var_id_maybe_assign ',' maybe_indirect_var_ids;
 
-maybe_indirect_var_ids: var_id
-                | var_id ',' maybe_indirect_var_ids;
-                | type_indirection var_id
-                | type_indirection var_id ',' maybe_indirect_var_ids;
+maybe_indirect_var_ids: var_id_maybe_assign
+                | var_id_maybe_assign ',' maybe_indirect_var_ids;
+                | type_indirection var_id_maybe_assign
+                | type_indirection var_id_maybe_assign ','
+                  maybe_indirect_var_ids;
 
-var_id: any_id var_array { $<integer>$ = $<integer>2; };
+var_id_maybe_assign: var_id maybe_var_assign;
+
+var_id: any_id maybe_var_array;
 
 /*
  [n]       = VTK_PARSE_POINTER
@@ -677,17 +685,25 @@ var_id: any_id var_array { $<integer>$ = $<integer>2; };
  [n][m][l] = 3*VTK_PARSE_POINTER
 */
 
-var_array: { $<integer>$ = 0; }
-     | ARRAY_NUM { char temp[100]; sprintf(temp,"[%i]",$<integer>1);
+maybe_var_array: {$<integer>$ = 0;} | var_array {$<integer>$ = $<integer>1;}; 
+
+var_array:
+       ARRAY_NUM { char temp[100]; sprintf(temp,"[%i]",$<integer>1);
                    postSig(temp); }
-       var_array { $<integer>$ = VTK_PARSE_POINTER + (VTK_PARSE_COUNT_START * $<integer>1) + ($<integer>3 & VTK_PARSE_UNQUALIFIED_TYPE); }
-     | '[' maybe_other_no_semi ']' var_array
-           { postSig("[]"); $<integer>$ = VTK_PARSE_POINTER + ($<integer>4 & VTK_PARSE_UNQUALIFIED_TYPE); };
+       maybe_var_array { $<integer>$ = VTK_PARSE_POINTER +
+                         (VTK_PARSE_COUNT_START * $<integer>1) +
+                          ($<integer>3 & VTK_PARSE_UNQUALIFIED_TYPE); }
+     | '[' maybe_other_no_semi ']' maybe_var_array
+            { postSig("[]");
+              $<integer>$ = VTK_PARSE_POINTER +
+                ($<integer>4 & VTK_PARSE_UNQUALIFIED_TYPE); };
 
 type: const_mod type_red1 {$<integer>$ = VTK_PARSE_CONST + $<integer>2;}
           | type_red1 {$<integer>$ = $<integer>1;}
-          | static_mod type_red1 {$<integer>$ = VTK_PARSE_STATIC + $<integer>2;}
-          | static_mod const_mod type_red1 {$<integer>$ = (VTK_PARSE_CONST | VTK_PARSE_STATIC) + $<integer>3;};
+          | static_mod type_red1
+            {$<integer>$ = VTK_PARSE_STATIC + $<integer>2;}
+          | static_mod const_mod type_red1
+            {$<integer>$ = (VTK_PARSE_CONST|VTK_PARSE_STATIC) + $<integer>3;};
 
 type_red1: type_red2 {$<integer>$ = $<integer>1;}
          | type_red2 type_indirection
@@ -739,7 +755,9 @@ scoped_id: ID DOUBLE_COLON maybe_scoped_id
    * const&  is VTK_PARSE_POINTER_CONST_REF
    **  is VTK_PARSE_POINTER_POINTER
    * const*  is VTK_PARSE_POINTER_CONST_POINTER
+   everything else is VTK_PARSE_BAD_INDIRECT
    */
+
 type_indirection: '&' { postSig("&"); $<integer>$ = VTK_PARSE_REF;}
   | '*' { postSig("*"); $<integer>$ = VTK_PARSE_POINTER;}
   | '*' '&' { postSig("*&"); $<integer>$ = VTK_PARSE_POINTER_REF;}
@@ -748,10 +766,16 @@ type_indirection: '&' { postSig("&"); $<integer>$ = VTK_PARSE_REF;}
     { postSig("* const&"); $<integer>$ = VTK_PARSE_POINTER_CONST_REF;}
   | '*' CONST_PTR
     { postSig("* const*"); $<integer>$ = VTK_PARSE_POINTER_CONST_POINTER;}
-  | '*' '*' '&' { postSig("**&"); $<integer>$ = VTK_PARSE_BAD_INDIRECT;}
-  | '*' '*' '*' { postSig("***"); $<integer>$ = VTK_PARSE_BAD_INDIRECT;}
   | CONST_REF { postSig("const&"); $<integer>$ = VTK_PARSE_BAD_INDIRECT;}
-  | CONST_PTR { postSig("const*"); $<integer>$ = VTK_PARSE_BAD_INDIRECT;};
+  | CONST_PTR { postSig("const*"); $<integer>$ = VTK_PARSE_BAD_INDIRECT;}
+  | '*' '*' { postSig("**"); } type_indirection
+    { $<integer>$ = VTK_PARSE_BAD_INDIRECT;}
+  | '*' '&' { postSig("**"); } type_indirection
+    { $<integer>$ = VTK_PARSE_BAD_INDIRECT;}
+  | CONST_REF { postSig("const&");} type_indirection
+    { $<integer>$ = VTK_PARSE_BAD_INDIRECT;}
+  | CONST_PTR { postSig("const*");} type_indirection
+    { $<integer>$ = VTK_PARSE_BAD_INDIRECT;};
 
 type_red2:  type_primitive { $<integer>$ = $<integer>1;}
  | OSTREAM { postSig("ostream "); $<integer>$ = VTK_PARSE_UNKNOWN;} 
@@ -834,12 +858,19 @@ scope_type: {in_public = 0; in_protected = 0;}
           | PRIVATE {in_public = 0; in_protected = 0;}
           | PROTECTED {in_public = 0; in_protected = 1;};
 
-float_num: '-' float_prim | float_prim;
+literal:  literal2 {$<str>$ = $<str>1;}
+          | '+' literal2 {$<str>$ = $<str>2;}
+          | '-' literal2 {$<str>$ = (char *)malloc(strlen($<str>2)+2);
+                        sprintf($<str>$, "-%s", $<str>2); }
+          | STRING_LITERAL {$<str>$ = $<str>1;}
+          | '(' literal ')' {$<str>$ = $<str>2;};
 
-float_prim: INT_LITERAL {$<integer>$ = $1;}
-          | HEX_LITERAL {$<integer>$ = -1;}
-          | FLOAT_LITERAL {$<integer>$ = -1;}
-          | any_id {$<integer>$ = -1;};
+literal2: INT_LITERAL {$<str>$ = $<str>1;}
+          | HEX_LITERAL {$<str>$ = $<str>1;}
+          | FLOAT_LITERAL {$<str>$ = $<str>1;}
+          | CHAR_LITERAL {$<str>$ = $<str>1;}
+          | ID {$<str>$ = $<str>1;}
+          | VTK_ID {$<str>$ = $<str>1;};
 
 macro:
   SetMacro '(' any_id ','
@@ -1160,17 +1191,17 @@ macro:
       free(currentFunction->Signature);
       currentFunction->Signature = NULL;
       }
-     type_red2 ',' float_num ')'
+     type_red2 ',' INT_LITERAL ')'
    {
    char *local = vtkstrdup(currentFunction->Signature);
-   sprintf(currentFunction->Signature,"void Set%s(%s [%i]);",$<str>3,
-      local, $<integer>8);
+   sprintf(currentFunction->Signature,"void Set%s(%s [%s]);",$<str>3,
+      local, $<str>8);
      sprintf(temps,"Set%s",$<str>3);
      currentFunction->Name = vtkstrdup(temps);
      currentFunction->ReturnType = VTK_PARSE_VOID;
      currentFunction->NumberOfArguments = 1;
      currentFunction->ArgTypes[0] = VTK_PARSE_POINTER + $<integer>6;
-     currentFunction->ArgCounts[0] = $<integer>8;
+     currentFunction->ArgCounts[0] = atol($<str>8);
      output_function();
    }
 | GetVectorMacro  '(' any_id ','
@@ -1178,7 +1209,7 @@ macro:
      free(currentFunction->Signature);
      currentFunction->Signature = NULL;
      }
-     type_red2 ',' float_num ')'
+     type_red2 ',' INT_LITERAL ')'
    {
    char *local = vtkstrdup(currentFunction->Signature);
    sprintf(currentFunction->Signature,"%s *Get%s();",local, $<str>3);
@@ -1187,7 +1218,7 @@ macro:
    currentFunction->NumberOfArguments = 0;
    currentFunction->ReturnType = VTK_PARSE_POINTER + $<integer>6;
    currentFunction->HaveHint = 1;
-   currentFunction->HintSize = $<integer>8;
+   currentFunction->HintSize = atol($<str>8);
    output_function();
    }
 | ViewportCoordinateMacro '(' any_id ')'
@@ -1447,11 +1478,12 @@ other_stuff_or_class : CLASS | TEMPLATE | other_stuff;
 other_stuff : ';' | other_stuff_no_semi | typedef_ignore;
 
 other_stuff_no_semi : OTHER | braces | parens | brackets
-   | op_token_no_delim | ':' | '.' | STRING | type_red2 | DOUBLE_COLON
-   | INT_LITERAL | FLOAT_LITERAL | CLASS_REF | CONST | CONST_PTR
-   | CONST_REF | CONST_EQUAL | OPERATOR | STATIC | INLINE | VIRTUAL
-   | ENUM | UNION | TYPENAME | ARRAY_NUM | VAR_FUNCTION
-   | ELLIPSIS | PUBLIC | PROTECTED | PRIVATE | NAMESPACE | USING;
+   | op_token_no_delim | ':' | '.' | type_red2 | DOUBLE_COLON
+   | INT_LITERAL | HEX_LITERAL | FLOAT_LITERAL | CHAR_LITERAL
+   | STRING_LITERAL | CLASS_REF | CONST | CONST_PTR | CONST_REF | CONST_EQUAL
+   | OPERATOR | STATIC | INLINE | VIRTUAL | ENUM | UNION | TYPENAME
+   | ARRAY_NUM | VAR_FUNCTION | ELLIPSIS | PUBLIC | PROTECTED | PRIVATE
+   | NAMESPACE | USING;
 
 braces: '{' maybe_other_class '}';
 parens: '(' maybe_other ')'

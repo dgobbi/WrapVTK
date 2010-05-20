@@ -270,14 +270,36 @@ Modify lex.yy.c:
 "const"[\r\n\t ]*"&"   return(CONST_REF);
 "const"[\r\n\t ]*"="   return(CONST_EQUAL);
 
-[0-9]+"."[0-9]*([eE][+-]?[0-9]+)?[fFlL]? return(FLOAT_LITERAL);
-Ox[0-9a-fA-f]+[ulUL]? return(HEX_LITERAL);
-[0-9]+[ulUL]?  { sscanf(yytext,"%d",&yylval.integer); return(INT_LITERAL);}
+[0-9]+"."[0-9]*([eE][+-]?[0-9]+)?[fFlL]?  {
+                     yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(FLOAT_LITERAL);
+                    }
+Ox[0-9a-fA-f]+[ulUL]?      {
+                     yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(HEX_LITERAL);
+                    }
+[0-9]+[ulUL]?      { yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(INT_LITERAL);
+                    }
 
 \"[^\"]+\"      {
-                yylval.str =  vtkstrdup(yytext + 1);
-                yylval.str[strlen(yytext)-2] = '\0';
-                return(STRING);
+                yylval.str = (char *)malloc(yyleng + 1);
+                memcpy(yylval.str,yytext,yyleng);
+                yylval.str[yyleng] = '\0';
+                return(STRING_LITERAL);
+                }
+
+\'[^\']+\'      {
+                yylval.str = (char *)malloc(yyleng + 1);
+                memcpy(yylval.str,yytext,yyleng);
+                yylval.str[yyleng] = '\0';
+                return(CHAR_LITERAL);
                 }
 
 ^"#"(\\\n|\\\r\n|[^\n])*$     ;
@@ -296,7 +318,14 @@ Ox[0-9a-fA-f]+[ulUL]? return(HEX_LITERAL);
                         }
 
 "("[\t\n\r ]*"&"  return(LPAREN_AMPERSAND);
-"("[\t\n\r ]*([a-zA-Z_][a-zA-Z0-9_]*::)*"*"  return(LPAREN_POINTER);
+"("[\t\n\r ]*([a-zA-Z_][a-zA-Z0-9_]*::)*"*" {
+                int i = 1;
+                while (yytext[i]==' ' || yytext[i]=='\r' || yytext[i]=='\n')
+                  { i++; }
+                yylval.str = vtkstrdup(yytext + i);
+                yylval.str[strlen(yytext)-2] = '\0';
+                return(LPAREN_POINTER);
+                }
 
 [\t\n\r ] ;
 
