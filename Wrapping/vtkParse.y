@@ -40,57 +40,6 @@ Modify vtkParse.tab.c:
 #endif
 #define YYINCLUDED_STDLIB_H
 
-/* Map from the type enumeration in vtkType.h to the VTK wrapping type
-   system number for the type. */
-
-#include "vtkParseType.h"
-
-static int vtkParseTypeMap[] =
-  {
-   VTK_PARSE_VOID,               /* VTK_VOID                0 */
-   0,                            /* VTK_BIT                 1 */
-   VTK_PARSE_CHAR,               /* VTK_CHAR                2 */
-   VTK_PARSE_UNSIGNED_CHAR,      /* VTK_UNSIGNED_CHAR       3 */
-   VTK_PARSE_SHORT,              /* VTK_SHORT               4 */
-   VTK_PARSE_UNSIGNED_SHORT,     /* VTK_UNSIGNED_SHORT      5 */
-   VTK_PARSE_INT,                /* VTK_INT                 6 */
-   VTK_PARSE_UNSIGNED_INT,       /* VTK_UNSIGNED_INT        7 */
-   VTK_PARSE_LONG,               /* VTK_LONG                8 */
-   VTK_PARSE_UNSIGNED_LONG,      /* VTK_UNSIGNED_LONG       9 */
-   VTK_PARSE_FLOAT,              /* VTK_FLOAT              10 */
-   VTK_PARSE_DOUBLE,             /* VTK_DOUBLE             11 */
-   VTK_PARSE_ID_TYPE,            /* VTK_ID_TYPE            12 */
-   VTK_PARSE_STRING,             /* VTK_STRING             13 */
-   0,                            /* VTK_OPAQUE             14 */
-   VTK_PARSE_SIGNED_CHAR,        /* VTK_SIGNED_CHAR        15 */
-   VTK_PARSE_LONG_LONG,          /* VTK_LONG_LONG          16 */
-   VTK_PARSE_UNSIGNED_LONG_LONG, /* VTK_UNSIGNED_LONG_LONG 17 */
-   VTK_PARSE___INT64,            /* VTK___INT64            18 */
-   VTK_PARSE_UNSIGNED___INT64,   /* VTK_UNSIGNED___INT64   19 */
-   0,                            /* VTK_VARIANT            20 */
-   0,                            /* VTK_OBJECT             21 */
-   VTK_PARSE_UNICODE_STRING      /* VTK_UNICODE_STRING     22 */
-  };
-
-/* Define some constants to simplify references to the table lookup in
-   the type_primitive production rule code.  */
-#include "vtkType.h"
-#define VTK_PARSE_INT8 vtkParseTypeMap[VTK_TYPE_INT8]
-#define VTK_PARSE_UINT8 vtkParseTypeMap[VTK_TYPE_UINT8]
-#define VTK_PARSE_INT16 vtkParseTypeMap[VTK_TYPE_INT16]
-#define VTK_PARSE_UINT16 vtkParseTypeMap[VTK_TYPE_UINT16]
-#define VTK_PARSE_INT32 vtkParseTypeMap[VTK_TYPE_INT32]
-#define VTK_PARSE_UINT32 vtkParseTypeMap[VTK_TYPE_UINT32]
-#define VTK_PARSE_INT64 vtkParseTypeMap[VTK_TYPE_INT64]
-#define VTK_PARSE_UINT64 vtkParseTypeMap[VTK_TYPE_UINT64]
-#define VTK_PARSE_FLOAT32 vtkParseTypeMap[VTK_TYPE_FLOAT32]
-#define VTK_PARSE_FLOAT64 vtkParseTypeMap[VTK_TYPE_FLOAT64]
-
-/* Define the division between type and array count */
-#define VTK_PARSE_COUNT_START 0x10000
-
-static void vtkParseDebug(const char* s1, const char* s2);
-
 /* Borland and MSVC do not define __STDC__ properly. */
 #if !defined(__STDC__)
 # if (defined(_MSC_VER) && _MSC_VER >= 1200) || defined(__BORLANDC__)
@@ -109,12 +58,83 @@ static void vtkParseDebug(const char* s1, const char* s2);
 # pragma warn -8066 /* unreachable code */
 #endif
 
+/* Map from the type enumeration in vtkType.h to the VTK wrapping type
+   system number for the type. */
+
+#include "vtkParse.h"
+#include "vtkType.h"
+
+static int vtkParseTypeMap[] =
+  {
+  VTK_PARSE_VOID,               /* VTK_VOID                0 */
+  0,                            /* VTK_BIT                 1 */
+  VTK_PARSE_CHAR,               /* VTK_CHAR                2 */
+  VTK_PARSE_UNSIGNED_CHAR,      /* VTK_UNSIGNED_CHAR       3 */
+  VTK_PARSE_SHORT,              /* VTK_SHORT               4 */
+  VTK_PARSE_UNSIGNED_SHORT,     /* VTK_UNSIGNED_SHORT      5 */
+  VTK_PARSE_INT,                /* VTK_INT                 6 */
+  VTK_PARSE_UNSIGNED_INT,       /* VTK_UNSIGNED_INT        7 */
+  VTK_PARSE_LONG,               /* VTK_LONG                8 */
+  VTK_PARSE_UNSIGNED_LONG,      /* VTK_UNSIGNED_LONG       9 */
+  VTK_PARSE_FLOAT,              /* VTK_FLOAT              10 */
+  VTK_PARSE_DOUBLE,             /* VTK_DOUBLE             11 */
+  VTK_PARSE_ID_TYPE,            /* VTK_ID_TYPE            12 */
+  VTK_PARSE_STRING,             /* VTK_STRING             13 */
+  0,                            /* VTK_OPAQUE             14 */
+  VTK_PARSE_SIGNED_CHAR,        /* VTK_SIGNED_CHAR        15 */
+  VTK_PARSE_LONG_LONG,          /* VTK_LONG_LONG          16 */
+  VTK_PARSE_UNSIGNED_LONG_LONG, /* VTK_UNSIGNED_LONG_LONG 17 */
+  VTK_PARSE___INT64,            /* VTK___INT64            18 */
+  VTK_PARSE_UNSIGNED___INT64,   /* VTK_UNSIGNED___INT64   19 */
+  0,                            /* VTK_VARIANT            20 */
+  0,                            /* VTK_OBJECT             21 */
+  VTK_PARSE_UNICODE_STRING      /* VTK_UNICODE_STRING     22 */
+  };
+
+/* Define some constants to simplify references to the table lookup in
+   the type_primitive production rule code.  */
+#define VTK_PARSE_INT8 vtkParseTypeMap[VTK_TYPE_INT8]
+#define VTK_PARSE_UINT8 vtkParseTypeMap[VTK_TYPE_UINT8]
+#define VTK_PARSE_INT16 vtkParseTypeMap[VTK_TYPE_INT16]
+#define VTK_PARSE_UINT16 vtkParseTypeMap[VTK_TYPE_UINT16]
+#define VTK_PARSE_INT32 vtkParseTypeMap[VTK_TYPE_INT32]
+#define VTK_PARSE_UINT32 vtkParseTypeMap[VTK_TYPE_UINT32]
+#define VTK_PARSE_INT64 vtkParseTypeMap[VTK_TYPE_INT64]
+#define VTK_PARSE_UINT64 vtkParseTypeMap[VTK_TYPE_UINT64]
+#define VTK_PARSE_FLOAT32 vtkParseTypeMap[VTK_TYPE_FLOAT32]
+#define VTK_PARSE_FLOAT64 vtkParseTypeMap[VTK_TYPE_FLOAT64]
+
+/* Define the division between type and array count */
+#define VTK_PARSE_COUNT_START 0x10000
+
+static void vtkParseDebug(const char* s1, const char* s2);
+
+/* the tokenizer */
 int yylex(void);
+
+/* global variables */
+FileInfo data;
+FunctionInfo throwAwayFunction;
+FunctionInfo *currentFunction;
+
+FILE *fhint;
+char temps[2048];
+int  in_public;
+int  in_protected;
+int  HaveComment;
+char CommentText[50000];
+int CommentState;
+int sigClosed;
+int sigMark;
+unsigned int sigAllocatedLength;
+int mainClass;
+char *currentId;
+
 void start_class(const char *classname);
 void output_function(void);
 void reject_function(void);
 
-/* vtkstrdup is not part of POSIX so we create our own */
+/* duplicate a string */
 char *vtkstrdup(const char *in)
 {
   char *res = malloc(strlen(in)+1);
@@ -122,156 +142,154 @@ char *vtkstrdup(const char *in)
   return res;
 }
 
-#include "vtkParse.h"
+/* reallocate Signature if "arg" cannot be appended */
+void checkSigSize(const char *arg)
+{
+  if (strlen(currentFunction->Signature) + strlen(arg) + 5 >
+      sigAllocatedLength)
+    {
+    currentFunction->Signature = (char *)
+      realloc(currentFunction->Signature, sigAllocatedLength*2);
+    sigAllocatedLength = sigAllocatedLength*2;
+    }
+}
 
-  FileInfo data;
-  FunctionInfo throwAwayFunction;
-  FunctionInfo *currentFunction;
+/* close the signature, i.e. allow no more additions to it */
+void closeSig()
+{
+  sigClosed = 1;
+}
 
-  FILE *fhint;
-  char temps[2048];
-  int  in_public;
-  int  in_protected;
-  int  HaveComment;
-  char CommentText[50000];
-  int CommentState;
-  int sigClosed;
-  int sigMark;
-  unsigned int sigAllocatedLength;
-  int mainClass;
+/* insert text at the beginning of the signature */
+void preSig(const char *arg)
+{
+  if (!currentFunction->Signature)
+    {
+    currentFunction->Signature = (char*)malloc(2048);
+    sigAllocatedLength = 2048;
+    strcpy(currentFunction->Signature, arg);
+    }
+  else if (!sigClosed)
+    {
+    int m, n;
+    char *cp;
+    checkSigSize(arg);
+    cp = currentFunction->Signature;
+    m = strlen(cp);
+    n = strlen(arg);
+    memmove(&cp[n], cp, m+1);
+    strncpy(cp, arg, n);
+    }
+}
 
-#define YYMAXDEPTH 1000
+/* append text to the end of the signature */
+void postSig(const char *arg)
+{
+  if (!currentFunction->Signature)
+    {
+    currentFunction->Signature = (char*)malloc(2048);
+    sigAllocatedLength = 2048;
+    strcpy(currentFunction->Signature, arg);
+    }
+  else if (!sigClosed)
+    {
+    int m, n;
+    char *cp;
+    checkSigSize(arg);
+    cp = currentFunction->Signature;
+    m = strlen(cp);
+    n = strlen(arg);
+    strncpy(&cp[m], arg, n+1);
+    }
+}
 
-  void checkSigSize(const char *arg)
+/* append a scope to the ID at the end of the signature */
+void preScopeSig(const char *arg)
+{
+  if (!currentFunction->Signature)
     {
-    if (strlen(currentFunction->Signature) + strlen(arg) + 5 >
-        sigAllocatedLength)
+    currentFunction->Signature = (char*)malloc(2048);
+    sigAllocatedLength = 2048;
+    strcpy(currentFunction->Signature, arg);
+    }
+  else if (!sigClosed)
+    {
+    int i, m, n;
+    char *cp;
+    checkSigSize(arg);
+    cp = currentFunction->Signature;
+    m = strlen(cp);
+    n = strlen(arg);
+    i = m;
+    while (i > 0 &&
+          ((cp[i-1] >= 'a' && cp[i-1] <= 'z') ||
+           (cp[i-1] >= 'A' && cp[i-1] <= 'Z') ||
+           (cp[i-1] >= '0' && cp[i-1] <= '9') ||
+           cp[i-1] == '_' || cp[i-1] == ':'))
       {
-      currentFunction->Signature = (char *)
-        realloc(currentFunction->Signature, sigAllocatedLength*2);
-      sigAllocatedLength = sigAllocatedLength*2;
+      i--;
+      }
+    memmove(&cp[i+n+2], &cp[i], m+1);
+    strncpy(&cp[i], arg, n);
+    strncpy(&cp[i+n], "::", 2);
+    }
+}
+
+/* set a mark in the signature for later operations */
+void markSig()
+{
+  sigMark = 0;
+  if (currentFunction->Signature)
+    {
+    sigMark = strlen(currentFunction->Signature);
+    }
+}
+
+/* swap the signature text using the mark as the radix */
+void swapSig()
+{
+  if (currentFunction->Signature && sigMark > 0)
+    {
+    int i, m, n, nn;
+    char c;
+    char *cp;
+    cp = currentFunction->Signature;
+    n = strlen(cp);
+    m = sigMark;
+    nn = m/2;
+    for (i = 0; i < nn; i++)
+      {
+      c = cp[i]; cp[i] = cp[m-i-1]; cp[m-i-1] = c;
+      }
+    nn = (n-m)/2;
+    for (i = 0; i < nn; i++)
+      {
+      c = cp[i+m]; cp[i+m] = cp[n-i-1]; cp[n-i-1] = c;
+      }
+    nn = n/2;
+    for (i = 0; i < nn; i++)
+      {
+      c = cp[i]; cp[i] = cp[n-i-1]; cp[n-i-1] = c;
       }
     }
-  void closeSig()
+}
+
+/* delete the signature */
+void delSig(void)
+{
+  if (currentFunction->Signature)
     {
-    sigClosed = 1;
+    free(currentFunction->Signature);
+    currentFunction->Signature = NULL;
     }
-  void preSig(const char *arg)
-    {
-    if (!currentFunction->Signature)
-      {
-      currentFunction->Signature = (char*)malloc(2048);
-      sigAllocatedLength = 2048;
-      strcpy(currentFunction->Signature, arg);
-      }
-    else if (!sigClosed)
-      {
-      int m, n;
-      char *cp;
-      checkSigSize(arg);
-      cp = currentFunction->Signature;
-      m = strlen(cp);
-      n = strlen(arg);
-      memmove(&cp[n], cp, m+1);
-      strncpy(cp, arg, n);
-      }
-    }
-  void postSig(const char *arg)
-    {
-    if (!currentFunction->Signature)
-      {
-      currentFunction->Signature = (char*)malloc(2048);
-      sigAllocatedLength = 2048;
-      strcpy(currentFunction->Signature, arg);
-      }
-    else if (!sigClosed)
-      {
-      int m, n;
-      char *cp;
-      checkSigSize(arg);
-      cp = currentFunction->Signature;
-      m = strlen(cp);
-      n = strlen(arg);
-      strncpy(&cp[m], arg, n+1);
-      }
-    }
-  void preScopeSig(const char *arg)
-    {
-    if (!currentFunction->Signature)
-      {
-      currentFunction->Signature = (char*)malloc(2048);
-      sigAllocatedLength = 2048;
-      strcpy(currentFunction->Signature, arg);
-      }
-    else if (!sigClosed)
-      {
-      int i, m, n;
-      char *cp;
-      checkSigSize(arg);
-      cp = currentFunction->Signature;
-      m = strlen(cp);
-      n = strlen(arg);
-      i = m;
-      while (i > 0 &&
-            ((cp[i-1] >= 'a' && cp[i-1] <= 'z') ||
-             (cp[i-1] >= 'A' && cp[i-1] <= 'Z') ||
-             (cp[i-1] >= '0' && cp[i-1] <= '9') ||
-             cp[i-1] == '_' || cp[i-1] == ':'))
-        {
-        i--;
-        }
-      memmove(&cp[i+n+2], &cp[i], m+1);
-      strncpy(&cp[i], arg, n);
-      strncpy(&cp[i+n], "::", 2);
-      }
-    }
-  void markSig()
-    {
-    sigMark = 0;
-    if (currentFunction->Signature)
-      {
-      sigMark = strlen(currentFunction->Signature);
-      }
-    }
-  void swapSig()
-    {
-    if (currentFunction->Signature && sigMark > 0)
-      {
-      int i, m, n, nn;
-      char c;
-      char *cp;
-      cp = currentFunction->Signature;
-      n = strlen(cp);
-      m = sigMark;
-      nn = m/2;
-      for (i = 0; i < nn; i++)
-        {
-        c = cp[i]; cp[i] = cp[m-i-1]; cp[m-i-1] = c;
-        }
-      nn = (n-m)/2;
-      for (i = 0; i < nn; i++)
-        {
-        c = cp[i+m]; cp[i+m] = cp[n-i-1]; cp[n-i-1] = c;
-        }
-      nn = n/2;
-      for (i = 0; i < nn; i++)
-        {
-        c = cp[i]; cp[i] = cp[n-i-1]; cp[n-i-1] = c;
-        }
-      }
-    }
-  void delSig(void)
-    {
-    if (currentFunction->Signature)
-      {
-      free(currentFunction->Signature);
-      currentFunction->Signature = NULL;
-      }
-    }
-  void legacySig(void)
-    {
-    currentFunction->IsLegacy = 1;
-    }
+}
+
+/* mark this signature as legacy */
+void legacySig(void)
+{
+  currentFunction->IsLegacy = 1;
+}
+
 %}
 
 %union{
@@ -357,6 +375,10 @@ char *vtkstrdup(const char *in)
 %token ELLIPSIS
 %token DOUBLE_COLON
 
+/* type tokens */
+%token IdType
+%token StdString
+%token UnicodeString
 %token TypeInt8
 %token TypeUInt8
 %token TypeInt16
@@ -369,9 +391,6 @@ char *vtkstrdup(const char *in)
 %token TypeFloat64
 
 /* macro tokens */
-%token IdType
-%token StdString
-%token UnicodeString
 %token SetMacro
 %token GetMacro
 %token SetStringMacro
@@ -393,6 +412,8 @@ char *vtkstrdup(const char *in)
 %token ViewportCoordinateMacro
 %token WorldCoordinateMacro
 %token TypeMacro
+
+/* special tokens */
 %token VTK_CONSTANT_DEF
 %token VTK_BYTE_SWAP_DECL
 
@@ -697,36 +718,41 @@ more_args: arg { currentFunction->NumberOfArguments++;}
 
 arg: type maybe_var_array
     {
-      currentFunction->ArgCounts[currentFunction->NumberOfArguments] =
-        $<integer>2 / VTK_PARSE_COUNT_START;
-      currentFunction->ArgTypes[currentFunction->NumberOfArguments] =
-        $<integer>1 + ($<integer>2 % VTK_PARSE_COUNT_START);
+      int i = currentFunction->NumberOfArguments;
+      int array_type = ($<integer>2 % VTK_PARSE_COUNT_START);
+      int array_count = ($<integer>2 / VTK_PARSE_COUNT_START);
+      currentFunction->ArgCounts[i] = array_count;
+      currentFunction->ArgTypes[i] = $<integer>1 + array_type;
     }
   | type var_id
     {
-      currentFunction->ArgCounts[currentFunction->NumberOfArguments] =
-        $<integer>2 / VTK_PARSE_COUNT_START;
-      currentFunction->ArgTypes[currentFunction->NumberOfArguments] =
-        $<integer>1 + ($<integer>2 % VTK_PARSE_COUNT_START);
+      int i = currentFunction->NumberOfArguments;
+      int array_type = ($<integer>2 % VTK_PARSE_COUNT_START);
+      int array_count = ($<integer>2 / VTK_PARSE_COUNT_START);
+      currentFunction->ArgCounts[i] = array_count;
+      currentFunction->ArgTypes[i] = $<integer>1 + array_type;
     } maybe_var_assign
   | VAR_FUNCTION
     {
+      int i = currentFunction->NumberOfArguments;
       postSig("void (*func)(void *) ");
-      currentFunction->ArgCounts[currentFunction->NumberOfArguments] = 0;
-      currentFunction->ArgTypes[currentFunction->NumberOfArguments] = VTK_PARSE_FUNCTION;
+      currentFunction->ArgCounts[i] = 0;
+      currentFunction->ArgTypes[i] = VTK_PARSE_FUNCTION;
     }
   | type LPAREN_AMPERSAND { postSig("(&"); } maybe_id ')'
     {
+      int i = currentFunction->NumberOfArguments;
       postSig(") ");
-      currentFunction->ArgCounts[currentFunction->NumberOfArguments] = 0;
-      currentFunction->ArgTypes[currentFunction->NumberOfArguments] = VTK_PARSE_UNKNOWN;
+      currentFunction->ArgCounts[i] = 0;
+      currentFunction->ArgTypes[i] = VTK_PARSE_UNKNOWN;
     }
   | type LPAREN_POINTER { postSig("("); postSig($<str>2); postSig("*"); }
     maybe_id ')' '(' { postSig(")("); } ignore_args_list ')'
     {
+      int i = currentFunction->NumberOfArguments;
       postSig(")");
-      currentFunction->ArgCounts[currentFunction->NumberOfArguments] = 0;
-      currentFunction->ArgTypes[currentFunction->NumberOfArguments] = VTK_PARSE_UNKNOWN;
+      currentFunction->ArgCounts[i] = 0;
+      currentFunction->ArgTypes[i] = VTK_PARSE_UNKNOWN;
     };
 
 maybe_id: | any_id;
