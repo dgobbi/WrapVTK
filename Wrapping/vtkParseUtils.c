@@ -79,7 +79,8 @@ const char *parseBaseTypeAsString(int type, const char *vtkname)
     baseType = 0;
     }
 
-  if (baseType == VTK_PARSE_VTK_OBJECT && vtkname != 0)
+  if ((baseType == VTK_PARSE_VTK_OBJECT ||
+      (baseType == VTK_PARSE_UNKNOWN)) && vtkname != 0)
     {
     return vtkname;
     }

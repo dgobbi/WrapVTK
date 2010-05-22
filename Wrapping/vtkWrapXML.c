@@ -150,12 +150,12 @@ static const char *quoteForXML(const char *comment, int maxlen)
       {
       strcpy(&result[j],"&gt;");
       j += 4;
-      }      
+      }
     else if (comment[i] == '&')
       {
       strcpy(&result[j],"&amp;");
       j += 5;
-      }      
+      }
     else if (comment[i] == '\"')
       {
       strcpy(&result[j],"&quot;");
@@ -202,10 +202,23 @@ static void printMultilineText(FILE *fp, const char *cp, int indentation)
       {
       temp[j] = cp[i++];
       }
+
+    while (j > 0 &&
+           (temp[j-1] == ' ' || temp[j-1] == '\t' || temp[j-1] == '\r'))
+      {
+      j--;
+      }
+
     temp[j] = '\0';
-        
-    fprintf(fp, "%s%s\n", indent(indentation),
-            quoteForXML(temp,500));
+
+    if (j > 0)
+      {
+      fprintf(fp, "%s%s\n", indent(indentation), quoteForXML(temp,500));
+      }
+    else
+      {
+      fprintf(fp, "\n");
+      }
     }
 }
 
@@ -217,10 +230,10 @@ void classHeader(FILE *fp, FileInfo *data, int indentation)
 
   fprintf(fp, "%s<Class>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          data->ClassName);
+          quoteForXML(data->ClassName, 500));
 
   /* There is also data->IsAbstract and data->HasDelete but these are
-     deprecated.  The IsAbstract flag is computed by vtkParse, but 
+     deprecated.  The IsAbstract flag is computed by vtkParse, but
      IsConcrete is set by CMake and is more reliable.  */
 
   /* actually, vtk classes never have more than one superclass */
@@ -228,7 +241,7 @@ void classHeader(FILE *fp, FileInfo *data, int indentation)
   for (i = 0; i < n && i < 1; i++)
     {
     fprintf(fp, "%s<Superclass>%s</Superclass>\n", indent(indentation),
-            data->SuperClasses[i]);
+            quoteForXML(data->SuperClasses[i], 500));
     }
 
   /* the "concrete" flag means the class has a ::New method */
@@ -257,7 +270,7 @@ void classDocumentation(FILE *fp, FileInfo *data, int indentation)
 
   fprintf(fp, "%s<Comment>\n", indent(indentation++));
 
-  if (data->NameComment) 
+  if (data->NameComment)
     {
     cp = data->NameComment;
     while (*cp == ' ')
@@ -300,7 +313,7 @@ void classDocumentation(FILE *fp, FileInfo *data, int indentation)
       if (strncmp(cp, ".SECTION", 8) == 0)
         {
         fprintf(fp, "\n");
-        
+
         while(cp > data->SeeAlso && isspace(*(cp - 1)) && *(cp - 1) != '\n')
           {
           cp--;
@@ -335,11 +348,11 @@ void typeInformation(
 
   if (typeIsConst(type))
     {
-    fprintf(fp, "%s<Decorator>const</Decorator>\n", indent(indentation)); 
+    fprintf(fp, "%s<Decorator>const</Decorator>\n", indent(indentation));
     }
- 
+
   fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
-          parseBaseTypeAsString(type, vtkclass));
+          quoteForXML(parseBaseTypeAsString(type, vtkclass), 500));
 
   for (cp = parseIndirectionAsString(type); *cp != '\0'; cp++)
     {
@@ -351,7 +364,7 @@ void typeInformation(
       j++;
       }
     else
-      { 
+      {
       fprintf(fp, "%s<Decorator>%s</Decorator>\n", indent(indentation),
               ((*cp == '&') ? "reference" : "pointer"));
       }
@@ -359,7 +372,8 @@ void typeInformation(
 }
 
 /* Print out a function in XML format */
-void classMethod(FILE *fp, FunctionInfo *func, int indentation)
+void classMethod(
+  FILE *fp, FileInfo *data, FunctionInfo *func, int indentation)
 {
   static const char *accessLevel[] = {"private", "public", "protected"};
   size_t i, n;
@@ -390,7 +404,7 @@ void classMethod(FILE *fp, FunctionInfo *func, int indentation)
 
   if (typeIsStatic(func->ReturnType))
     {
-    fprintf(fp, "%s<Flag>static</Flag>\n", indent(indentation)); 
+    fprintf(fp, "%s<Flag>static</Flag>\n", indent(indentation));
     }
 
   if (func->IsPureVirtual)
@@ -412,8 +426,7 @@ void classMethod(FILE *fp, FunctionInfo *func, int indentation)
     }
   temp[i] = '\0';
 
-  fprintf(fp, "%s %s\n", indent(indentation),
-          quoteForXML(temp, 500));
+  fprintf(fp, "%s %s\n", indent(indentation), quoteForXML(temp, 500));
 
   fprintf(fp, "%s</Signature>\n", indent(--indentation));
 
@@ -423,14 +436,18 @@ void classMethod(FILE *fp, FunctionInfo *func, int indentation)
     printMultilineText(fp, func->Comment, indentation);
     fprintf(fp, "%s</Comment>\n", indent(--indentation));
     }
- 
-  fprintf(fp, "%s<Return>\n", indent(indentation++));
 
-  typeInformation(fp, func->ReturnType, func->ReturnClass,
-                  (func->HaveHint ? func->HintSize : 0),
-                  indentation); 
+  if (data == NULL || !(strcmp(data->ClassName, func->Name) == 0 ||
+      (func->Name[0] != '~' && strcmp(data->ClassName, &func->Name[1]) == 0)))
+    {
+    fprintf(fp, "%s<Return>\n", indent(indentation++));
 
-  fprintf(fp, "%s</Return>\n", indent(--indentation));
+    typeInformation(fp, func->ReturnType, func->ReturnClass,
+                    (func->HaveHint ? func->HintSize : 0),
+                    indentation);
+
+    fprintf(fp, "%s</Return>\n", indent(--indentation));
+    }
 
   n = func->NumberOfArguments;
   for (i = 0; i < n; i++)
@@ -438,7 +455,7 @@ void classMethod(FILE *fp, FunctionInfo *func, int indentation)
     fprintf(fp, "%s<Arg>\n", indent(indentation++));
 
     typeInformation(fp, func->ArgTypes[i], func->ArgClasses[i],
-                    func->ArgCounts[i], indentation); 
+                    func->ArgCounts[i], indentation);
 
     fprintf(fp, "%s</Arg>\n", indent(--indentation));
     }
@@ -451,7 +468,7 @@ void classVariableMethods(
 {
   int i;
   unsigned int methodType;
- 
+
   for (i = 0; i < 32; i++)
     {
     methodType = methodBitfield & (1U << i);
@@ -478,7 +495,7 @@ void classVariable(FILE *fp, VariableAttributes *var, int indentation)
     printMultilineText(fp, var->Comment, indentation);
     fprintf(fp, "%s</Comment>\n", indent(--indentation));
     }
- 
+
   typeInformation(fp, var->Type, var->ClassName, var->Count, indentation);
 
   if (var->EnumConstantNames)
@@ -582,7 +599,7 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
   for (i = 0; i < n; i++)
     {
     fprintf(fp, "\n");
-    classMethod(fp, &data->Functions[idList[i]], indentation);
+    classMethod(fp, data, &data->Functions[idList[i]], indentation);
     }
   fprintf(fp, "\n%s</Methods>\n", indent(--indentation));
 
