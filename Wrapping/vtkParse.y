@@ -170,6 +170,12 @@ void closeSig()
   sigClosed = 1;
 }
 
+/* re-open the signature */
+void openSig()
+{
+  sigClosed = 0;
+}
+
 /* insert text at the beginning of the signature */
 void preSig(const char *arg)
 {
@@ -657,8 +663,8 @@ template_type: TYPENAME { postSig("typename "); }
 
 legacy_function: VTK_LEGACY '(' function ')' ;
 
-function: '~' destructor { preSig("~"); }
-      | VIRTUAL '~' destructor { preSig("virtual ~"); }
+function: '~' destructor {openSig(); preSig("~"); closeSig();}
+      | VIRTUAL '~' destructor {openSig(); preSig("virtual ~"); closeSig();}
       | constructor
       | type func
          {
@@ -670,12 +676,16 @@ function: '~' destructor { preSig("~"); }
          }
       | VIRTUAL type CONST func
          {
+         openSig();
          preSig("virtual ");
+         closeSig();
          currentFunction->ReturnType = $<integer>2;
          }
       | VIRTUAL type func
          {
+         openSig();
          preSig("virtual ");
+         closeSig();
          currentFunction->ReturnType = $<integer>2;
          };
 
@@ -694,12 +704,16 @@ operator:
          }
       | VIRTUAL type CONST op_func
          {
+         openSig();
          preSig("virtual ");
+         closeSig();
          currentFunction->ReturnType = $<integer>2;
          }
       | VIRTUAL type op_func
          {
+         openSig();
          preSig("virtual ");
+         closeSig();
          currentFunction->ReturnType = $<integer>2;
          };
 
