@@ -438,7 +438,7 @@ void classMethod(
     }
 
   if (data == NULL || !(strcmp(data->ClassName, func->Name) == 0 ||
-      (func->Name[0] != '~' && strcmp(data->ClassName, &func->Name[1]) == 0)))
+      (func->Name[0] == '~' && strcmp(data->ClassName, &func->Name[1]) == 0)))
     {
     fprintf(fp, "%s<Return>\n", indent(indentation++));
 
