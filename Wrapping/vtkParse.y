@@ -265,7 +265,7 @@ void preScopeSig(const char *arg)
           }
         }
       }
-      
+
     memmove(&cp[i+n+2], &cp[i], m+1);
     strncpy(&cp[i], arg, n);
     strncpy(&cp[i+n], "::", 2);
@@ -760,7 +760,7 @@ op_sig: OPERATOR op_token {postSig($<str>2);} '('
       currentFunction->IsOperator = 1;
       currentFunction->ReturnClass = vtkstrdup(getTypeId());
     }
-    args_list ')' { $<str>$ = $<str>2; }; 
+    args_list ')' { $<str>$ = $<str>2; };
 
 func: func_sig { postSig(")"); } maybe_const
     {
@@ -1160,8 +1160,9 @@ macro:
 | SetClampMacro '(' any_id ',' {delSig(); markSig();} type_red2 {closeSig();}
      ',' maybe_other_no_semi ')'
    {
+   char *local;
    chopSig();
-   char *local = vtkstrdup(copySig());
+   local = vtkstrdup(copySig());
    sprintf(currentFunction->Signature,"void Set%s(%s);",$<str>3,local);
    sprintf(temps,"Set%s",$<str>3);
    currentFunction->Name = vtkstrdup(temps);
@@ -1273,8 +1274,9 @@ macro:
 | SetVectorMacro  '(' any_id ',' {delSig(); markSig();}
      type_red2 ',' INT_LITERAL ')'
    {
+   char *local;
    chopSig();
-   char *local = vtkstrdup(copySig());
+   local = vtkstrdup(copySig());
    sprintf(currentFunction->Signature,"void Set%s(%s a[%s]);",
            $<str>3, local, $<str>8);
    sprintf(temps,"Set%s",$<str>3);
@@ -1289,8 +1291,9 @@ macro:
 | GetVectorMacro  '(' any_id ',' {delSig(); markSig();}
      type_red2 ',' INT_LITERAL ')'
    {
+   char *local;
    chopSig();
-   char *local = vtkstrdup(copySig());
+   local = vtkstrdup(copySig());
    sprintf(currentFunction->Signature,"%s *Get%s();", local, $<str>3);
    sprintf(temps,"Get%s",$<str>3);
    currentFunction->Name = vtkstrdup(temps);
