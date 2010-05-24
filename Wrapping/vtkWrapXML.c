@@ -345,28 +345,55 @@ void typeInformation(
 {
   int j = 0;
   const char *cp;
+  const char *dctr;
 
   if (typeIsConst(type))
     {
-    fprintf(fp, "%s<Decorator>const</Decorator>\n", indent(indentation));
+    fprintf(fp, "%s<Dctr>const</Dctr>\n", indent(indentation));
     }
 
   fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
           quoteForXML(parseBaseTypeAsString(type, vtkclass), 500));
 
-  for (cp = parseIndirectionAsString(type); *cp != '\0'; cp++)
+  cp = parseIndirectionAsString(type);
+
+  if (cp == 0)
     {
-    if (*cp != '&' && j == 0 && count)
+    fprintf(fp, "%s<Dctr>unrecognized</Dctr>\n", indent(indentation));
+    return;
+    }
+
+  j = strlen(cp);
+
+  while (j > 0)
+    {
+    dctr = "";
+
+    do { j--; } while (j > 0 && cp[j] == ' ');
+
+    if (j >= 4 && cp[j] == 't' && cp[j-1] == 's' && cp[j-2] == 'n' &&
+        cp[j-3] == 'o' && cp[j-4] == 'c')
       {
-      fprintf(fp, "%s<Decorator>array</Decorator>\n", indent(indentation));
-      fprintf(fp, "%s<ArraySize>%i</ArraySize>\n", indent(indentation),
-              count);
-      j++;
+      j -= 4;
+      dctr = "const";
       }
-    else
+    else if (cp[j] == '&')
       {
-      fprintf(fp, "%s<Decorator>%s</Decorator>\n", indent(indentation),
-              ((*cp == '&') ? "reference" : "pointer"));
+      dctr = "reference";
+      }
+    else if (cp[j] == '*')
+      {
+      dctr = "pointer";
+      if (count > 0)
+        {
+        dctr = "array";
+        }
+      }
+
+    fprintf(fp, "%s<Dctr>%s</Dctr>\n", indent(indentation), dctr);
+    if (count)
+      {
+      fprintf(fp, "%s<Size>%i</Size>\n", indent(indentation), count);
       }
     }
 }

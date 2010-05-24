@@ -38,14 +38,16 @@ const char *parseStorageClassAsString(int type)
 /* return the indirection decorators as a string */
 const char *parseIndirectionAsString(int type)
 {
-  /* multi-directional arrays aren't handled */
-  static const char *vtkIndirectionMap[8] = {
-    "", "&", "&&", "*", "&*", "*&", "*", "**",
+  static const char *vtkIndirectionMap[16] = {
+    "", "&", "*const ", "*",
+    "*const &", "*&", 0, "**",
+    "*const *", 0, 0, 0,
+    0, 0, 0, 0,
   };
 
   int i = 0;
 
-  i = (typeIndirection(type) & VTK_PARSE_POINTER_POINTER) / VTK_PARSE_REF;
+  i = (typeIndirection(type) & VTK_PARSE_INDIRECT) / VTK_PARSE_REF;
 
   return vtkIndirectionMap[i];
 }

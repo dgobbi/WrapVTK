@@ -803,6 +803,10 @@ int methodMatchesVariable(
     {
     methType = ((methType & ~VTK_PARSE_INDIRECT) | VTK_PARSE_POINTER);
     } 
+  else if (typeIndirection(methType) == VTK_PARSE_CONST_POINTER_REF)
+    {
+    methType = ((methType & ~VTK_PARSE_INDIRECT) | VTK_PARSE_CONST_POINTER);
+    } 
 
   /* if method is multivalue, e.g. SetColor(r,g,b), then the
    * referenced variable is a pointer */
@@ -892,6 +896,12 @@ void initializeVariableAttributes(
         typeIndirection(type) == VTK_PARSE_REF)))
     {
     var->Type = (var->Type | VTK_PARSE_POINTER);
+    }
+  else if ((!meth->IsMultiValue &&
+       (typeIndirection(type) == VTK_PARSE_CONST_POINTER ||
+        typeIndirection(type) == VTK_PARSE_CONST_POINTER_REF)))
+    {
+    var->Type = (var->Type | VTK_PARSE_CONST_POINTER);
     }
   else if (typeIndirection(type) == VTK_PARSE_POINTER_POINTER ||
            (typeIndirection(type) == VTK_PARSE_POINTER &&

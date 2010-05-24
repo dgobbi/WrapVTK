@@ -24,10 +24,13 @@
 #define typeIndirection(x) ((x) & VTK_PARSE_INDIRECT)
 #define typeIsIndirect(x) (typeIndirection(x) != 0)
 #define typeIsPointer(x) (typeIndirection(x) == VTK_PARSE_POINTER || \
+                          typeIndirection(x) == VTK_PARSE_CONST_POINTER || \
                           typeIndirection(x) == VTK_PARSE_POINTER_REF || \
+                          typeIndirection(x) == VTK_PARSE_CONST_POINTER_REF ||\
                           typeIndirection(x) == VTK_PARSE_POINTER_POINTER)
 #define typeIsReference(x) (typeIndirection(x) == VTK_PARSE_REF || \
-                            typeIndirection(x) == VTK_PARSE_POINTER_REF)
+                            typeIndirection(x) == VTK_PARSE_POINTER_REF_REF) \
+                            typeIndirection(x) == VTK_PARSE_CONST_POINTER_REF))
 
 #define typeIsFunction(x)   ((x) == VTK_PARSE_FUNCTION)
 
