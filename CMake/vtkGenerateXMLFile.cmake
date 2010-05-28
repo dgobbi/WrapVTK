@@ -1,7 +1,7 @@
 # vtkGenerateXMLFile.cmake
 #
 # 1 macro, 3 arguments.
-# 
+#
 # Macro: VTK_GENERATE_XML_FILE
 #         ARGUMENT: XML_LIST_NAME
 #                the list to add all generated xml filenames to
@@ -23,25 +23,47 @@ MACRO(VTK_GENERATE_XML_FILE XML_LIST_NAME INPUT_FILE OUTPUT_DIR)
     SET(TMP_HEADER_DIR ${TMP_DIR})
   ENDIF("${TMP_DIR}" STREQUAL "")
 
+  IF(CMAKE_GENERATOR MATCHES "NMake Makefiles")
+    SET(quote "\"")
+  ELSE(CMAKE_GENERATOR MATCHES "NMake Makefiles")
+    SET(quote "")
+  ENDIF(CMAKE_GENERATOR MATCHES "NMake Makefiles")
+
   IF(VTK_CLASS_WRAP_SPECIAL_${INPUT_FILE} OR
     NOT VTK_CLASS_WRAP_EXCLUDE_${INPUT_FILE})
 
     IF(VTK_CLASS_ABSTRACT_${INPUT_FILE})
-      SET(TMP_CONCRETE 0)
+      SET(TMP_CONCRETE "--abstract")
     ELSE(VTK_CLASS_ABSTRACT_${INPUT_FILE})
-      SET(TMP_CONCRETE 1)
+      SET(TMP_CONCRETE "--concrete")
     ENDIF(VTK_CLASS_ABSTRACT_${INPUT_FILE})
 
-    SET(TMP_INPUT "${TMP_HEADER_DIR}/${TMP_CLASS}.h")
-    SET(TMP_OUTPUT "${VTKXML_OUTPUT_DIR}/${TMP_CLASS}.xml")
+    IF(VTK_CLASS_WRAP_SPECIAL_${INPUT_FILE})
+      SET(TMP_SPECIAL "--special")
+    ELSE(VTK_CLASS_WRAP_SPECIAL_${INPUT_FILE})
+      SET(TMP_SPECIAL "--vtkobject")
+    ENDIF(VTK_CLASS_WRAP_SPECIAL_${INPUT_FILE})
+
+    IF(WrapVTK_HINTS)
+      SET(TMP_HINTS "--hints" "${quote}${WrapVTK_HINTS}${quote}")
+    ELSE(WrapVTK_HINTS)
+      SET(TMP_HINTS)
+    ENDIF(WrapVTK_HINTS)
+
+    SET(TMP_INPUT "${quote}${TMP_HEADER_DIR}/${TMP_CLASS}.h${quote}")
+    SET(TMP_OUTPUT "${quote}${VTKXML_OUTPUT_DIR}/${TMP_CLASS}.xml${quote}")
 
     # add custom command to output
     ADD_CUSTOM_COMMAND(
       OUTPUT ${TMP_OUTPUT}
       DEPENDS ${VTKXML_EXE} ${VTKXML_HINTS} ${TMP_INPUT}
       COMMAND ${VTKXML_EXE}
-      ARGS ${TMP_INPUT} ${VTKXML_HINTS} ${TMP_CONCRETE}
-            ${VTKXML_OUTPUT_DIR}/${TMP_CLASS}.xml
+      ARGS
+      ${TMP_CONCRETE}
+      ${TMP_SPECIAL}
+      ${TMP_HINTS}
+      ${TMP_INPUT}
+      ${TMP_OUTPUT}
       COMMENT "XML Wrapping - generating ${TMP_CLASS}.xml"
       )
 
