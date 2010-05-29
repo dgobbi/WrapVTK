@@ -1078,22 +1078,24 @@ type_integer:
 
 optional_scope: | ':' scope_list;
 
-scope_list: scope_type maybe_scoped_id
+scope_list: scope_list_item | scope_list_item ',' scope_list;
+
+scope_list_item: scope_type maybe_scoped_id
     {
+      int i, j;
+
       if (mainClass)
         {
         data.SuperClasses[data.NumberOfSuperClasses] = vtkstrdup($<str>2);
         data.NumberOfSuperClasses++;
         }
-    }
-  | scope_type maybe_scoped_id
-    {
-      if (mainClass)
-        {
-        data.SuperClasses[data.NumberOfSuperClasses] = vtkstrdup($<str>2);
-        data.NumberOfSuperClasses++;
-        }
-    } ',' scope_list;
+
+      /* build a list of superclasses for all classes in file */
+      for (i = 0; data.ClassesInFile[i+1]; i++) { ; }
+      for (j = 0; data.ClassSuperClasses[i][j]; j++) { ; }
+      data.ClassSuperClasses[i][j] = vtkstrdup($<str>2);
+      data.ClassSuperClasses[i][j+1] = NULL;
+    };
 
 scope_type: {in_public = 0; in_protected = 0;}
           | PUBLIC {in_public = 1; in_protected = 0;}
@@ -1752,6 +1754,8 @@ void InitFunction(FunctionInfo *func)
 /* check whether this is the class we are looking for */
 void start_class(const char *classname)
 {
+  int i;
+
   if (!strcmp(data.ClassName, classname))
     {
     mainClass = 1;
@@ -1764,6 +1768,11 @@ void start_class(const char *classname)
     currentFunction = &throwAwayFunction;
     }
   InitFunction(currentFunction);
+
+  for (i = 0; data.ClassesInFile[i]; i++) { ; }
+  data.ClassesInFile[i] = vtkstrdup(classname);
+  data.ClassesInFile[i+1] = NULL;
+  data.ClassSuperClasses[i][0] = NULL;
 }
 
 /* when the cpp file doesn't have enough info use the hint file */
@@ -1967,6 +1976,7 @@ int check_options(int argc, char *argv[])
 
   data.IsConcrete = 1;
   data.IsVTKObject = 1;
+  data.HierarchyFileName = 0;
   hintFileName = 0;
 
   for (i = 1; i < argc && argv[i][0] == '-'; i++)
@@ -1996,6 +2006,15 @@ int check_options(int argc, char *argv[])
         }
       hintFileName = argv[i];
       }
+    else if (strcmp(argv[i], "--hierarchy") == 0)
+      {
+      i++;
+      if (i >= argc || argv[i][0] == '-')
+        {
+        return -1;
+        }
+      data.HierarchyFileName = argv[i];
+      }
     }
 
   return i;
@@ -2015,7 +2034,7 @@ int main(int argc, char *argv[])
     {
     has_options = 1;
     }
-  else if (argi < 0 || argc < 4 || argc > 5)
+  else if (argi < 0 || argc < 3 || argc > 5)
     {
     fprintf(stderr,
             "Usage: %s [options] input_file output_file\n"
@@ -2027,6 +2046,9 @@ int main(int argc, char *argv[])
             argv[0]);
     exit(1);
     }
+
+  data.ClassesInFile[0] = NULL;
+  data.ClassSuperClasses[0][0] = NULL;
 
   data.FileName = argv[argi++];
   data.NameComment = NULL;
@@ -2072,7 +2094,10 @@ int main(int argc, char *argv[])
       {
       hintFileName = argv[argi++];
       }
-    data.IsConcrete = atoi(argv[argi++]);
+    if (argc >= 4)
+      {
+      data.IsConcrete = atoi(argv[argi++]);
+      }
     }
 
   if (hintFileName && hintFileName[0] != '\0')
@@ -2104,6 +2129,7 @@ int main(int argc, char *argv[])
     fprintf(stderr, "Error opening output file %s\n", data.OutputFileName);
     exit(1);
     }
+
   vtkParseOutput(fout, &data);
   fclose(fout);
 

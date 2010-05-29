@@ -30,6 +30,7 @@
 #include "vtkParse.h"
 #include "vtkParseUtils.h"
 #include "vtkParseVariables.h"
+#include "vtkParseHierarchy.h"
 #include "vtkConfigure.h"
 
 /* the indentation string, default is two spaces */
@@ -577,7 +578,39 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
   int numFunctions;
   int *idList;
   int indentation = 0;
+  HierarchyInfo *hinfo = 0;
   ClassVariables *vars = 0;
+
+  if (data->HierarchyFileName)
+    {
+    hinfo = readHierarchyFile(data->HierarchyFileName);
+    /* just test these methods to make sure they don't crash */
+    if (!isHierarchySuperClass(hinfo, data->ClassName, "vtkObjectBase") !=
+        !data->IsVTKObject)
+      {
+      if (data->IsVTKObject)
+        {
+        fprintf(stderr, "Hierarchy thinks %s is a special object\n",
+                data->ClassName);
+        }
+      else
+        {
+        fprintf(stderr, "Hierarchy thinks %s is a vtk object\n",
+                data->ClassName);
+        }
+      freeHierarchyInfo(hinfo);
+      exit(1);
+      }
+    if (strncmp(getHierarchyClassHeader(hinfo, data->ClassName),
+                data->ClassName, strlen(data->ClassName)) != 0)
+      {
+      fprintf(stderr, "Wrong header file \"%s\" for class %s\n",
+              getHierarchyClassHeader(hinfo, data->ClassName),
+              data->ClassName);
+      freeHierarchyInfo(hinfo);
+      exit(1);
+      }
+    }
 
   /* start new XML section for class */
   classHeader(fp, data, indentation++);
@@ -661,4 +694,9 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
 
   /* print the class footer */
   classFooter(fp, data, --indentation);
+
+  if (hinfo)
+    {
+    freeHierarchyInfo(hinfo);
+    }
 }

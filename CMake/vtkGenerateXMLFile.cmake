@@ -25,8 +25,10 @@ MACRO(VTK_GENERATE_XML_FILE XML_LIST_NAME INPUT_FILE OUTPUT_DIR)
 
   IF(CMAKE_GENERATOR MATCHES "NMake Makefiles")
     SET(quote "\"")
+    SET(verbatim "")
   ELSE(CMAKE_GENERATOR MATCHES "NMake Makefiles")
     SET(quote "")
+    SET(verbatim "VERBATIM")
   ENDIF(CMAKE_GENERATOR MATCHES "NMake Makefiles")
 
   IF(VTK_CLASS_WRAP_SPECIAL_${INPUT_FILE} OR
@@ -50,21 +52,25 @@ MACRO(VTK_GENERATE_XML_FILE XML_LIST_NAME INPUT_FILE OUTPUT_DIR)
       SET(TMP_HINTS)
     ENDIF(WrapVTK_HINTS)
 
-    SET(TMP_INPUT "${quote}${TMP_HEADER_DIR}/${TMP_CLASS}.h${quote}")
-    SET(TMP_OUTPUT "${quote}${VTKXML_OUTPUT_DIR}/${TMP_CLASS}.xml${quote}")
+    SET(TMP_HIERARCHY "${VTKXML_OUTPUT_DIR}/vtk${KIT_NAME}Hierarchy.txt")
+
+    SET(TMP_INPUT "${TMP_HEADER_DIR}/${TMP_CLASS}.h")
+    SET(TMP_OUTPUT "${VTKXML_OUTPUT_DIR}/${TMP_CLASS}.xml")
 
     # add custom command to output
     ADD_CUSTOM_COMMAND(
       OUTPUT ${TMP_OUTPUT}
-      DEPENDS ${VTKXML_EXE} ${VTKXML_HINTS} ${TMP_INPUT}
+      DEPENDS ${VTKXML_EXE} ${VTKXML_HINTS} ${TMP_INPUT} ${TMP_HIERARCHY}
       COMMAND ${VTKXML_EXE}
       ARGS
       ${TMP_CONCRETE}
       ${TMP_SPECIAL}
       ${TMP_HINTS}
-      ${TMP_INPUT}
-      ${TMP_OUTPUT}
+      "--hierarchy" "${quote}${TMP_HIERARCHY}${quote}"
+      "${quote}${TMP_INPUT}${quote}"
+      "${quote}${TMP_OUTPUT}${quote}"
       COMMENT "XML Wrapping - generating ${TMP_CLASS}.xml"
+      ${verbatim}
       )
 
     SET(${XML_LIST_NAME} ${${XML_LIST_NAME}} ${TMP_OUTPUT})

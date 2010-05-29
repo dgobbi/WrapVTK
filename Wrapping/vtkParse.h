@@ -34,7 +34,7 @@
     int   ReturnType;
     char *ReturnClass;
     char *Comment;
-    char *Signature;  
+    char *Signature;
     int   IsLegacy;
   } FunctionInfo;
   
@@ -47,6 +47,7 @@
     char *ClassName;
     char *FileName;
     char *OutputFileName;
+    char *HierarchyFileName;
     char *SuperClasses[10];
     int   NumberOfSuperClasses;
     int   NumberOfFunctions;
@@ -55,4 +56,6 @@
     char *Description;
     char *Caveats;
     char *SeeAlso;
+    char *ClassesInFile[100];
+    char *ClassSuperClasses[100][10];
   } FileInfo;
