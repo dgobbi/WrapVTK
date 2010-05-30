@@ -1015,8 +1015,8 @@ void findAllMatches(
             if (j % 8 == 0)
               {
               var->EnumConstantNames =
-                (const char **)realloc(var->EnumConstantNames,
-                                       sizeof(char *)*(j+8));
+                (char **)realloc(var->EnumConstantNames,
+                                 sizeof(char *)*(j+8));
               }
             var->EnumConstantNames[j] = 0; 
             }
@@ -1138,8 +1138,8 @@ int searchForRepeatedMethods(
   MethodAttributes *attrs, ClassVariableMethods *methods)
 {
   int i, n;
-  n = methods->NumberOfMethods;
   MethodAttributes *meth;
+  n = methods->NumberOfMethods;
 
   for (i = 0; i < n; i++)
     {
