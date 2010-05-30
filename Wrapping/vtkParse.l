@@ -167,6 +167,10 @@ Modify lex.yy.c:
 
 [A-Za-z0-9_]*"_EXPORT" ;
 
+"APIENTRY" ;
+"CALLBACK" ;
+"WINAPI" ;
+
 "vtkNotUsed"[ ]*"("[^)]*")" {
      int i; int j = 0;
      while (yytext[j]!='(') { j++; }
