@@ -114,15 +114,20 @@ MACRO(VTK_WRAP_HIERARCHY TARGET OUTPUT_DIR SOURCES)
   # build the hierarchy file: the hierarchy file is only
   # overwritten if it will changed
   ADD_CUSTOM_COMMAND(
-    OUTPUT ${OUTPUT_DIR}/${TARGET}.txt
+    OUTPUT ${OUTPUT_DIR}/${TARGET}.target ${OUTPUT_DIR}/${TARGET}.txt
     DEPENDS ${VTK_BUILD_HIERARCHY_EXE} ${OUTPUT_FILES}
     ${OTHER_HIERARCHY_FILES}
     ${OUTPUT_DIR}/${TARGET}.data
+
     COMMAND ${VTK_BUILD_HIERARCHY_EXE}
     ARGS
     "-o" "${quote}${OUTPUT_DIR}/${TARGET}.txt${quote}"
     "${quote}${OUTPUT_DIR}/${TARGET}.data${quote}"
     ${QUOTED_HIERARCHY_FILES}
+
+    COMMAND ${CMAKE_COMMAND}
+    ARGS
+    "-E" "touch" "${quote}${OUTPUT_DIR}/${TARGET}.target${quote}"
     COMMENT "Hierarchy Wrapping - generating ${TARGET}.txt"
     ${verbatim}
     )
