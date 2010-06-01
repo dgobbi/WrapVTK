@@ -192,7 +192,7 @@ static const char *vtkWrapXML_Quote(const char *comment, int maxlen)
 }
 
 /* print multi-line text at the specified indentation level. */
-static void printMultilineText(FILE *fp, const char *cp, int indentation)
+static void vtkWrapXML_MultiLineText(FILE *fp, const char *cp, int indentation)
 {
   int i, j;
   char temp[512];
@@ -285,13 +285,13 @@ void vtkWrapXML_ClassDoc(FILE *fp, FileInfo *data, int indentation)
   if (data->Description)
     {
     fprintf(fp, "\n%s .SECTION Description\n", indent(indentation));
-    printMultilineText(fp, data->Description, indentation);
+    vtkWrapXML_MultiLineText(fp, data->Description, indentation);
     }
 
   if (data->Caveats && data->Caveats[0] != '\0')
     {
     fprintf(fp, "\n%s .SECTION Caveats\n", indent(indentation));
-    printMultilineText(fp, data->Caveats, indentation);
+    vtkWrapXML_MultiLineText(fp, data->Caveats, indentation);
     }
 
   if (data->SeeAlso && data->SeeAlso[0] != '\0')
@@ -319,7 +319,7 @@ void vtkWrapXML_ClassDoc(FILE *fp, FileInfo *data, int indentation)
           {
           cp--;
           }
-        printMultilineText(fp, cp, indentation);
+        vtkWrapXML_MultiLineText(fp, cp, indentation);
         break;
         }
 
@@ -461,7 +461,7 @@ void vtkWrapXML_ClassMethod(
   if (func->Comment)
     {
     fprintf(fp, "%s<Comment>\n", indent(indentation++));
-    printMultilineText(fp, func->Comment, indentation);
+    vtkWrapXML_MultiLineText(fp, func->Comment, indentation);
     fprintf(fp, "%s</Comment>\n", indent(--indentation));
     }
 
@@ -521,7 +521,7 @@ void vtkWrapXML_ClassVariable(
   if (var->Comment)
     {
     fprintf(fp, "%s<Comment>\n", indent(indentation++));
-    printMultilineText(fp, var->Comment, indentation);
+    vtkWrapXML_MultiLineText(fp, var->Comment, indentation);
     fprintf(fp, "%s</Comment>\n", indent(--indentation));
     }
 
