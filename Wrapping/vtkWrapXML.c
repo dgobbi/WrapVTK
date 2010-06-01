@@ -39,15 +39,15 @@
 /* ----- name sorting functions ----- */
 
 /* swap integer item "i" with item "j" */
-static void swapArrayItems(int arr[], int i, int j)
-{
-  int temp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = temp;
+#define vtkWrapXML_Swap(arr, i, j) \
+{ \
+  int temp = arr[i]; \
+  arr[i] = arr[j]; \
+  arr[j] = temp; \
 }
 
 /* sort functions lexically between indices "start" and "ends" */
-static void sortFunctionsByName(
+static void vtkWrapXML_SortMethods(
   FileInfo *data, int functionList[], int start, int ends)
 {
   int i;
@@ -62,17 +62,17 @@ static void sortFunctionsByName(
     if (strcmp(data->Functions[functionList[ends]].Name,
                data->Functions[functionList[i]].Name) > 0)
       {
-      swapArrayItems(functionList, location, i);
+      vtkWrapXML_Swap(functionList, location, i);
       location++;
       }
     }
-  swapArrayItems(functionList, location, ends);
-  sortFunctionsByName(data, functionList, start, location - 1);
-  sortFunctionsByName(data, functionList, location + 1, ends);
+  vtkWrapXML_Swap(functionList, location, ends);
+  vtkWrapXML_SortMethods(data, functionList, start, location - 1);
+  vtkWrapXML_SortMethods(data, functionList, location + 1, ends);
 }
 
 /* sort variables lexically between indices "start" and "ends" */
-static void sortVariablesByName(
+static void vtkWrapXML_SortVariables(
   ClassVariables *vars, int variableList[], int start, int ends)
 {
   int i;
@@ -87,13 +87,13 @@ static void sortVariablesByName(
     if (strcmp(vars->Variables[variableList[ends]].Name,
                vars->Variables[variableList[i]].Name) > 0)
       {
-      swapArrayItems(variableList, location, i);
+      vtkWrapXML_Swap(variableList, location, i);
       location++;
       }
     }
-  swapArrayItems(variableList, location, ends);
-  sortVariablesByName(vars, variableList, start, location - 1);
-  sortVariablesByName(vars, variableList, location + 1, ends);
+  vtkWrapXML_Swap(variableList, location, ends);
+  vtkWrapXML_SortVariables(vars, variableList, start, location - 1);
+  vtkWrapXML_SortVariables(vars, variableList, location + 1, ends);
 }
 
 /* ----- XML utility functions ----- */
@@ -116,7 +116,7 @@ static const char *indent(int indentation)
 /* convert special characters in a string into their escape codes,
  * so that the string can be quoted in an xml file (the specified
  * maxlen must be at least 32 chars)*/
-static const char *quoteForXML(const char *comment, int maxlen)
+static const char *vtkWrapXML_Quote(const char *comment, int maxlen)
 {
   static char *result = 0;
   static int oldmaxlen = 0;
@@ -214,7 +214,7 @@ static void printMultilineText(FILE *fp, const char *cp, int indentation)
 
     if (j > 0)
       {
-      fprintf(fp, "%s%s\n", indent(indentation), quoteForXML(temp,500));
+      fprintf(fp, "%s%s\n", indent(indentation), vtkWrapXML_Quote(temp,500));
       }
     else
       {
@@ -224,14 +224,14 @@ static void printMultilineText(FILE *fp, const char *cp, int indentation)
 }
 
 /* Write out the class header */
-void classHeader(FILE *fp, FileInfo *data, int indentation)
+void vtkWrapXML_ClassHeader(FILE *fp, FileInfo *data, int indentation)
 {
   int i = 0;
   int n;
 
   fprintf(fp, "%s<Class>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          quoteForXML(data->ClassName, 500));
+          vtkWrapXML_Quote(data->ClassName, 500));
 
   /* There is also data->IsAbstract and data->HasDelete but these are
      deprecated.  The IsAbstract flag is computed by vtkParse, but
@@ -242,7 +242,7 @@ void classHeader(FILE *fp, FileInfo *data, int indentation)
   for (i = 0; i < n && i < 1; i++)
     {
     fprintf(fp, "%s<Superclass>%s</Superclass>\n", indent(indentation),
-            quoteForXML(data->SuperClasses[i], 500));
+            vtkWrapXML_Quote(data->SuperClasses[i], 500));
     }
 
   /* the "concrete" flag means the class has a ::New method */
@@ -257,13 +257,13 @@ void classHeader(FILE *fp, FileInfo *data, int indentation)
 }
 
 /* Write out the class footer */
-void classFooter(FILE *fp, FileInfo *data, int indentation)
+void vtkWrapXML_ClassFooter(FILE *fp, FileInfo *data, int indentation)
 {
   fprintf(fp, "%s</Class>\n", indent(indentation));
 }
 
 /* Write out the documentation for the class */
-void classDocumentation(FILE *fp, FileInfo *data, int indentation)
+void vtkWrapXML_ClassDoc(FILE *fp, FileInfo *data, int indentation)
 {
   size_t n;
   char temp[500];
@@ -279,7 +279,7 @@ void classDocumentation(FILE *fp, FileInfo *data, int indentation)
       cp++;
       }
     fprintf(fp, "%s .NAME %s\n", indent(indentation),
-            quoteForXML(cp,500));
+            vtkWrapXML_Quote(cp,500));
     }
 
   if (data->Description)
@@ -328,7 +328,7 @@ void classDocumentation(FILE *fp, FileInfo *data, int indentation)
         strncpy(temp, cp, n);
         temp[n] = '\0';
         fprintf(fp,"%s %s\n", indent(indentation),
-                quoteForXML(temp,500));
+                vtkWrapXML_Quote(temp,500));
         }
       cp += n;
       while(isspace(*cp))
@@ -341,7 +341,7 @@ void classDocumentation(FILE *fp, FileInfo *data, int indentation)
 }
 
 /* Print out a type in XML format */
-void typeInformation(
+void vtkWrapXML_Type(
   FILE *fp, int type, const char *vtkclass, int count, int indentation)
 {
   int j = 0;
@@ -354,7 +354,7 @@ void typeInformation(
     }
 
   fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
-          quoteForXML(vtkParse_BaseTypeAsString(type, vtkclass), 500));
+          vtkWrapXML_Quote(vtkParse_BaseTypeAsString(type, vtkclass), 500));
 
   cp = vtkParse_IndirectionAsString(type);
 
@@ -400,7 +400,7 @@ void typeInformation(
 }
 
 /* Print out a function in XML format */
-void classMethod(
+void vtkWrapXML_ClassMethod(
   FILE *fp, FileInfo *data, FunctionInfo *func, int indentation)
 {
   static const char *accessLevel[] = {"private", "public", "protected"};
@@ -426,7 +426,7 @@ void classMethod(
 
   fprintf(fp, "%s<Method>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          quoteForXML(func->Name, 500));
+          vtkWrapXML_Quote(func->Name, 500));
   fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation),
           accessLevel[access]);
 
@@ -454,7 +454,7 @@ void classMethod(
     }
   temp[i] = '\0';
 
-  fprintf(fp, "%s %s\n", indent(indentation), quoteForXML(temp, 500));
+  fprintf(fp, "%s %s\n", indent(indentation), vtkWrapXML_Quote(temp, 500));
 
   fprintf(fp, "%s</Signature>\n", indent(--indentation));
 
@@ -470,7 +470,7 @@ void classMethod(
     {
     fprintf(fp, "%s<Return>\n", indent(indentation++));
 
-    typeInformation(fp, func->ReturnType, func->ReturnClass,
+    vtkWrapXML_Type(fp, func->ReturnType, func->ReturnClass,
                     (func->HaveHint ? func->HintSize : 0),
                     indentation);
 
@@ -482,7 +482,7 @@ void classMethod(
     {
     fprintf(fp, "%s<Arg>\n", indent(indentation++));
 
-    typeInformation(fp, func->ArgTypes[i], func->ArgClasses[i],
+    vtkWrapXML_Type(fp, func->ArgTypes[i], func->ArgClasses[i],
                     func->ArgCounts[i], indentation);
 
     fprintf(fp, "%s</Arg>\n", indent(--indentation));
@@ -491,7 +491,7 @@ void classMethod(
 }
 
 /* print a bitfield of class variable access methods */
-void classVariableMethods(
+void vtkWrapXML_ClassVariableMethods(
   FILE *fp, unsigned int methodBitfield, int indentation)
 {
   int i;
@@ -509,7 +509,8 @@ void classVariableMethods(
 }
 
 /* Print out a variable in XML format */
-void classVariable(FILE *fp, VariableAttributes *var, int indentation)
+void vtkWrapXML_ClassVariable(
+  FILE *fp, VariableAttributes *var, int indentation)
 {
   int i;
 
@@ -524,7 +525,7 @@ void classVariable(FILE *fp, VariableAttributes *var, int indentation)
     fprintf(fp, "%s</Comment>\n", indent(--indentation));
     }
 
-  typeInformation(fp, var->Type, var->ClassName, var->Count, indentation);
+  vtkWrapXML_Type(fp, var->Type, var->ClassName, var->Count, indentation);
 
   if (var->EnumConstantNames)
     {
@@ -540,50 +541,115 @@ void classVariable(FILE *fp, VariableAttributes *var, int indentation)
   if (var->PublicMethods)
     {
     fprintf(fp, "%s<PublicMethods>\n", indent(indentation++));
-    classVariableMethods(fp, var->PublicMethods, indentation);
+    vtkWrapXML_ClassVariableMethods(fp, var->PublicMethods, indentation);
     fprintf(fp, "%s</PublicMethods>\n", indent(--indentation));
     }
 
   if (var->ProtectedMethods)
     {
     fprintf(fp, "%s<ProtectedMethods>\n", indent(indentation++));
-    classVariableMethods(fp, var->ProtectedMethods, indentation);
+    vtkWrapXML_ClassVariableMethods(fp, var->ProtectedMethods, indentation);
     fprintf(fp, "%s</ProtectedMethods>\n", indent(--indentation));
     }
 
   if (var->PrivateMethods)
     {
     fprintf(fp, "%s<PrivateMethods>\n", indent(indentation++));
-    classVariableMethods(fp, var->PrivateMethods, indentation);
+    vtkWrapXML_ClassVariableMethods(fp, var->PrivateMethods, indentation);
     fprintf(fp, "%s</PrivateMethods>\n", indent(--indentation));
     }
 
   if (var->LegacyMethods)
     {
     fprintf(fp, "%s<LegacyMethods>\n", indent(indentation++));
-    classVariableMethods(fp, var->LegacyMethods, indentation);
+    vtkWrapXML_ClassVariableMethods(fp, var->LegacyMethods, indentation);
     fprintf(fp, "%s</LegacyMethods>\n", indent(--indentation));
     }
 
   fprintf(fp, "%s</Variable>\n", indent(--indentation));
 }
 
-/* main functions that takes a parsed FileInfo from vtk and produces a
- * specific vtkXML format for desired functions to be incorporated in SimVTK
- * (ie. certain add, remove, get and set methods). */
-void vtkParseOutput(FILE *fp, FileInfo *data)
+/* print information about all the methods in the class */
+void vtkWrapXML_ClassMethods(
+  FILE *fp, FileInfo *data, int indentation)
 {
   int i, n;
-  char *cp;
   int numFunctions;
-  int *idList;
-  int indentation = 0;
-  HierarchyInfo *hinfo = 0;
+  int *idList = (int *)malloc(sizeof(int)*data->NumberOfFunctions);
+
+  /* create a list of function ids */
+  numFunctions = data->NumberOfFunctions;
+  n = 0;
+  for (i = 0; i < numFunctions; i++)
+    {
+    if (data->Functions[i].Name &&
+        !data->Functions[i].ArrayFailure)
+      {
+      idList[n++] = i;
+      }
+    }
+
+  /* sort function id list based on function name */
+  vtkWrapXML_SortMethods(data, idList, 0, n-1);
+
+  fprintf(fp, "\n");
+  fprintf(fp, "%s<Methods>\n", indent(indentation++));
+  /* function handling code */
+  for (i = 0; i < n; i++)
+    {
+    fprintf(fp, "\n");
+    vtkWrapXML_ClassMethod(fp, data,
+                            &data->Functions[idList[i]], indentation);
+    }
+  fprintf(fp, "\n%s</Methods>\n", indent(--indentation));
+
+  free(idList);
+}
+
+/* print information about all the variables in the class */
+void vtkWrapXML_ClassVariables(
+  FILE *fp, FileInfo*data, int indentation)
+{
+  int i, n;
   ClassVariables *vars = 0;
+  int *idList = 0;
+
+  vars = vtkParseVariables_Create(data);
+
+  /* create a list of variable ids */
+  n = vars->NumberOfVariables;
+  idList = (int *)malloc(sizeof(int)*n);
+  for (i = 0; i < n; i++)
+    {
+    idList[i] = i;
+    }
+
+  /* sort function id list based on function name */
+  vtkWrapXML_SortVariables(vars, idList, 0, n-1);
+
+  fprintf(fp, "\n%s<Variables>\n", indent(indentation++));
+  /* variable handling code */
+  for (i = 0; i < n; i++)
+    {
+    fprintf(fp, "\n");
+    vtkWrapXML_ClassVariable(fp, &vars->Variables[idList[i]], indentation);
+    }
+  fprintf(fp, "\n%s</Variables>\n", indent(--indentation));
+  fprintf(fp, "\n");
+
+  free(idList);
+  vtkParseVariables_Free(vars);
+}
+
+/* check the hierarchy info (doesn't do anything with it yet) */
+void vtkWrapXML_CheckHierarchy(FileInfo *data)
+{
+  HierarchyInfo *hinfo = 0;
 
   if (data->HierarchyFileName)
     {
     hinfo = vtkParseHierarchy_ReadFile(data->HierarchyFileName);
+
     /* just test these methods to make sure they don't crash */
     if (!vtkParseHierarchy_IsTypeOf(
         hinfo, data->ClassName, "vtkObjectBase") != !data->IsVTKObject)
@@ -612,91 +678,34 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
       }
     }
 
-  /* start new XML section for class */
-  classHeader(fp, data, indentation++);
-
-  /* print the documentation */
-  classDocumentation(fp, data, indentation);
-
-  idList = (int *)malloc(sizeof(int)*data->NumberOfFunctions);
-
-  /* create a list of function ids */
-  numFunctions = data->NumberOfFunctions;
-  n = 0;
-  for (i = 0; i < numFunctions; i++)
-    {
-    if (data->Functions[i].Name &&
-        !data->Functions[i].ArrayFailure)
-      {
-      idList[n++] = i;
-
-      /* if destructor found, fix function name */
-      if (strcmp(data->Functions[i].Name, data->ClassName) == 0)
-        {
-        cp = data->Functions[i].Signature;
-        for (; *cp != '\0' && *cp != '('; cp++)
-          {
-          if (*cp == '~')
-            {
-            data->Functions[i].Name =
-              (char *)malloc(strlen(data->ClassName) + 2);
-            data->Functions[i].Name[0] = '~';
-            strcpy(&data->Functions[i].Name[1], data->ClassName);
-
-            break;
-            }
-          }
-        }
-      }
-    }
-
-  /* sort function id list based on function name */
-  sortFunctionsByName(data, idList, 0, n-1);
-
-  fprintf(fp, "\n");
-  fprintf(fp, "%s<Methods>\n", indent(indentation++));
-  /* function handling code */
-  for (i = 0; i < n; i++)
-    {
-    fprintf(fp, "\n");
-    classMethod(fp, data, &data->Functions[idList[i]], indentation);
-    }
-  fprintf(fp, "\n%s</Methods>\n", indent(--indentation));
-
-  free(idList);
-
-  vars = vtkParseVariables_Create(data);
-
-  idList = (int *)malloc(sizeof(int)*vars->NumberOfVariables);
-
-  /* create a list of variable ids */
-  n = vars->NumberOfVariables ;
-  for (i = 0; i < n; i++)
-    {
-    idList[i] = i;
-    }
-
-  /* sort function id list based on function name */
-  sortVariablesByName(vars, idList, 0, n-1);
-
-  fprintf(fp, "\n%s<Variables>\n", indent(indentation++));
-  /* variable handling code */
-  for (i = 0; i < n; i++)
-    {
-    fprintf(fp, "\n");
-    classVariable(fp, &vars->Variables[idList[i]], indentation);
-    }
-  fprintf(fp, "\n%s</Variables>\n", indent(--indentation));
-  fprintf(fp, "\n");
-
-  free(idList);
-  vtkParseVariables_Free(vars);
-
-  /* print the class footer */
-  classFooter(fp, data, --indentation);
-
   if (hinfo)
     {
     vtkParseHierarchy_Free(hinfo);
     }
+}
+
+/* main functions that takes a parsed FileInfo from vtk and produces a
+ * specific vtkXML format for desired functions to be incorporated in SimVTK
+ * (ie. certain add, remove, get and set methods). */
+void vtkParseOutput(FILE *fp, FileInfo *data)
+{
+  int indentation = 0;
+
+  /* check the hierarchy info (doesn't do anything with it yet) */
+  vtkWrapXML_CheckHierarchy(data);
+
+  /* start new XML section for class */
+  vtkWrapXML_ClassHeader(fp, data, indentation++);
+
+  /* print the documentation */
+  vtkWrapXML_ClassDoc(fp, data, indentation);
+
+  /* print the methods section */
+  vtkWrapXML_ClassMethods(fp, data, indentation);
+
+  /* print the variables section */
+  vtkWrapXML_ClassVariables(fp, data, indentation);
+
+  /* print the class footer */
+  vtkWrapXML_ClassFooter(fp, data, --indentation);
 }
