@@ -11,6 +11,7 @@ ENDIF(MSVC_VERSION EQUAL 1400 OR MSVC_VERSION GREATER 1400)
 
 SET(vtkWrapXML_SRCS
   vtkParse.tab.c
+  vtkParseMain.c
   vtkParseUtils.c
   vtkParseVariables.c
   vtkParseHierarchy.c
@@ -23,6 +24,7 @@ ADD_EXECUTABLE(${vtkWrapXML_EXE} ${vtkWrapXML_SRCS})
 
 SET(vtkWrapHierarchy_SRCS
   vtkParse.tab.c
+  vtkParseMain.c
   vtkWrapHierarchy.c
 )
 

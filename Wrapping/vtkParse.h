@@ -14,6 +14,7 @@
 =========================================================================*/
 
 #include "vtkParseType.h"
+#include <stdio.h>
 
 #define MAX_ARGS 20  
 
@@ -59,3 +60,23 @@
     char *ClassesInFile[100];
     char *ClassSuperClasses[100][10];
   } FileInfo;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Parse a header file and return a FileInfo struct */
+FileInfo *vtkParse_ParseFile(
+  const char *filename, int concrete, FILE *ifile, FILE *errfile);
+
+/* Read a hints file and update the FileInfo */
+int vtkParse_ReadHints(FileInfo *data, FILE *hfile, FILE *errfile);
+
+/* Free the FileInfo struct returned by vtkParse_ParseFile() */
+void vtkParse_Free(FileInfo *data);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+

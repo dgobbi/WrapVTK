@@ -117,8 +117,6 @@ FileInfo data;
 FunctionInfo throwAwayFunction;
 FunctionInfo *currentFunction;
 
-char *hintFileName;
-FILE *fhint;
 char temps[2048];
 int  in_public;
 int  in_protected;
@@ -1775,35 +1773,6 @@ void start_class(const char *classname)
   data.ClassSuperClasses[i][0] = NULL;
 }
 
-/* when the cpp file doesn't have enough info use the hint file */
-void look_for_hint(void)
-{
-  char h_cls[80];
-  char h_func[80];
-  unsigned int  h_type;
-  int  h_value;
-
-  /* reset the position */
-  if (!fhint)
-    {
-    return;
-    }
-  rewind(fhint);
-
-  /* first find a hint */
-  while (fscanf(fhint,"%s %s %x %i",h_cls,h_func,&h_type,&h_value) != EOF)
-    {
-    if ((!strcmp(h_cls,data.ClassName))&&
-        currentFunction->Name &&
-        (!strcmp(h_func,currentFunction->Name))&&
-        ((int)h_type == currentFunction->ReturnType))
-      {
-      currentFunction->HaveHint = 1;
-      currentFunction->HintSize = h_value;
-      }
-    }
-}
-
 /* reject the function, do not output it */
 void reject_function()
 {
@@ -1861,28 +1830,6 @@ void output_function()
     if (mainClass)
       {
       data.HasDelete = 1;
-      }
-    }
-
-
-  /* if we need a return type hint and dont currently have one */
-  /* then try to find one */
-  if (!currentFunction->HaveHint)
-    {
-    switch (currentFunction->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE)
-      {
-      case VTK_PARSE_FLOAT_PTR:
-      case VTK_PARSE_VOID_PTR:
-      case VTK_PARSE_DOUBLE_PTR:
-      case VTK_PARSE_ID_TYPE_PTR:
-      case VTK_PARSE_LONG_LONG_PTR:
-      case VTK_PARSE___INT64_PTR:
-      case VTK_PARSE_INT_PTR:
-      case VTK_PARSE_SHORT_PTR:
-      case VTK_PARSE_LONG_PTR:
-      case VTK_PARSE_UNSIGNED_CHAR_PTR:
-        look_for_hint();
-        break;
       }
     }
 
@@ -1968,100 +1915,24 @@ void outputGetVectorMacro(
   free(local);
 }
 
-extern void vtkParseOutput(FILE *,FileInfo *);
-
-int check_options(int argc, char *argv[])
-{
-  int i;
-
-  data.IsConcrete = 1;
-  data.IsVTKObject = 1;
-  data.HierarchyFileName = 0;
-  hintFileName = 0;
-
-  for (i = 1; i < argc && argv[i][0] == '-'; i++)
-    {
-    if (strcmp(argv[i], "--concrete") == 0)
-      {
-      data.IsConcrete = 1;
-      }
-    else if (strcmp(argv[i], "--abstract") == 0)
-      {
-      data.IsConcrete = 0;
-      }
-    else if (strcmp(argv[i], "--vtkobject") == 0)
-      {
-      data.IsVTKObject = 1;
-      }
-    else if (strcmp(argv[i], "--special") == 0)
-      {
-      data.IsVTKObject = 0;
-      }
-    else if (strcmp(argv[i], "--hints") == 0)
-      {
-      i++;
-      if (i >= argc || argv[i][0] == '-')
-        {
-        return -1;
-        }
-      hintFileName = argv[i];
-      }
-    else if (strcmp(argv[i], "--hierarchy") == 0)
-      {
-      i++;
-      if (i >= argc || argv[i][0] == '-')
-        {
-        return -1;
-        }
-      data.HierarchyFileName = argv[i];
-      }
-    }
-
-  return i;
-}
-
-int main(int argc, char *argv[])
+/* Parse a header file and return a FileInfo struct */
+FileInfo *vtkParse_ParseFile(
+  const char *filename, int concrete, FILE *ifile, FILE *errfile)
 {
   int i, j;
-  int argi;
-  int has_options = 0;
-  FILE *fin;
   int ret;
-  FILE *fout;
-
-  argi = check_options(argc, argv);
-  if (argi > 1 && argc - argi == 2)
-    {
-    has_options = 1;
-    }
-  else if (argi < 0 || argc < 3 || argc > 5)
-    {
-    fprintf(stderr,
-            "Usage: %s [options] input_file output_file\n"
-            "  --concrete      concrete class (default)\n"
-            "  --abstract      abstract class\n"
-            "  --vtkobject     vtkObjectBase-derived class (default)\n"
-            "  --special       non-vtkObjectBase class\n"
-            "  --hints <file>  hints file\n",
-            argv[0]);
-    exit(1);
-    }
+  FileInfo *file_info;
 
   data.ClassesInFile[0] = NULL;
   data.ClassSuperClasses[0][0] = NULL;
 
-  data.FileName = argv[argi++];
+  data.FileName = vtkstrdup(filename);
+  data.IsConcrete = concrete;
   data.NameComment = NULL;
   data.Description = NULL;
   data.Caveats = NULL;
   data.SeeAlso = NULL;
   CommentState = 0;
-
-  if (!(fin = fopen(data.FileName, "r")))
-    {
-    fprintf(stderr,"Error opening input file %s\n", data.FileName);
-    exit(1);
-    }
 
   /* The class name should be the file name */
   i = strlen(data.FileName);
@@ -2088,51 +1959,86 @@ int main(int argc, char *argv[])
 
   currentFunction = &throwAwayFunction;
 
-  if (!has_options)
-    {
-    if (argc == 5)
-      {
-      hintFileName = argv[argi++];
-      }
-    if (argc >= 4)
-      {
-      data.IsConcrete = atoi(argv[argi++]);
-      }
-    }
-
-  if (hintFileName && hintFileName[0] != '\0')
-    {
-    if (!(fhint = fopen(hintFileName, "r")))
-      {
-      fprintf(stderr, "Error opening hint file %s\n", hintFileName);
-      exit(1);
-      }
-    }
-
-  yyin = fin;
-  yyout = stdout;
+  yyin = ifile;
+  yyout = errfile;
   ret = yyparse();
   if (ret)
     {
-    fprintf(stdout,
+    fprintf(errfile,
             "*** SYNTAX ERROR found in parsing the header file %s "
             "before line %d ***\n",
-            data.FileName, yylineno);
-    return ret;
+            filename, yylineno);
+    return NULL;
     }
 
-  data.OutputFileName = argv[argi++];
-  fout = fopen(data.OutputFileName, "w");
+  file_info = (FileInfo *)malloc(sizeof(FileInfo));
+  memcpy(file_info, &data, sizeof(FileInfo));
 
-  if (!fout)
+  return file_info;
+}
+
+/* Read a hints file and update the FileInfo */
+int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
+{
+  char h_cls[80];
+  char h_func[80];
+  unsigned int  h_type;
+  int  h_value;
+  FunctionInfo *func_info;
+  int i;
+
+  /* read each hint line in succession */
+  while (fscanf(hfile,"%s %s %x %i", h_cls, h_func, &h_type, &h_value) != EOF)
     {
-    fprintf(stderr, "Error opening output file %s\n", data.OutputFileName);
-    exit(1);
+    /* is this a hint for the our class? */
+    if (strcmp(h_cls, file_info->ClassName) == 0)
+      {
+      /* find the matching function */
+      for (i = 0; i < file_info->NumberOfFunctions; i++)
+        {
+        func_info = &file_info->Functions[i];
+
+        if (func_info->HaveHint == 0 && func_info->Name &&
+            (strcmp(h_func, func_info->Name) == 0) &&
+            ((int)h_type == func_info->ReturnType))
+          {
+          /* types that hints are accepted for */
+          switch (func_info->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE)
+            {
+            case VTK_PARSE_FLOAT_PTR:
+            case VTK_PARSE_VOID_PTR:
+            case VTK_PARSE_DOUBLE_PTR:
+            case VTK_PARSE_ID_TYPE_PTR:
+            case VTK_PARSE_LONG_LONG_PTR:
+            case VTK_PARSE_UNSIGNED_LONG_LONG_PTR:
+            case VTK_PARSE___INT64_PTR:
+            case VTK_PARSE_UNSIGNED___INT64_PTR:
+            case VTK_PARSE_INT_PTR:
+            case VTK_PARSE_UNSIGNED_INT_PTR:
+            case VTK_PARSE_SHORT_PTR:
+            case VTK_PARSE_UNSIGNED_SHORT_PTR:
+            case VTK_PARSE_LONG_PTR:
+            case VTK_PARSE_UNSIGNED_LONG_PTR:
+            case VTK_PARSE_SIGNED_CHAR_PTR:
+            case VTK_PARSE_UNSIGNED_CHAR_PTR:
+              {
+              func_info->HaveHint = 1;
+              func_info->HintSize = h_value;
+              break;
+              }
+            }
+          }
+        }
+      }
     }
 
-  vtkParseOutput(fout, &data);
-  fclose(fout);
+  return 1;
+}
 
-  return 0;
+/* Free the FileInfo struct returned by vtkParse_ParseFile() */
+void vtkParse_Free(FileInfo *file_info)
+{
+  /* big memory leak here */
+  free(file_info);
 }
 
