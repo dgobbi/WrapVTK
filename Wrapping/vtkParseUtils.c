@@ -19,7 +19,7 @@
 #include "vtkType.h"
 
 /* return the storage class decorator as a string */
-const char *parseStorageClassAsString(int type)
+const char *vtkParse_StorageClassAsString(int type)
 {
   static const char *vtkStorageClassMap[4] = {
     "", "const", "static", "static const",
@@ -27,16 +27,16 @@ const char *parseStorageClassAsString(int type)
 
   int i = 0;
 
-  if (!typeIsFunction(type))
+  if (!vtkParse_TypeIsFunction(type))
     {
-    i = typeQualifier(type) / VTK_PARSE_CONST;
+    i = vtkParse_TypeQualifier(type) / VTK_PARSE_CONST;
     }
 
   return vtkStorageClassMap[i];
 }
 
 /* return the indirection decorators as a string */
-const char *parseIndirectionAsString(int type)
+const char *vtkParse_IndirectionAsString(int type)
 {
   static const char *vtkIndirectionMap[16] = {
     "", "&", "*const ", "*",
@@ -47,14 +47,14 @@ const char *parseIndirectionAsString(int type)
 
   int i = 0;
 
-  i = (typeIndirection(type) & VTK_PARSE_INDIRECT) / VTK_PARSE_REF;
+  i = (vtkParse_TypeIndirection(type) & VTK_PARSE_INDIRECT) / VTK_PARSE_REF;
 
   return vtkIndirectionMap[i];
 }
 
 /* return the base type as a string, or
    return "vtkname" if base type is vtkObject */
-const char *parseBaseTypeAsString(int type, const char *vtkname)
+const char *vtkParse_BaseTypeAsString(int type, const char *vtkname)
 {
   static const char *vtkParseTypeNameMap[36] = {
     "",             "float",          "void",          "char",
@@ -70,12 +70,12 @@ const char *parseBaseTypeAsString(int type, const char *vtkname)
 
   int baseType;
 
-  if (typeIsFunction(type))
+  if (vtkParse_TypeIsFunction(type))
     {
     return "function";
     }
 
-  baseType = typeBaseType(type);
+  baseType = vtkParse_BaseType(type);
   if (baseType > 35 || baseType < 0)
     {
     baseType = 0;
@@ -93,7 +93,7 @@ const char *parseBaseTypeAsString(int type, const char *vtkname)
 /* return the base type constant as a string, or
    return "vtkname" if base type is vtkObject */
 
-const char *parseTypeConstAsString(int type)
+const char *vtkParse_TypeConstAsString(int type)
 {
   static const char *vtkParseTypeStringMap[36] = {
     "",             "FLOAT",          "VOID",          "CHAR",
@@ -107,7 +107,7 @@ const char *parseTypeConstAsString(int type)
     "",             "STRING",         "UNICODE_STRING",""
     };
 
-  int baseType = typeBaseType(type);
+  int baseType = vtkParse_BaseType(type);
   if (baseType > 35 || baseType < 0)
     {
     baseType = 0;
@@ -117,7 +117,7 @@ const char *parseTypeConstAsString(int type)
 }
 
 /* return the base type as a VTK type constant */
-int parseBaseTypeAsVTKType(int type)
+int vtkParse_BaseTypeAsVTKType(int type)
 {
   static const int vtkParseTypeMap[36] = {
     0,                VTK_FLOAT,        VTK_VOID,       VTK_CHAR,
@@ -131,7 +131,7 @@ int parseBaseTypeAsVTKType(int type)
     0,                VTK_STRING,       VTK_UNICODE_STRING, 0
     };
 
-  int baseType = typeBaseType(type);
+  int baseType = vtkParse_BaseType(type);
   if (baseType > 35 || baseType < 0)
     {
     baseType = 0;

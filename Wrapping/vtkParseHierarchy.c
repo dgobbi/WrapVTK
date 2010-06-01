@@ -42,7 +42,7 @@ static int skip_name(const char *text)
 }
 
 /* read a hierarchy file into a HeirarchyInfo struct, or return NULL */
-HierarchyInfo *readHierarchyFile(const char *filename)
+HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
 {
   HierarchyInfo *info;
   HierarchyEntry *entry;
@@ -137,7 +137,7 @@ HierarchyInfo *readHierarchyFile(const char *filename)
 
   if (!feof(fp))
     {
-    freeHierarchyInfo(info);
+    vtkParseHierarchy_Free(info);
     info = NULL;
     }
 
@@ -145,7 +145,7 @@ HierarchyInfo *readHierarchyFile(const char *filename)
 }
 
 /* free a HierarchyInfo struct */
-void freeHierarchyInfo(HierarchyInfo *info)
+void vtkParseHierarchy_Free(HierarchyInfo *info)
 {
   HierarchyEntry *entry;
   int i, j;
@@ -199,7 +199,7 @@ static int superclass_helper(
           {
           if (strcmp(entry->SuperClasses[j], info->Classes[i].ClassName) == 0)
             {
-            /* cache the position */
+            /* cache the position of the superclass */
             entry->SuperClassIndex[j] = i;
             break;
             }
@@ -219,7 +219,7 @@ static int superclass_helper(
             break;
             } 
 
-          /* recurse if multiple inheritance */
+          /* recurse for multiple inheritance */
           if (superclass_helper(info, &info->Classes[i], superclass)) 
             {
             return 1;
@@ -233,8 +233,8 @@ static int superclass_helper(
 }
 
 
-/* check whether class 1 is a subclass of class 2 */
-int isHierarchySuperClass(
+/* check whether class 2 is a subclass of class 1 */
+int vtkParseHierarchy_IsTypeOf(
   HierarchyInfo *info, const char *subclass, const char *superclass)
 {
   HierarchyEntry *entry;
@@ -253,7 +253,7 @@ int isHierarchySuperClass(
 }
 
 /* get the header file for the specified class */
-const char *getHierarchyClassHeader(
+const char *vtkParseHierarchy_ClassHeader(
   HierarchyInfo *info, const char *classname)
 {
   HierarchyEntry *entry;

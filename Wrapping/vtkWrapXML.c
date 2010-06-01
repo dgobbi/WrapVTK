@@ -348,15 +348,15 @@ void typeInformation(
   const char *cp;
   const char *dctr;
 
-  if (typeIsConst(type))
+  if (vtkParse_TypeIsConst(type))
     {
     fprintf(fp, "%s<Dctr>const</Dctr>\n", indent(indentation));
     }
 
   fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
-          quoteForXML(parseBaseTypeAsString(type, vtkclass), 500));
+          quoteForXML(vtkParse_BaseTypeAsString(type, vtkclass), 500));
 
-  cp = parseIndirectionAsString(type);
+  cp = vtkParse_IndirectionAsString(type);
 
   if (cp == 0)
     {
@@ -430,7 +430,7 @@ void classMethod(
   fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation),
           accessLevel[access]);
 
-  if (typeIsStatic(func->ReturnType))
+  if (vtkParse_TypeIsStatic(func->ReturnType))
     {
     fprintf(fp, "%s<Flag>static</Flag>\n", indent(indentation));
     }
@@ -503,7 +503,7 @@ void classVariableMethods(
     if (methodType)
       {
       fprintf(fp, "%s<MethodType>%s</MethodType>\n", indent(indentation),
-        methodTypeString(methodType));
+        vtkParseVariables_MethodTypeAsString(methodType));
       }
     }
 }
@@ -583,10 +583,10 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
 
   if (data->HierarchyFileName)
     {
-    hinfo = readHierarchyFile(data->HierarchyFileName);
+    hinfo = vtkParseHierarchy_ReadFile(data->HierarchyFileName);
     /* just test these methods to make sure they don't crash */
-    if (!isHierarchySuperClass(hinfo, data->ClassName, "vtkObjectBase") !=
-        !data->IsVTKObject)
+    if (!vtkParseHierarchy_IsTypeOf(
+        hinfo, data->ClassName, "vtkObjectBase") != !data->IsVTKObject)
       {
       if (data->IsVTKObject)
         {
@@ -598,16 +598,16 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
         fprintf(stderr, "Hierarchy thinks %s is a vtk object\n",
                 data->ClassName);
         }
-      freeHierarchyInfo(hinfo);
+      vtkParseHierarchy_Free(hinfo);
       exit(1);
       }
-    if (strncmp(getHierarchyClassHeader(hinfo, data->ClassName),
+    if (strncmp(vtkParseHierarchy_ClassHeader(hinfo, data->ClassName),
                 data->ClassName, strlen(data->ClassName)) != 0)
       {
       fprintf(stderr, "Wrong header file \"%s\" for class %s\n",
-              getHierarchyClassHeader(hinfo, data->ClassName),
+              vtkParseHierarchy_ClassHeader(hinfo, data->ClassName),
               data->ClassName);
-      freeHierarchyInfo(hinfo);
+      vtkParseHierarchy_Free(hinfo);
       exit(1);
       }
     }
@@ -665,7 +665,7 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
 
   free(idList);
 
-  vars = buildClassVariablesStruct(data);
+  vars = vtkParseVariables_Create(data);
 
   idList = (int *)malloc(sizeof(int)*vars->NumberOfVariables);
 
@@ -690,13 +690,13 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
   fprintf(fp, "\n");
 
   free(idList);
-  freeClassVariablesStruct(vars);
+  vtkParseVariables_Free(vars);
 
   /* print the class footer */
   classFooter(fp, data, --indentation);
 
   if (hinfo)
     {
-    freeHierarchyInfo(hinfo);
+    vtkParseHierarchy_Free(hinfo);
     }
 }

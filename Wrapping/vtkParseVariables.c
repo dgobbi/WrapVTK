@@ -51,13 +51,13 @@ typedef struct _ClassVariableMethods
 /*-------------------------------------------------------------------
  * Checks for various common method names for variable access */
 
-int isSetMethod(const char *name)
+static int isSetMethod(const char *name)
 {
   return (name && name[0] == 'S' && name[1] == 'e' && name[2] == 't' &&
           isupper(name[3]));
 }
 
-int isSetNthMethod(const char *name)
+static int isSetNthMethod(const char *name)
 {
   if (isSetMethod(name))
     {
@@ -68,7 +68,7 @@ int isSetNthMethod(const char *name)
   return 0;
 }
 
-int isSetNumberOfMethod(const char *name)
+static int isSetNumberOfMethod(const char *name)
 {
   int n;
 
@@ -84,13 +84,13 @@ int isSetNumberOfMethod(const char *name)
   return 0;
 }
 
-int isGetMethod(const char *name)
+static int isGetMethod(const char *name)
 {
   return (name && name[0] == 'G' && name[1] == 'e' && name[2] == 't' &&
           isupper(name[3]));
 }
 
-int isGetNthMethod(const char *name)
+static int isGetNthMethod(const char *name)
 {
   if (isGetMethod(name))
     {
@@ -101,7 +101,7 @@ int isGetNthMethod(const char *name)
   return 0;
 }
 
-int isGetNumberOfMethod(const char *name)
+static int isGetNumberOfMethod(const char *name)
 {
   int n;
 
@@ -117,20 +117,20 @@ int isGetNumberOfMethod(const char *name)
   return 0;
 }
 
-int isAddMethod(const char *name)
+static int isAddMethod(const char *name)
 {
   return (name && name[0] == 'A' && name[1] == 'd' && name[2] == 'd' &&
           isupper(name[3]));
 }
 
-int isRemoveMethod(const char *name)
+static int isRemoveMethod(const char *name)
 {
   return (name && name[0] == 'R' && name[1] == 'e' && name[2] == 'm' &&
           name[3] == 'o' && name[4] == 'v' && name[5] == 'e' &&
           isupper(name[6]));
 }
 
-int isRemoveAllMethod(const char *name)
+static int isRemoveAllMethod(const char *name)
 {
   int n;
 
@@ -144,7 +144,7 @@ int isRemoveAllMethod(const char *name)
   return 0;
 }
 
-int isBooleanMethod(const char *name)
+static int isBooleanMethod(const char *name)
 {
   int n;
 
@@ -161,7 +161,7 @@ int isBooleanMethod(const char *name)
   return 0;
 }
 
-int isEnumeratedMethod(const char *name)
+static int isEnumeratedMethod(const char *name)
 {
   size_t i, n;
 
@@ -181,7 +181,7 @@ int isEnumeratedMethod(const char *name)
   return 0;
 }
 
-int isAsStringMethod(const char *name)
+static int isAsStringMethod(const char *name)
 {
   int n;
 
@@ -202,7 +202,7 @@ int isAsStringMethod(const char *name)
   return 0;
 }
 
-int isGetMinValueMethod(const char *name)
+static int isGetMinValueMethod(const char *name)
 {
   int n;
 
@@ -218,7 +218,7 @@ int isGetMinValueMethod(const char *name)
   return 0;
 }
 
-int isGetMaxValueMethod(const char *name)
+static int isGetMaxValueMethod(const char *name)
 {
   int n;
 
@@ -240,7 +240,7 @@ int isGetMaxValueMethod(const char *name)
  * If shortForm in on, then suffixes such as On, Off, AsString,
  * and ToSomething are considered while doing the categorization */
 
-unsigned int methodCategory(MethodAttributes *meth, int shortForm)
+static unsigned int methodCategory(MethodAttributes *meth, int shortForm)
 {
   int n;
   const char *name;
@@ -379,7 +379,7 @@ unsigned int methodCategory(MethodAttributes *meth, int shortForm)
  * remove the following prefixes from a method name:
  * Set, Get, Add, Remove */
 
-const char *nameWithoutPrefix(const char *name)
+static const char *nameWithoutPrefix(const char *name)
 {
   if (isGetNthMethod(name) || isSetNthMethod(name))
     {
@@ -404,7 +404,7 @@ const char *nameWithoutPrefix(const char *name)
 /*-------------------------------------------------------------------
  * check for a valid suffix, i.e. "On" or "Off" or "ToSomething" */
 
-int isValidSuffix(
+static int isValidSuffix(
   const char *methName, const char *varName, const char *suffix)
 {
   if ((suffix[0] == 'O' && suffix[1] == 'n' && suffix[2] == '\0') ||
@@ -463,7 +463,7 @@ int isValidSuffix(
  * means the conversion failed, i.e. the method signature is too complex
  * for the MethodAttributes struct */
 
-int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
+static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
 {
   size_t i, n;
   int tmptype = 0;
@@ -486,13 +486,13 @@ int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
 
   /* check for indexed methods: the first argument will be an integer */
   if (func->NumberOfArguments > 0 &&
-      (typeBaseType(func->ArgTypes[0]) == VTK_PARSE_INT ||
-       typeBaseType(func->ArgTypes[0]) == VTK_PARSE_ID_TYPE) &&
-      !typeIsIndirect(func->ArgTypes[0]))
+      (vtkParse_BaseType(func->ArgTypes[0]) == VTK_PARSE_INT ||
+       vtkParse_BaseType(func->ArgTypes[0]) == VTK_PARSE_ID_TYPE) &&
+      !vtkParse_TypeIsIndirect(func->ArgTypes[0]))
     {
     /* methods of the form "void SetValue(int i, type value)" */
-    if (typeBaseType(func->ReturnType) == VTK_PARSE_VOID &&
-        !typeIsIndirect(func->ReturnType) &&
+    if (vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
+        !vtkParse_TypeIsIndirect(func->ReturnType) &&
         func->NumberOfArguments == 2)
       {
       indexed = 1;
@@ -515,8 +515,8 @@ int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
         }
       }
     /* methods of the form "type GetValue(int i)" */
-    if (!(typeBaseType(func->ReturnType) == VTK_PARSE_VOID &&
-          !typeIsIndirect(func->ReturnType)) &&
+    if (!(vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
+          !vtkParse_TypeIsIndirect(func->ReturnType)) &&
         func->NumberOfArguments == 1)
       {
       indexed = 1;
@@ -526,8 +526,8 @@ int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     }
 
   /* if return type is not void and no args or 1 index */
-  if (!(typeBaseType(func->ReturnType) == VTK_PARSE_VOID &&
-        !typeIsIndirect(func->ReturnType)) &&
+  if (!(vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
+        !vtkParse_TypeIsIndirect(func->ReturnType)) &&
       func->NumberOfArguments == indexed)
     {
     /* methods of the form "type GetValue()" or "type GetValue(i)" */
@@ -543,8 +543,8 @@ int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     }
 
   /* if return type is void and 1 arg or 1 index and 1 arg */
-  if (typeBaseType(func->ReturnType) == VTK_PARSE_VOID &&
-      !typeIsIndirect(func->ReturnType) &&
+  if (vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
+      !vtkParse_TypeIsIndirect(func->ReturnType) &&
       func->NumberOfArguments == (1 + indexed))
     {
     /* "void SetValue(type)" or "void SetValue(int, type)" */
@@ -559,8 +559,8 @@ int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     /* "void GetValue(type *)" or "void GetValue(int, type *)" */
     else if (isGetMethod(func->Name) &&
              func->ArgCounts[indexed] > 0 &&
-             typeIsIndirect(func->ArgTypes[indexed]) &&
-             !typeIsConst(func->ArgTypes[indexed]))
+             vtkParse_TypeIsIndirect(func->ArgTypes[indexed]) &&
+             !vtkParse_TypeIsConst(func->ArgTypes[indexed]))
       {
       attrs->Type = func->ArgTypes[indexed];
       attrs->Count = func->ArgCounts[indexed];
@@ -570,8 +570,8 @@ int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       }
     /* "void AddValue(vtkObject *)" or "void RemoveValue(vtkObject *)" */
     else if (((isAddMethod(func->Name) || isRemoveMethod(func->Name)) &&
-             typeBaseType(func->ArgTypes[indexed]) == VTK_PARSE_VTK_OBJECT &&
-             typeIndirection(func->ArgTypes[indexed]) == VTK_PARSE_POINTER))
+             vtkParse_BaseType(func->ArgTypes[indexed]) == VTK_PARSE_VTK_OBJECT &&
+             vtkParse_TypeIndirection(func->ArgTypes[indexed]) == VTK_PARSE_POINTER))
       {
       attrs->Type = func->ArgTypes[indexed];
       attrs->Count = func->ArgCounts[indexed];
@@ -599,9 +599,9 @@ int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     if (allSame)
       {
       /* "void SetValue(type x, type y, type z)" */
-      if (isSetMethod(func->Name) && !typeIsIndirect(tmptype) &&
-          typeBaseType(func->ReturnType) == VTK_PARSE_VOID &&
-          !typeIsIndirect(func->ReturnType))
+      if (isSetMethod(func->Name) && !vtkParse_TypeIsIndirect(tmptype) &&
+          vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
+          !vtkParse_TypeIsIndirect(func->ReturnType))
         {
         attrs->Type = tmptype;
         attrs->Count = n;
@@ -611,10 +611,10 @@ int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
         }
       /* "void GetValue(type& x, type& x, type& x)" */
       else if (isGetMethod(func->Name) && 
-               typeIndirection(tmptype) == VTK_PARSE_REF &&
-               !typeIsConst(tmptype) &&
-               typeBaseType(func->ReturnType) == VTK_PARSE_VOID &&
-              !typeIsIndirect(func->ReturnType))
+               vtkParse_TypeIndirection(tmptype) == VTK_PARSE_REF &&
+               !vtkParse_TypeIsConst(tmptype) &&
+               vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
+              !vtkParse_TypeIsIndirect(func->ReturnType))
         {
         attrs->Type = tmptype;
         attrs->Count = n;
@@ -623,11 +623,11 @@ int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
         return 1;
         }
       /* "void AddValue(type x, type y, type z)" */
-      else if (isAddMethod(func->Name) && !typeIsIndirect(tmptype) &&
-               (typeBaseType(func->ReturnType) == VTK_PARSE_VOID ||
-                typeBaseType(func->ReturnType) == VTK_PARSE_INT ||
-                typeBaseType(func->ReturnType) == VTK_PARSE_ID_TYPE) &&
-               !typeIsIndirect(func->ReturnType))
+      else if (isAddMethod(func->Name) && !vtkParse_TypeIsIndirect(tmptype) &&
+               (vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID ||
+                vtkParse_BaseType(func->ReturnType) == VTK_PARSE_INT ||
+                vtkParse_BaseType(func->ReturnType) == VTK_PARSE_ID_TYPE) &&
+               !vtkParse_TypeIsIndirect(func->ReturnType))
         {
         attrs->Type = tmptype;
         attrs->Count = n;
@@ -639,8 +639,8 @@ int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     }
 
   /* if return type is void, and there are no arguments */
-  if (typeBaseType(func->ReturnType) == VTK_PARSE_VOID &&
-      !typeIsIndirect(func->ReturnType) &&
+  if (vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
+      !vtkParse_TypeIsIndirect(func->ReturnType) &&
       func->NumberOfArguments == 0)
     {
     attrs->Type = VTK_PARSE_VOID;
@@ -673,7 +673,7 @@ int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
  * must match.  The longMatch value is set to '1' if the prefix/suffix
  * was part of the name match. */
 
-int methodMatchesVariable(
+static int methodMatchesVariable(
   VariableAttributes *var, MethodAttributes *meth, int *longMatch)
 {
   size_t n;
@@ -763,7 +763,7 @@ int methodMatchesVariable(
   varType = var->Type;
 
   /* remove "const" and "static" */
-  if (typeHasQualifier(methType))
+  if (vtkParse_TypeHasQualifier(methType))
     {
     methType = (methType & VTK_PARSE_UNQUALIFIED_TYPE);
     }
@@ -771,7 +771,7 @@ int methodMatchesVariable(
   /* check for RemoveAll method matching an Add method*/
   if (isRemoveAllMethod(meth->Name) &&
       methType == VTK_PARSE_VOID &&
-      !typeIsIndirect(methType) &&
+      !vtkParse_TypeIsIndirect(methType) &&
       ((methodBitfield & (VTKVAR_BASIC_ADD | VTKVAR_MULTI_ADD)) != 0))
     {
     return 1;
@@ -780,7 +780,7 @@ int methodMatchesVariable(
   /* check for GetNumberOf and SetNumberOf for indexed variables */
   if (isGetNumberOfMethod(meth->Name) &&
       (methType == VTK_PARSE_INT || methType == VTK_PARSE_ID_TYPE) &&
-      !typeIsIndirect(methType) &&
+      !vtkParse_TypeIsIndirect(methType) &&
       ((methodBitfield & (VTKVAR_INDEX_GET | VTKVAR_NTH_GET)) != 0))
     {
     return 1;
@@ -788,22 +788,22 @@ int methodMatchesVariable(
 
   if (isSetNumberOfMethod(meth->Name) &&
       (methType == VTK_PARSE_INT || methType == VTK_PARSE_ID_TYPE) &&
-      !typeIsIndirect(methType) &&
+      !vtkParse_TypeIsIndirect(methType) &&
       ((methodBitfield & (VTKVAR_INDEX_SET | VTKVAR_NTH_SET)) != 0))
     {
     return 1;
     }
 
   /* remove ampersands i.e. "ref" */
-  if (typeIndirection(methType) == VTK_PARSE_REF)
+  if (vtkParse_TypeIndirection(methType) == VTK_PARSE_REF)
     {
     methType = (methType & ~VTK_PARSE_INDIRECT);
     }
-  else if (typeIndirection(methType) == VTK_PARSE_POINTER_REF)
+  else if (vtkParse_TypeIndirection(methType) == VTK_PARSE_POINTER_REF)
     {
     methType = ((methType & ~VTK_PARSE_INDIRECT) | VTK_PARSE_POINTER);
     } 
-  else if (typeIndirection(methType) == VTK_PARSE_CONST_POINTER_REF)
+  else if (vtkParse_TypeIndirection(methType) == VTK_PARSE_CONST_POINTER_REF)
     {
     methType = ((methType & ~VTK_PARSE_INDIRECT) | VTK_PARSE_CONST_POINTER);
     } 
@@ -812,12 +812,12 @@ int methodMatchesVariable(
    * referenced variable is a pointer */
   if (meth->IsMultiValue)
     {
-    if (typeIndirection(methType) == VTK_PARSE_POINTER)
+    if (vtkParse_TypeIndirection(methType) == VTK_PARSE_POINTER)
       {
       methType = (methType & ~VTK_PARSE_INDIRECT);
       methType = (methType | VTK_PARSE_POINTER_POINTER);
       }
-    else if (typeIndirection(methType) == 0)
+    else if (vtkParse_TypeIndirection(methType) == 0)
       {
       methType = (methType | VTK_PARSE_POINTER);
       }
@@ -831,10 +831,10 @@ int methodMatchesVariable(
   /* check for GetValueAsString method, assume it has matching enum */
   if (meth->IsBoolean || meth->IsEnumerated ||
       (isAsStringMethod(meth->Name) &&
-       typeBaseType(methType) == VTK_PARSE_CHAR &&
-       typeIndirection(methType) == VTK_PARSE_POINTER))
+       vtkParse_BaseType(methType) == VTK_PARSE_CHAR &&
+       vtkParse_TypeIndirection(methType) == VTK_PARSE_POINTER))
     {
-    if (!typeIsIndirect(varType) &&
+    if (!vtkParse_TypeIsIndirect(varType) &&
         (varType == VTK_PARSE_INT ||
          varType == VTK_PARSE_UNSIGNED_INT ||
          varType == VTK_PARSE_UNSIGNED_CHAR ||
@@ -851,9 +851,9 @@ int methodMatchesVariable(
     }
 
   /* if vtkObject, check that classes match */
-  if (typeBaseType(methType) == VTK_PARSE_VTK_OBJECT)
+  if (vtkParse_BaseType(methType) == VTK_PARSE_VTK_OBJECT)
     {
-    if (meth->IsMultiValue || !typeIsPointer(methType) || meth->Count != 0 ||
+    if (meth->IsMultiValue || !vtkParse_TypeIsPointer(methType) || meth->Count != 0 ||
         meth->ClassName == 0 || var->ClassName == 0 ||
         strcmp(meth->ClassName, var->ClassName) != 0)
       {
@@ -870,7 +870,7 @@ int methodMatchesVariable(
  * struct, only valid if the method name has no suffixes such as
  * On/Off, AsString, ToSomething, RemoveAllSomethings, etc. */ 
 
-void initializeVariableAttributes(
+static void initializeVariableAttributes(
   VariableAttributes *var, MethodAttributes *meth)
 {
   unsigned int methodBit;
@@ -887,24 +887,24 @@ void initializeVariableAttributes(
 
   /* get variable type, but don't include "ref" as part of type,
    * and use a pointer if the method is multi-valued */
-  var->Type = typeBaseType(type);
+  var->Type = vtkParse_BaseType(type);
   if ((!meth->IsMultiValue &&
-       (typeIndirection(type) == VTK_PARSE_POINTER ||
-        typeIndirection(type) == VTK_PARSE_POINTER_REF)) ||
+       (vtkParse_TypeIndirection(type) == VTK_PARSE_POINTER ||
+        vtkParse_TypeIndirection(type) == VTK_PARSE_POINTER_REF)) ||
       (meth->IsMultiValue &&
-       (typeIndirection(type) == 0 ||
-        typeIndirection(type) == VTK_PARSE_REF)))
+       (vtkParse_TypeIndirection(type) == 0 ||
+        vtkParse_TypeIndirection(type) == VTK_PARSE_REF)))
     {
     var->Type = (var->Type | VTK_PARSE_POINTER);
     }
   else if ((!meth->IsMultiValue &&
-       (typeIndirection(type) == VTK_PARSE_CONST_POINTER ||
-        typeIndirection(type) == VTK_PARSE_CONST_POINTER_REF)))
+       (vtkParse_TypeIndirection(type) == VTK_PARSE_CONST_POINTER ||
+        vtkParse_TypeIndirection(type) == VTK_PARSE_CONST_POINTER_REF)))
     {
     var->Type = (var->Type | VTK_PARSE_CONST_POINTER);
     }
-  else if (typeIndirection(type) == VTK_PARSE_POINTER_POINTER ||
-           (typeIndirection(type) == VTK_PARSE_POINTER &&
+  else if (vtkParse_TypeIndirection(type) == VTK_PARSE_POINTER_POINTER ||
+           (vtkParse_TypeIndirection(type) == VTK_PARSE_POINTER &&
             meth->IsMultiValue))
     {
     var->Type = (var->Type | VTK_PARSE_POINTER_POINTER);
@@ -946,7 +946,7 @@ void initializeVariableAttributes(
  * Find all the methods that match the specified method, and add
  * flags to the VariableAttributes struct */
 
-void findAllMatches(
+static void findAllMatches(
   VariableAttributes *var, ClassVariableMethods *methods,
   int matchedMethods[])
 {
@@ -1014,7 +1014,7 @@ void findAllMatches(
             var->EnumConstantNames[j++] = &meth->Name[5+m];
             if (j % 8 == 0)
               {
-              var->EnumConstantNames =
+              var->EnumConstantNames = (const char **)
                 (char **)realloc(var->EnumConstantNames,
                                  sizeof(char *)*(j+8));
               }
@@ -1030,7 +1030,7 @@ void findAllMatches(
  * This is the method that finds out everything that it can about
  * all variables that can be accessed by the methods of a class */
 
-void categorizeVariables(
+static void categorizeVariables(
   ClassVariableMethods *methods, ClassVariables *variables)
 {
   int i, n;
@@ -1134,7 +1134,7 @@ void categorizeVariables(
 
 /*-------------------------------------------------------------------
  * search for methods that are repeated with minor variations */
-int searchForRepeatedMethods(
+static int searchForRepeatedMethods(
   MethodAttributes *attrs, ClassVariableMethods *methods)
 {
   int i, n;
@@ -1147,7 +1147,7 @@ int searchForRepeatedMethods(
 
     /* check whether the function name and basic structure are matched */
     if (strcmp(attrs->Name, meth->Name) == 0 &&
-        typeIndirection(attrs->Type) == typeIndirection(meth->Type) &&
+        vtkParse_TypeIndirection(attrs->Type) == vtkParse_TypeIndirection(meth->Type) &&
         attrs->IsPublic == meth->IsPublic &&
         attrs->IsProtected == meth->IsProtected &&
         attrs->IsHinted == meth->IsHinted &&
@@ -1161,9 +1161,9 @@ int searchForRepeatedMethods(
        * prefer higher-counted arrays,
        * prefer non-legacy methods */
 
-      if ((typeBaseType(attrs->Type) == VTK_PARSE_FLOAT &&
-           typeBaseType(meth->Type) == VTK_PARSE_DOUBLE) ||
-          (typeBaseType(attrs->Type) == typeBaseType(meth->Type) &&
+      if ((vtkParse_BaseType(attrs->Type) == VTK_PARSE_FLOAT &&
+           vtkParse_BaseType(meth->Type) == VTK_PARSE_DOUBLE) ||
+          (vtkParse_BaseType(attrs->Type) == vtkParse_BaseType(meth->Type) &&
            attrs->Count < meth->Count) ||
           (attrs->IsLegacy && !meth->IsLegacy))
         {
@@ -1171,9 +1171,9 @@ int searchForRepeatedMethods(
         return 0;
         }
 
-      if ((typeBaseType(attrs->Type) == VTK_PARSE_DOUBLE &&
-           typeBaseType(meth->Type) == VTK_PARSE_FLOAT) ||
-          (typeBaseType(attrs->Type) == typeBaseType(meth->Type) &&
+      if ((vtkParse_BaseType(attrs->Type) == VTK_PARSE_DOUBLE &&
+           vtkParse_BaseType(meth->Type) == VTK_PARSE_FLOAT) ||
+          (vtkParse_BaseType(attrs->Type) == vtkParse_BaseType(meth->Type) &&
            attrs->Count > meth->Count) ||
           (!attrs->IsLegacy && meth->IsLegacy))
         {
@@ -1194,7 +1194,8 @@ int searchForRepeatedMethods(
 /*-------------------------------------------------------------------
  * categorize methods that get/set/add/remove values */
 
-void categorizeVariableMethods(FileInfo *data, ClassVariableMethods *methods)
+static void categorizeVariableMethods(
+  FileInfo *data, ClassVariableMethods *methods)
 {
   int i, n;
   int *functionIds;
@@ -1239,7 +1240,7 @@ void categorizeVariableMethods(FileInfo *data, ClassVariableMethods *methods)
 /*-------------------------------------------------------------------
  * build a ClassVariables struct from the info in a FileInfo struct */
 
-ClassVariables *buildClassVariablesStruct(FileInfo *data)
+ClassVariables *vtkParseVariables_Create(FileInfo *data)
 {
   ClassVariables *vars;
   ClassVariableMethods *methods;
@@ -1268,7 +1269,7 @@ ClassVariables *buildClassVariablesStruct(FileInfo *data)
 /*-------------------------------------------------------------------
  * free a class variables struct */
 
-void freeClassVariablesStruct(ClassVariables *vars)
+void vtkParseVariables_Free(ClassVariables *vars)
 {
   free(vars->Variables);
   free(vars);
@@ -1277,7 +1278,7 @@ void freeClassVariablesStruct(ClassVariables *vars)
 /*-------------------------------------------------------------------
  * get a string representation of method bitfield value */
 
-const char *methodTypeString(unsigned int methodType)
+const char *vtkParseVariables_MethodTypeAsString(unsigned int methodType)
 {
   switch (methodType)
     {

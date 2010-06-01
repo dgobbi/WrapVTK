@@ -116,15 +116,15 @@ extern "C" {
 
 /* function to build the ClassVariables struct from a FileInfo struct */
 
-ClassVariables *buildClassVariablesStruct(struct _FileInfo *data);
-void freeClassVariablesStruct(ClassVariables *variables);
+ClassVariables *vtkParseVariables_Create(struct _FileInfo *data);
+void vtkParseVariables_Free(ClassVariables *variables);
 
 /* function to convert a method bitfield value to a string */
 
-const char *methodTypeString(unsigned int methodType);
+const char *vtkParseVariables_MethodTypeAsString(unsigned int methodType);
 
 #ifdef __cplusplus
-}
+} /* extern "C" */
 #endif
 
 #endif

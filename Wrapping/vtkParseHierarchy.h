@@ -37,18 +37,26 @@ typedef struct _HierarchyInfo
   HierarchyEntry *Classes;
 } HierarchyInfo;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* read a hierarchy file into a HeirarchyInfo struct, or return NULL */
-HierarchyInfo *readHierarchyFile(const char *filename);
+HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename);
 
 /* free a HierarchyInfo struct */
-void freeHierarchyInfo(HierarchyInfo *info);
+void vtkParseHierarchy_Free(HierarchyInfo *info);
 
 /* check whether class 1 is a subclass of class 2 */
-int isHierarchySuperClass(
+int vtkParseHierarchy_IsTypeOf(
   HierarchyInfo *info, const char *subclass, const char *superclass);
 
 /* get the header file for the specified class */
-const char *getHierarchyClassHeader(
+const char *vtkParseHierarchy_ClassHeader(
   HierarchyInfo *info, const char *classname);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif
