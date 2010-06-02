@@ -1195,7 +1195,7 @@ static int searchForRepeatedMethods(
  * categorize methods that get/set/add/remove values */
 
 static void categorizeVariableMethods(
-  FileInfo *data, ClassVariableMethods *methods)
+  ClassInfo *data, ClassVariableMethods *methods)
 {
   int i, n;
   int *functionIds;
@@ -1209,9 +1209,9 @@ static void categorizeVariableMethods(
   functionIds = (int *)malloc(sizeof(int)*data->NumberOfFunctions);
   for (i = 0; i < data->NumberOfFunctions; i++)
     {
-    if (data->Functions[i].Name &&
-        !data->Functions[i].ArrayFailure &&
-        !data->Functions[i].IsOperator)
+    if (data->Functions[i]->Name &&
+        !data->Functions[i]->ArrayFailure &&
+        !data->Functions[i]->IsOperator)
       {
       functionIds[n++] = i;
       }
@@ -1220,7 +1220,7 @@ static void categorizeVariableMethods(
   /* build up the ClassVariableMethods struct */
   for (i = 0; i < n; i++)
     {
-    func = &data->Functions[functionIds[i]];
+    func = data->Functions[functionIds[i]];
     attrs = &methods->Methods[methods->NumberOfMethods];
 
     /* copy the func into a MethodAttributes struct if possible */ 
@@ -1240,7 +1240,7 @@ static void categorizeVariableMethods(
 /*-------------------------------------------------------------------
  * build a ClassVariables struct from the info in a FileInfo struct */
 
-ClassVariables *vtkParseVariables_Create(FileInfo *data)
+ClassVariables *vtkParseVariables_Create(ClassInfo *data)
 {
   ClassVariables *vars;
   ClassVariableMethods *methods;

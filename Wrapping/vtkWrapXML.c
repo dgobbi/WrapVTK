@@ -48,7 +48,7 @@
 
 /* sort functions lexically between indices "start" and "ends" */
 static void vtkWrapXML_SortMethods(
-  FileInfo *data, int functionList[], int start, int ends)
+  ClassInfo *data, int functionList[], int start, int ends)
 {
   int i;
   int location = start;
@@ -59,8 +59,8 @@ static void vtkWrapXML_SortMethods(
     }
   for (i = start; i < ends; i++)
     {
-    if (strcmp(data->Functions[functionList[ends]].Name,
-               data->Functions[functionList[i]].Name) > 0)
+    if (strcmp(data->Functions[functionList[ends]]->Name,
+               data->Functions[functionList[i]]->Name) > 0)
       {
       vtkWrapXML_Swap(functionList, location, i);
       location++;
@@ -224,7 +224,7 @@ static void vtkWrapXML_MultiLineText(FILE *fp, const char *cp, int indentation)
 }
 
 /* Write out the class header */
-void vtkWrapXML_ClassHeader(FILE *fp, FileInfo *data, int indentation)
+void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
 {
   int i = 0;
   int n;
@@ -232,10 +232,6 @@ void vtkWrapXML_ClassHeader(FILE *fp, FileInfo *data, int indentation)
   fprintf(fp, "%s<Class>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(data->ClassName, 500));
-
-  /* There is also data->IsAbstract and data->HasDelete but these are
-     deprecated.  The IsAbstract flag is computed by vtkParse, but
-     IsConcrete is set by CMake and is more reliable.  */
 
   /* actually, vtk classes never have more than one superclass */
   n = data->NumberOfSuperClasses;
@@ -245,19 +241,14 @@ void vtkWrapXML_ClassHeader(FILE *fp, FileInfo *data, int indentation)
             vtkWrapXML_Quote(data->SuperClasses[i], 500));
     }
 
-  /* the "concrete" flag means the class has a ::New method */
-  if (data->IsConcrete)
-    {
-    fprintf(fp, "%s<Flag>concrete</Flag>\n", indent(indentation));
-    }
-  else
+  if (data->IsAbstract)
     {
     fprintf(fp, "%s<Flag>abstract</Flag>\n", indent(indentation));
     }
 }
 
 /* Write out the class footer */
-void vtkWrapXML_ClassFooter(FILE *fp, FileInfo *data, int indentation)
+void vtkWrapXML_ClassFooter(FILE *fp, ClassInfo *data, int indentation)
 {
   fprintf(fp, "%s</Class>\n", indent(indentation));
 }
@@ -401,7 +392,7 @@ void vtkWrapXML_Type(
 
 /* Print out a function in XML format */
 void vtkWrapXML_ClassMethod(
-  FILE *fp, FileInfo *data, FunctionInfo *func, int indentation)
+  FILE *fp, ClassInfo *data, FunctionInfo *func, int indentation)
 {
   static const char *accessLevel[] = {"private", "public", "protected"};
   size_t i, n;
@@ -571,7 +562,7 @@ void vtkWrapXML_ClassVariable(
 
 /* print information about all the methods in the class */
 void vtkWrapXML_ClassMethods(
-  FILE *fp, FileInfo *data, int indentation)
+  FILE *fp, ClassInfo *data, int indentation)
 {
   int i, n;
   int numFunctions;
@@ -582,8 +573,8 @@ void vtkWrapXML_ClassMethods(
   n = 0;
   for (i = 0; i < numFunctions; i++)
     {
-    if (data->Functions[i].Name &&
-        !data->Functions[i].ArrayFailure)
+    if (data->Functions[i]->Name &&
+        !data->Functions[i]->ArrayFailure)
       {
       idList[n++] = i;
       }
@@ -599,7 +590,7 @@ void vtkWrapXML_ClassMethods(
     {
     fprintf(fp, "\n");
     vtkWrapXML_ClassMethod(fp, data,
-                            &data->Functions[idList[i]], indentation);
+                           data->Functions[idList[i]], indentation);
     }
   fprintf(fp, "\n%s</Methods>\n", indent(--indentation));
 
@@ -608,7 +599,7 @@ void vtkWrapXML_ClassMethods(
 
 /* print information about all the variables in the class */
 void vtkWrapXML_ClassVariables(
-  FILE *fp, FileInfo*data, int indentation)
+  FILE *fp, ClassInfo*data, int indentation)
 {
   int i, n;
   ClassVariables *vars = 0;
@@ -645,34 +636,37 @@ void vtkWrapXML_ClassVariables(
 void vtkWrapXML_CheckHierarchy(FileInfo *data)
 {
   HierarchyInfo *hinfo = 0;
+  const char *classname;
+
+  classname = data->Classes[0]->ClassName;
 
   if (data->HierarchyFileName)
     {
     hinfo = vtkParseHierarchy_ReadFile(data->HierarchyFileName);
 
     /* just test these methods to make sure they don't crash */
-    if (!vtkParseHierarchy_IsTypeOf(
-        hinfo, data->ClassName, "vtkObjectBase") != !data->IsVTKObject)
+    if (!vtkParseHierarchy_IsTypeOf(hinfo, classname, "vtkObjectBase")
+        != !data->IsVTKObject)
       {
       if (data->IsVTKObject)
         {
         fprintf(stderr, "Hierarchy thinks %s is a special object\n",
-                data->ClassName);
+                classname);
         }
       else
         {
         fprintf(stderr, "Hierarchy thinks %s is a vtk object\n",
-                data->ClassName);
+                classname);
         }
       vtkParseHierarchy_Free(hinfo);
       exit(1);
       }
-    if (strncmp(vtkParseHierarchy_ClassHeader(hinfo, data->ClassName),
-                data->ClassName, strlen(data->ClassName)) != 0)
+    if (strncmp(vtkParseHierarchy_ClassHeader(hinfo, classname),
+                classname, strlen(classname)) != 0)
       {
       fprintf(stderr, "Wrong header file \"%s\" for class %s\n",
-              vtkParseHierarchy_ClassHeader(hinfo, data->ClassName),
-              data->ClassName);
+              vtkParseHierarchy_ClassHeader(hinfo, classname),
+              classname);
       vtkParseHierarchy_Free(hinfo);
       exit(1);
       }
@@ -690,22 +684,23 @@ void vtkWrapXML_CheckHierarchy(FileInfo *data)
 void vtkParseOutput(FILE *fp, FileInfo *data)
 {
   int indentation = 0;
+  ClassInfo *classInfo = data->Classes[0];
 
   /* check the hierarchy info (doesn't do anything with it yet) */
   vtkWrapXML_CheckHierarchy(data);
 
   /* start new XML section for class */
-  vtkWrapXML_ClassHeader(fp, data, indentation++);
+  vtkWrapXML_ClassHeader(fp, classInfo, indentation++);
 
   /* print the documentation */
   vtkWrapXML_ClassDoc(fp, data, indentation);
 
   /* print the methods section */
-  vtkWrapXML_ClassMethods(fp, data, indentation);
+  vtkWrapXML_ClassMethods(fp, classInfo, indentation);
 
   /* print the variables section */
-  vtkWrapXML_ClassVariables(fp, data, indentation);
+  vtkWrapXML_ClassVariables(fp, classInfo, indentation);
 
   /* print the class footer */
-  vtkWrapXML_ClassFooter(fp, data, --indentation);
+  vtkWrapXML_ClassFooter(fp, classInfo, --indentation);
 }

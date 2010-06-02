@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
       {
       fclose(hfile);
       }
-    return 1;
+    exit(1);
     }
 
   data->IsVTKObject = options.IsVTKObject;

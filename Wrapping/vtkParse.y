@@ -114,8 +114,8 @@ int yylex(void);
 
 /* global variables */
 FileInfo data;
-FunctionInfo throwAwayFunction;
-FunctionInfo *currentFunction;
+ClassInfo *currentClass = NULL;
+FunctionInfo *currentFunction = NULL;
 
 char temps[2048];
 int  in_public;
@@ -127,7 +127,6 @@ int sigClosed;
 int sigMark[10];
 int sigMarkDepth = 0;
 unsigned int sigAllocatedLength;
-int mainClass;
 char *currentId = 0;
 
 void start_class(const char *classname);
@@ -736,10 +735,7 @@ op_func: op_sig { postSig(")"); } maybe_const
         }
       vtkParseDebug("Parsed operator", $<str>1);
       currentFunction->IsPureVirtual = 1;
-      if (mainClass)
-        {
-        data.IsAbstract = 1;
-        }
+      currentClass->IsAbstract = 1;
     };
 
 op_sig: OPERATOR op_token {postSig($<str>2);} '('
@@ -772,10 +768,7 @@ func: func_sig { postSig(")"); } maybe_const
         }
       vtkParseDebug("Parsed func", $<str>1);
       currentFunction->IsPureVirtual = 1;
-      if (mainClass)
-        {
-        data.IsAbstract = 1;
-        }
+      currentClass->IsAbstract = 1;
     };
 
 pure_virtual: '=' INT_LITERAL {postSig(") = 0");}
@@ -1080,19 +1073,8 @@ scope_list: scope_list_item | scope_list_item ',' scope_list;
 
 scope_list_item: scope_type maybe_scoped_id
     {
-      int i, j;
-
-      if (mainClass)
-        {
-        data.SuperClasses[data.NumberOfSuperClasses] = vtkstrdup($<str>2);
-        data.NumberOfSuperClasses++;
-        }
-
-      /* build a list of superclasses for all classes in file */
-      for (i = 0; data.ClassesInFile[i+1]; i++) { ; }
-      for (j = 0; data.ClassSuperClasses[i][j]; j++) { ; }
-      data.ClassSuperClasses[i][j] = vtkstrdup($<str>2);
-      data.ClassSuperClasses[i][j+1] = NULL;
+      currentClass->SuperClasses[currentClass->NumberOfSuperClasses++] =
+        vtkstrdup($<str>2);
     };
 
 scope_type: {in_public = 0; in_protected = 0;}
@@ -1749,28 +1731,40 @@ void InitFunction(FunctionInfo *func)
   sigMark[0] = 0;
 }
 
+/* initialize the structure */
+void InitClass(ClassInfo *cls)
+{
+  cls->ClassName = NULL;
+  cls->IsAbstract = 0;
+  cls->HasDelete = 0;
+  cls->NumberOfSuperClasses = 0;
+  cls->NumberOfFunctions = 0;
+}
+
+void InitFile(FileInfo *file_info)
+{
+  file_info->IsConcrete = 1;
+  file_info->IsVTKObject = 1;
+  file_info->FileName = NULL;
+  file_info->OutputFileName = NULL;
+  file_info->HierarchyFileName = NULL;
+  file_info->NameComment = NULL;
+  file_info->Description = NULL;
+  file_info->Caveats = NULL;
+  file_info->SeeAlso = NULL;
+  file_info->NumberOfClasses = 0;
+}
+
 /* check whether this is the class we are looking for */
 void start_class(const char *classname)
 {
-  int i;
+  currentClass = (ClassInfo *)malloc(sizeof(ClassInfo));
+  InitClass(currentClass);
+  currentClass->ClassName = vtkstrdup(classname);
 
-  if (!strcmp(data.ClassName, classname))
-    {
-    mainClass = 1;
-    currentFunction = data.Functions;
-    data.NumberOfFunctions = 0;
-    }
-  else
-    {
-    mainClass = 0;
-    currentFunction = &throwAwayFunction;
-    }
+  data.Classes[data.NumberOfClasses++] = currentClass;
+
   InitFunction(currentFunction);
-
-  for (i = 0; data.ClassesInFile[i]; i++) { ; }
-  data.ClassesInFile[i] = vtkstrdup(classname);
-  data.ClassesInFile[i+1] = NULL;
-  data.ClassSuperClasses[i][0] = NULL;
 }
 
 /* reject the function, do not output it */
@@ -1792,7 +1786,8 @@ void output_function()
     }
 
   /* a void argument is the same as no arguements */
-  if ((currentFunction->ArgTypes[0] & VTK_PARSE_UNQUALIFIED_TYPE) ==
+  if (currentFunction->NumberOfArguments == 1 &&
+      (currentFunction->ArgTypes[0] & VTK_PARSE_UNQUALIFIED_TYPE) ==
       VTK_PARSE_VOID)
     {
     currentFunction->NumberOfArguments = 0;
@@ -1827,10 +1822,7 @@ void output_function()
   /* is it a delete function */
   if (currentFunction->Name && !strcmp("Delete",currentFunction->Name))
     {
-    if (mainClass)
-      {
-      data.HasDelete = 1;
-      }
+    currentClass->HasDelete = 1;
     }
 
   /* reject multi-dimensional arrays from wrappers */
@@ -1846,11 +1838,10 @@ void output_function()
       }
     }
 
-  if (mainClass)
-    {
-    data.NumberOfFunctions++;
-    currentFunction = data.Functions + data.NumberOfFunctions;
-    }
+  currentClass->Functions[currentClass->NumberOfFunctions++]
+    = currentFunction;
+
+  currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
 
   InitFunction(currentFunction);
 }
@@ -1922,46 +1913,23 @@ FileInfo *vtkParse_ParseFile(
   int i, j;
   int ret;
   FileInfo *file_info;
+  char *main_class;
 
-  data.ClassesInFile[0] = NULL;
-  data.ClassSuperClasses[0][0] = NULL;
+  InitFile(&data);
 
   data.FileName = vtkstrdup(filename);
   data.IsConcrete = concrete;
-  data.NameComment = NULL;
-  data.Description = NULL;
-  data.Caveats = NULL;
-  data.SeeAlso = NULL;
+
   CommentState = 0;
-
-  /* The class name should be the file name */
-  i = strlen(data.FileName);
-  j = i;
-  while (i > 0)
-    {
-    --i;
-    if (data.FileName[i] == '.')
-      {
-      j = i;
-      }
-    if (data.FileName[i] == '/' || data.FileName[i] == '\\')
-      {
-      i++;
-      break;
-      }
-    }
-  data.ClassName = (char *)malloc(j-i + 1);
-  strncpy(data.ClassName, &data.FileName[i], j-i);
-  data.ClassName[j-i] = '\0';
-
-  /* This will be set to 1 while parsing the main class */
-  mainClass = 0;
-
-  currentFunction = &throwAwayFunction;
+  currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
+  InitFunction(currentFunction);
 
   yyin = ifile;
   yyout = errfile;
   ret = yyparse();
+
+  free(currentFunction);
+
   if (ret)
     {
     fprintf(errfile,
@@ -1970,6 +1938,45 @@ FileInfo *vtkParse_ParseFile(
             filename, yylineno);
     return NULL;
     }
+
+  /* The main class name should match the file name */
+  i = strlen(filename);
+  j = i;
+  while (i > 0)
+    {
+    --i;
+    if (filename[i] == '.')
+      {
+      j = i;
+      }
+    if (filename[i] == '/' || filename[i] == '\\')
+      {
+      i++;
+      break;
+      }
+    }
+  main_class = (char *)malloc(j-i+1);
+  strncpy(main_class, &data.FileName[i], j-i);
+  main_class[j-i] = '\0';
+
+  /* move the main class to the first position */
+  for (i = 0; i < data.NumberOfClasses; i++)
+    {
+    if (strcmp(data.Classes[i]->ClassName, main_class) == 0)
+      {
+      ClassInfo *temp = data.Classes[i];
+      for (j = i; j > 0; j--)
+        {
+        data.Classes[j] = data.Classes[j-1];
+        }
+      data.Classes[0] = temp;
+      /* override "IsAbstract" with the "IsConcrete" set by CMake */
+      data.Classes[0]->IsAbstract = !data.IsConcrete;
+      break;
+      }
+    }
+
+  free(main_class);
 
   file_info = (FileInfo *)malloc(sizeof(FileInfo));
   memcpy(file_info, &data, sizeof(FileInfo));
@@ -1985,46 +1992,52 @@ int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
   unsigned int  h_type;
   int  h_value;
   FunctionInfo *func_info;
-  int i;
+  ClassInfo *class_info;
+  int i, j;
 
   /* read each hint line in succession */
   while (fscanf(hfile,"%s %s %x %i", h_cls, h_func, &h_type, &h_value) != EOF)
     {
-    /* is this a hint for the our class? */
-    if (strcmp(h_cls, file_info->ClassName) == 0)
+    /* find the matching class */
+    for (i = 0; i < file_info->NumberOfClasses; i++)
       {
-      /* find the matching function */
-      for (i = 0; i < file_info->NumberOfFunctions; i++)
+      class_info = file_info->Classes[i];
+      
+      if (strcmp(h_cls, class_info->ClassName) == 0)
         {
-        func_info = &file_info->Functions[i];
-
-        if (func_info->HaveHint == 0 && func_info->Name &&
-            (strcmp(h_func, func_info->Name) == 0) &&
-            ((int)h_type == func_info->ReturnType))
+        /* find the matching function */
+        for (j = 0; j < class_info->NumberOfFunctions; j++)
           {
-          /* types that hints are accepted for */
-          switch (func_info->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE)
+          func_info = class_info->Functions[j];
+
+          if (func_info->HaveHint == 0 && func_info->Name &&
+              (strcmp(h_func, func_info->Name) == 0) &&
+              ((int)h_type == func_info->ReturnType))
             {
-            case VTK_PARSE_FLOAT_PTR:
-            case VTK_PARSE_VOID_PTR:
-            case VTK_PARSE_DOUBLE_PTR:
-            case VTK_PARSE_ID_TYPE_PTR:
-            case VTK_PARSE_LONG_LONG_PTR:
-            case VTK_PARSE_UNSIGNED_LONG_LONG_PTR:
-            case VTK_PARSE___INT64_PTR:
-            case VTK_PARSE_UNSIGNED___INT64_PTR:
-            case VTK_PARSE_INT_PTR:
-            case VTK_PARSE_UNSIGNED_INT_PTR:
-            case VTK_PARSE_SHORT_PTR:
-            case VTK_PARSE_UNSIGNED_SHORT_PTR:
-            case VTK_PARSE_LONG_PTR:
-            case VTK_PARSE_UNSIGNED_LONG_PTR:
-            case VTK_PARSE_SIGNED_CHAR_PTR:
-            case VTK_PARSE_UNSIGNED_CHAR_PTR:
+            /* types that hints are accepted for */
+            switch (func_info->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE)
               {
-              func_info->HaveHint = 1;
-              func_info->HintSize = h_value;
-              break;
+              case VTK_PARSE_FLOAT_PTR:
+              case VTK_PARSE_VOID_PTR:
+              case VTK_PARSE_DOUBLE_PTR:
+              case VTK_PARSE_ID_TYPE_PTR:
+              case VTK_PARSE_LONG_LONG_PTR:
+              case VTK_PARSE_UNSIGNED_LONG_LONG_PTR:
+              case VTK_PARSE___INT64_PTR:
+              case VTK_PARSE_UNSIGNED___INT64_PTR:
+              case VTK_PARSE_INT_PTR:
+              case VTK_PARSE_UNSIGNED_INT_PTR:
+              case VTK_PARSE_SHORT_PTR:
+              case VTK_PARSE_UNSIGNED_SHORT_PTR:
+              case VTK_PARSE_LONG_PTR:
+              case VTK_PARSE_UNSIGNED_LONG_PTR:
+              case VTK_PARSE_SIGNED_CHAR_PTR:
+              case VTK_PARSE_UNSIGNED_CHAR_PTR:
+                {
+                func_info->HaveHint = 1;
+                func_info->HintSize = h_value;
+                break;
+                }
               }
             }
           }

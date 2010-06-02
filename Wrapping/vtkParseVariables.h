@@ -13,7 +13,7 @@
 =========================================================================*/
 
 /* structures and methods for finding variables based on the Set and Get
- * functions defined in the FileInfo struct created by vtkParse */
+ * functions defined in the ClassInfo struct created by vtkParse */
 
 #ifndef VTK_PARSE_VARIABLES_H
 #define VTK_PARSE_VARIABLES_H
@@ -108,15 +108,15 @@ typedef struct _ClassVariables
   VariableAttributes *Variables;
 } ClassVariables;
 
-struct _FileInfo;
+struct _ClassInfo;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* function to build the ClassVariables struct from a FileInfo struct */
+/* function to build the ClassVariables struct from a ClassInfo struct */
 
-ClassVariables *vtkParseVariables_Create(struct _FileInfo *data);
+ClassVariables *vtkParseVariables_Create(struct _ClassInfo *data);
 void vtkParseVariables_Free(ClassVariables *variables);
 
 /* function to convert a method bitfield value to a string */

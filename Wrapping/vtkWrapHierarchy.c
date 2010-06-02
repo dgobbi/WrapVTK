@@ -26,20 +26,23 @@
 
 void vtkParseOutput(FILE *fp, FileInfo *data)
 {
+  ClassInfo *classInfo;
   int i, j;
 
-  for (i = 0; data->ClassesInFile[i]; i++)
+  for (i = 0; i < data->NumberOfClasses; i++)
     {
-    fprintf(fp, "%s ", data->ClassesInFile[i]);
-    if (data->ClassSuperClasses[i][0])
+    classInfo = data->Classes[i];
+
+    fprintf(fp, "%s ", classInfo->ClassName);
+    if (classInfo->NumberOfSuperClasses)
       {
       fprintf(fp, ": ");
       }
 
-    for (j = 0; data->ClassSuperClasses[i][j]; j++)
+    for (j = 0; j < classInfo->NumberOfSuperClasses; j++)
       {
-      fprintf(fp, "%s ", data->ClassSuperClasses[i][j]);
-      if (data->ClassSuperClasses[i][j+1])
+      fprintf(fp, "%s ", classInfo->SuperClasses[j]);
+      if (j+1 < classInfo->NumberOfSuperClasses)
         {
         fprintf(fp, ", ");
         }

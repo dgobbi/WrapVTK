@@ -16,50 +16,59 @@
 #include "vtkParseType.h"
 #include <stdio.h>
 
-#define MAX_ARGS 20  
+#define MAX_ARGS 20
+#define MAX_FUNCTIONS 1000
+#define MAX_CLASSES 20
+#define MAX_SUPERCLASSES 10
 
-  typedef struct _FunctionInfo
-  {
-    char *Name;
-    int   NumberOfArguments;
-    int   ArrayFailure;
-    int   IsPureVirtual;
-    int   IsPublic;
-    int   IsProtected;
-    int   IsOperator;
-    int   HaveHint;
-    int   HintSize;
-    int   ArgTypes[MAX_ARGS];
-    int   ArgCounts[MAX_ARGS];
-    char *ArgClasses[MAX_ARGS];
-    int   ReturnType;
-    char *ReturnClass;
-    char *Comment;
-    char *Signature;
-    int   IsLegacy;
-  } FunctionInfo;
-  
-  typedef struct _FileInfo
-  {
-    int   HasDelete;
-    int   IsAbstract;
-    int   IsConcrete;
-    int   IsVTKObject;
-    char *ClassName;
-    char *FileName;
-    char *OutputFileName;
-    char *HierarchyFileName;
-    char *SuperClasses[10];
-    int   NumberOfSuperClasses;
-    int   NumberOfFunctions;
-    FunctionInfo Functions[1000];
-    char *NameComment;
-    char *Description;
-    char *Caveats;
-    char *SeeAlso;
-    char *ClassesInFile[100];
-    char *ClassSuperClasses[100][10];
-  } FileInfo;
+typedef struct _FunctionInfo
+{
+  char *Name;
+  int   IsPureVirtual;
+  int   IsPublic;
+  int   IsProtected;
+  int   IsOperator;
+  int   ArrayFailure;
+  int   NumberOfArguments;
+  int   ArgTypes[MAX_ARGS];
+  int   ArgCounts[MAX_ARGS];
+  char *ArgClasses[MAX_ARGS];
+  int   ReturnType;
+  char *ReturnClass;
+  int   HaveHint;
+  int   HintSize;
+  char *Comment;
+  char *Signature;
+  int   IsLegacy;
+} FunctionInfo;
+
+typedef struct _ClassInfo
+{
+  char *ClassName;
+  int   IsAbstract;
+  int   HasDelete;
+  int   NumberOfSuperClasses;
+  char *SuperClasses[MAX_SUPERCLASSES];
+  int   NumberOfFunctions;
+  FunctionInfo *Functions[MAX_FUNCTIONS];
+} ClassInfo;
+
+typedef struct _FileInfo
+{
+  /* options from cmake */
+  int   IsConcrete;
+  int   IsVTKObject;
+  /* file information */
+  char *FileName;
+  char *OutputFileName;
+  char *HierarchyFileName;
+  char *NameComment;
+  char *Description;
+  char *Caveats;
+  char *SeeAlso;
+  int   NumberOfClasses;
+  ClassInfo *Classes[MAX_CLASSES];
+} FileInfo;
 
 #ifdef __cplusplus
 extern "C" {
