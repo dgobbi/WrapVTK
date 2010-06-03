@@ -13,6 +13,14 @@
 
 =========================================================================*/
 
+/*
+  This is the header file for vtkParse.tab.c, which is generated
+  from vtkParse.y with the "yacc" compiler-compiler.
+*/
+
+#ifndef VTK_PARSE_H
+#define VTK_PARSE_H
+
 #include "vtkParseType.h"
 #include <stdio.h>
 
@@ -55,13 +63,8 @@ typedef struct _ClassInfo
 
 typedef struct _FileInfo
 {
-  /* options from cmake */
-  int   IsConcrete;
-  int   IsVTKObject;
   /* file information */
   char *FileName;
-  char *OutputFileName;
-  char *HierarchyFileName;
   char *NameComment;
   char *Description;
   char *Caveats;
@@ -88,4 +91,4 @@ void vtkParse_Free(FileInfo *data);
 } /* extern "C" */
 #endif
 
-
+#endif

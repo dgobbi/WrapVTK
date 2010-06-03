@@ -22,48 +22,48 @@ the code that parses the header file.
 */
 
 #include "vtkParse.h"
+#include "vtkParseMain.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+
+/* This is the struct that contains the options */
+OptionInfo options;
 
 /* This method provides the back-end for the generators */
 extern void vtkParseOutput(FILE *, FileInfo *);
 
-typedef struct _OptionData
-{
-  char *HintFileName;
-  char *HierarchyFileName;
-  int IsVTKObject;
-  int IsConcrete;
-} OptionData;
-
 /* Check the options */
-static int check_options(OptionData *options, int argc, char *argv[])
+static int check_options(int argc, char *argv[])
 {
   int i;
 
-  options->IsConcrete = 1;
-  options->IsVTKObject = 1;
-  options->HierarchyFileName = 0;
-  options->HintFileName = 0;
+  options.InputFileName = NULL;
+  options.OutputFileName = NULL;
+  options.IsConcrete = 1;
+  options.IsVTKObject = 1;
+  options.HierarchyFileName = 0;
+  options.HintFileName = 0;
+  options.NumberOfIncludeDirectories = 0;
 
   for (i = 1; i < argc && argv[i][0] == '-'; i++)
     {
     if (strcmp(argv[i], "--concrete") == 0)
       {
-      options->IsConcrete = 1;
+      options.IsConcrete = 1;
       }
     else if (strcmp(argv[i], "--abstract") == 0)
       {
-      options->IsConcrete = 0;
+      options.IsConcrete = 0;
       }
     else if (strcmp(argv[i], "--vtkobject") == 0)
       {
-      options->IsVTKObject = 1;
+      options.IsVTKObject = 1;
       }
     else if (strcmp(argv[i], "--special") == 0)
       {
-      options->IsVTKObject = 0;
+      options.IsVTKObject = 0;
       }
     else if (strcmp(argv[i], "--hints") == 0)
       {
@@ -72,7 +72,7 @@ static int check_options(OptionData *options, int argc, char *argv[])
         {
         return -1;
         }
-      options->HintFileName = argv[i];
+      options.HintFileName = argv[i];
       }
     else if (strcmp(argv[i], "--hierarchy") == 0)
       {
@@ -81,26 +81,88 @@ static int check_options(OptionData *options, int argc, char *argv[])
         {
         return -1;
         }
-      options->HierarchyFileName = argv[i];
+      options.HierarchyFileName = argv[i];
+      }
+    else if (strcmp(argv[i], "-I") == 0)
+      {
+      i++;
+      if (i >= argc || argv[i][0] == '-' ||
+          options.NumberOfIncludeDirectories + 1 >= MAX_INCLUDE_DIRS)
+        {
+        return -1;
+        }
+      options.IncludeDirectories[options.NumberOfIncludeDirectories++]
+        = argv[i];
       }
     }
 
   return i;
 }
 
+/* Return a pointer to the static OptionInfo struct */
+OptionInfo *vtkParse_GetCommandLineOptions()
+{
+  return &options;
+}
+
+/* Find a filename, given the "-I" options from the command line */
+char *vtkParse_FindPath(const char *filename)
+{
+  int i;
+  struct stat fs;
+  char filepath[512];
+  const char *directory;
+  char *output;
+  const char *sep;
+
+  for (i = -1; i < options.NumberOfIncludeDirectories; i++)
+    {
+    if (i < 0)
+      {
+      /* try first with no path */
+      strcpy(filepath, filename);
+      }
+    else
+      {
+      directory = options.IncludeDirectories[i];
+      sep = "/";
+      if (directory[strlen(directory)-1] == sep[0])
+        {
+        sep = "";
+        }
+      sprintf(filepath, "%s%s%s", directory, sep, filename);
+      }
+
+    if (stat(filepath, &fs) == 0)
+      {
+      output = (char *)malloc(strlen(filepath+1));
+      strcpy(output, filepath);
+      return output;
+      }
+    }
+
+  return NULL;
+}
+
+/* Free a path returned by FindPath */
+void vtkParse_FreePath(char *filepath)
+{
+  if (filepath)
+    {
+    free(filepath);
+    }
+}
+
 int main(int argc, char *argv[])
 {
   int argi;
   int has_options = 0;
-  OptionData options;
-  char *input_filename;
-  char *output_filename;
   FILE *ifile;
   FILE *ofile;
   FILE *hfile = 0;
   FileInfo *data;
 
-  argi = check_options(&options, argc, argv);
+  argi = check_options(argc, argv);
   if (argi > 1 && argc - argi == 2)
     {
     has_options = 1;
@@ -114,16 +176,17 @@ int main(int argc, char *argv[])
             "  --vtkobject     vtkObjectBase-derived class (default)\n"
             "  --special       non-vtkObjectBase class\n"
             "  --hints <file>  hints file\n"
-            "  --hierarchy <file>  hierarchy file\n",
+            "  --hierarchy <file>  hierarchy file\n"
+            "  -I <dir>        add an include directory\n",
             argv[0]);
     exit(1);
     }
 
-  input_filename = argv[argi++];
+  options.InputFileName = argv[argi++];
 
-  if (!(ifile = fopen(input_filename, "r")))
+  if (!(ifile = fopen(options.InputFileName, "r")))
     {
-    fprintf(stderr,"Error opening input file %s\n", input_filename);
+    fprintf(stderr,"Error opening input file %s\n", options.InputFileName);
     exit(1);
     }
 
@@ -149,12 +212,12 @@ int main(int argc, char *argv[])
       }
     }
 
-  output_filename = argv[argi++];
-  ofile = fopen(output_filename, "w");
+  options.OutputFileName = argv[argi++];
+  ofile = fopen(options.OutputFileName, "w");
 
   if (!ofile)
     {
-    fprintf(stderr, "Error opening output file %s\n", output_filename);
+    fprintf(stderr, "Error opening output file %s\n", options.OutputFileName);
     fclose(ifile);
     if (hfile)
       {
@@ -164,7 +227,7 @@ int main(int argc, char *argv[])
     }
 
   data = vtkParse_ParseFile(
-    input_filename, options.IsConcrete, ifile, stderr);
+    options.InputFileName, options.IsConcrete, ifile, stderr);
 
   if (!data)
     {
@@ -175,17 +238,6 @@ int main(int argc, char *argv[])
       fclose(hfile);
       }
     exit(1);
-    }
-
-  data->IsVTKObject = options.IsVTKObject;
-  data->OutputFileName = (char *)malloc(strlen(output_filename) + 1);
-  strcpy(data->OutputFileName, output_filename);
-
-  if (options.HierarchyFileName)
-    {
-    data->HierarchyFileName =
-      (char *)malloc(strlen(options.HierarchyFileName)+1);
-    strcpy(data->HierarchyFileName, options.HierarchyFileName);
     }
 
   if (hfile)

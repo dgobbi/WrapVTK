@@ -31,6 +31,7 @@
 #include "vtkParseUtils.h"
 #include "vtkParseVariables.h"
 #include "vtkParseHierarchy.h"
+#include "vtkParseMain.h"
 #include "vtkConfigure.h"
 
 /* the indentation string, default is two spaces */
@@ -635,20 +636,23 @@ void vtkWrapXML_ClassVariables(
 /* check the hierarchy info (doesn't do anything with it yet) */
 void vtkWrapXML_CheckHierarchy(FileInfo *data)
 {
-  HierarchyInfo *hinfo = 0;
+  HierarchyInfo *hinfo = NULL;
+  OptionInfo *oinfo = NULL;
   const char *classname;
+  char *filepath;
 
   classname = data->Classes[0]->ClassName;
+  oinfo = vtkParse_GetCommandLineOptions();
 
-  if (data->HierarchyFileName)
+  if (oinfo->HierarchyFileName)
     {
-    hinfo = vtkParseHierarchy_ReadFile(data->HierarchyFileName);
+    hinfo = vtkParseHierarchy_ReadFile(oinfo->HierarchyFileName);
 
     /* just test these methods to make sure they don't crash */
     if (!vtkParseHierarchy_IsTypeOf(hinfo, classname, "vtkObjectBase")
-        != !data->IsVTKObject)
+        != !oinfo->IsVTKObject)
       {
-      if (data->IsVTKObject)
+      if (oinfo->IsVTKObject)
         {
         fprintf(stderr, "Hierarchy thinks %s is a special object\n",
                 classname);

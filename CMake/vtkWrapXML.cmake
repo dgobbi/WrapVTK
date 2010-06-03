@@ -22,6 +22,19 @@ MACRO(VTK_WRAP_XML TARGET XML_LIST_NAME OUTPUT_DIR SOURCES)
     SET(verbatim "VERBATIM")
   ENDIF(CMAKE_GENERATOR MATCHES "NMake Makefiles")
 
+  IF(WrapVTK_HINTS)
+    SET(TMP_HINTS "--hints" "${quote}${WrapVTK_HINTS}${quote}")
+  ELSE(WrapVTK_HINTS)
+    SET(TMP_HINTS)
+  ENDIF(WrapVTK_HINTS)
+
+  SET(TMP_HIERARCHY "${OUTPUT_DIR}/vtk${KIT_NAME}Hierarchy.txt")
+
+  SET(TMP_INCLUDE)
+  FOREACH(INCLUDE_DIR ${VTK_INCLUDE_DIRS})
+    SET(TMP_INCLUDE ${TMP_INCLUDE} -I "${quote}${INCLUDE_DIR}${quote}")
+  ENDFOREACH(INCLUDE_DIR ${VTK_INCLUDE_DIRS})
+
   FOREACH(INPUT_FILE ${SOURCES})
 
     # In case we were given a path with the class name
@@ -49,14 +62,6 @@ MACRO(VTK_WRAP_XML TARGET XML_LIST_NAME OUTPUT_DIR SOURCES)
         SET(TMP_SPECIAL "--vtkobject")
       ENDIF(VTK_CLASS_WRAP_SPECIAL_${INPUT_FILE})
 
-      IF(WrapVTK_HINTS)
-        SET(TMP_HINTS "--hints" "${quote}${WrapVTK_HINTS}${quote}")
-      ELSE(WrapVTK_HINTS)
-        SET(TMP_HINTS)
-      ENDIF(WrapVTK_HINTS)
-
-      SET(TMP_HIERARCHY "${OUTPUT_DIR}/vtk${KIT_NAME}Hierarchy.txt")
-
       SET(TMP_INPUT "${TMP_HEADER_DIR}/${TMP_CLASS}.h")
       SET(TMP_OUTPUT "${OUTPUT_DIR}/${TMP_CLASS}.xml")
 
@@ -71,6 +76,7 @@ MACRO(VTK_WRAP_XML TARGET XML_LIST_NAME OUTPUT_DIR SOURCES)
         ${TMP_SPECIAL}
         ${TMP_HINTS}
         "--hierarchy" "${quote}${TMP_HIERARCHY}${quote}"
+        ${TMP_INCLUDE}
         "${quote}${TMP_INPUT}${quote}"
         "${quote}${TMP_OUTPUT}${quote}"
         COMMENT "XML Wrapping - generating ${TMP_CLASS}.xml"

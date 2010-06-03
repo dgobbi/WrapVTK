@@ -120,6 +120,7 @@ FunctionInfo *currentFunction = NULL;
 char temps[2048];
 int  in_public;
 int  in_protected;
+int  is_concrete;
 int  HaveComment;
 char CommentText[50000];
 int CommentState;
@@ -1521,7 +1522,7 @@ macro:
    currentFunction->ReturnClass = vtkstrdup($<str>3);
    output_function();
 
-   if ( data.IsConcrete )
+   if ( is_concrete )
      {
      currentFunction->Signature = (char *)malloc(2048);
      sigAllocatedLength = 2048;
@@ -1589,7 +1590,7 @@ macro:
    currentFunction->ReturnClass = vtkstrdup($<str>3);
    output_function();
 
-   if ( data.IsConcrete )
+   if ( is_concrete )
      {
      currentFunction->Signature = (char *)malloc(2048);
      sigAllocatedLength = 2048;
@@ -1743,11 +1744,7 @@ void InitClass(ClassInfo *cls)
 
 void InitFile(FileInfo *file_info)
 {
-  file_info->IsConcrete = 1;
-  file_info->IsVTKObject = 1;
   file_info->FileName = NULL;
-  file_info->OutputFileName = NULL;
-  file_info->HierarchyFileName = NULL;
   file_info->NameComment = NULL;
   file_info->Description = NULL;
   file_info->Caveats = NULL;
@@ -1918,7 +1915,7 @@ FileInfo *vtkParse_ParseFile(
   InitFile(&data);
 
   data.FileName = vtkstrdup(filename);
-  data.IsConcrete = concrete;
+  is_concrete = concrete;
 
   CommentState = 0;
   currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
@@ -1971,7 +1968,7 @@ FileInfo *vtkParse_ParseFile(
         }
       data.Classes[0] = temp;
       /* override "IsAbstract" with the "IsConcrete" set by CMake */
-      data.Classes[0]->IsAbstract = !data.IsConcrete;
+      data.Classes[0]->IsAbstract = !is_concrete;
       break;
       }
     }
