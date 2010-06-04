@@ -391,9 +391,28 @@ void vtkWrapXML_Type(
     }
 }
 
+/* print a bitfield of class variable access methods */
+void vtkWrapXML_ClassVariableMethods(
+  FILE *fp, unsigned int methodBitfield, int indentation)
+{
+  int i;
+  unsigned int methodType;
+
+  for (i = 0; i < 32; i++)
+    {
+    methodType = methodBitfield & (1U << i);
+    if (methodType)
+      {
+      fprintf(fp, "%s<MethodType>%s</MethodType>\n", indent(indentation),
+        vtkParseVariables_MethodTypeAsString(methodType));
+      }
+    }
+}
+
 /* Print out a function in XML format */
 void vtkWrapXML_ClassMethod(
-  FILE *fp, ClassInfo *data, FunctionInfo *func, int indentation)
+  FILE *fp, ClassInfo *data, FunctionInfo *func, unsigned int methodType,
+  int indentation)
 {
   static const char *accessLevel[] = {"private", "public", "protected"};
   size_t i, n;
@@ -450,6 +469,11 @@ void vtkWrapXML_ClassMethod(
 
   fprintf(fp, "%s</Signature>\n", indent(--indentation));
 
+  if (methodType)
+    {
+    vtkWrapXML_ClassVariableMethods(fp, methodType, indentation);
+    }
+
   if (func->Comment)
     {
     fprintf(fp, "%s<Comment>\n", indent(indentation++));
@@ -482,27 +506,9 @@ void vtkWrapXML_ClassMethod(
   fprintf(fp, "%s</Method>\n", indent(--indentation));
 }
 
-/* print a bitfield of class variable access methods */
-void vtkWrapXML_ClassVariableMethods(
-  FILE *fp, unsigned int methodBitfield, int indentation)
-{
-  int i;
-  unsigned int methodType;
-
-  for (i = 0; i < 32; i++)
-    {
-    methodType = methodBitfield & (1U << i);
-    if (methodType)
-      {
-      fprintf(fp, "%s<MethodType>%s</MethodType>\n", indent(indentation),
-        vtkParseVariables_MethodTypeAsString(methodType));
-      }
-    }
-}
-
 /* Print out a variable in XML format */
 void vtkWrapXML_ClassVariable(
-  FILE *fp, VariableAttributes *var, int indentation)
+  FILE *fp, VariableInfo *var, int indentation)
 {
   int i;
 
@@ -563,7 +569,7 @@ void vtkWrapXML_ClassVariable(
 
 /* print information about all the methods in the class */
 void vtkWrapXML_ClassMethods(
-  FILE *fp, ClassInfo *data, int indentation)
+  FILE *fp, ClassInfo *data, ClassVariables *vars, int indentation)
 {
   int i, n;
   int numFunctions;
@@ -590,8 +596,8 @@ void vtkWrapXML_ClassMethods(
   for (i = 0; i < n; i++)
     {
     fprintf(fp, "\n");
-    vtkWrapXML_ClassMethod(fp, data,
-                           data->Functions[idList[i]], indentation);
+    vtkWrapXML_ClassMethod(fp, data, data->Functions[idList[i]],
+                           vars->MethodTypes[idList[i]], indentation);
     }
   fprintf(fp, "\n%s</Methods>\n", indent(--indentation));
 
@@ -600,13 +606,10 @@ void vtkWrapXML_ClassMethods(
 
 /* print information about all the variables in the class */
 void vtkWrapXML_ClassVariables(
-  FILE *fp, ClassInfo*data, int indentation)
+  FILE *fp, ClassInfo *data, ClassVariables *vars, int indentation)
 {
   int i, n;
-  ClassVariables *vars = 0;
   int *idList = 0;
-
-  vars = vtkParseVariables_Create(data);
 
   /* create a list of variable ids */
   n = vars->NumberOfVariables;
@@ -630,7 +633,6 @@ void vtkWrapXML_ClassVariables(
   fprintf(fp, "\n");
 
   free(idList);
-  vtkParseVariables_Free(vars);
 }
 
 /* check the hierarchy info (doesn't do anything with it yet) */
@@ -639,7 +641,6 @@ void vtkWrapXML_CheckHierarchy(FileInfo *data)
   HierarchyInfo *hinfo = NULL;
   OptionInfo *oinfo = NULL;
   const char *classname;
-  char *filepath;
 
   classname = data->Classes[0]->ClassName;
   oinfo = vtkParse_GetCommandLineOptions();
@@ -688,6 +689,7 @@ void vtkWrapXML_CheckHierarchy(FileInfo *data)
 void vtkParseOutput(FILE *fp, FileInfo *data)
 {
   int indentation = 0;
+  ClassVariables *vars;
   ClassInfo *classInfo = data->Classes[0];
 
   /* check the hierarchy info (doesn't do anything with it yet) */
@@ -699,11 +701,17 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
   /* print the documentation */
   vtkWrapXML_ClassDoc(fp, data, indentation);
 
+  /* get information about the variables */
+  vars = vtkParseVariables_Create(classInfo);
+
   /* print the methods section */
-  vtkWrapXML_ClassMethods(fp, classInfo, indentation);
+  vtkWrapXML_ClassMethods(fp, classInfo, vars, indentation);
 
   /* print the variables section */
-  vtkWrapXML_ClassVariables(fp, classInfo, indentation);
+  vtkWrapXML_ClassVariables(fp, classInfo, vars, indentation);
+
+  /* release the information about the variables */
+  vtkParseVariables_Free(vars);
 
   /* print the class footer */
   vtkWrapXML_ClassFooter(fp, classInfo, --indentation);

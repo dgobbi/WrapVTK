@@ -21,25 +21,28 @@
 #include "vtkParseVariables.h"
 #include "vtkConfigure.h"
 
-/* A struct that lays out the function information in a way
+/*-------------------------------------------------------------------
+ * A struct that lays out the function information in a way
  * that makes it easy to find methods that act on the same ivars.
  * Only ivar methods will properly fit this struct. */
 
 typedef struct _MethodAttributes
 {
-  const char *Name;
-  int Type;
-  int Count;
-  const char *ClassName;
-  const char *Comment;
-  int IsPublic;
-  int IsProtected;
-  int IsLegacy;
-  int IsHinted;
-  int IsMultiValue;
-  int IsIndexed;
-  int IsEnumerated;
-  int IsBoolean;
+  const char *Name;       /* method name */
+  int HasVariable;        /* method accesses a variable */
+  int Type;               /* data type of gettable/settable value */
+  int Count;              /* count for gettable/settable value */
+  const char *ClassName;  /* class name for if the type is a class */
+  const char *Comment;    /* documentation for method */
+  int IsPublic;           /* method is public */
+  int IsProtected;        /* method is protected */
+  int IsLegacy;           /* method is marked "legacy" */
+  int IsRepeat;           /* method is a repeat of a similar method */
+  int IsHinted;           /* method has a hint */
+  int IsMultiValue;       /* method is e.g. SetValue(x0, x1, x2) */
+  int IsIndexed;          /* method is e.g. SetValue(i, val) */
+  int IsEnumerated;       /* method is e.g. SetValueToSomething() */
+  int IsBoolean;          /* method is ValueOn() or ValueOff() */
 } MethodAttributes;
 
 typedef struct _ClassVariableMethods
@@ -155,7 +158,7 @@ static int isBooleanMethod(const char *name)
         (n > 3 && name[n-3] == 'O' && name[n-2] == 'f' && name[n-1] == 'f'))
       {
       return 1;
-      }    
+      }
     }
 
   return 0;
@@ -212,7 +215,7 @@ static int isGetMinValueMethod(const char *name)
     if (n > 11 && strcmp("MinValue", &name[n-8]) == 0)
       {
       return 1;
-      }    
+      }
     }
 
   return 0;
@@ -228,7 +231,7 @@ static int isGetMaxValueMethod(const char *name)
     if (n > 11 && strcmp("MaxValue", &name[n-8]) == 0)
       {
       return 1;
-      }    
+      }
     }
 
   return 0;
@@ -399,7 +402,7 @@ static const char *nameWithoutPrefix(const char *name)
     }
 
   return name;
-} 
+}
 
 /*-------------------------------------------------------------------
  * check for a valid suffix, i.e. "On" or "Off" or "ToSomething" */
@@ -471,6 +474,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   int indexed = 0;
 
   attrs->Name = func->Name;
+  attrs->HasVariable = 0; 
   attrs->Type = 0;
   attrs->Count = 0;
   attrs->ClassName = 0;
@@ -478,11 +482,18 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   attrs->IsPublic = func->IsPublic;
   attrs->IsProtected = func->IsProtected;
   attrs->IsLegacy = func->IsLegacy;
+  attrs->IsRepeat = 0;
   attrs->IsMultiValue = 0;
   attrs->IsHinted = 0;
   attrs->IsIndexed = 0;
   attrs->IsEnumerated = 0;
   attrs->IsBoolean = 0;
+
+  /* check for major issues with the function */
+  if (!func->Name || func->ArrayFailure || func->IsOperator)
+    {
+    return 0;
+    }
 
   /* check for indexed methods: the first argument will be an integer */
   if (func->NumberOfArguments > 0 &&
@@ -533,6 +544,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     /* methods of the form "type GetValue()" or "type GetValue(i)" */
     if (isGetMethod(func->Name))
       {
+      attrs->HasVariable = 1;
       attrs->Type = func->ReturnType;
       attrs->Count = (func->HaveHint ? func->HintSize : 0);
       attrs->IsHinted = func->HaveHint;
@@ -550,6 +562,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     /* "void SetValue(type)" or "void SetValue(int, type)" */
     if (isSetMethod(func->Name))
       {
+      attrs->HasVariable = 1;
       attrs->Type = func->ArgTypes[indexed];
       attrs->Count = func->ArgCounts[indexed];
       attrs->ClassName = func->ArgClasses[indexed];
@@ -562,6 +575,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
              vtkParse_TypeIsIndirect(func->ArgTypes[indexed]) &&
              !vtkParse_TypeIsConst(func->ArgTypes[indexed]))
       {
+      attrs->HasVariable = 1;
       attrs->Type = func->ArgTypes[indexed];
       attrs->Count = func->ArgCounts[indexed];
       attrs->ClassName = func->ArgClasses[indexed];
@@ -573,6 +587,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
              vtkParse_BaseType(func->ArgTypes[indexed]) == VTK_PARSE_VTK_OBJECT &&
              vtkParse_TypeIndirection(func->ArgTypes[indexed]) == VTK_PARSE_POINTER))
       {
+      attrs->HasVariable = 1;
       attrs->Type = func->ArgTypes[indexed];
       attrs->Count = func->ArgCounts[indexed];
       attrs->ClassName = func->ArgClasses[indexed];
@@ -603,6 +618,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
           vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
           !vtkParse_TypeIsIndirect(func->ReturnType))
         {
+        attrs->HasVariable = 1;
         attrs->Type = tmptype;
         attrs->Count = n;
         attrs->IsMultiValue = 1;
@@ -610,12 +626,13 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
         return 1;
         }
       /* "void GetValue(type& x, type& x, type& x)" */
-      else if (isGetMethod(func->Name) && 
+      else if (isGetMethod(func->Name) &&
                vtkParse_TypeIndirection(tmptype) == VTK_PARSE_REF &&
                !vtkParse_TypeIsConst(tmptype) &&
                vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
               !vtkParse_TypeIsIndirect(func->ReturnType))
         {
+        attrs->HasVariable = 1;
         attrs->Type = tmptype;
         attrs->Count = n;
         attrs->IsMultiValue = 1;
@@ -629,6 +646,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
                 vtkParse_BaseType(func->ReturnType) == VTK_PARSE_ID_TYPE) &&
                !vtkParse_TypeIsIndirect(func->ReturnType))
         {
+        attrs->HasVariable = 1;
         attrs->Type = tmptype;
         attrs->Count = n;
         attrs->IsMultiValue = 1;
@@ -648,18 +666,21 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     /* "void ValueOn()" or "void ValueOff()" */
     if (isBooleanMethod(func->Name))
       {
+      attrs->HasVariable = 1;
       attrs->IsBoolean = 1;
       return 1;
       }
     /* "void SetValueToEnum()" */
     else if (isEnumeratedMethod(func->Name))
       {
+      attrs->HasVariable = 1;
       attrs->IsEnumerated = 1;
       return 1;
       }
     /* "void RemoveAllValues()" */
     else if (isRemoveAllMethod(func->Name))
       {
+      attrs->HasVariable = 1;
       return 1;
       }
     }
@@ -674,7 +695,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
  * was part of the name match. */
 
 static int methodMatchesVariable(
-  VariableAttributes *var, MethodAttributes *meth, int *longMatch)
+  VariableInfo *var, MethodAttributes *meth, int *longMatch)
 {
   size_t n;
   int varType, methType;
@@ -697,7 +718,7 @@ static int methodMatchesVariable(
     methodBitfield = var->PrivateMethods;
     }
 
-  /* get the variable name and compare it to the method name */ 
+  /* get the variable name and compare it to the method name */
   varName = var->Name;
   name = nameWithoutPrefix(meth->Name);
 
@@ -707,7 +728,7 @@ static int methodMatchesVariable(
     }
 
   /* longMatch is only set for full matches of GetNumberOf(),
-   * SetNumberOf(), GetVarMinValue(), GetVarMaxValue() methods */ 
+   * SetNumberOf(), GetVarMinValue(), GetVarMaxValue() methods */
   *longMatch = 0;
   n = strlen(varName);
   if (isGetNumberOfMethod(meth->Name) || isSetNumberOfMethod(meth->Name))
@@ -728,21 +749,21 @@ static int methodMatchesVariable(
     if (n >= 8 && strcmp(&varName[n-8], "MinValue") == 0)
       {
       *longMatch = 1;
-      } 
+      }
     }
   else if (isGetMaxValueMethod(meth->Name))
     {
     if (n >= 8 && strcmp(&varName[n-8], "MaxValue") == 0)
       {
       *longMatch = 1;
-      } 
+      }
     }
   else if (isAsStringMethod(meth->Name))
     {
     if (n >= 8 && strcmp(&varName[n-8], "AsString") == 0)
       {
       *longMatch = 1;
-      } 
+      }
     }
 
   /* make sure the method name contains the variable name */
@@ -802,11 +823,11 @@ static int methodMatchesVariable(
   else if (vtkParse_TypeIndirection(methType) == VTK_PARSE_POINTER_REF)
     {
     methType = ((methType & ~VTK_PARSE_INDIRECT) | VTK_PARSE_POINTER);
-    } 
+    }
   else if (vtkParse_TypeIndirection(methType) == VTK_PARSE_CONST_POINTER_REF)
     {
     methType = ((methType & ~VTK_PARSE_INDIRECT) | VTK_PARSE_CONST_POINTER);
-    } 
+    }
 
   /* if method is multivalue, e.g. SetColor(r,g,b), then the
    * referenced variable is a pointer */
@@ -866,14 +887,13 @@ static int methodMatchesVariable(
 }
 
 /*-------------------------------------------------------------------
- * initialize a VariableAttributes struct from a MethodAttributes
+ * initialize a VariableInfo struct from a MethodAttributes
  * struct, only valid if the method name has no suffixes such as
- * On/Off, AsString, ToSomething, RemoveAllSomethings, etc. */ 
+ * On/Off, AsString, ToSomething, RemoveAllSomethings, etc. */
 
-static void initializeVariableAttributes(
-  VariableAttributes *var, MethodAttributes *meth)
+static void initializeVariableInfo(
+  VariableInfo *var, MethodAttributes *meth, unsigned int methodBit)
 {
-  unsigned int methodBit;
   int type;
   type = meth->Type;
 
@@ -919,10 +939,6 @@ static void initializeVariableAttributes(
   var->LegacyMethods = 0;
   var->Comment = meth->Comment;
 
-  /* add this as the initial member of the method bitfield,
-   * and ignore any suffixes while doing the categorization */
-  methodBit = methodCategory(meth, 0);
-
   if (meth->IsPublic)
     {
     var->PublicMethods = methodBit;
@@ -944,11 +960,11 @@ static void initializeVariableAttributes(
 
 /*-------------------------------------------------------------------
  * Find all the methods that match the specified method, and add
- * flags to the VariableAttributes struct */
+ * flags to the VariableInfo struct */
 
 static void findAllMatches(
-  VariableAttributes *var, ClassVariableMethods *methods,
-  int matchedMethods[])
+  VariableInfo *var, ClassVariableMethods *methods,
+  int matchedMethods[], unsigned int methodCategories[])
 {
   int i, j, n;
   size_t m;
@@ -977,6 +993,7 @@ static void findAllMatches(
         /* add this as a member of the method bitfield, and consider method
          * suffixes like On, MaxValue, etc. while doing the categorization */
         methodBit = methodCategory(meth, !longMatch);
+        methodCategories[i] = methodBit;
 
         if (meth->IsPublic)
           {
@@ -1018,7 +1035,7 @@ static void findAllMatches(
                 (char **)realloc(var->EnumConstantNames,
                                  sizeof(char *)*(j+8));
               }
-            var->EnumConstantNames[j] = 0; 
+            var->EnumConstantNames[j] = 0;
             }
           }
         }
@@ -1036,7 +1053,8 @@ static void categorizeVariables(
   int i, n;
   int *matchedMethods;
   MethodAttributes *meth;
-  VariableAttributes *var;
+  VariableInfo *var;
+  unsigned int category;
 
   variables->NumberOfVariables = 0;
 
@@ -1044,7 +1062,8 @@ static void categorizeVariables(
   matchedMethods = (int *)malloc(sizeof(int)*n);
   for (i = 0; i < n; i++)
     {
-    matchedMethods[i] = 0;
+    /* "matchedMethods" are methods removed from consideration */
+    matchedMethods[i] = !methods->Methods[i].HasVariable;
     }
 
   /* start with the set methods */
@@ -1053,15 +1072,21 @@ static void categorizeVariables(
     if (matchedMethods[i]) { continue; }
 
     meth = &methods->Methods[i];
+
     /* all set methods except for SetValueToEnum() methods
      * and SetNumberOf() methods */
     if (isSetMethod(meth->Name) && !meth->IsEnumerated &&
         !isSetNumberOfMethod(meth->Name))
       {
       matchedMethods[i] = 1;
-      var = &variables->Variables[variables->NumberOfVariables++];
-      initializeVariableAttributes(var, meth);
-      findAllMatches(var, methods, matchedMethods);
+      category = methodCategory(meth, 0);
+      variables->MethodTypes[i] = category;
+      if (!meth->IsRepeat)
+        {
+        var = &variables->Variables[variables->NumberOfVariables++];
+        initializeVariableInfo(var, meth, category);
+        findAllMatches(var, methods, matchedMethods, variables->MethodTypes);
+        }
       }
     }
 
@@ -1074,9 +1099,14 @@ static void categorizeVariables(
     if (isSetNumberOfMethod(meth->Name))
       {
       matchedMethods[i] = 1;
-      var = &variables->Variables[variables->NumberOfVariables++];
-      initializeVariableAttributes(var, meth);
-      findAllMatches(var, methods, matchedMethods);
+      category = methodCategory(meth, 0);
+      variables->MethodTypes[i] = category;
+      if (!meth->IsRepeat)
+        {
+        var = &variables->Variables[variables->NumberOfVariables++];
+        initializeVariableInfo(var, meth, category);
+        findAllMatches(var, methods, matchedMethods, variables->MethodTypes);
+        }
       }
     }
 
@@ -1092,9 +1122,14 @@ static void categorizeVariables(
         !isGetNumberOfMethod(meth->Name))
       {
       matchedMethods[i] = 1;
-      var = &variables->Variables[variables->NumberOfVariables++];
-      initializeVariableAttributes(var, meth);
-      findAllMatches(var, methods, matchedMethods);
+      category = methodCategory(meth, 0);
+      variables->MethodTypes[i] = category;
+      if (!meth->IsRepeat)
+        {
+        var = &variables->Variables[variables->NumberOfVariables++];
+        initializeVariableInfo(var, meth, category);
+        findAllMatches(var, methods, matchedMethods, variables->MethodTypes);
+        }
       }
     }
 
@@ -1107,9 +1142,14 @@ static void categorizeVariables(
     if (isGetNumberOfMethod(meth->Name))
       {
       matchedMethods[i] = 1;
-      var = &variables->Variables[variables->NumberOfVariables++];
-      initializeVariableAttributes(var, meth);
-      findAllMatches(var, methods, matchedMethods);
+      category = methodCategory(meth, 0);
+      variables->MethodTypes[i] = category;
+      if (!meth->IsRepeat)
+        {
+        var = &variables->Variables[variables->NumberOfVariables++];
+        initializeVariableInfo(var, meth, category);
+        findAllMatches(var, methods, matchedMethods, variables->MethodTypes);
+        }
       }
     }
 
@@ -1123,9 +1163,14 @@ static void categorizeVariables(
     if (isAddMethod(meth->Name))
       {
       matchedMethods[i] = 1;
-      var = &variables->Variables[variables->NumberOfVariables++];
-      initializeVariableAttributes(var, meth);
-      findAllMatches(var, methods, matchedMethods);
+      category = methodCategory(meth, 0);
+      variables->MethodTypes[i] = category;
+      if (!meth->IsRepeat)
+        {
+        var = &variables->Variables[variables->NumberOfVariables++];
+        initializeVariableInfo(var, meth, category);
+        findAllMatches(var, methods, matchedMethods, variables->MethodTypes);
+        }
       }
     }
 
@@ -1146,7 +1191,7 @@ static int searchForRepeatedMethods(
     meth = &methods->Methods[i];
 
     /* check whether the function name and basic structure are matched */
-    if (strcmp(attrs->Name, meth->Name) == 0 &&
+    if (meth->Name && strcmp(attrs->Name, meth->Name) == 0 &&
         vtkParse_TypeIndirection(attrs->Type) == vtkParse_TypeIndirection(meth->Type) &&
         attrs->IsPublic == meth->IsPublic &&
         attrs->IsProtected == meth->IsProtected &&
@@ -1168,6 +1213,7 @@ static int searchForRepeatedMethods(
           (attrs->IsLegacy && !meth->IsLegacy))
         {
         /* keep existing method */
+        attrs->IsRepeat = 1;
         return 0;
         }
 
@@ -1177,11 +1223,8 @@ static int searchForRepeatedMethods(
            attrs->Count > meth->Count) ||
           (!attrs->IsLegacy && meth->IsLegacy))
         {
-        /* replace existing method */
-        meth->IsLegacy = attrs->IsLegacy;
-        meth->Comment = attrs->Comment;
-        meth->Type = attrs->Type;
-        meth->Count = attrs->Count;
+        /* keep this method */
+        meth->IsRepeat = 1;
         return 0;
         }
       }
@@ -1198,43 +1241,25 @@ static void categorizeVariableMethods(
   ClassInfo *data, ClassVariableMethods *methods)
 {
   int i, n;
-  int *functionIds;
   FunctionInfo *func;
   MethodAttributes *attrs;
 
   methods->NumberOfMethods = 0;
 
-  /* create a list of function ids */
-  n = 0;
-  functionIds = (int *)malloc(sizeof(int)*data->NumberOfFunctions);
-  for (i = 0; i < data->NumberOfFunctions; i++)
-    {
-    if (data->Functions[i]->Name &&
-        !data->Functions[i]->ArrayFailure &&
-        !data->Functions[i]->IsOperator)
-      {
-      functionIds[n++] = i;
-      }
-    }
-
   /* build up the ClassVariableMethods struct */
+  n = data->NumberOfFunctions;
   for (i = 0; i < n; i++)
     {
-    func = data->Functions[functionIds[i]];
-    attrs = &methods->Methods[methods->NumberOfMethods];
+    func = data->Functions[i];
+    attrs = &methods->Methods[methods->NumberOfMethods++];
 
-    /* copy the func into a MethodAttributes struct if possible */ 
+    /* copy the func into a MethodAttributes struct if possible */
     if (getMethodAttributes(func, attrs))
       {
       /* check for repeats e.g. SetPoint(float *), SetPoint(double *) */
-      if (searchForRepeatedMethods(attrs, methods))
-        {      
-        methods->NumberOfMethods++;
-        }
+      searchForRepeatedMethods(attrs, methods);
       }
     }
-
-  free(functionIds);
 }
 
 /*-------------------------------------------------------------------
@@ -1242,6 +1267,7 @@ static void categorizeVariableMethods(
 
 ClassVariables *vtkParseVariables_Create(ClassInfo *data)
 {
+  int i;
   ClassVariables *vars;
   ClassVariableMethods *methods;
 
@@ -1254,12 +1280,19 @@ ClassVariables *vtkParseVariables_Create(ClassInfo *data)
   categorizeVariableMethods(data, methods);
 
   vars = (ClassVariables *)malloc(sizeof(ClassVariables));
-  vars->Variables = (VariableAttributes *)malloc(sizeof(VariableAttributes)*
-                                                 methods->NumberOfMethods);
+  vars->Variables = (VariableInfo *)malloc(sizeof(VariableInfo)*
+                                           methods->NumberOfMethods);
+  vars->MethodTypes = (unsigned int *)malloc(sizeof(unsigned int)*
+                                             methods->NumberOfMethods);
+
+  for (i = 0; i < methods->NumberOfMethods; i++)
+    {
+    vars->MethodTypes[i] = 0;
+    }
 
   /* synthesize a list of variables from the list of methods */
   categorizeVariables(methods, vars);
-  
+
   free(methods->Methods);
   free(methods);
 
@@ -1272,6 +1305,7 @@ ClassVariables *vtkParseVariables_Create(ClassInfo *data)
 void vtkParseVariables_Free(ClassVariables *vars)
 {
   free(vars->Variables);
+  free(vars->MethodTypes);
   free(vars);
 }
 

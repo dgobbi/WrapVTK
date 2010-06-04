@@ -81,12 +81,12 @@
  * A struct that contains all the variable information that
  * can be ascertained from the vtkParse info */
 
-typedef struct _VariableAttributes
+typedef struct _VariableInfo
 {
   const char *Name;          /* variable name */
-  const char *ClassName;     /* VTK object type of the variable, or NULL */
   int Type;                  /* variable type as VTK_PARSE constant */
   int Count;                 /* the count for array-type variables */
+  const char *ClassName;     /* VTK object type of the variable, or NULL */
   const char **EnumConstantNames;  /* the names of int enum values */
   unsigned int PublicMethods;      /* bitfield for public methods */
   unsigned int ProtectedMethods;   /* bitfield for protected methods */
@@ -95,7 +95,7 @@ typedef struct _VariableAttributes
   const char *Comment;       /* comment from header file */
   unsigned int ExtraFlags;   /* flags for any extra variable info */
   void *Extra;               /* pointer to extra variable info */
-} VariableAttributes;
+} VariableInfo;
 
 /* these 4 bits are reserved for when Extra points to cached values */
 #define VTKVAR_EXTRA_VALUES  0x00000000F
@@ -104,8 +104,10 @@ typedef struct _VariableAttributes
 
 typedef struct _ClassVariables
 {
-  int NumberOfVariables;
-  VariableAttributes *Variables;
+  int NumberOfVariables;      /* total number of variables found */
+  VariableInfo *Variables;    /* info for each variable */
+  int NumberOfMethods;        /* number of methods in FunctionInfo */
+  unsigned int *MethodTypes;  /* discovered type of each method */
 } ClassVariables;
 
 struct _ClassInfo;
