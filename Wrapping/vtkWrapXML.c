@@ -343,7 +343,7 @@ void vtkWrapXML_ClassInheritance(FILE *fp, MergeInfo *merge, int indentation)
   fprintf(fp, "%s<Inheritance>\n", indent(indentation++));
   for (i = 1; i < n; i++)
     {
-    fprintf(fp, "%s<Class>%s</Class>\n", indent(indentation),
+    fprintf(fp, "%s<ClassName>%s</ClassName>\n", indent(indentation),
             vtkWrapXML_Quote(merge->ClassNames[i], 500));
     }
   fprintf(fp, "%s</Inheritance>\n", indent(--indentation));
@@ -458,7 +458,7 @@ void vtkWrapXML_ClassMethod(
 
   if (classname)
     {
-    fprintf(fp, "%s<Class>%s</Class>\n", indent(indentation),
+    fprintf(fp, "%s<ClassName>%s</ClassName>\n", indent(indentation),
             classname);
     }
 
@@ -547,7 +547,7 @@ void vtkWrapXML_ClassVariable(
 
   if (classname)
     {
-    fprintf(fp, "%s<Class>%s</Class>\n", indent(indentation),
+    fprintf(fp, "%s<ClassName>%s</ClassName>\n", indent(indentation),
             classname);
     }
 
