@@ -32,10 +32,12 @@
 typedef struct _FunctionInfo
 {
   char *Name;
+  int   IsVirtual;
   int   IsPureVirtual;
   int   IsPublic;
   int   IsProtected;
   int   IsOperator;
+  int   IsLegacy;
   int   ArrayFailure;
   int   NumberOfArguments;
   int   ArgTypes[MAX_ARGS];
@@ -47,7 +49,6 @@ typedef struct _FunctionInfo
   int   HintSize;
   char *Comment;
   char *Signature;
-  int   IsLegacy;
 } FunctionInfo;
 
 typedef struct _ClassInfo

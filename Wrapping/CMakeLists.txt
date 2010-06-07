@@ -15,6 +15,7 @@ SET(vtkWrapXML_SRCS
   vtkParseUtils.c
   vtkParseVariables.c
   vtkParseHierarchy.c
+  vtkParseMerge.c
   vtkWrapXML.c
 )
 

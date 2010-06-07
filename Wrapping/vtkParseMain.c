@@ -135,7 +135,7 @@ char *vtkParse_FindPath(const char *filename)
 
     if (stat(filepath, &fs) == 0)
       {
-      output = (char *)malloc(strlen(filepath+1));
+      output = (char *)malloc(strlen(filepath)+1);
       strcpy(output, filepath);
       return output;
       }

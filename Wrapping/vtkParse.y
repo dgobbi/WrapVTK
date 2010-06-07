@@ -662,7 +662,11 @@ template_type: TYPENAME { postSig("typename "); }
 legacy_function: VTK_LEGACY '(' function ')' ;
 
 function: '~' destructor {openSig(); preSig("~"); closeSig();}
-      | VIRTUAL '~' destructor {openSig(); preSig("virtual ~"); closeSig();}
+      | VIRTUAL '~' destructor
+         {
+         openSig(); preSig("virtual ~"); closeSig();
+         currentFunction->IsVirtual = 1;
+         }
       | constructor
       | type func
          {
@@ -673,6 +677,7 @@ function: '~' destructor {openSig(); preSig("~"); closeSig();}
          openSig();
          preSig("virtual ");
          closeSig();
+         currentFunction->IsVirtual = 1;
          currentFunction->ReturnType = $<integer>2;
          };
 
@@ -690,6 +695,7 @@ operator:
          openSig();
          preSig("virtual ");
          closeSig();
+         currentFunction->IsVirtual = 1;
          currentFunction->ReturnType = $<integer>2;
          };
 
@@ -1716,6 +1722,7 @@ void InitFunction(FunctionInfo *func)
   func->Name = NULL;
   func->NumberOfArguments = 0;
   func->ArrayFailure = 0;
+  func->IsVirtual = 0;
   func->IsPureVirtual = 0;
   func->IsPublic = 0;
   func->IsOperator = 0;
@@ -2048,7 +2055,24 @@ int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
 /* Free the FileInfo struct returned by vtkParse_ParseFile() */
 void vtkParse_Free(FileInfo *file_info)
 {
-  /* big memory leak here */
+  /* big memory leak here, strings aren't freed */
+  int i, j, n, m;
+  ClassInfo *class_info;
+  FunctionInfo *func_info;
+
+  n = file_info->NumberOfClasses;
+  for (i = 0; i < n; i++)
+    {
+    class_info = file_info->Classes[i];
+    m = class_info->NumberOfFunctions;
+    for (j = 0; j < m; j++)
+      {
+      func_info = class_info->Functions[j];
+      free(func_info);
+      }
+    free(class_info);
+    }
+
   free(file_info);
 }
 

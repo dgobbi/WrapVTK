@@ -108,6 +108,7 @@ typedef struct _ClassVariables
   VariableInfo *Variables;    /* info for each variable */
   int NumberOfMethods;        /* number of methods in FunctionInfo */
   unsigned int *MethodTypes;  /* discovered type of each method */
+  int *MethodVariables;       /* discovered variable for each method */
 } ClassVariables;
 
 struct _ClassInfo;

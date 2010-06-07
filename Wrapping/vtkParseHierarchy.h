@@ -49,11 +49,15 @@ void vtkParseHierarchy_Free(HierarchyInfo *info);
 
 /* check whether class 1 is a subclass of class 2 */
 int vtkParseHierarchy_IsTypeOf(
-  HierarchyInfo *info, const char *subclass, const char *superclass);
+  const HierarchyInfo *info, const char *subclass, const char *superclass);
 
 /* get the header file for the specified class */
 const char *vtkParseHierarchy_ClassHeader(
-  HierarchyInfo *info, const char *classname);
+  const HierarchyInfo *info, const char *classname);
+
+/* get the nth superclass for specified class, or return null */
+const char *vtkParseHierarchy_ClassSuperClass(
+  const HierarchyInfo *info, const char *classname, int i);
 
 #ifdef __cplusplus
 } /* extern "C" */

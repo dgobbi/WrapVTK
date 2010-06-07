@@ -963,8 +963,9 @@ static void initializeVariableInfo(
  * flags to the VariableInfo struct */
 
 static void findAllMatches(
-  VariableInfo *var, ClassVariableMethods *methods,
-  int matchedMethods[], unsigned int methodCategories[])
+  VariableInfo *var, int varId, ClassVariableMethods *methods,
+  int matchedMethods[], unsigned int methodCategories[],
+  int methodVariables[])
 {
   int i, j, n;
   size_t m;
@@ -994,6 +995,7 @@ static void findAllMatches(
          * suffixes like On, MaxValue, etc. while doing the categorization */
         methodBit = methodCategory(meth, !longMatch);
         methodCategories[i] = methodBit;
+        methodVariables[i] = varId;
 
         if (meth->IsPublic)
           {
@@ -1044,147 +1046,16 @@ static void findAllMatches(
 }
 
 /*-------------------------------------------------------------------
- * This is the method that finds out everything that it can about
- * all variables that can be accessed by the methods of a class */
-
-static void categorizeVariables(
-  ClassVariableMethods *methods, ClassVariables *variables)
-{
-  int i, n;
-  int *matchedMethods;
-  MethodAttributes *meth;
-  VariableInfo *var;
-  unsigned int category;
-
-  variables->NumberOfVariables = 0;
-
-  n = methods->NumberOfMethods;
-  matchedMethods = (int *)malloc(sizeof(int)*n);
-  for (i = 0; i < n; i++)
-    {
-    /* "matchedMethods" are methods removed from consideration */
-    matchedMethods[i] = !methods->Methods[i].HasVariable;
-    }
-
-  /* start with the set methods */
-  for (i = 0; i < n; i++)
-    {
-    if (matchedMethods[i]) { continue; }
-
-    meth = &methods->Methods[i];
-
-    /* all set methods except for SetValueToEnum() methods
-     * and SetNumberOf() methods */
-    if (isSetMethod(meth->Name) && !meth->IsEnumerated &&
-        !isSetNumberOfMethod(meth->Name))
-      {
-      matchedMethods[i] = 1;
-      category = methodCategory(meth, 0);
-      variables->MethodTypes[i] = category;
-      if (!meth->IsRepeat)
-        {
-        var = &variables->Variables[variables->NumberOfVariables++];
-        initializeVariableInfo(var, meth, category);
-        findAllMatches(var, methods, matchedMethods, variables->MethodTypes);
-        }
-      }
-    }
-
-  /* sweep SetNumberOf() methods that didn't have
-   * matching indexed Set methods */
-  for (i = 0; i < n; i++)
-    {
-    if (matchedMethods[i]) { continue; }
-    meth = &methods->Methods[i];
-    if (isSetNumberOfMethod(meth->Name))
-      {
-      matchedMethods[i] = 1;
-      category = methodCategory(meth, 0);
-      variables->MethodTypes[i] = category;
-      if (!meth->IsRepeat)
-        {
-        var = &variables->Variables[variables->NumberOfVariables++];
-        initializeVariableInfo(var, meth, category);
-        findAllMatches(var, methods, matchedMethods, variables->MethodTypes);
-        }
-      }
-    }
-
-  /* next do the get methods that didn't have matching set methods */
-  for (i = 0; i < n; i++)
-    {
-    if (matchedMethods[i]) { continue; }
-
-    meth = &methods->Methods[i];
-    /* all get methods except for GetValueAs() methods
-     * and GetNumberOf() methods */
-    if (isGetMethod(meth->Name) && !isAsStringMethod(meth->Name) &&
-        !isGetNumberOfMethod(meth->Name))
-      {
-      matchedMethods[i] = 1;
-      category = methodCategory(meth, 0);
-      variables->MethodTypes[i] = category;
-      if (!meth->IsRepeat)
-        {
-        var = &variables->Variables[variables->NumberOfVariables++];
-        initializeVariableInfo(var, meth, category);
-        findAllMatches(var, methods, matchedMethods, variables->MethodTypes);
-        }
-      }
-    }
-
-  /* sweep the GetNumberOf() methods that didn't have
-   * matching indexed Get methods */
-  for (i = 0; i < n; i++)
-    {
-    if (matchedMethods[i]) { continue; }
-    meth = &methods->Methods[i];
-    if (isGetNumberOfMethod(meth->Name))
-      {
-      matchedMethods[i] = 1;
-      category = methodCategory(meth, 0);
-      variables->MethodTypes[i] = category;
-      if (!meth->IsRepeat)
-        {
-        var = &variables->Variables[variables->NumberOfVariables++];
-        initializeVariableInfo(var, meth, category);
-        findAllMatches(var, methods, matchedMethods, variables->MethodTypes);
-        }
-      }
-    }
-
-  /* finally do the add methods */
-  for (i = 0; i < n; i++)
-    {
-    if (matchedMethods[i]) { continue; }
-
-    meth = &methods->Methods[i];
-    /* all add methods */
-    if (isAddMethod(meth->Name))
-      {
-      matchedMethods[i] = 1;
-      category = methodCategory(meth, 0);
-      variables->MethodTypes[i] = category;
-      if (!meth->IsRepeat)
-        {
-        var = &variables->Variables[variables->NumberOfVariables++];
-        initializeVariableInfo(var, meth, category);
-        findAllMatches(var, methods, matchedMethods, variables->MethodTypes);
-        }
-      }
-    }
-
-  free(matchedMethods);
-}
-
-/*-------------------------------------------------------------------
  * search for methods that are repeated with minor variations */
 static int searchForRepeatedMethods(
-  MethodAttributes *attrs, ClassVariableMethods *methods)
+  ClassVariables *vars, ClassVariableMethods *methods, int j)
 {
   int i, n;
+  MethodAttributes *attrs;
   MethodAttributes *meth;
   n = methods->NumberOfMethods;
+
+  attrs = &methods->Methods[j];
 
   for (i = 0; i < n; i++)
     {
@@ -1192,7 +1063,8 @@ static int searchForRepeatedMethods(
 
     /* check whether the function name and basic structure are matched */
     if (meth->Name && strcmp(attrs->Name, meth->Name) == 0 &&
-        vtkParse_TypeIndirection(attrs->Type) == vtkParse_TypeIndirection(meth->Type) &&
+        (vtkParse_TypeIndirection(attrs->Type) ==
+          vtkParse_TypeIndirection(meth->Type)) &&
         attrs->IsPublic == meth->IsPublic &&
         attrs->IsProtected == meth->IsProtected &&
         attrs->IsHinted == meth->IsHinted &&
@@ -1214,6 +1086,11 @@ static int searchForRepeatedMethods(
         {
         /* keep existing method */
         attrs->IsRepeat = 1;
+        if (vars)
+          {
+          vars->MethodTypes[j] = vars->MethodTypes[i];
+          vars->MethodVariables[j] = vars->MethodVariables[i];
+          }
         return 0;
         }
 
@@ -1225,6 +1102,11 @@ static int searchForRepeatedMethods(
         {
         /* keep this method */
         meth->IsRepeat = 1;
+        if (vars)
+          {
+          vars->MethodTypes[i] = vars->MethodTypes[j];
+          vars->MethodVariables[i] = vars->MethodVariables[j];
+          }
         return 0;
         }
       }
@@ -1232,6 +1114,118 @@ static int searchForRepeatedMethods(
 
   /* no matches */
   return 1;
+}
+
+/*-------------------------------------------------------------------
+ * Add a variable, using method at index i as a template */
+
+static void addVariable(
+  ClassVariables *variables, ClassVariableMethods *methods, int i,
+  int matchedMethods[])
+{ 
+  MethodAttributes *meth = &methods->Methods[i];
+  VariableInfo *var;
+  unsigned int category;
+
+  /* save the info about the method used to discover the variable */
+  matchedMethods[i] = 1;
+  category = methodCategory(meth, 0);
+  variables->MethodTypes[i] = category;
+  variables->MethodVariables[i] = variables->NumberOfVariables;
+  /* duplicate the info for all "repeat" methods */
+  searchForRepeatedMethods(variables, methods, i);
+
+  /* create the variable */
+  var = &variables->Variables[variables->NumberOfVariables];
+  initializeVariableInfo(var, meth, category);
+  findAllMatches(var, variables->NumberOfVariables, methods,
+                 matchedMethods, variables->MethodTypes,
+                 variables->MethodVariables);
+
+  variables->NumberOfVariables++;
+}
+
+/*-------------------------------------------------------------------
+ * This is the method that finds out everything that it can about
+ * all variables that can be accessed by the methods of a class */
+
+static void categorizeVariables(
+  ClassVariableMethods *methods, ClassVariables *variables)
+{
+  int i, n;
+  int *matchedMethods;
+
+  variables->NumberOfVariables = 0;
+
+  n = methods->NumberOfMethods;
+  matchedMethods = (int *)malloc(sizeof(int)*n);
+  for (i = 0; i < n; i++)
+    {
+    /* "matchedMethods" are methods removed from consideration */
+    matchedMethods[i] = 0;
+    if (!methods->Methods[i].HasVariable || methods->Methods[i].IsRepeat)
+      {
+      matchedMethods[i] = 1;
+      }
+    }
+
+  /* start with the set methods */
+  for (i = 0; i < n; i++)
+    {
+    /* all set methods except for SetValueToEnum() methods
+     * and SetNumberOf() methods */
+    if (!matchedMethods[i] && isSetMethod(methods->Methods[i].Name) &&
+        !methods->Methods[i].IsEnumerated &&
+        !isSetNumberOfMethod(methods->Methods[i].Name))
+      {
+      addVariable(variables, methods, i, matchedMethods);
+      }
+    }
+
+  /* sweep SetNumberOf() methods that didn't have
+   * matching indexed Set methods */
+  for (i = 0; i < n; i++)
+    {
+    if (!matchedMethods[i] && isSetNumberOfMethod(methods->Methods[i].Name))
+      {
+      addVariable(variables, methods, i, matchedMethods);
+      }
+    }
+
+  /* next do the get methods that didn't have matching set methods */
+  for (i = 0; i < n; i++)
+    {
+    /* all get methods except for GetValueAs() methods
+     * and GetNumberOf() methods */
+    if (!matchedMethods[i] && isGetMethod(methods->Methods[i].Name) &&
+        !isAsStringMethod(methods->Methods[i].Name) &&
+        !isGetNumberOfMethod(methods->Methods[i].Name))
+      {
+      addVariable(variables, methods, i, matchedMethods);
+      }
+    }
+
+  /* sweep the GetNumberOf() methods that didn't have
+   * matching indexed Get methods */
+  for (i = 0; i < n; i++)
+    {
+    if (!matchedMethods[i] && isGetNumberOfMethod(methods->Methods[i].Name))
+      {
+      addVariable(variables, methods, i, matchedMethods);
+      }
+    }
+
+  /* finally do the add methods */
+  for (i = 0; i < n; i++)
+    {
+    /* all add methods */
+    if (!matchedMethods[i] && isAddMethod(methods->Methods[i].Name))
+      {
+      addVariable(variables, methods, i, matchedMethods);
+      }
+    }
+
+  free(matchedMethods);
 }
 
 /*-------------------------------------------------------------------
@@ -1257,7 +1251,7 @@ static void categorizeVariableMethods(
     if (getMethodAttributes(func, attrs))
       {
       /* check for repeats e.g. SetPoint(float *), SetPoint(double *) */
-      searchForRepeatedMethods(attrs, methods);
+      searchForRepeatedMethods(0, methods, i);
       }
     }
 }
@@ -1280,14 +1274,18 @@ ClassVariables *vtkParseVariables_Create(ClassInfo *data)
   categorizeVariableMethods(data, methods);
 
   vars = (ClassVariables *)malloc(sizeof(ClassVariables));
+  vars->NumberOfVariables = 0;
+  vars->NumberOfMethods = methods->NumberOfMethods;
   vars->Variables = (VariableInfo *)malloc(sizeof(VariableInfo)*
                                            methods->NumberOfMethods);
   vars->MethodTypes = (unsigned int *)malloc(sizeof(unsigned int)*
                                              methods->NumberOfMethods);
+  vars->MethodVariables = (int *)malloc(sizeof(int)*methods->NumberOfMethods);
 
   for (i = 0; i < methods->NumberOfMethods; i++)
     {
     vars->MethodTypes[i] = 0;
+    vars->MethodVariables[i] = -1;
     }
 
   /* synthesize a list of variables from the list of methods */
@@ -1306,6 +1304,7 @@ void vtkParseVariables_Free(ClassVariables *vars)
 {
   free(vars->Variables);
   free(vars->MethodTypes);
+  free(vars->MethodVariables);
   free(vars);
 }
 

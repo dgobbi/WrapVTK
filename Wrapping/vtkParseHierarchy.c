@@ -166,7 +166,8 @@ void vtkParseHierarchy_Free(HierarchyInfo *info)
 }
 
 static int superclass_helper(
-  HierarchyInfo *info, HierarchyEntry *entry, const char *superclass)
+  const HierarchyInfo *info, const HierarchyEntry *entry,
+  const char *superclass)
 {
   int iterating = 1;
   int i, j;
@@ -200,7 +201,7 @@ static int superclass_helper(
           if (strcmp(entry->SuperClasses[j], info->Classes[i].ClassName) == 0)
             {
             /* cache the position of the superclass */
-            entry->SuperClassIndex[j] = i;
+            ((HierarchyEntry *)entry)->SuperClassIndex[j] = i;
             break;
             }
           }
@@ -208,7 +209,7 @@ static int superclass_helper(
           {
           /* outside of hierarchy, can't search */
           i = -2;
-          entry->SuperClassIndex[j] = i;
+          ((HierarchyEntry *)entry)->SuperClassIndex[j] = i;
           }
         if (i >= 0)
           {
@@ -235,7 +236,7 @@ static int superclass_helper(
 
 /* check whether class 2 is a subclass of class 1 */
 int vtkParseHierarchy_IsTypeOf(
-  HierarchyInfo *info, const char *subclass, const char *superclass)
+  const HierarchyInfo *info, const char *subclass, const char *superclass)
 {
   HierarchyEntry *entry;
   int i;
@@ -254,7 +255,7 @@ int vtkParseHierarchy_IsTypeOf(
 
 /* get the header file for the specified class */
 const char *vtkParseHierarchy_ClassHeader(
-  HierarchyInfo *info, const char *classname)
+  const HierarchyInfo *info, const char *classname)
 {
   HierarchyEntry *entry;
   int i;
@@ -265,6 +266,32 @@ const char *vtkParseHierarchy_ClassHeader(
     if (strcmp(classname, entry->ClassName) == 0)
       {
       return entry->HeaderFile;
+      }
+    }
+
+  return NULL;
+}
+
+/* get the nth superclass for specified class, or return null */
+const char *vtkParseHierarchy_ClassSuperClass(
+  const HierarchyInfo *info, const char *classname, int i)
+{
+  HierarchyEntry *entry;
+  int j, k;
+
+  for (j = 0; j < info->NumberOfClasses; j++)
+    {
+    entry = &info->Classes[j];
+    if (strcmp(classname, entry->ClassName) == 0)
+      {
+      for (k = 0; k <= i; k++)
+        {
+        if (entry->SuperClasses[k] == NULL)
+          {
+          return NULL;
+          }
+        return entry->SuperClasses[i];
+        }
       }
     }
 

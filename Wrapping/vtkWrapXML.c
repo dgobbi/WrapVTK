@@ -31,6 +31,7 @@
 #include "vtkParseUtils.h"
 #include "vtkParseVariables.h"
 #include "vtkParseHierarchy.h"
+#include "vtkParseMerge.h"
 #include "vtkParseMain.h"
 #include "vtkConfigure.h"
 
@@ -236,7 +237,7 @@ void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
 
   /* actually, vtk classes never have more than one superclass */
   n = data->NumberOfSuperClasses;
-  for (i = 0; i < n && i < 1; i++)
+  for (i = 0; i < n; i++)
     {
     fprintf(fp, "%s<Superclass>%s</Superclass>\n", indent(indentation),
             vtkWrapXML_Quote(data->SuperClasses[i], 500));
@@ -332,6 +333,22 @@ void vtkWrapXML_ClassDoc(FILE *fp, FileInfo *data, int indentation)
   fprintf(fp, "%s</Comment>\n", indent(--indentation));
 }
 
+void vtkWrapXML_ClassInheritance(FILE *fp, MergeInfo *merge, int indentation)
+{
+  int i, n;
+
+  /* show the geneology */
+  n = merge->NumberOfClasses;
+
+  fprintf(fp, "%s<Inheritance>\n", indent(indentation++));
+  for (i = 1; i < n; i++)
+    {
+    fprintf(fp, "%s<Class>%s</Class>\n", indent(indentation),
+            vtkWrapXML_Quote(merge->ClassNames[i], 500));
+    }
+  fprintf(fp, "%s</Inheritance>\n", indent(--indentation));
+}
+
 /* Print out a type in XML format */
 void vtkWrapXML_Type(
   FILE *fp, int type, const char *vtkclass, int count, int indentation)
@@ -412,7 +429,7 @@ void vtkWrapXML_ClassVariableMethods(
 /* Print out a function in XML format */
 void vtkWrapXML_ClassMethod(
   FILE *fp, ClassInfo *data, FunctionInfo *func, unsigned int methodType,
-  int indentation)
+  const char *classname, int indentation)
 {
   static const char *accessLevel[] = {"private", "public", "protected"};
   size_t i, n;
@@ -438,6 +455,13 @@ void vtkWrapXML_ClassMethod(
   fprintf(fp, "%s<Method>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(func->Name, 500));
+
+  if (classname)
+    {
+    fprintf(fp, "%s<Class>%s</Class>\n", indent(indentation),
+            classname);
+    }
+
   fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation),
           accessLevel[access]);
 
@@ -446,9 +470,14 @@ void vtkWrapXML_ClassMethod(
     fprintf(fp, "%s<Flag>static</Flag>\n", indent(indentation));
     }
 
+  if (func->IsVirtual)
+    {
+    fprintf(fp, "%s<Flag>virtual</Flag>\n", indent(indentation));
+    }
+
   if (func->IsPureVirtual)
     {
-    fprintf(fp, "%s<Flag>pureVirtual</Flag>\n", indent(indentation));
+    fprintf(fp, "%s<Flag>pure</Flag>\n", indent(indentation));
     }
 
   if (func->IsLegacy)
@@ -508,13 +537,19 @@ void vtkWrapXML_ClassMethod(
 
 /* Print out a variable in XML format */
 void vtkWrapXML_ClassVariable(
-  FILE *fp, VariableInfo *var, int indentation)
+  FILE *fp, VariableInfo *var, const char *classname, int indentation)
 {
   int i;
 
   fprintf(fp, "%s<Variable>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           var->Name);
+
+  if (classname)
+    {
+    fprintf(fp, "%s<Class>%s</Class>\n", indent(indentation),
+            classname);
+    }
 
   if (var->Comment)
     {
@@ -569,10 +604,12 @@ void vtkWrapXML_ClassVariable(
 
 /* print information about all the methods in the class */
 void vtkWrapXML_ClassMethods(
-  FILE *fp, ClassInfo *data, ClassVariables *vars, int indentation)
+  FILE *fp, ClassInfo *data, ClassVariables *vars, MergeInfo *merge,
+  int indentation)
 {
   int i, n;
   int numFunctions;
+  const char *classname = 0;
   int *idList = (int *)malloc(sizeof(int)*data->NumberOfFunctions);
 
   /* create a list of function ids */
@@ -595,9 +632,14 @@ void vtkWrapXML_ClassMethods(
   /* function handling code */
   for (i = 0; i < n; i++)
     {
+    if (merge && merge->NumberOfOverrides[idList[i]])
+      {
+      classname = merge->ClassNames[merge->OverrideClasses[idList[i]][0]];
+      }
     fprintf(fp, "\n");
     vtkWrapXML_ClassMethod(fp, data, data->Functions[idList[i]],
-                           vars->MethodTypes[idList[i]], indentation);
+                           vars->MethodTypes[idList[i]],
+                           classname, indentation);
     }
   fprintf(fp, "\n%s</Methods>\n", indent(--indentation));
 
@@ -606,10 +648,13 @@ void vtkWrapXML_ClassMethods(
 
 /* print information about all the variables in the class */
 void vtkWrapXML_ClassVariables(
-  FILE *fp, ClassInfo *data, ClassVariables *vars, int indentation)
+  FILE *fp, ClassInfo *data, ClassVariables *vars, MergeInfo *merge,
+  int indentation)
 {
-  int i, n;
+  int i, j, n;
   int *idList = 0;
+  int classId = 0;
+  const char *classname = 0;
 
   /* create a list of variable ids */
   n = vars->NumberOfVariables;
@@ -626,8 +671,30 @@ void vtkWrapXML_ClassVariables(
   /* variable handling code */
   for (i = 0; i < n; i++)
     {
+    /* Find the least-deep class this variable has an accessor method in */
+    classname = NULL;
+    if (merge)
+      {
+      classId = -1;
+      for (j = 0; j < vars->NumberOfMethods; j++)
+        {
+        if (vars->MethodVariables[j] == idList[i])
+          {
+          if (merge->NumberOfOverrides[j])
+            {
+            if (classId < 0 || merge->OverrideClasses[j][0] < classId)
+              {
+              classId = merge->OverrideClasses[j][0];
+              classname = merge->ClassNames[classId];
+              }
+            }
+          }
+        }
+      }
+
     fprintf(fp, "\n");
-    vtkWrapXML_ClassVariable(fp, &vars->Variables[idList[i]], indentation);
+    vtkWrapXML_ClassVariable(fp, &vars->Variables[idList[i]], classname,
+                             indentation);
     }
   fprintf(fp, "\n%s</Variables>\n", indent(--indentation));
   fprintf(fp, "\n");
@@ -635,45 +702,133 @@ void vtkWrapXML_ClassVariables(
   free(idList);
 }
 
-/* check the hierarchy info (doesn't do anything with it yet) */
-void vtkWrapXML_CheckHierarchy(FileInfo *data)
+/* Recursive suproutine to add the methods of "classname" and all its
+ * superclasses to "merge" */
+void vtkWrapXML_MergeHelper(
+  const FileInfo *data, const HierarchyInfo *hinfo, const char *classname,
+  FILE *hintfile, MergeInfo *info, ClassInfo *merge)
 {
+  FILE *fp = NULL;
+  ClassInfo *cinfo = NULL;
+  FileInfo *finfo = NULL;
+  const char *header;
+  char *filename;
+  int i, n;
+
+  /* find out if "classname" is in the currently loaded FileInfo */
+  n = data->NumberOfClasses;
+  for (i = 0; i < n; i++)
+    {
+    if (strcmp(data->Classes[i]->ClassName, classname) == 0)
+      {
+      cinfo = data->Classes[i];
+      break;
+      }
+    }
+
+  if (!cinfo)
+    {
+    header = vtkParseHierarchy_ClassHeader(hinfo, classname);
+    if (!header)
+      {
+      return;
+      }
+    filename = vtkParse_FindPath(header);
+    if (!filename)
+      {
+      if (hintfile) { fclose(hintfile); }
+      fprintf(stderr, "Couldn't locate header file %s\n", header);
+      exit(1);
+      }
+
+    fp = fopen(filename, "r");
+    if (!fp)
+      {
+      if (hintfile) { fclose(hintfile); }
+      fprintf(stderr, "Couldn't open header file %s\n", header);
+      exit(1);
+      }
+
+    finfo = vtkParse_ParseFile(filename, 0, fp, stderr);
+    vtkParse_FreePath(filename);
+    fclose(fp);
+
+    if (!finfo)
+      {
+      if (hintfile) { fclose(hintfile); }
+      exit(1);
+      }
+
+    if (hintfile)
+      {
+      rewind(hintfile);
+      vtkParse_ReadHints(finfo, hintfile, stderr);
+      }
+
+    data = finfo;
+    n = data->NumberOfClasses;
+    for (i = 0; i < n; i++)
+      {
+      if (strcmp(data->Classes[i]->ClassName, classname) == 0)
+        {
+        cinfo = data->Classes[i];
+        break;
+        }
+      }
+    }
+
+  if (cinfo)
+    {
+    vtkParseMerge_Merge(info, merge, cinfo);
+    n = cinfo->NumberOfSuperClasses;
+    for (i = 0; i < n; i++)
+      {
+      vtkWrapXML_MergeHelper(data, hinfo, cinfo->SuperClasses[i],
+                             hintfile, info, merge);
+      }
+    }
+
+  if (finfo)
+    {
+    vtkParse_Free(finfo);
+    }
+}
+
+/* Merge the methods from the superclasses */
+MergeInfo *vtkWrapXML_MergeSuperClasses(
+  FileInfo *data, ClassInfo *classInfo)
+{
+  FILE *hintfile = NULL;
   HierarchyInfo *hinfo = NULL;
+  MergeInfo *info = NULL;
   OptionInfo *oinfo = NULL;
   const char *classname;
+  int i, n;
 
-  classname = data->Classes[0]->ClassName;
+  classname = classInfo->ClassName;
   oinfo = vtkParse_GetCommandLineOptions();
 
   if (oinfo->HierarchyFileName)
     {
     hinfo = vtkParseHierarchy_ReadFile(oinfo->HierarchyFileName);
 
-    /* just test these methods to make sure they don't crash */
-    if (!vtkParseHierarchy_IsTypeOf(hinfo, classname, "vtkObjectBase")
-        != !oinfo->IsVTKObject)
+    if (oinfo->HintFileName)
       {
-      if (oinfo->IsVTKObject)
-        {
-        fprintf(stderr, "Hierarchy thinks %s is a special object\n",
-                classname);
-        }
-      else
-        {
-        fprintf(stderr, "Hierarchy thinks %s is a vtk object\n",
-                classname);
-        }
-      vtkParseHierarchy_Free(hinfo);
-      exit(1);
+      hintfile = fopen(oinfo->HintFileName, "r");
       }
-    if (strncmp(vtkParseHierarchy_ClassHeader(hinfo, classname),
-                classname, strlen(classname)) != 0)
+
+    info = vtkParseMerge_CreateMergeInfo(classInfo);
+
+    n = classInfo->NumberOfSuperClasses;
+    for (i = 0; i < n; i++)
       {
-      fprintf(stderr, "Wrong header file \"%s\" for class %s\n",
-              vtkParseHierarchy_ClassHeader(hinfo, classname),
-              classname);
-      vtkParseHierarchy_Free(hinfo);
-      exit(1);
+      vtkWrapXML_MergeHelper(data, hinfo, classInfo->SuperClasses[i],
+                             hintfile, info, classInfo);
+      }
+
+    if (hintfile)
+      {
+      fclose(hintfile);
       }
     }
 
@@ -681,6 +836,8 @@ void vtkWrapXML_CheckHierarchy(FileInfo *data)
     {
     vtkParseHierarchy_Free(hinfo);
     }
+
+  return info;
 }
 
 /* main functions that takes a parsed FileInfo from vtk and produces a
@@ -690,10 +847,8 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
 {
   int indentation = 0;
   ClassVariables *vars;
+  MergeInfo *merge = NULL;
   ClassInfo *classInfo = data->Classes[0];
-
-  /* check the hierarchy info (doesn't do anything with it yet) */
-  vtkWrapXML_CheckHierarchy(data);
 
   /* start new XML section for class */
   vtkWrapXML_ClassHeader(fp, classInfo, indentation++);
@@ -701,17 +856,32 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
   /* print the documentation */
   vtkWrapXML_ClassDoc(fp, data, indentation);
 
+  /* merge all the superclass information */
+  merge = vtkWrapXML_MergeSuperClasses(data, classInfo);
+
+  if (merge)
+    {
+    fprintf(fp, "\n");
+    vtkWrapXML_ClassInheritance(fp, merge, indentation);
+    }
+
   /* get information about the variables */
   vars = vtkParseVariables_Create(classInfo);
 
   /* print the methods section */
-  vtkWrapXML_ClassMethods(fp, classInfo, vars, indentation);
+  vtkWrapXML_ClassMethods(fp, classInfo, vars, merge, indentation);
 
   /* print the variables section */
-  vtkWrapXML_ClassVariables(fp, classInfo, vars, indentation);
+  vtkWrapXML_ClassVariables(fp, classInfo, vars, merge, indentation);
 
   /* release the information about the variables */
   vtkParseVariables_Free(vars);
+
+  /* release the info about what was merged from superclasses */
+  if (merge)
+    {
+    vtkParseMerge_FreeMergeInfo(merge);
+    }
 
   /* print the class footer */
   vtkWrapXML_ClassFooter(fp, classInfo, --indentation);
