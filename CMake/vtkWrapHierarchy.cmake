@@ -22,8 +22,8 @@ MACRO(VTK_WRAP_HIERARCHY TARGET OUTPUT_DIR SOURCES)
 
   SET(VTK_WRAPPER_INIT_DATA)
 
-  # list of produced files
-  SET(OUTPUT_FILES)
+  # list of used files
+  SET(INPUT_FILES)
 
   # For each class
   FOREACH(FILE ${SOURCES})
@@ -57,25 +57,12 @@ MACRO(VTK_WRAP_HIERARCHY TARGET OUTPUT_DIR SOURCES)
         SET(TMP_INPUT ${KIT_HEADER_DIR}/${TMP_FILENAME}.h)
       ENDIF (TMP_FILEPATH)
 
-      SET(TMP_OUTPUT ${OUTPUT_DIR}/${TMP_FILENAME}Hierarchy.txt)
+      # add to the INPUT_FILES
+      SET(INPUT_FILES ${INPUT_FILES} ${TMP_INPUT})
 
       # add the info to the init file
       SET(VTK_WRAPPER_INIT_DATA
-        "${VTK_WRAPPER_INIT_DATA}${TMP_OUTPUT}\n")
-
-      # add custom command to output
-      ADD_CUSTOM_COMMAND(
-        OUTPUT ${TMP_OUTPUT}
-        DEPENDS ${VTK_WRAP_HIERARCHY_EXE} ${TMP_INPUT}
-        COMMAND ${VTK_WRAP_HIERARCHY_EXE}
-        ARGS
-        "${quote}${TMP_INPUT}${quote}"
-        "${quote}${TMP_OUTPUT}${quote}"
-        COMMENT "Hierarchy Wrapping - generating ${TMP_FILENAME}Hierarchy.txt"
-        ${verbatim}
-        )
-
-      SET(OUTPUT_FILES ${OUTPUT_FILES} ${TMP_OUTPUT})
+        "${VTK_WRAPPER_INIT_DATA}${TMP_INPUT}\n")
 
     ENDIF (TMP_WRAP_SPECIAL OR NOT TMP_WRAP_EXCLUDE)
   ENDFOREACH(FILE)
@@ -115,7 +102,7 @@ MACRO(VTK_WRAP_HIERARCHY TARGET OUTPUT_DIR SOURCES)
   # overwritten if it will changed
   ADD_CUSTOM_COMMAND(
     OUTPUT ${OUTPUT_DIR}/${TARGET}.target ${OUTPUT_DIR}/${TARGET}.txt
-    DEPENDS ${VTK_BUILD_HIERARCHY_EXE} ${OUTPUT_FILES}
+    DEPENDS ${VTK_BUILD_HIERARCHY_EXE} ${INPUT_FILES}
     ${OTHER_HIERARCHY_FILES}
     ${OUTPUT_DIR}/${TARGET}.data
 

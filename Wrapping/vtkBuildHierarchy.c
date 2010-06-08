@@ -21,6 +21,7 @@
  classname [ : superclass ] ; header.h
 */
 
+#include "vtkParse.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -28,8 +29,76 @@
 
 #define MAX_NUM_CLASSES 10000
 
-/* read a file into "lines" without duplicating lines */
-static int read_file(FILE *fp, char *lines[])
+/* read a header file with vtkParse.tab.c */
+static int parse_header_file(FILE *fp, const char *filename, char *lines[])
+{
+  char line[2048];
+  char *cp;
+  FileInfo *data;
+  ClassInfo *class_info;
+  int i, j, k;
+
+  /* the "concrete" flag doesn't matter, just set to zero */
+  data = vtkParse_ParseFile(filename, 0, fp, stderr);
+
+  if (!data)
+    {
+    return 0;
+    }
+
+  /* find the last line in "lines" */
+  k = 0;
+  while (lines[k] != NULL)
+    {
+    k++;
+    }
+
+  cp = line;
+
+  /* add a line for each class that is found */
+  for (i = 0; i < data->NumberOfClasses; i++)
+    {
+    class_info = data->Classes[i];
+
+    sprintf(cp, "%s ", class_info->ClassName);
+    cp += strlen(cp);
+    if (class_info->NumberOfSuperClasses)
+      {
+      sprintf(cp, ": ");
+      cp += strlen(cp);
+      }
+
+    for (j = 0; j < class_info->NumberOfSuperClasses; j++)
+      {
+      sprintf(cp, "%s ", class_info->SuperClasses[j]);
+      cp += strlen(cp);
+      if (j+1 < class_info->NumberOfSuperClasses)
+        {
+        sprintf(cp, ", ");
+        cp += strlen(cp);
+        }
+      }
+
+    j = strlen(data->FileName) - 1;
+    while (j > 0 && data->FileName[j-1] != '/' && data->FileName[j-1] != '\\')
+      {
+      j--;
+      }
+
+    sprintf(cp, "; %s", &data->FileName[j]);
+    cp = line;
+    lines[k] = (char *)malloc(strlen(cp)+1);
+    strcpy(lines[k++], cp);
+    lines[k] = NULL;
+    }
+
+  vtkParse_Free(data);
+
+  return 1;
+}
+
+/* read a hierarchy file into "lines" without duplicating lines */
+static int read_text_file(FILE *fp, char *lines[])
 {
   char line[2048];
   int i, n;
@@ -141,7 +210,7 @@ static int compare_file(FILE *fp, char *lines[])
 }
 
 /* write "lines" to a file */
-static int write_file(FILE *fp, char *lines[])
+static int write_text_file(FILE *fp, char *lines[])
 {
   int i;
 
@@ -156,8 +225,75 @@ static int write_file(FILE *fp, char *lines[])
   return 1;
 }
 
+/* try to parse a header file, print error and exit if fail */
+static int try_parse_header_file(
+  char *include_dirs[], const char *file_name, char *lines[])
+{
+  const char *sep;
+  char *full_path;
+  FILE *input_file;
+  int i, n;
+  int maxlen = 0;
+
+  /* find out the full path length for string allocation */
+  for (i = 0; include_dirs[i] != NULL; i++)
+    {
+    n = strlen(include_dirs[i]);
+    if (n > maxlen)
+      {
+      maxlen = n;
+      }
+    }
+
+  maxlen += strlen(file_name) + 1;
+
+  full_path = (char *)malloc(maxlen+1);
+
+  /* try each path until the file loads */
+  for (i = 0; include_dirs[i] != NULL; i++)
+    {
+    sep = "/";
+    n = strlen(include_dirs[i]);
+    if (n > 0 && include_dirs[i][-1] == sep[0])
+      {
+      sep = "";
+      }
+    sprintf(full_path, "%s%s%s", include_dirs[i], sep, file_name);
+    input_file = fopen(full_path, "r");
+    if (input_file)
+      {
+      break;
+      }
+    }
+
+  /* free the string */
+  free(full_path);
+
+  /* special case if no include dirs */
+  if (include_dirs[0] == NULL)
+    {
+    input_file = fopen(file_name, "r");
+    }
+
+  if (!input_file)
+    {
+    fprintf(stderr, "vtkBuildHierarchy: couldn't open file %s\n",
+            file_name);
+    exit(1);
+    }
+
+  if (!parse_header_file(input_file, file_name, lines))
+    {
+    fclose(input_file);
+    exit(1);
+    }
+  fclose(input_file);
+
+  return 0;
+}
+
 /* try to read a file, print error and exit if fail */
-static int try_read_file(const char *file_name, char *lines[])
+static int try_read_text_file(const char *file_name, char *lines[])
 {
   FILE *input_file;
 
@@ -169,7 +305,7 @@ static int try_read_file(const char *file_name, char *lines[])
     exit(1);
     }
 
-  if (!read_file(input_file, lines))
+  if (!read_text_file(input_file, lines))
     {
     fclose(input_file);
     fprintf(stderr, "vtkBuildHierarchy: error reading file %s\n",
@@ -182,7 +318,7 @@ static int try_read_file(const char *file_name, char *lines[])
 }
 
 /* try to write a file, print error and exit if fail */
-static int try_write_file(const char *file_name, char *lines[])
+static int try_write_text_file(const char *file_name, char *lines[])
 {
   FILE *output_file;
   int matched = 0;
@@ -206,7 +342,7 @@ static int try_write_file(const char *file_name, char *lines[])
               file_name);
       exit(1);
       }
-    if (!write_file(output_file, lines))
+    if (!write_text_file(output_file, lines))
       {
       fclose(output_file);
       fprintf(stderr, "vtkBuildHierarchy: error writing file %s\n",
@@ -219,16 +355,54 @@ static int try_write_file(const char *file_name, char *lines[])
   return 0;
 }
 
+#define MAX_INCLUDE_DIRS 255
+
 int main(int argc, char *argv[])
 {
-  int i;
+  int usage_error = 0;
+  int num_dirs = 0;
+  char *include_dirs[MAX_INCLUDE_DIRS+1];
+  char *output_filename = 0;
+  int i, argi;
   char **lines;
   char **files;
 
-  if (argc < 4 || strcmp(argv[1], "-o") != 0)
+  /* parse command-line options */
+  for (argi = 1; argi < argc && argv[argi][0] == '-'; argi++)
+    {
+    if (strcmp(argv[argi], "-o") == 0)
+      {
+      argi++;
+      if (argi >= argc || argv[argi][0] == '-')
+        {
+        usage_error = 1;
+        break;
+        }
+      output_filename = argv[argi];
+      }
+    else if (strcmp(argv[i], "-I") == 0)
+      {
+      argi++;
+      if (argi >= argc || argv[argi][0] == '-')
+        {
+        usage_error = 1;
+        break;
+        }
+      if (num_dirs + 1 >= MAX_INCLUDE_DIRS)
+        {
+        fprintf(stderr, "%s: maximum %d include dirs allowed\n",
+                argv[0], MAX_INCLUDE_DIRS);
+        exit(1);
+        }
+      include_dirs[num_dirs++] = argv[argi];
+      include_dirs[num_dirs] = NULL;
+      }
+    }
+
+  if (usage_error || !output_filename || argc - argi < 1)
     {
     fprintf(stderr,
-            "Usage: %s -o output_file data_file [merge_files]\n",
+            "Usage: %s -o output_file -I include_dir data_file [files_to_merge]\n",
             argv[0]);
     exit(1);
     }
@@ -239,22 +413,23 @@ int main(int argc, char *argv[])
   files[0] = NULL;
 
   /* read the data file */
-  try_read_file(argv[3], files);
+  try_read_text_file(argv[argi++], files);
 
   /* read in all the prior files */
-  for (i = 4; i < argc; i++)
+  while (argi < argc)
     {
-    try_read_file(argv[i], lines);
+    try_read_text_file(argv[argi++], lines);
     }
 
   /* merge the files in the data file */
   for (i = 0; files[i] != NULL; i++)
     {
-    try_read_file(files[i], lines);
+    include_dirs[num_dirs] = NULL;
+    try_parse_header_file(include_dirs, files[i], lines);
     }
 
   /* write the file, if it has changed */
-  try_write_file(argv[2], lines);
+  try_write_text_file(output_filename, lines);
 
   free(files);
   free(lines);
