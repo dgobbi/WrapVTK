@@ -967,7 +967,7 @@ static void findAllMatches(
   int matchedMethods[], unsigned int methodCategories[],
   int methodVariables[])
 {
-  int i, j, n;
+  int i, j, k, n;
   size_t m;
   MethodAttributes *meth;
   unsigned int methodBit;
@@ -1033,9 +1033,14 @@ static void findAllMatches(
             var->EnumConstantNames[j++] = &meth->Name[5+m];
             if (j % 8 == 0)
               {
-              var->EnumConstantNames = (const char **)
-                (char **)realloc(var->EnumConstantNames,
-                                 sizeof(char *)*(j+8));
+              const char **savenames = var->EnumConstantNames; 
+              var->EnumConstantNames =
+                (const char **)malloc(sizeof(char *)*(j+8));
+              for (k = 0; k < j; k++)
+                {
+                var->EnumConstantNames[k] = savenames[k];
+                }
+              free((void *)savenames);
               }
             var->EnumConstantNames[j] = 0;
             }
