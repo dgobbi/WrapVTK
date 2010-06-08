@@ -226,54 +226,11 @@ static int write_text_file(FILE *fp, char *lines[])
 }
 
 /* try to parse a header file, print error and exit if fail */
-static int try_parse_header_file(
-  char *include_dirs[], const char *file_name, char *lines[])
+static int try_parse_header_file(const char *file_name, char *lines[])
 {
-  const char *sep;
-  char *full_path;
   FILE *input_file;
-  int i, n;
-  int maxlen = 0;
 
-  /* find out the full path length for string allocation */
-  for (i = 0; include_dirs[i] != NULL; i++)
-    {
-    n = strlen(include_dirs[i]);
-    if (n > maxlen)
-      {
-      maxlen = n;
-      }
-    }
-
-  maxlen += strlen(file_name) + 1;
-
-  full_path = (char *)malloc(maxlen+1);
-
-  /* try each path until the file loads */
-  for (i = 0; include_dirs[i] != NULL; i++)
-    {
-    sep = "/";
-    n = strlen(include_dirs[i]);
-    if (n > 0 && include_dirs[i][-1] == sep[0])
-      {
-      sep = "";
-      }
-    sprintf(full_path, "%s%s%s", include_dirs[i], sep, file_name);
-    input_file = fopen(full_path, "r");
-    if (input_file)
-      {
-      break;
-      }
-    }
-
-  /* free the string */
-  free(full_path);
-
-  /* special case if no include dirs */
-  if (include_dirs[0] == NULL)
-    {
-    input_file = fopen(file_name, "r");
-    }
+  input_file = fopen(file_name, "r");
 
   if (!input_file)
     {
@@ -360,8 +317,6 @@ static int try_write_text_file(const char *file_name, char *lines[])
 int main(int argc, char *argv[])
 {
   int usage_error = 0;
-  int num_dirs = 0;
-  char *include_dirs[MAX_INCLUDE_DIRS+1];
   char *output_filename = 0;
   int i, argi;
   char **lines;
@@ -380,29 +335,12 @@ int main(int argc, char *argv[])
         }
       output_filename = argv[argi];
       }
-    else if (strcmp(argv[i], "-I") == 0)
-      {
-      argi++;
-      if (argi >= argc || argv[argi][0] == '-')
-        {
-        usage_error = 1;
-        break;
-        }
-      if (num_dirs + 1 >= MAX_INCLUDE_DIRS)
-        {
-        fprintf(stderr, "%s: maximum %d include dirs allowed\n",
-                argv[0], MAX_INCLUDE_DIRS);
-        exit(1);
-        }
-      include_dirs[num_dirs++] = argv[argi];
-      include_dirs[num_dirs] = NULL;
-      }
     }
 
   if (usage_error || !output_filename || argc - argi < 1)
     {
     fprintf(stderr,
-            "Usage: %s -o output_file -I include_dir data_file [files_to_merge]\n",
+            "Usage: %s -o output_file data_file [files_to_merge]\n",
             argv[0]);
     exit(1);
     }
@@ -421,11 +359,10 @@ int main(int argc, char *argv[])
     try_read_text_file(argv[argi++], lines);
     }
 
-  /* merge the files in the data file */
+  /* merge the files listed in the data file */
   for (i = 0; files[i] != NULL; i++)
     {
-    include_dirs[num_dirs] = NULL;
-    try_parse_header_file(include_dirs, files[i], lines);
+    try_parse_header_file(files[i], lines);
     }
 
   /* write the file, if it has changed */
