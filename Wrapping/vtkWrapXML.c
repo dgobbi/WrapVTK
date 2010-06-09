@@ -664,7 +664,6 @@ void vtkWrapXML_ClassMethods(
   vtkWrapXML_SortMethods(data, idList, 0, n-1);
 
   fprintf(fp, "\n");
-  fprintf(fp, "%s<Methods>\n", indent(indentation++));
   /* function handling code */
   for (i = 0; i < n; i++)
     {
@@ -680,7 +679,6 @@ void vtkWrapXML_ClassMethods(
     vtkWrapXML_ClassMethod(fp, data, data->Functions[idList[i]],
                            classname, varname, indentation);
     }
-  fprintf(fp, "\n%s</Methods>\n", indent(--indentation));
 
   free(idList);
 }
@@ -706,7 +704,6 @@ void vtkWrapXML_ClassVariables(
   /* sort function id list based on function name */
   vtkWrapXML_SortVariables(vars, idList, 0, n-1);
 
-  fprintf(fp, "\n%s<Variables>\n", indent(indentation++));
   /* variable handling code */
   for (i = 0; i < n; i++)
     {
@@ -735,7 +732,6 @@ void vtkWrapXML_ClassVariables(
     vtkWrapXML_ClassVariable(fp, vars->Variables[idList[i]], classname,
                              indentation);
     }
-  fprintf(fp, "\n%s</Variables>\n", indent(--indentation));
   fprintf(fp, "\n");
 
   free(idList);
