@@ -29,7 +29,7 @@
 #include <ctype.h>
 #include "vtkParse.h"
 #include "vtkParseUtils.h"
-#include "vtkParseVariables.h"
+#include "vtkParseProperties.h"
 #include "vtkParseHierarchy.h"
 #include "vtkParseMerge.h"
 #include "vtkParseMain.h"
@@ -73,9 +73,9 @@ static void vtkWrapXML_SortMethods(
   vtkWrapXML_SortMethods(data, functionList, location + 1, ends);
 }
 
-/* sort variables lexically between indices "start" and "ends" */
-static void vtkWrapXML_SortVariables(
-  ClassVariables *vars, int variableList[], int start, int ends)
+/* sort properties lexically between indices "start" and "ends" */
+static void vtkWrapXML_SortProperties(
+  ClassProperties *properties, int propertyList[], int start, int ends)
 {
   int i;
   int location = start;
@@ -86,16 +86,16 @@ static void vtkWrapXML_SortVariables(
     }
   for (i = start; i < ends; i++)
     {
-    if (strcmp(vars->Variables[variableList[ends]]->Name,
-               vars->Variables[variableList[i]]->Name) > 0)
+    if (strcmp(properties->Properties[propertyList[ends]]->Name,
+               properties->Properties[propertyList[i]]->Name) > 0)
       {
-      vtkWrapXML_Swap(variableList, location, i);
+      vtkWrapXML_Swap(propertyList, location, i);
       location++;
       }
     }
-  vtkWrapXML_Swap(variableList, location, ends);
-  vtkWrapXML_SortVariables(vars, variableList, start, location - 1);
-  vtkWrapXML_SortVariables(vars, variableList, location + 1, ends);
+  vtkWrapXML_Swap(propertyList, location, ends);
+  vtkWrapXML_SortProperties(properties, propertyList, start, location - 1);
+  vtkWrapXML_SortProperties(properties, propertyList, location + 1, ends);
 }
 
 /* ----- XML utility functions ----- */
@@ -194,7 +194,8 @@ static const char *vtkWrapXML_Quote(const char *comment, int maxlen)
 }
 
 /* print multi-line text at the specified indentation level. */
-static void vtkWrapXML_MultiLineText(FILE *fp, const char *cp, int indentation)
+static void vtkWrapXML_MultiLineText(
+  FILE *fp, const char *cp, int indentation)
 {
   int i, j;
   char temp[512];
@@ -411,8 +412,8 @@ void vtkWrapXML_Type(
     }
 }
 
-/* print a bitfield of class variable access methods */
-void vtkWrapXML_ClassVariableMethods(
+/* print a bitfield of class property access methods */
+void vtkWrapXML_ClassPropertyMethods(
   FILE *fp, unsigned int methodBitfield, int indentation)
 {
   int i;
@@ -424,7 +425,7 @@ void vtkWrapXML_ClassVariableMethods(
     if (methodType)
       {
       fprintf(fp, "%s<MethodType>%s</MethodType>\n", indent(indentation),
-        vtkParseVariables_MethodTypeAsString(methodType));
+        vtkParseProperties_MethodTypeAsString(methodType));
       }
     }
 }
@@ -432,7 +433,7 @@ void vtkWrapXML_ClassVariableMethods(
 /* Print out a function in XML format */
 void vtkWrapXML_ClassMethod(
   FILE *fp, ClassInfo *data, FunctionInfo *func, const char *classname,
-  const char *varname, int indentation)
+  const char *propname, int indentation)
 {
   static const char *accessLevel[] = {"private", "public", "protected"};
   size_t i, n;
@@ -501,9 +502,9 @@ void vtkWrapXML_ClassMethod(
 
   fprintf(fp, "%s</Signature>\n", indent(--indentation));
 
-  if (varname)
+  if (propname)
     {
-    fprintf(fp, "%s<VariableName>%s</VariableName>\n", indent(indentation),
+    fprintf(fp, "%s<PropertyName>%s</PropertyName>\n", indent(indentation),
             classname);
     }
 
@@ -539,16 +540,16 @@ void vtkWrapXML_ClassMethod(
   fprintf(fp, "%s</Method>\n", indent(--indentation));
 }
 
-/* Print out a variable in XML format */
-void vtkWrapXML_ClassVariable(
-  FILE *fp, VariableInfo *var, const char *classname, int indentation)
+/* Print out a property in XML format */
+void vtkWrapXML_ClassProperty(
+  FILE *fp, PropertyInfo *property, const char *classname, int indentation)
 {
   const char *access = 0;
   int i;
 
-  fprintf(fp, "%s<Variable>\n", indent(indentation++));
+  fprintf(fp, "%s<Property>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          var->Name);
+          property->Name);
 
   if (classname)
     {
@@ -556,15 +557,15 @@ void vtkWrapXML_ClassVariable(
             classname);
     }
 
-  if (var->PublicMethods)
+  if (property->PublicMethods)
     {
     access = "public";
     }
-  else if (var->ProtectedMethods)
+  else if (property->ProtectedMethods)
     {
     access = "protected";
     }
-  else if (var->PrivateMethods)
+  else if (property->PrivateMethods)
     {
     access = "private";
     }
@@ -575,77 +576,82 @@ void vtkWrapXML_ClassVariable(
             access);
     }
 
-  if (var->IsStatic)
+  if (property->IsStatic)
     {
     fprintf(fp, "%s<Flag>static</Flag>\n", indent(indentation));
     }
 
-  if (((var->PublicMethods | var->ProtectedMethods | var->PrivateMethods) &
-       ~var->LegacyMethods) == 0)
+  if (((property->PublicMethods | property->ProtectedMethods |
+        property->PrivateMethods) & ~property->LegacyMethods) == 0)
     {
     fprintf(fp, "%s<Flag>legacy</Flag>\n", indent(indentation));
     }
 
-  if (var->Comment)
+  if (property->Comment)
     {
     fprintf(fp, "%s<Comment>\n", indent(indentation++));
-    vtkWrapXML_MultiLineText(fp, var->Comment, indentation);
+    vtkWrapXML_MultiLineText(fp, property->Comment, indentation);
     fprintf(fp, "%s</Comment>\n", indent(--indentation));
     }
 
-  vtkWrapXML_Type(fp, var->Type, var->ClassName, var->Count, indentation);
+  vtkWrapXML_Type(fp, property->Type, property->ClassName, property->Count,
+                  indentation);
 
-  if (var->EnumConstantNames)
+  if (property->EnumConstantNames)
     {
     fprintf(fp, "%s<Values>\n", indent(indentation++));
-    for (i = 0; var->EnumConstantNames[i] != 0; i++)
+    for (i = 0; property->EnumConstantNames[i] != 0; i++)
       {
       fprintf(fp, "%s<Constant>%s</Constant>\n", indent(indentation),
-              var->EnumConstantNames[i]);
+              property->EnumConstantNames[i]);
       }
     fprintf(fp, "%s</Values>\n", indent(--indentation));
     }
 
-  if (var->PublicMethods)
+  if (property->PublicMethods)
     {
     fprintf(fp, "%s<PublicMethods>\n", indent(indentation++));
-    vtkWrapXML_ClassVariableMethods(fp, var->PublicMethods, indentation);
+    vtkWrapXML_ClassPropertyMethods(fp, property->PublicMethods,
+                                    indentation);
     fprintf(fp, "%s</PublicMethods>\n", indent(--indentation));
     }
 
-  if (var->ProtectedMethods)
+  if (property->ProtectedMethods)
     {
     fprintf(fp, "%s<ProtectedMethods>\n", indent(indentation++));
-    vtkWrapXML_ClassVariableMethods(fp, var->ProtectedMethods, indentation);
+    vtkWrapXML_ClassPropertyMethods(fp, property->ProtectedMethods,
+                                    indentation);
     fprintf(fp, "%s</ProtectedMethods>\n", indent(--indentation));
     }
 
-  if (var->PrivateMethods)
+  if (property->PrivateMethods)
     {
     fprintf(fp, "%s<PrivateMethods>\n", indent(indentation++));
-    vtkWrapXML_ClassVariableMethods(fp, var->PrivateMethods, indentation);
+    vtkWrapXML_ClassPropertyMethods(fp, property->PrivateMethods,
+                                    indentation);
     fprintf(fp, "%s</PrivateMethods>\n", indent(--indentation));
     }
 
-  if (var->LegacyMethods)
+  if (property->LegacyMethods)
     {
     fprintf(fp, "%s<LegacyMethods>\n", indent(indentation++));
-    vtkWrapXML_ClassVariableMethods(fp, var->LegacyMethods, indentation);
+    vtkWrapXML_ClassPropertyMethods(fp, property->LegacyMethods,
+                                    indentation);
     fprintf(fp, "%s</LegacyMethods>\n", indent(--indentation));
     }
 
-  fprintf(fp, "%s</Variable>\n", indent(--indentation));
+  fprintf(fp, "%s</Property>\n", indent(--indentation));
 }
 
 /* print information about all the methods in the class */
 void vtkWrapXML_ClassMethods(
-  FILE *fp, ClassInfo *data, ClassVariables *vars, MergeInfo *merge,
+  FILE *fp, ClassInfo *data, ClassProperties *properties, MergeInfo *merge,
   int indentation)
 {
   int i, n;
   int numFunctions;
   const char *classname = 0;
-  const char *varname = 0;
+  const char *propname = 0;
   int *idList = (int *)malloc(sizeof(int)*data->NumberOfFunctions);
 
   /* create a list of function ids */
@@ -663,7 +669,6 @@ void vtkWrapXML_ClassMethods(
   /* sort function id list based on function name */
   vtkWrapXML_SortMethods(data, idList, 0, n-1);
 
-  fprintf(fp, "\n");
   /* function handling code */
   for (i = 0; i < n; i++)
     {
@@ -671,21 +676,22 @@ void vtkWrapXML_ClassMethods(
       {
       classname = merge->ClassNames[merge->OverrideClasses[idList[i]][0]];
       }
-    if (vars && vars->MethodVariables[idList[i]] >= 0)
+    if (properties && properties->MethodProperties[idList[i]] >= 0)
       {
-      varname = vars->Variables[vars->MethodVariables[idList[i]]]->Name;
+      propname =
+        properties->Properties[properties->MethodProperties[idList[i]]]->Name;
       }
     fprintf(fp, "\n");
     vtkWrapXML_ClassMethod(fp, data, data->Functions[idList[i]],
-                           classname, varname, indentation);
+                           classname, propname, indentation);
     }
 
   free(idList);
 }
 
-/* print information about all the variables in the class */
-void vtkWrapXML_ClassVariables(
-  FILE *fp, ClassInfo *data, ClassVariables *vars, MergeInfo *merge,
+/* print information about all the properties in the class */
+void vtkWrapXML_ClassProperties(
+  FILE *fp, ClassInfo *data, ClassProperties *properties, MergeInfo *merge,
   int indentation)
 {
   int i, j, n;
@@ -693,8 +699,8 @@ void vtkWrapXML_ClassVariables(
   int classId = 0;
   const char *classname = 0;
 
-  /* create a list of variable ids */
-  n = vars->NumberOfVariables;
+  /* create a list of property ids */
+  n = properties->NumberOfProperties;
   idList = (int *)malloc(sizeof(int)*n);
   for (i = 0; i < n; i++)
     {
@@ -702,19 +708,19 @@ void vtkWrapXML_ClassVariables(
     }
 
   /* sort function id list based on function name */
-  vtkWrapXML_SortVariables(vars, idList, 0, n-1);
+  vtkWrapXML_SortProperties(properties, idList, 0, n-1);
 
-  /* variable handling code */
+  /* property handling code */
   for (i = 0; i < n; i++)
     {
-    /* Find the least-deep class this variable has an accessor method in */
+    /* Find the least-deep class this property has an accessor method in */
     classname = NULL;
     if (merge)
       {
       classId = -1;
-      for (j = 0; j < vars->NumberOfMethods; j++)
+      for (j = 0; j < properties->NumberOfMethods; j++)
         {
-        if (vars->MethodVariables[j] == idList[i])
+        if (properties->MethodProperties[j] == idList[i])
           {
           if (merge->NumberOfOverrides[j])
             {
@@ -729,7 +735,7 @@ void vtkWrapXML_ClassVariables(
       }
 
     fprintf(fp, "\n");
-    vtkWrapXML_ClassVariable(fp, vars->Variables[idList[i]], classname,
+    vtkWrapXML_ClassProperty(fp, properties->Properties[idList[i]], classname,
                              indentation);
     }
   fprintf(fp, "\n");
@@ -881,7 +887,7 @@ MergeInfo *vtkWrapXML_MergeSuperClasses(
 void vtkParseOutput(FILE *fp, FileInfo *data)
 {
   int indentation = 0;
-  ClassVariables *vars;
+  ClassProperties *properties;
   MergeInfo *merge = NULL;
   ClassInfo *classInfo = data->Classes[0];
 
@@ -900,17 +906,17 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
     vtkWrapXML_ClassInheritance(fp, merge, indentation);
     }
 
-  /* get information about the variables */
-  vars = vtkParseVariables_Create(classInfo);
+  /* get information about the properties */
+  properties = vtkParseProperties_Create(classInfo);
 
   /* print the methods section */
-  vtkWrapXML_ClassMethods(fp, classInfo, vars, merge, indentation);
+  vtkWrapXML_ClassMethods(fp, classInfo, properties, merge, indentation);
 
-  /* print the variables section */
-  vtkWrapXML_ClassVariables(fp, classInfo, vars, merge, indentation);
+  /* print the properties section */
+  vtkWrapXML_ClassProperties(fp, classInfo, properties, merge, indentation);
 
-  /* release the information about the variables */
-  vtkParseVariables_Free(vars);
+  /* release the information about the properties */
+  vtkParseProperties_Free(properties);
 
   /* release the info about what was merged from superclasses */
   if (merge)

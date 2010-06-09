@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   WrapVTK
-  Module:    vtkParseVariables.h
+  Module:    vtkParseProperties.h
 
   Copyright (c) 2010 David Gobbi
   All rights reserved.
@@ -12,14 +12,14 @@
 
 =========================================================================*/
 
-/* structures and methods for finding variables based on the Set and Get
+/* structures and methods for finding properties based on the Set and Get
  * functions defined in the ClassInfo struct created by vtkParse */
 
-#ifndef VTK_PARSE_VARIABLES_H
-#define VTK_PARSE_VARIABLES_H
+#ifndef VTK_PARSE_PROPERTIES_H
+#define VTK_PARSE_PROPERTIES_H
 
 /*-------------------------------------------------------------------
- * bitfield values to say what methods are available for a variable
+ * bitfield values to say what methods are available for a property
  *
  * BASIC_GET is "type GetValue()" or "type *GetValue()"
  * BASIC_SET is "void SetValue(type)" or "type SetValue(type [])"
@@ -51,61 +51,61 @@
  *
  * */
 
-#define VTKVAR_BASIC_GET  0x00000001
-#define VTKVAR_BASIC_SET  0x00000002
-#define VTKVAR_MULTI_GET  0x00000004
-#define VTKVAR_MULTI_SET  0x00000008
-#define VTKVAR_INDEX_GET  0x00000010
-#define VTKVAR_INDEX_SET  0x00000020
-#define VTKVAR_NTH_GET    0x00000040
-#define VTKVAR_NTH_SET    0x00000080
-#define VTKVAR_RHS_GET    0x00000100
-#define VTKVAR_INDEX_RHS_GET 0x00000200
-#define VTKVAR_NTH_RHS_GET 0x000000400
-#define VTKVAR_STRING_GET 0x00001000
-#define VTKVAR_ENUM_SET   0x00002000
-#define VTKVAR_BOOL_ON    0x00004000
-#define VTKVAR_BOOL_OFF   0x00008000
-#define VTKVAR_MIN_GET    0x00010000
-#define VTKVAR_MAX_GET    0x00020000
-#define VTKVAR_GET_NUM    0x00040000
-#define VTKVAR_SET_NUM    0x00080000
-#define VTKVAR_BASIC_ADD  0x00100000
-#define VTKVAR_MULTI_ADD  0x00200000
-#define VTKVAR_INDEX_ADD  0x00400000
-#define VTKVAR_BASIC_REM  0x01000000
-#define VTKVAR_INDEX_REM  0x04000000
-#define VTKVAR_REMOVEALL  0x08000000
+#define VTK_METH_BASIC_GET  0x00000001
+#define VTK_METH_BASIC_SET  0x00000002
+#define VTK_METH_MULTI_GET  0x00000004
+#define VTK_METH_MULTI_SET  0x00000008
+#define VTK_METH_INDEX_GET  0x00000010
+#define VTK_METH_INDEX_SET  0x00000020
+#define VTK_METH_NTH_GET    0x00000040
+#define VTK_METH_NTH_SET    0x00000080
+#define VTK_METH_RHS_GET    0x00000100
+#define VTK_METH_INDEX_RHS_GET 0x00000200
+#define VTK_METH_NTH_RHS_GET 0x000000400
+#define VTK_METH_STRING_GET 0x00001000
+#define VTK_METH_ENUM_SET   0x00002000
+#define VTK_METH_BOOL_ON    0x00004000
+#define VTK_METH_BOOL_OFF   0x00008000
+#define VTK_METH_MIN_GET    0x00010000
+#define VTK_METH_MAX_GET    0x00020000
+#define VTK_METH_GET_NUM    0x00040000
+#define VTK_METH_SET_NUM    0x00080000
+#define VTK_METH_BASIC_ADD  0x00100000
+#define VTK_METH_MULTI_ADD  0x00200000
+#define VTK_METH_INDEX_ADD  0x00400000
+#define VTK_METH_BASIC_REM  0x01000000
+#define VTK_METH_INDEX_REM  0x04000000
+#define VTK_METH_REMOVEALL  0x08000000
 
 /*-------------------------------------------------------------------
- * A struct that contains all the variable information that
+ * A struct that contains all the property information that
  * can be ascertained from the vtkParse info */
 
-typedef struct _VariableInfo
+typedef struct _PropertyInfo
 {
-  const char *Name;          /* variable name */
-  int Type;                  /* variable type as VTK_PARSE constant */
-  int Count;                 /* the count for array-type variables */
-  int IsStatic;              /* if the variable is static */
-  const char *ClassName;     /* VTK object type of the variable, or NULL */
+  const char *Name;          /* property name */
+  int Type;                  /* property type as VTK_PARSE constant */
+  int Count;                 /* the count for array-type properties */
+  int IsStatic;              /* if the property is static */
+  const char *ClassName;     /* VTK object type of the property, or NULL */
   const char **EnumConstantNames;  /* the names of int enum values */
   unsigned int PublicMethods;      /* bitfield for public methods */
   unsigned int ProtectedMethods;   /* bitfield for protected methods */
   unsigned int PrivateMethods;     /* bitfield for private methods */
   unsigned int LegacyMethods;      /* bitfield for legacy methods */
   const char *Comment;       /* comment from header file */
-} VariableInfo;
+} PropertyInfo;
 
-/* List of methods for accessing/changing variables */
+/* List of methods for accessing/changing properties */
 
-typedef struct _ClassVariables
+typedef struct _ClassProperties
 {
-  int NumberOfVariables;      /* total number of variables found */
-  VariableInfo **Variables;   /* info for each variable */
-  int NumberOfMethods;        /* number of methods in FunctionInfo */
-  unsigned int *MethodTypes;  /* discovered type of each method */
-  int *MethodVariables;       /* discovered variable for each method */
-} ClassVariables;
+  int NumberOfProperties;      /* total number of properties found */
+  PropertyInfo **Properties;   /* info for each property */
+  int NumberOfMethods;         /* number of methods in FunctionInfo */
+  unsigned int *MethodTypes;   /* discovered type of each method */
+  int *MethodProperties;       /* discovered property for each method */
+} ClassProperties;
 
 struct _ClassInfo;
 
@@ -113,14 +113,14 @@ struct _ClassInfo;
 extern "C" {
 #endif
 
-/* function to build the ClassVariables struct from a ClassInfo struct */
+/* function to build the ClassProperties struct from a ClassInfo struct */
 
-ClassVariables *vtkParseVariables_Create(struct _ClassInfo *data);
-void vtkParseVariables_Free(ClassVariables *variables);
+ClassProperties *vtkParseProperties_Create(struct _ClassInfo *data);
+void vtkParseProperties_Free(ClassProperties *properties);
 
 /* function to convert a method bitfield value to a string */
 
-const char *vtkParseVariables_MethodTypeAsString(unsigned int methodType);
+const char *vtkParseProperties_MethodTypeAsString(unsigned int methodType);
 
 #ifdef __cplusplus
 } /* extern "C" */
