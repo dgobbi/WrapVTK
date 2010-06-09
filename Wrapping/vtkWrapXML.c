@@ -466,6 +466,12 @@ void vtkWrapXML_ClassMethod(
             classname);
     }
 
+  if (propname)
+    {
+    fprintf(fp, "%s<PropertyName>%s</PropertyName>\n", indent(indentation),
+            propname);
+    }
+
   fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation),
           accessLevel[access]);
 
@@ -501,12 +507,6 @@ void vtkWrapXML_ClassMethod(
   fprintf(fp, "%s %s\n", indent(indentation), vtkWrapXML_Quote(temp, 500));
 
   fprintf(fp, "%s</Signature>\n", indent(--indentation));
-
-  if (propname)
-    {
-    fprintf(fp, "%s<PropertyName>%s</PropertyName>\n", indent(indentation),
-            classname);
-    }
 
   if (func->Comment)
     {
