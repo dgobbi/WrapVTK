@@ -37,6 +37,7 @@ typedef struct _MethodAttributes
   int IsPublic;           /* method is public */
   int IsProtected;        /* method is protected */
   int IsLegacy;           /* method is marked "legacy" */
+  int IsStatic;           /* method is static */
   int IsRepeat;           /* method is a repeat of a similar method */
   int IsHinted;           /* method has a hint */
   int IsMultiValue;       /* method is e.g. SetValue(x0, x1, x2) */
@@ -48,7 +49,7 @@ typedef struct _MethodAttributes
 typedef struct _ClassVariableMethods
 {
   int NumberOfMethods;
-  MethodAttributes *Methods;
+  MethodAttributes **Methods;
 } ClassVariableMethods;
 
 /*-------------------------------------------------------------------
@@ -482,12 +483,19 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   attrs->IsPublic = func->IsPublic;
   attrs->IsProtected = func->IsProtected;
   attrs->IsLegacy = func->IsLegacy;
+  attrs->IsStatic = 0;
   attrs->IsRepeat = 0;
   attrs->IsMultiValue = 0;
   attrs->IsHinted = 0;
   attrs->IsIndexed = 0;
   attrs->IsEnumerated = 0;
   attrs->IsBoolean = 0;
+
+  if ((func->ReturnType & VTK_PARSE_STATIC) &&
+      func->ReturnType != VTK_PARSE_FUNCTION)
+    {
+    attrs->IsStatic = 1;
+    }
 
   /* check for major issues with the function */
   if (!func->Name || func->ArrayFailure || func->IsOperator)
@@ -932,6 +940,7 @@ static void initializeVariableInfo(
 
   var->ClassName = meth->ClassName;
   var->Count = meth->Count;
+  var->IsStatic = meth->IsStatic;
   var->EnumConstantNames = 0;
   var->PublicMethods = 0;
   var->ProtectedMethods = 0;
@@ -985,11 +994,17 @@ static void findAllMatches(
       {
       if (matchedMethods[i]) { continue; }
 
-      meth = &methods->Methods[i];
+      meth = methods->Methods[i];
       if (methodMatchesVariable(var, meth, &longMatch))
         {
         matchedMethods[i] = 1;
         foundNoMatches = 0;
+
+        /* if any method is static, the variable is static */
+        if (meth->IsStatic)
+          {
+          var->IsStatic = 1;
+          }
 
         /* add this as a member of the method bitfield, and consider method
          * suffixes like On, MaxValue, etc. while doing the categorization */
@@ -1060,11 +1075,11 @@ static int searchForRepeatedMethods(
   MethodAttributes *meth;
   n = methods->NumberOfMethods;
 
-  attrs = &methods->Methods[j];
+  attrs = methods->Methods[j];
 
   for (i = 0; i < n; i++)
     {
-    meth = &methods->Methods[i];
+    meth = methods->Methods[i];
 
     /* check whether the function name and basic structure are matched */
     if (meth->Name && strcmp(attrs->Name, meth->Name) == 0 &&
@@ -1128,7 +1143,7 @@ static void addVariable(
   ClassVariables *variables, ClassVariableMethods *methods, int i,
   int matchedMethods[])
 { 
-  MethodAttributes *meth = &methods->Methods[i];
+  MethodAttributes *meth = methods->Methods[i];
   VariableInfo *var;
   unsigned int category;
 
@@ -1141,13 +1156,13 @@ static void addVariable(
   searchForRepeatedMethods(variables, methods, i);
 
   /* create the variable */
-  var = &variables->Variables[variables->NumberOfVariables];
+  var = (VariableInfo *)malloc(sizeof(VariableInfo));
   initializeVariableInfo(var, meth, category);
   findAllMatches(var, variables->NumberOfVariables, methods,
                  matchedMethods, variables->MethodTypes,
                  variables->MethodVariables);
 
-  variables->NumberOfVariables++;
+  variables->Variables[variables->NumberOfVariables++] = var;
 }
 
 /*-------------------------------------------------------------------
@@ -1168,7 +1183,7 @@ static void categorizeVariables(
     {
     /* "matchedMethods" are methods removed from consideration */
     matchedMethods[i] = 0;
-    if (!methods->Methods[i].HasVariable || methods->Methods[i].IsRepeat)
+    if (!methods->Methods[i]->HasVariable || methods->Methods[i]->IsRepeat)
       {
       matchedMethods[i] = 1;
       }
@@ -1179,9 +1194,9 @@ static void categorizeVariables(
     {
     /* all set methods except for SetValueToEnum() methods
      * and SetNumberOf() methods */
-    if (!matchedMethods[i] && isSetMethod(methods->Methods[i].Name) &&
-        !methods->Methods[i].IsEnumerated &&
-        !isSetNumberOfMethod(methods->Methods[i].Name))
+    if (!matchedMethods[i] && isSetMethod(methods->Methods[i]->Name) &&
+        !methods->Methods[i]->IsEnumerated &&
+        !isSetNumberOfMethod(methods->Methods[i]->Name))
       {
       addVariable(variables, methods, i, matchedMethods);
       }
@@ -1191,7 +1206,7 @@ static void categorizeVariables(
    * matching indexed Set methods */
   for (i = 0; i < n; i++)
     {
-    if (!matchedMethods[i] && isSetNumberOfMethod(methods->Methods[i].Name))
+    if (!matchedMethods[i] && isSetNumberOfMethod(methods->Methods[i]->Name))
       {
       addVariable(variables, methods, i, matchedMethods);
       }
@@ -1202,9 +1217,9 @@ static void categorizeVariables(
     {
     /* all get methods except for GetValueAs() methods
      * and GetNumberOf() methods */
-    if (!matchedMethods[i] && isGetMethod(methods->Methods[i].Name) &&
-        !isAsStringMethod(methods->Methods[i].Name) &&
-        !isGetNumberOfMethod(methods->Methods[i].Name))
+    if (!matchedMethods[i] && isGetMethod(methods->Methods[i]->Name) &&
+        !isAsStringMethod(methods->Methods[i]->Name) &&
+        !isGetNumberOfMethod(methods->Methods[i]->Name))
       {
       addVariable(variables, methods, i, matchedMethods);
       }
@@ -1214,7 +1229,7 @@ static void categorizeVariables(
    * matching indexed Get methods */
   for (i = 0; i < n; i++)
     {
-    if (!matchedMethods[i] && isGetNumberOfMethod(methods->Methods[i].Name))
+    if (!matchedMethods[i] && isGetNumberOfMethod(methods->Methods[i]->Name))
       {
       addVariable(variables, methods, i, matchedMethods);
       }
@@ -1224,7 +1239,7 @@ static void categorizeVariables(
   for (i = 0; i < n; i++)
     {
     /* all add methods */
-    if (!matchedMethods[i] && isAddMethod(methods->Methods[i].Name))
+    if (!matchedMethods[i] && isAddMethod(methods->Methods[i]->Name))
       {
       addVariable(variables, methods, i, matchedMethods);
       }
@@ -1250,7 +1265,8 @@ static void categorizeVariableMethods(
   for (i = 0; i < n; i++)
     {
     func = data->Functions[i];
-    attrs = &methods->Methods[methods->NumberOfMethods++];
+    attrs = (MethodAttributes *)malloc(sizeof(MethodAttributes));
+    methods->Methods[methods->NumberOfMethods++] = attrs;
 
     /* copy the func into a MethodAttributes struct if possible */
     if (getMethodAttributes(func, attrs))
@@ -1271,8 +1287,8 @@ ClassVariables *vtkParseVariables_Create(ClassInfo *data)
   ClassVariableMethods *methods;
 
   methods = (ClassVariableMethods *)malloc(sizeof(ClassVariableMethods));
-  methods->Methods = (MethodAttributes *)malloc(sizeof(MethodAttributes)*
-                                                data->NumberOfFunctions);
+  methods->Methods = (MethodAttributes **)malloc(sizeof(MethodAttributes *)*
+                                                 data->NumberOfFunctions);
 
   /* categorize the methods according to what variables they reference
    * and what they do to that variable */
@@ -1281,8 +1297,8 @@ ClassVariables *vtkParseVariables_Create(ClassInfo *data)
   vars = (ClassVariables *)malloc(sizeof(ClassVariables));
   vars->NumberOfVariables = 0;
   vars->NumberOfMethods = methods->NumberOfMethods;
-  vars->Variables = (VariableInfo *)malloc(sizeof(VariableInfo)*
-                                           methods->NumberOfMethods);
+  vars->Variables = (VariableInfo **)malloc(sizeof(VariableInfo *)*
+                                            methods->NumberOfMethods);
   vars->MethodTypes = (unsigned int *)malloc(sizeof(unsigned int)*
                                              methods->NumberOfMethods);
   vars->MethodVariables = (int *)malloc(sizeof(int)*methods->NumberOfMethods);
@@ -1296,6 +1312,11 @@ ClassVariables *vtkParseVariables_Create(ClassInfo *data)
   /* synthesize a list of variables from the list of methods */
   categorizeVariables(methods, vars);
 
+  for (i = 0; i < methods->NumberOfMethods; i++)
+    {
+    free(methods->Methods[i]);
+    }
+
   free(methods->Methods);
   free(methods);
 
@@ -1307,6 +1328,14 @@ ClassVariables *vtkParseVariables_Create(ClassInfo *data)
 
 void vtkParseVariables_Free(ClassVariables *vars)
 {
+  int i, n;
+
+  n = vars->NumberOfVariables;
+  for (i = 0; i < n; i++)
+    {
+    free(vars->Variables[i]);
+    }
+
   free(vars->Variables);
   free(vars->MethodTypes);
   free(vars->MethodVariables);

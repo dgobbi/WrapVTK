@@ -86,8 +86,8 @@ static void vtkWrapXML_SortVariables(
     }
   for (i = start; i < ends; i++)
     {
-    if (strcmp(vars->Variables[variableList[ends]].Name,
-               vars->Variables[variableList[i]].Name) > 0)
+    if (strcmp(vars->Variables[variableList[ends]]->Name,
+               vars->Variables[variableList[i]]->Name) > 0)
       {
       vtkWrapXML_Swap(variableList, location, i);
       location++;
@@ -239,8 +239,11 @@ void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
   n = data->NumberOfSuperClasses;
   for (i = 0; i < n; i++)
     {
-    fprintf(fp, "%s<Superclass>%s</Superclass>\n", indent(indentation),
+    fprintf(fp, "%s<SuperClass>\n", indent(indentation++));
+    fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
             vtkWrapXML_Quote(data->SuperClasses[i], 500));
+    fprintf(fp, "%s<Access>public</Access>\n", indent(indentation));
+    fprintf(fp, "%s</SuperClass>\n", indent(--indentation));
     }
 
   if (data->IsAbstract)
@@ -428,8 +431,8 @@ void vtkWrapXML_ClassVariableMethods(
 
 /* Print out a function in XML format */
 void vtkWrapXML_ClassMethod(
-  FILE *fp, ClassInfo *data, FunctionInfo *func, unsigned int methodType,
-  const char *classname, int indentation)
+  FILE *fp, ClassInfo *data, FunctionInfo *func, const char *classname,
+  const char *varname, int indentation)
 {
   static const char *accessLevel[] = {"private", "public", "protected"};
   size_t i, n;
@@ -498,9 +501,10 @@ void vtkWrapXML_ClassMethod(
 
   fprintf(fp, "%s</Signature>\n", indent(--indentation));
 
-  if (methodType)
+  if (varname)
     {
-    vtkWrapXML_ClassVariableMethods(fp, methodType, indentation);
+    fprintf(fp, "%s<VariableName>%s</VariableName>\n", indent(indentation),
+            classname);
     }
 
   if (func->Comment)
@@ -539,6 +543,7 @@ void vtkWrapXML_ClassMethod(
 void vtkWrapXML_ClassVariable(
   FILE *fp, VariableInfo *var, const char *classname, int indentation)
 {
+  const char *access = 0;
   int i;
 
   fprintf(fp, "%s<Variable>\n", indent(indentation++));
@@ -549,6 +554,36 @@ void vtkWrapXML_ClassVariable(
     {
     fprintf(fp, "%s<ClassName>%s</ClassName>\n", indent(indentation),
             classname);
+    }
+
+  if (var->PublicMethods)
+    {
+    access = "public";
+    }
+  else if (var->ProtectedMethods)
+    {
+    access = "protected";
+    }
+  else if (var->PrivateMethods)
+    {
+    access = "private";
+    }
+
+  if (access)
+    {
+    fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation),
+            access);
+    }
+
+  if (var->IsStatic)
+    {
+    fprintf(fp, "%s<Flag>static</Flag>\n", indent(indentation));
+    }
+
+  if (((var->PublicMethods | var->ProtectedMethods | var->PrivateMethods) &
+       ~var->LegacyMethods) == 0)
+    {
+    fprintf(fp, "%s<Flag>legacy</Flag>\n", indent(indentation));
     }
 
   if (var->Comment)
@@ -610,6 +645,7 @@ void vtkWrapXML_ClassMethods(
   int i, n;
   int numFunctions;
   const char *classname = 0;
+  const char *varname = 0;
   int *idList = (int *)malloc(sizeof(int)*data->NumberOfFunctions);
 
   /* create a list of function ids */
@@ -636,10 +672,13 @@ void vtkWrapXML_ClassMethods(
       {
       classname = merge->ClassNames[merge->OverrideClasses[idList[i]][0]];
       }
+    if (vars && vars->MethodVariables[idList[i]] >= 0)
+      {
+      varname = vars->Variables[vars->MethodVariables[idList[i]]]->Name;
+      }
     fprintf(fp, "\n");
     vtkWrapXML_ClassMethod(fp, data, data->Functions[idList[i]],
-                           vars->MethodTypes[idList[i]],
-                           classname, indentation);
+                           classname, varname, indentation);
     }
   fprintf(fp, "\n%s</Methods>\n", indent(--indentation));
 
@@ -693,7 +732,7 @@ void vtkWrapXML_ClassVariables(
       }
 
     fprintf(fp, "\n");
-    vtkWrapXML_ClassVariable(fp, &vars->Variables[idList[i]], classname,
+    vtkWrapXML_ClassVariable(fp, vars->Variables[idList[i]], classname,
                              indentation);
     }
   fprintf(fp, "\n%s</Variables>\n", indent(--indentation));

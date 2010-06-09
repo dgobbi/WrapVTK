@@ -86,6 +86,7 @@ typedef struct _VariableInfo
   const char *Name;          /* variable name */
   int Type;                  /* variable type as VTK_PARSE constant */
   int Count;                 /* the count for array-type variables */
+  int IsStatic;              /* if the variable is static */
   const char *ClassName;     /* VTK object type of the variable, or NULL */
   const char **EnumConstantNames;  /* the names of int enum values */
   unsigned int PublicMethods;      /* bitfield for public methods */
@@ -93,19 +94,14 @@ typedef struct _VariableInfo
   unsigned int PrivateMethods;     /* bitfield for private methods */
   unsigned int LegacyMethods;      /* bitfield for legacy methods */
   const char *Comment;       /* comment from header file */
-  unsigned int ExtraFlags;   /* flags for any extra variable info */
-  void *Extra;               /* pointer to extra variable info */
 } VariableInfo;
-
-/* these 4 bits are reserved for when Extra points to cached values */
-#define VTKVAR_EXTRA_VALUES  0x00000000F
 
 /* List of methods for accessing/changing variables */
 
 typedef struct _ClassVariables
 {
   int NumberOfVariables;      /* total number of variables found */
-  VariableInfo *Variables;    /* info for each variable */
+  VariableInfo **Variables;   /* info for each variable */
   int NumberOfMethods;        /* number of methods in FunctionInfo */
   unsigned int *MethodTypes;  /* discovered type of each method */
   int *MethodVariables;       /* discovered variable for each method */
