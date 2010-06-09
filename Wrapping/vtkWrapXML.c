@@ -345,7 +345,7 @@ void vtkWrapXML_ClassInheritance(FILE *fp, MergeInfo *merge, int indentation)
   n = merge->NumberOfClasses;
 
   fprintf(fp, "%s<Inheritance>\n", indent(indentation++));
-  for (i = 1; i < n; i++)
+  for (i = 0; i < n; i++)
     {
     fprintf(fp, "%s<ClassName>%s</ClassName>\n", indent(indentation),
             vtkWrapXML_Quote(merge->ClassNames[i], 500));
@@ -599,13 +599,11 @@ void vtkWrapXML_ClassProperty(
 
   if (property->EnumConstantNames)
     {
-    fprintf(fp, "%s<Values>\n", indent(indentation++));
     for (i = 0; property->EnumConstantNames[i] != 0; i++)
       {
-      fprintf(fp, "%s<Constant>%s</Constant>\n", indent(indentation),
+      fprintf(fp, "%s<SetTo>%s</SetTo>\n", indent(indentation),
               property->EnumConstantNames[i]);
       }
-    fprintf(fp, "%s</Values>\n", indent(--indentation));
     }
 
   if (property->PublicMethods)
