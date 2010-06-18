@@ -253,7 +253,7 @@ static void merge_function(FunctionInfo *merge, const FunctionInfo *func)
 int vtkParseMerge_Merge(
   MergeInfo *info, ClassInfo *merge, const ClassInfo *super)
 {
-  int i, j, k, n, m, depth;
+  int i, j, k, n, m, depth, match;
   const FunctionInfo *func;
   FunctionInfo *f2;
 
@@ -278,6 +278,8 @@ int vtkParseMerge_Merge(
       continue;
       }
 
+    /* check for overridden functions */
+    match = 0;
     for (j = 0; j < m; j++)
       {
       f2 = merge->Functions[j];
@@ -289,16 +291,17 @@ int vtkParseMerge_Merge(
             {
             if (f2->ArgTypes[k] != func->ArgTypes[k]) { break; }
             }
+          /* if all args match, then merge the comments */
           if (k == f2->NumberOfArguments)
             {
             merge_function(f2, func);
             vtkParseMerge_PushOverride(info, j, depth);
-            break;
             }
           }
+        match = 1;
         }
       }
-    if (j == m)
+    if (!match)
       {
       merge->NumberOfFunctions = m+1;
       merge->Functions[m] = (FunctionInfo *)malloc(sizeof(FunctionInfo));
