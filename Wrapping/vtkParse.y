@@ -668,7 +668,7 @@ function: '~' destructor {openSig(); preSig("~"); closeSig();}
          currentFunction->IsVirtual = 1;
          }
       | constructor
-      | type func
+      | maybe_static_type func
          {
          currentFunction->ReturnType = $<integer>1;
          }
@@ -686,7 +686,7 @@ operator:
          {
          currentFunction->ReturnType = $<integer>1;
          }
-      | type op_func
+      | maybe_static_type op_func
          {
          currentFunction->ReturnType = $<integer>1;
          }
@@ -700,7 +700,7 @@ operator:
          };
 
 typecast_op_func:
-  OPERATOR type '('
+  OPERATOR maybe_static_type '('
     {
       postSig("(");
       currentFunction->ReturnClass = vtkstrdup(getTypeId());
@@ -914,14 +914,14 @@ var: CLASS any_id var_ids ';'
      | ENUM any_id type_indirection var_ids ';'
      | UNION any_id var_ids ';'
      | UNION any_id type_indirection var_ids ';'
-     | type var_ids ';'
+     | maybe_static_type var_ids ';'
      | VAR_FUNCTION ';'
      | STATIC VAR_FUNCTION ';'
-     | type LPAREN_AMPERSAND any_id ')' ';'
-     | type LPAREN_POINTER any_id ')' ';'
-     | type LPAREN_POINTER any_id ')' ARRAY_NUM ';'
-     | type LPAREN_POINTER any_id ')' '[' maybe_other ']' ';'
-     | type LPAREN_POINTER any_id ')' '(' ignore_args_list ')' ';'
+     | maybe_static_type LPAREN_AMPERSAND any_id ')' ';'
+     | maybe_static_type LPAREN_POINTER any_id ')' ';'
+     | maybe_static_type LPAREN_POINTER any_id ')' ARRAY_NUM ';'
+     | maybe_static_type LPAREN_POINTER any_id ')' '[' maybe_other ']' ';'
+     | maybe_static_type LPAREN_POINTER any_id ')' '(' ignore_args_list ')' ';'
 
 var_ids: var_id_maybe_assign
        | var_id_maybe_assign ',' maybe_indirect_var_ids;
@@ -956,17 +956,17 @@ var_array:
               $<integer>$ = ((VTK_PARSE_POINTER + $<integer>4) &
                              VTK_PARSE_UNQUALIFIED_TYPE); };
 
-type: type_red1 {$<integer>$ = $<integer>1;}
-    | static_mod type_red1 {$<integer>$ = (VTK_PARSE_STATIC | $<integer>2);};
+maybe_static_type: type {$<integer>$ = $<integer>1;}
+    | static_mod type {$<integer>$ = (VTK_PARSE_STATIC | $<integer>2);};
 
-type_red1: type_red11 {$<integer>$ = $<integer>1;}
-    | type_red11 type_indirection {$<integer>$ = ($<integer>1 | $<integer>2);};
+type: type_red {$<integer>$ = $<integer>1;}
+    | type_red type_indirection {$<integer>$ = ($<integer>1 | $<integer>2);};
 
-type_red11: type_red12 {$<integer>$ = $<integer>1;}
-    | const_mod type_red12 {$<integer>$ = (VTK_PARSE_CONST | $<integer>2);}
-    | type_red12 const_mod {$<integer>$ = (VTK_PARSE_CONST | $<integer>1);};
+type_red: type_red1 {$<integer>$ = $<integer>1;}
+    | const_mod type_red1 {$<integer>$ = (VTK_PARSE_CONST | $<integer>2);}
+    | type_red1 const_mod {$<integer>$ = (VTK_PARSE_CONST | $<integer>1);};
 
-type_red12: type_red2
+type_red1: type_red2
     | templated_id
       {postSig(" "); setTypeId($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN;}
     | scoped_id
@@ -980,7 +980,7 @@ templated_id:
  | ID '<' { markSig(); postSig($<str>1); postSig("<");} types '>'
      {chopSig(); postSig(">"); $<str>$ = vtkstrdup(copySig()); clearTypeId();};
 
-types: type_red1 | type_red1 ',' {postSig(", ");} types;
+types: type | type ',' {postSig(", ");} types;
 
 maybe_scoped_id: ID {$<str>$ = $<str>1; postSig($<str>1);}
                | VTK_ID {$<str>$ = $<str>1; postSig($<str>1);}
@@ -1104,7 +1104,7 @@ literal2: INT_LITERAL {$<str>$ = $<str>1;}
           | VTK_ID {$<str>$ = $<str>1;};
 
 macro:
-  SetMacro '(' any_id ',' {preSig("void Set"); postSig("(");} type_red1 ')'
+  SetMacro '(' any_id ',' {preSig("void Set"); postSig("(");} type ')'
    {
    postSig("a);");
    sprintf(temps,"Set%s",$<str>3);
@@ -1120,7 +1120,7 @@ macro:
    output_function();
    }
 | GetMacro '(' {postSig("Get");} any_id ','
-   {markSig();} type_red1 {swapSig();} ')'
+   {markSig();} type {swapSig();} ')'
    {
    postSig("();");
    sprintf(temps,"Get%s",$<str>4);
