@@ -214,7 +214,7 @@ struct yy_buffer_state
         /* Number of characters read into yy_ch_buf, not including EOB
          * characters.
          */
-        int yy_n_chars;
+        size_t yy_n_chars;
 
         /* Whether we "own" the buffer - i.e., we know we created it,
          * and can realloc() it to grow it, and should free() it to
@@ -284,7 +284,7 @@ static YY_BUFFER_STATE * yy_buffer_stack = 0; /**< Stack as an array. */
 
 /* yy_hold_char holds the character lost when yytext is formed. */
 static char yy_hold_char;
-static int yy_n_chars;                /* number of characters read into yy_ch_buf */
+static size_t yy_n_chars;                /* number of characters read into yy_ch_buf */
 int yyleng;
 
 /* Points to current character in buffer. */
@@ -1478,12 +1478,14 @@ Run flex like this:
   flex --nounput -olex.yy.c vtkParse.l
 
 Modify lex.yy.c:
-  - remove TABs
+  - convert tabs to spaces (8 spaces per tab)
+  - remove extra space from end of lines
+  - remove blank lines from end of file
   - change yy_n_chars declarations from "int yy_n_chars;" to
     "size_t yy_n_chars;" in both the yy_buffer_state structure
     and the global scope.
-  - change num_to_read declaration from "int num_to_read;" to
-    "size_t num_to_read;" in yy_get_next_buffer function.
+  - in YY_INPUT change "int n" to "size_t n"
+  - compile with gcc and "-Wsign-compare", there should be no warnings
 
 */
 
@@ -1510,7 +1512,7 @@ Modify lex.yy.c:
 #pragma warning ( disable : 4786 )
 #endif
 
-#line 1514 "lex.yy.c"
+#line 1516 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -1608,7 +1610,7 @@ static int input (void );
         if ( YY_CURRENT_BUFFER_LVALUE->yy_is_interactive ) \
                 { \
                 int c = '*'; \
-                int n; \
+                size_t n; \
                 for ( n = 0; n < max_size && \
                              (c = getc( yyin )) != EOF && c != '\n'; ++n ) \
                         buf[n] = (char) c; \
@@ -1693,10 +1695,10 @@ YY_DECL
         register char *yy_cp, *yy_bp;
         register int yy_act;
 
-#line 48 "vtkParse.l"
+#line 50 "vtkParse.l"
 
 
-#line 1700 "lex.yy.c"
+#line 1702 "lex.yy.c"
 
         if ( !(yy_init) )
                 {
@@ -1792,7 +1794,7 @@ do_action:        /* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 50 "vtkParse.l"
+#line 52 "vtkParse.l"
 { int c1 = 0, c2 = input();
        for (;;)
          {
@@ -1811,7 +1813,7 @@ case 2:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 63 "vtkParse.l"
+#line 65 "vtkParse.l"
 {
        int c1 = 0, c2 = 0, c3 = 0, c4 = 0, c5 = input();
        for (;;)
@@ -1837,7 +1839,7 @@ case 3:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 84 "vtkParse.l"
+#line 86 "vtkParse.l"
 ;
         YY_BREAK
 case 4:
@@ -1845,7 +1847,7 @@ case 4:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 85 "vtkParse.l"
+#line 87 "vtkParse.l"
 ;
         YY_BREAK
 case 5:
@@ -1853,7 +1855,7 @@ case 5:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 87 "vtkParse.l"
+#line 89 "vtkParse.l"
 {
        int c1 = 0, c2 = 0, c3 = 0, c4 = 0, c5 = 0, c6 = input();
        for (;;)
@@ -1876,7 +1878,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 107 "vtkParse.l"
+#line 109 "vtkParse.l"
 {
      int pos = 1;
      while (yytext[pos-1] != 'M' || yytext[pos] != 'E')
@@ -1891,7 +1893,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 119 "vtkParse.l"
+#line 121 "vtkParse.l"
 {
      CommentState = 1;
      data.Description = (char*)malloc(100000);
@@ -1900,7 +1902,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 125 "vtkParse.l"
+#line 127 "vtkParse.l"
 {
      CommentState = 3;
      data.SeeAlso = (char*)malloc(100000);
@@ -1909,7 +1911,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 131 "vtkParse.l"
+#line 133 "vtkParse.l"
 {
      CommentState = 3;
      data.SeeAlso = (char*)malloc(100000);
@@ -1918,7 +1920,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 137 "vtkParse.l"
+#line 139 "vtkParse.l"
 {
      CommentState = 4;
      data.Caveats = (char*)malloc(100000);
@@ -1927,7 +1929,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 143 "vtkParse.l"
+#line 145 "vtkParse.l"
 {
      CommentState = 2;
      HaveComment = 1;
@@ -1937,7 +1939,7 @@ YY_RULE_SETUP
 case 12:
 /* rule 12 can match eol */
 YY_RULE_SETUP
-#line 149 "vtkParse.l"
+#line 151 "vtkParse.l"
 {
      HaveComment = 0;
      CommentState = 0;
@@ -1945,7 +1947,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 154 "vtkParse.l"
+#line 156 "vtkParse.l"
 {
      int pos = 1;
      while (yytext[pos-1] != '/' || yytext[pos] != '/') pos++;
@@ -1964,33 +1966,33 @@ YY_RULE_SETUP
         YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 170 "vtkParse.l"
+#line 172 "vtkParse.l"
 ;
         YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 172 "vtkParse.l"
+#line 174 "vtkParse.l"
 ;
         YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 174 "vtkParse.l"
+#line 176 "vtkParse.l"
 ;
         YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 175 "vtkParse.l"
+#line 177 "vtkParse.l"
 ;
         YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 176 "vtkParse.l"
+#line 178 "vtkParse.l"
 ;
         YY_BREAK
 case 19:
 /* rule 19 can match eol */
 YY_RULE_SETUP
-#line 178 "vtkParse.l"
+#line 180 "vtkParse.l"
 {
      int i; int j = 0;
      while (yytext[j]!='(') { j++; }
@@ -2005,7 +2007,7 @@ YY_RULE_SETUP
 case 20:
 /* rule 20 can match eol */
 YY_RULE_SETUP
-#line 189 "vtkParse.l"
+#line 191 "vtkParse.l"
 {
      sscanf(yytext+1,"%d",&yylval.integer);
      return(ARRAY_NUM);
@@ -2014,7 +2016,7 @@ YY_RULE_SETUP
 case 21:
 /* rule 21 can match eol */
 YY_RULE_SETUP
-#line 194 "vtkParse.l"
+#line 196 "vtkParse.l"
 {
      return(CLASS_REF);
      };
@@ -2022,7 +2024,7 @@ YY_RULE_SETUP
 case 22:
 /* rule 22 can match eol */
 YY_RULE_SETUP
-#line 198 "vtkParse.l"
+#line 200 "vtkParse.l"
 {
      return(CLASS_REF);
      };
@@ -2030,7 +2032,7 @@ YY_RULE_SETUP
 case 23:
 /* rule 23 can match eol */
 YY_RULE_SETUP
-#line 202 "vtkParse.l"
+#line 204 "vtkParse.l"
 {
      return(VAR_FUNCTION);
      };
@@ -2038,436 +2040,436 @@ YY_RULE_SETUP
 case 24:
 /* rule 24 can match eol */
 YY_RULE_SETUP
-#line 206 "vtkParse.l"
+#line 208 "vtkParse.l"
 return(SHORT);
         YY_BREAK
 case 25:
 /* rule 25 can match eol */
 YY_RULE_SETUP
-#line 207 "vtkParse.l"
+#line 209 "vtkParse.l"
 return(LONG);
         YY_BREAK
 case 26:
 /* rule 26 can match eol */
 YY_RULE_SETUP
-#line 208 "vtkParse.l"
+#line 210 "vtkParse.l"
 return(SHORT);
         YY_BREAK
 case 27:
 /* rule 27 can match eol */
 YY_RULE_SETUP
-#line 209 "vtkParse.l"
+#line 211 "vtkParse.l"
 return(LONG);
         YY_BREAK
 case 28:
 /* rule 28 can match eol */
 YY_RULE_SETUP
-#line 211 "vtkParse.l"
+#line 213 "vtkParse.l"
 return(LONG_LONG);
         YY_BREAK
 case 29:
 /* rule 29 can match eol */
 YY_RULE_SETUP
-#line 212 "vtkParse.l"
+#line 214 "vtkParse.l"
 return(LONG_LONG);
         YY_BREAK
 case 30:
 /* rule 30 can match eol */
 YY_RULE_SETUP
-#line 213 "vtkParse.l"
+#line 215 "vtkParse.l"
 return(LONG_LONG);
         YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 215 "vtkParse.l"
+#line 217 "vtkParse.l"
 return(INT64__);
         YY_BREAK
 case 32:
 /* rule 32 can match eol */
 YY_RULE_SETUP
-#line 217 "vtkParse.l"
+#line 219 "vtkParse.l"
 return(SIGNED_CHAR);
         YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 219 "vtkParse.l"
+#line 221 "vtkParse.l"
 return(OSTREAM);
         YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 220 "vtkParse.l"
+#line 222 "vtkParse.l"
 return(ISTREAM);
         YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 222 "vtkParse.l"
+#line 224 "vtkParse.l"
 return(CLASS);
         YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 223 "vtkParse.l"
+#line 225 "vtkParse.l"
 return(CLASS);
         YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 224 "vtkParse.l"
+#line 226 "vtkParse.l"
 return(PUBLIC);
         YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 225 "vtkParse.l"
+#line 227 "vtkParse.l"
 return(PRIVATE);
         YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 226 "vtkParse.l"
+#line 228 "vtkParse.l"
 return(PROTECTED);
         YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 227 "vtkParse.l"
+#line 229 "vtkParse.l"
 return(INT);
         YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 228 "vtkParse.l"
+#line 230 "vtkParse.l"
 return(FLOAT);
         YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 229 "vtkParse.l"
+#line 231 "vtkParse.l"
 return(SHORT);
         YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 230 "vtkParse.l"
+#line 232 "vtkParse.l"
 return(LONG);
         YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 231 "vtkParse.l"
+#line 233 "vtkParse.l"
 return(DOUBLE);
         YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 232 "vtkParse.l"
+#line 234 "vtkParse.l"
 return(VOID);
         YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 233 "vtkParse.l"
+#line 235 "vtkParse.l"
 return(CHAR);
         YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 234 "vtkParse.l"
+#line 236 "vtkParse.l"
 return(BOOL);
         YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 235 "vtkParse.l"
+#line 237 "vtkParse.l"
 return(ENUM);
         YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 236 "vtkParse.l"
+#line 238 "vtkParse.l"
 return(UNION);
         YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 237 "vtkParse.l"
+#line 239 "vtkParse.l"
 return(VIRTUAL);
         YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 238 "vtkParse.l"
+#line 240 "vtkParse.l"
 return(CONST);
         YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 239 "vtkParse.l"
+#line 241 "vtkParse.l"
 return(MUTABLE);
         YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 240 "vtkParse.l"
+#line 242 "vtkParse.l"
 return(OPERATOR);
         YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 241 "vtkParse.l"
+#line 243 "vtkParse.l"
 return(UNSIGNED);
         YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 242 "vtkParse.l"
+#line 244 "vtkParse.l"
 return(FRIEND);
         YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 243 "vtkParse.l"
+#line 245 "vtkParse.l"
 return(INLINE);
         YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 244 "vtkParse.l"
+#line 246 "vtkParse.l"
 return(STATIC);
         YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 245 "vtkParse.l"
+#line 247 "vtkParse.l"
 return(TEMPLATE);
         YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 246 "vtkParse.l"
+#line 248 "vtkParse.l"
 return(TYPENAME);
         YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 247 "vtkParse.l"
+#line 249 "vtkParse.l"
 return(TYPEDEF);
         YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 248 "vtkParse.l"
+#line 250 "vtkParse.l"
 return(NAMESPACE);
         YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 249 "vtkParse.l"
+#line 251 "vtkParse.l"
 return(USING);
         YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 250 "vtkParse.l"
+#line 252 "vtkParse.l"
 return(NEW);
         YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 251 "vtkParse.l"
+#line 253 "vtkParse.l"
 return(DELETE);
         YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 253 "vtkParse.l"
+#line 255 "vtkParse.l"
 return(DOUBLE);
         YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 254 "vtkParse.l"
+#line 256 "vtkParse.l"
 return(IdType);
         YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 255 "vtkParse.l"
+#line 257 "vtkParse.l"
 return(StdString);
         YY_BREAK
 case 68:
 YY_RULE_SETUP
-#line 256 "vtkParse.l"
+#line 258 "vtkParse.l"
 return(UnicodeString);
         YY_BREAK
 case 69:
 YY_RULE_SETUP
-#line 257 "vtkParse.l"
+#line 259 "vtkParse.l"
 return(SetMacro);
         YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 258 "vtkParse.l"
+#line 260 "vtkParse.l"
 return(GetMacro);
         YY_BREAK
 case 71:
 YY_RULE_SETUP
-#line 259 "vtkParse.l"
+#line 261 "vtkParse.l"
 return(SetStringMacro);
         YY_BREAK
 case 72:
 YY_RULE_SETUP
-#line 260 "vtkParse.l"
+#line 262 "vtkParse.l"
 return(GetStringMacro);
         YY_BREAK
 case 73:
 YY_RULE_SETUP
-#line 261 "vtkParse.l"
+#line 263 "vtkParse.l"
 return(SetClampMacro);
         YY_BREAK
 case 74:
 YY_RULE_SETUP
-#line 262 "vtkParse.l"
+#line 264 "vtkParse.l"
 return(SetObjectMacro);
         YY_BREAK
 case 75:
 YY_RULE_SETUP
-#line 263 "vtkParse.l"
+#line 265 "vtkParse.l"
 return(GetObjectMacro);
         YY_BREAK
 case 76:
 YY_RULE_SETUP
-#line 264 "vtkParse.l"
+#line 266 "vtkParse.l"
 return(BooleanMacro);
         YY_BREAK
 case 77:
 YY_RULE_SETUP
-#line 265 "vtkParse.l"
+#line 267 "vtkParse.l"
 return(SetVector2Macro);
         YY_BREAK
 case 78:
 YY_RULE_SETUP
-#line 266 "vtkParse.l"
+#line 268 "vtkParse.l"
 return(SetVector3Macro);
         YY_BREAK
 case 79:
 YY_RULE_SETUP
-#line 267 "vtkParse.l"
+#line 269 "vtkParse.l"
 return(SetVector4Macro);
         YY_BREAK
 case 80:
 YY_RULE_SETUP
-#line 268 "vtkParse.l"
+#line 270 "vtkParse.l"
 return(SetVector6Macro);
         YY_BREAK
 case 81:
 YY_RULE_SETUP
-#line 269 "vtkParse.l"
+#line 271 "vtkParse.l"
 return(GetVector2Macro);
         YY_BREAK
 case 82:
 YY_RULE_SETUP
-#line 270 "vtkParse.l"
+#line 272 "vtkParse.l"
 return(GetVector3Macro);
         YY_BREAK
 case 83:
 YY_RULE_SETUP
-#line 271 "vtkParse.l"
+#line 273 "vtkParse.l"
 return(GetVector4Macro);
         YY_BREAK
 case 84:
 YY_RULE_SETUP
-#line 272 "vtkParse.l"
+#line 274 "vtkParse.l"
 return(GetVector6Macro);
         YY_BREAK
 case 85:
 YY_RULE_SETUP
-#line 273 "vtkParse.l"
+#line 275 "vtkParse.l"
 return(SetVectorMacro);
         YY_BREAK
 case 86:
 YY_RULE_SETUP
-#line 274 "vtkParse.l"
+#line 276 "vtkParse.l"
 return(GetVectorMacro);
         YY_BREAK
 case 87:
 YY_RULE_SETUP
-#line 275 "vtkParse.l"
+#line 277 "vtkParse.l"
 return(ViewportCoordinateMacro);
         YY_BREAK
 case 88:
 YY_RULE_SETUP
-#line 276 "vtkParse.l"
+#line 278 "vtkParse.l"
 return(WorldCoordinateMacro);
         YY_BREAK
 case 89:
 YY_RULE_SETUP
-#line 277 "vtkParse.l"
+#line 279 "vtkParse.l"
 return(TypeMacro);
         YY_BREAK
 case 90:
 YY_RULE_SETUP
-#line 278 "vtkParse.l"
+#line 280 "vtkParse.l"
 return(TypeMacro);
         YY_BREAK
 case 91:
 YY_RULE_SETUP
-#line 279 "vtkParse.l"
+#line 281 "vtkParse.l"
 return(TypeMacro);
         YY_BREAK
 case 92:
 YY_RULE_SETUP
-#line 280 "vtkParse.l"
+#line 282 "vtkParse.l"
 return(TypeMacro);
         YY_BREAK
 case 93:
 YY_RULE_SETUP
-#line 281 "vtkParse.l"
+#line 283 "vtkParse.l"
 return(VTK_LEGACY);
         YY_BREAK
 case 94:
 YY_RULE_SETUP
-#line 282 "vtkParse.l"
+#line 284 "vtkParse.l"
 ;
         YY_BREAK
 case 95:
 YY_RULE_SETUP
-#line 283 "vtkParse.l"
+#line 285 "vtkParse.l"
 return(VTK_BYTE_SWAP_DECL);
         YY_BREAK
 case 96:
 YY_RULE_SETUP
-#line 284 "vtkParse.l"
+#line 286 "vtkParse.l"
 return(TypeInt8);
         YY_BREAK
 case 97:
 YY_RULE_SETUP
-#line 285 "vtkParse.l"
+#line 287 "vtkParse.l"
 return(TypeUInt8);
         YY_BREAK
 case 98:
 YY_RULE_SETUP
-#line 286 "vtkParse.l"
+#line 288 "vtkParse.l"
 return(TypeInt16);
         YY_BREAK
 case 99:
 YY_RULE_SETUP
-#line 287 "vtkParse.l"
+#line 289 "vtkParse.l"
 return(TypeUInt16);
         YY_BREAK
 case 100:
 YY_RULE_SETUP
-#line 288 "vtkParse.l"
+#line 290 "vtkParse.l"
 return(TypeInt32);
         YY_BREAK
 case 101:
 YY_RULE_SETUP
-#line 289 "vtkParse.l"
+#line 291 "vtkParse.l"
 return(TypeUInt32);
         YY_BREAK
 case 102:
 YY_RULE_SETUP
-#line 290 "vtkParse.l"
+#line 292 "vtkParse.l"
 return(TypeInt64);
         YY_BREAK
 case 103:
 YY_RULE_SETUP
-#line 291 "vtkParse.l"
+#line 293 "vtkParse.l"
 return(TypeUInt64);
         YY_BREAK
 case 104:
 YY_RULE_SETUP
-#line 292 "vtkParse.l"
+#line 294 "vtkParse.l"
 return(TypeFloat32);
         YY_BREAK
 case 105:
 YY_RULE_SETUP
-#line 293 "vtkParse.l"
+#line 295 "vtkParse.l"
 return(TypeFloat64);
         YY_BREAK
 case 106:
 /* rule 106 can match eol */
 YY_RULE_SETUP
-#line 295 "vtkParse.l"
+#line 297 "vtkParse.l"
 return(CONST_PTR);
         YY_BREAK
 case 107:
 /* rule 107 can match eol */
 YY_RULE_SETUP
-#line 296 "vtkParse.l"
+#line 298 "vtkParse.l"
 return(CONST_EQUAL);
         YY_BREAK
 case 108:
 YY_RULE_SETUP
-#line 298 "vtkParse.l"
+#line 300 "vtkParse.l"
 {
                      yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
@@ -2477,7 +2479,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 109:
 YY_RULE_SETUP
-#line 304 "vtkParse.l"
+#line 306 "vtkParse.l"
 {
                      yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
@@ -2487,7 +2489,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 110:
 YY_RULE_SETUP
-#line 310 "vtkParse.l"
+#line 312 "vtkParse.l"
 { yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
@@ -2497,7 +2499,7 @@ YY_RULE_SETUP
 case 111:
 /* rule 111 can match eol */
 YY_RULE_SETUP
-#line 316 "vtkParse.l"
+#line 318 "vtkParse.l"
 {
                 yylval.str = (char *)malloc(yyleng + 1);
                 memcpy(yylval.str,yytext,yyleng);
@@ -2508,7 +2510,7 @@ YY_RULE_SETUP
 case 112:
 /* rule 112 can match eol */
 YY_RULE_SETUP
-#line 323 "vtkParse.l"
+#line 325 "vtkParse.l"
 {
                 yylval.str = (char *)malloc(yyleng + 1);
                 memcpy(yylval.str,yytext,yyleng);
@@ -2521,7 +2523,7 @@ case 113:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 330 "vtkParse.l"
+#line 332 "vtkParse.l"
 {
                 int i;
                 for (i = 0; i < yyleng && yytext[i] != 'V'; i++) { ; };
@@ -2536,12 +2538,12 @@ case 114:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 338 "vtkParse.l"
+#line 340 "vtkParse.l"
 ;
         YY_BREAK
 case 115:
 YY_RULE_SETUP
-#line 341 "vtkParse.l"
+#line 343 "vtkParse.l"
 { yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
@@ -2550,7 +2552,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 116:
 YY_RULE_SETUP
-#line 347 "vtkParse.l"
+#line 349 "vtkParse.l"
 { yylval.str = (char *)malloc(yyleng + 1);
                           memcpy(yylval.str,yytext,yyleng);
                           yylval.str[yyleng] = '\0';
@@ -2560,13 +2562,13 @@ YY_RULE_SETUP
 case 117:
 /* rule 117 can match eol */
 YY_RULE_SETUP
-#line 353 "vtkParse.l"
+#line 355 "vtkParse.l"
 return(LPAREN_AMPERSAND);
         YY_BREAK
 case 118:
 /* rule 118 can match eol */
 YY_RULE_SETUP
-#line 354 "vtkParse.l"
+#line 356 "vtkParse.l"
 {
                 int i = 1;
                 int j;
@@ -2583,165 +2585,165 @@ YY_RULE_SETUP
 case 119:
 /* rule 119 can match eol */
 YY_RULE_SETUP
-#line 367 "vtkParse.l"
+#line 369 "vtkParse.l"
 ;
         YY_BREAK
 case 120:
 YY_RULE_SETUP
-#line 369 "vtkParse.l"
+#line 371 "vtkParse.l"
 return(OP_LSHIFT_EQ);
         YY_BREAK
 case 121:
 YY_RULE_SETUP
-#line 370 "vtkParse.l"
+#line 372 "vtkParse.l"
 return(OP_RSHIFT_EQ);
         YY_BREAK
 case 122:
 YY_RULE_SETUP
-#line 371 "vtkParse.l"
+#line 373 "vtkParse.l"
 return(OP_LSHIFT);
         YY_BREAK
 case 123:
 YY_RULE_SETUP
-#line 372 "vtkParse.l"
+#line 374 "vtkParse.l"
 return(OP_ARROW_POINTER);
         YY_BREAK
 case 124:
 YY_RULE_SETUP
-#line 373 "vtkParse.l"
+#line 375 "vtkParse.l"
 return(OP_ARROW);
         YY_BREAK
 case 125:
 YY_RULE_SETUP
-#line 374 "vtkParse.l"
+#line 376 "vtkParse.l"
 return(OP_RSHIFT);
         YY_BREAK
 case 126:
 YY_RULE_SETUP
-#line 375 "vtkParse.l"
+#line 377 "vtkParse.l"
 return(OP_INCR);
         YY_BREAK
 case 127:
 YY_RULE_SETUP
-#line 376 "vtkParse.l"
+#line 378 "vtkParse.l"
 return(OP_DECR);
         YY_BREAK
 case 128:
 YY_RULE_SETUP
-#line 377 "vtkParse.l"
+#line 379 "vtkParse.l"
 return(OP_PLUS_EQ);
         YY_BREAK
 case 129:
 YY_RULE_SETUP
-#line 378 "vtkParse.l"
+#line 380 "vtkParse.l"
 return(OP_MINUS_EQ);
         YY_BREAK
 case 130:
 YY_RULE_SETUP
-#line 379 "vtkParse.l"
+#line 381 "vtkParse.l"
 return(OP_TIMES_EQ);
         YY_BREAK
 case 131:
 YY_RULE_SETUP
-#line 380 "vtkParse.l"
+#line 382 "vtkParse.l"
 return(OP_DIVIDE_EQ);
         YY_BREAK
 case 132:
 YY_RULE_SETUP
-#line 381 "vtkParse.l"
+#line 383 "vtkParse.l"
 return(OP_REMAINDER_EQ);
         YY_BREAK
 case 133:
 YY_RULE_SETUP
-#line 382 "vtkParse.l"
+#line 384 "vtkParse.l"
 return(OP_AND_EQ);
         YY_BREAK
 case 134:
 YY_RULE_SETUP
-#line 383 "vtkParse.l"
+#line 385 "vtkParse.l"
 return(OP_OR_EQ);
         YY_BREAK
 case 135:
 YY_RULE_SETUP
-#line 384 "vtkParse.l"
+#line 386 "vtkParse.l"
 return(OP_XOR_EQ);
         YY_BREAK
 case 136:
 YY_RULE_SETUP
-#line 385 "vtkParse.l"
+#line 387 "vtkParse.l"
 return(OP_LOGIC_AND_EQ);
         YY_BREAK
 case 137:
 YY_RULE_SETUP
-#line 386 "vtkParse.l"
+#line 388 "vtkParse.l"
 return(OP_LOGIC_OR_EQ);
         YY_BREAK
 case 138:
 YY_RULE_SETUP
-#line 387 "vtkParse.l"
+#line 389 "vtkParse.l"
 return(OP_LOGIC_AND);
         YY_BREAK
 case 139:
 YY_RULE_SETUP
-#line 388 "vtkParse.l"
+#line 390 "vtkParse.l"
 return(OP_LOGIC_OR);
         YY_BREAK
 case 140:
 YY_RULE_SETUP
-#line 389 "vtkParse.l"
+#line 391 "vtkParse.l"
 return(OP_LOGIC_EQ);
         YY_BREAK
 case 141:
 YY_RULE_SETUP
-#line 390 "vtkParse.l"
+#line 392 "vtkParse.l"
 return(OP_LOGIC_NEQ);
         YY_BREAK
 case 142:
 YY_RULE_SETUP
-#line 391 "vtkParse.l"
+#line 393 "vtkParse.l"
 return(OP_LOGIC_LEQ);
         YY_BREAK
 case 143:
 YY_RULE_SETUP
-#line 392 "vtkParse.l"
+#line 394 "vtkParse.l"
 return(OP_LOGIC_GEQ);
         YY_BREAK
 case 144:
 YY_RULE_SETUP
-#line 393 "vtkParse.l"
+#line 395 "vtkParse.l"
 return(ELLIPSIS);
         YY_BREAK
 case 145:
 YY_RULE_SETUP
-#line 394 "vtkParse.l"
+#line 396 "vtkParse.l"
 return(DOUBLE_COLON);
         YY_BREAK
 case 146:
 YY_RULE_SETUP
-#line 396 "vtkParse.l"
+#line 398 "vtkParse.l"
 { return(yytext[0]); }
         YY_BREAK
 case 147:
 YY_RULE_SETUP
-#line 397 "vtkParse.l"
+#line 399 "vtkParse.l"
 { return(yytext[0]); }
         YY_BREAK
 case 148:
 YY_RULE_SETUP
-#line 399 "vtkParse.l"
+#line 401 "vtkParse.l"
 { return(yytext[0]); }
         YY_BREAK
 case 149:
 YY_RULE_SETUP
-#line 401 "vtkParse.l"
+#line 403 "vtkParse.l"
 return(OTHER);
         YY_BREAK
 case 150:
 YY_RULE_SETUP
-#line 402 "vtkParse.l"
+#line 404 "vtkParse.l"
 ECHO;
         YY_BREAK
-#line 2745 "lex.yy.c"
+#line 2747 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
         yyterminate();
 
@@ -3712,5 +3714,5 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 402 "vtkParse.l"
+#line 404 "vtkParse.l"
 

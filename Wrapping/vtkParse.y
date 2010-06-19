@@ -130,6 +130,8 @@ size_t sigMarkDepth = 0;
 unsigned int sigAllocatedLength;
 char *currentId = 0;
 
+int parseDebug = 0;
+
 void start_class(const char *classname);
 void output_function(void);
 void reject_function(void);
@@ -729,7 +731,7 @@ op_func: op_sig { postSig(")"); } maybe_const
         {
         currentFunction->Comment = vtkstrdup(CommentText);
         }
-      vtkParseDebug("Parsed operator", $<str>1);
+      vtkParseDebug("Parsed operator", currentFunction->Name);
     }
   | op_sig pure_virtual
     {
@@ -740,7 +742,7 @@ op_func: op_sig { postSig(")"); } maybe_const
         {
         currentFunction->Comment = vtkstrdup(CommentText);
         }
-      vtkParseDebug("Parsed operator", $<str>1);
+      vtkParseDebug("Parsed operator", currentFunction->Name);
       currentFunction->IsPureVirtual = 1;
       currentClass->IsAbstract = 1;
     };
@@ -762,7 +764,7 @@ func: func_sig { postSig(")"); } maybe_const
         {
         currentFunction->Comment = vtkstrdup(CommentText);
         }
-      vtkParseDebug("Parsed func", $<str>1);
+      vtkParseDebug("Parsed func", currentFunction->Name);
     }
   | func_sig pure_virtual
     {
@@ -773,7 +775,7 @@ func: func_sig { postSig(")"); } maybe_const
         {
         currentFunction->Comment = vtkstrdup(CommentText);
         }
-      vtkParseDebug("Parsed func", $<str>1);
+      vtkParseDebug("Parsed func", currentFunction->Name);
       currentFunction->IsPureVirtual = 1;
       currentClass->IsAbstract = 1;
     };
@@ -807,7 +809,7 @@ constructor: constructor_sig { postSig(")"); } maybe_initializers
         {
         currentFunction->Comment = vtkstrdup(CommentText);
         }
-      vtkParseDebug("Parsed func", $<str>1);
+      vtkParseDebug("Parsed func", currentFunction->Name);
     };
 
 constructor_sig: any_id '(' { postSig("("); } args_list ')';
@@ -1706,14 +1708,9 @@ typedef_ignore_body : | CLASS typedef_ignore_body
 
 static void vtkParseDebug(const char* s1, const char* s2)
 {
-  if ( getenv("DEBUG") )
+  if ( parseDebug )
     {
-    fprintf(stderr, "   %s", s1);
-    if ( s2 )
-      {
-      fprintf(stderr, " %s", s2);
-      }
-    fprintf(stderr, "\n");
+    fprintf(stderr, "   %s %s\n", s1, s2);
     }
 }
 
@@ -1928,6 +1925,12 @@ FileInfo *vtkParse_ParseFile(
   CommentState = 0;
   currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
   InitFunction(currentFunction);
+
+  parseDebug = 0;
+  if (getenv("DEBUG") != NULL)
+    {
+    parseDebug = 1;
+    }
 
   yyin = ifile;
   yyout = errfile;
