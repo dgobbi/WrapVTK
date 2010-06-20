@@ -232,6 +232,7 @@ void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
   int i = 0;
   int n;
 
+  fprintf(fp, "\n");
   fprintf(fp, "%s<Class>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(data->ClassName, 500));
@@ -259,8 +260,33 @@ void vtkWrapXML_ClassFooter(FILE *fp, ClassInfo *data, int indentation)
   fprintf(fp, "%s</Class>\n", indent(indentation));
 }
 
+/* write the file header */
+void vtkWrapXML_FileHeader(FILE *fp, const FileInfo *data, int indentation)
+{
+  const char *cp = data->FileName;
+  int i;
+
+  fprintf(fp, "%s<File>\n", indent(indentation));
+  if (cp)
+    {
+    i = strlen(cp);
+    while (i > 0 && cp[i-1] != '/' && cp[i-1] != '\\' && cp[i-1] != ':')
+      {
+      i--;
+      }
+    fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
+            vtkWrapXML_Quote(&cp[i], 500));
+    }
+}
+
+/* write the file footer */
+void vtkWrapXML_FileFooter(FILE *fp, const FileInfo *data, int indentation)
+{
+  fprintf(fp, "%s</File>\n", indent(indentation));
+}
+
 /* Write out the documentation for the class */
-void vtkWrapXML_ClassDoc(FILE *fp, FileInfo *data, int indentation)
+void vtkWrapXML_FileDoc(FILE *fp, FileInfo *data, int indentation)
 {
   size_t n;
   char temp[500];
@@ -765,7 +791,7 @@ void vtkWrapXML_MergeHelper(
       }
     }
 
-  if (!cinfo)
+  if (n > 0 && !cinfo)
     {
     header = vtkParseHierarchy_ClassHeader(hinfo, classname);
     if (!header)
@@ -887,41 +913,51 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
   int indentation = 0;
   ClassProperties *properties;
   MergeInfo *merge = NULL;
-  ClassInfo *classInfo = data->Classes[0];
+  ClassInfo *classInfo;
+  int i;
 
-  /* start new XML section for class */
-  vtkWrapXML_ClassHeader(fp, classInfo, indentation++);
+  vtkWrapXML_FileHeader(fp, data, indentation);
 
   /* print the documentation */
-  vtkWrapXML_ClassDoc(fp, data, indentation);
+  vtkWrapXML_FileDoc(fp, data, indentation);
 
-  /* merge all the superclass information */
-  merge = vtkWrapXML_MergeSuperClasses(data, classInfo);
-
-  if (merge)
+  for (i = 0; i < data->NumberOfClasses; i++)
     {
-    fprintf(fp, "\n");
-    vtkWrapXML_ClassInheritance(fp, merge, indentation);
+    classInfo = data->Classes[i];
+
+    /* start new XML section for class */
+    vtkWrapXML_ClassHeader(fp, classInfo, indentation++);
+
+    /* merge all the superclass information */
+    merge = vtkWrapXML_MergeSuperClasses(data, classInfo);
+
+    if (merge)
+      {
+      fprintf(fp, "\n");
+      vtkWrapXML_ClassInheritance(fp, merge, indentation);
+      }
+
+    /* get information about the properties */
+    properties = vtkParseProperties_Create(classInfo);
+
+    /* print the methods section */
+    vtkWrapXML_ClassMethods(fp, classInfo, properties, merge, indentation);
+
+    /* print the properties section */
+    vtkWrapXML_ClassProperties(fp, classInfo, properties, merge, indentation);
+
+    /* release the information about the properties */
+    vtkParseProperties_Free(properties);
+
+    /* release the info about what was merged from superclasses */
+    if (merge)
+      {
+      vtkParseMerge_FreeMergeInfo(merge);
+      }
+
+    /* print the class footer */
+    vtkWrapXML_ClassFooter(fp, classInfo, --indentation);
     }
 
-  /* get information about the properties */
-  properties = vtkParseProperties_Create(classInfo);
-
-  /* print the methods section */
-  vtkWrapXML_ClassMethods(fp, classInfo, properties, merge, indentation);
-
-  /* print the properties section */
-  vtkWrapXML_ClassProperties(fp, classInfo, properties, merge, indentation);
-
-  /* release the information about the properties */
-  vtkParseProperties_Free(properties);
-
-  /* release the info about what was merged from superclasses */
-  if (merge)
-    {
-    vtkParseMerge_FreeMergeInfo(merge);
-    }
-
-  /* print the class footer */
-  vtkWrapXML_ClassFooter(fp, classInfo, --indentation);
+  vtkWrapXML_FileFooter(fp, data, indentation);
 }
