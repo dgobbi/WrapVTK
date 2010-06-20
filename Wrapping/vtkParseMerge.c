@@ -187,8 +187,11 @@ void vtkParseMerge_FreeMergeInfo(MergeInfo *info)
     {
     free(info->OverrideClasses[i]);
     }
-  free(info->NumberOfOverrides);
-  free(info->OverrideClasses);
+  if (n)
+    {
+    free(info->NumberOfOverrides);
+    free(info->OverrideClasses);
+    }
 
   free(info);
 }
