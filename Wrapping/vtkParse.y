@@ -533,7 +533,7 @@ const char *getTypeId()
  */
 strt: maybe_other maybe_classes;
 
-maybe_classes: | maybe_template_class_def maybe_other maybe_classes;
+maybe_classes: | maybe_classes maybe_template_class_def maybe_other;
 
 maybe_template_class_def: template type_red2 | template INLINE type_red2
               | template class_def | class_def;
@@ -543,7 +543,7 @@ class_def: CLASS any_id { start_class($<str>2); }
   | CLASS any_id '<' types '>' { start_class($<str>2); }
     optional_scope '{' class_def_body '}'
 
-class_def_body: | { delSig(); clearTypeId(); } class_def_item class_def_body;
+class_def_body: | class_def_body { delSig(); clearTypeId(); } class_def_item;
 
 class_def_item: scope_type ':'
    | var
@@ -841,7 +841,10 @@ const_mod: CONST {postSig("const ");};
 static_mod: STATIC {postSig("static ");}
           | STATIC INLINE {postSig("static ");};
 
-any_id: VTK_ID {postSig($<str>1);} | ID {postSig($<str>1);};
+any_id: VTK_ID {postSig($<str>1);}
+     | ID {postSig($<str>1);}
+     | StdString {postSig("vtkStdString");}
+     | UnicodeString {postSig("vtkUnicodeString");};
 
 func_body: ';'
     | '{' maybe_other '}' ';'
@@ -1676,9 +1679,9 @@ vtk_constant_def: VTK_CONSTANT_DEF;
 /*
  * These just eat up misc garbage
  */
-maybe_other : | other_stuff maybe_other;
-maybe_other_no_semi : | other_stuff_no_semi maybe_other_no_semi;
-maybe_other_class : | other_stuff_or_class maybe_other_class;
+maybe_other : | maybe_other other_stuff;
+maybe_other_no_semi : | maybe_other_no_semi other_stuff_no_semi;
+maybe_other_class : | maybe_other_class other_stuff_or_class;
 
 other_stuff_or_class : CLASS | TEMPLATE | other_stuff;
 
