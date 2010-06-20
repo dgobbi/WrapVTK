@@ -238,9 +238,6 @@ Modify lex.yy.c:
 
 "signed"[\t\n\r ]*"char"  return(SIGNED_CHAR);
 
-"ostream"       return(OSTREAM);
-"istream"       return(ISTREAM);
-
 "class"         return(CLASS);
 "struct"        return(CLASS);
 "public"        return(PUBLIC);
@@ -275,8 +272,6 @@ Modify lex.yy.c:
 
 "vtkFloatingPointType" return(DOUBLE);
 "vtkIdType"            return(IdType);
-"vtkStdString"         return(StdString);
-"vtkUnicodeString"     return(UnicodeString);
 "vtkSetMacro"          return(SetMacro);
 "vtkGetMacro"          return(GetMacro);
 "vtkSetStringMacro"    return(SetStringMacro);
@@ -322,33 +317,30 @@ Modify lex.yy.c:
                      yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
-                     return(FLOAT_LITERAL);
-                    }
+                     return(FLOAT_LITERAL); }
+
 "0x"[0-9a-fA-F]+[uU]?[lL]?      {
                      yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
-                     return(HEX_LITERAL);
-                    }
+                     return(HEX_LITERAL); }
+
 [0-9]+[uU]?[lL]?      { yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
-                     return(INT_LITERAL);
-                    }
+                     return(INT_LITERAL); }
 
 \"([^\"]|\\\")*\"      {
                 yylval.str = (char *)malloc(yyleng + 1);
                 memcpy(yylval.str,yytext,yyleng);
                 yylval.str[yyleng] = '\0';
-                return(STRING_LITERAL);
-                }
+                return(STRING_LITERAL); }
 
 \'([^\']|\\\')+\'      {
                 yylval.str = (char *)malloc(yyleng + 1);
                 memcpy(yylval.str,yytext,yyleng);
                 yylval.str[yyleng] = '\0';
-                return(CHAR_LITERAL);
-                }
+                return(CHAR_LITERAL); }
 
 ^"#"[\t ]*"define"[\t ]+"VTK_"[a-zA-Z0-9_]+.*$ {
                 int i;
@@ -360,18 +352,35 @@ Modify lex.yy.c:
 
 ^"#"(\\\n|\\\r\n|[^\n])*$     ;
 
-
-"vtk"[0-9a-zA-Z_]*  { yylval.str = (char *)malloc(yyleng + 1);
+"vtkStdString"     { yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
-                     return(VTK_ID);
-                    }
+                     return(StdString); }
+
+"vtkUnicodeString" { yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(UnicodeString); }
+
+"vtk"[0-9a-zA-Z_]* { yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(VTK_ID); }
+
+"ostream"          { yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(OSTREAM); }
+
+"istream"          { yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(ISTREAM); }
 
 [a-zA-Z_][0-9a-zA-Z_]*  { yylval.str = (char *)malloc(yyleng + 1);
                           memcpy(yylval.str,yytext,yyleng);
                           yylval.str[yyleng] = '\0';
-                          return(ID);
-                        }
+                          return(ID); }
 
 "("[\t\n\r ]*"&"  return(LPAREN_AMPERSAND);
 "("[\t\n\r ]*([a-zA-Z_][a-zA-Z0-9_]*::)*"*" {
@@ -384,8 +393,7 @@ Modify lex.yy.c:
                 yylval.str = (char *)malloc(j-i+1);
                 if (j > i) { strncpy(yylval.str, &yytext[i], j-i); }
                 yylval.str[j-i] = '\0';
-                return(LPAREN_POINTER);
-                }
+                return(LPAREN_POINTER); }
 
 [\t\n\r ] ;
 

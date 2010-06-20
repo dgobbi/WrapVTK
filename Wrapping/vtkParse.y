@@ -436,8 +436,8 @@ const char *getTypeId()
 %token CHAR
 %token SIGNED_CHAR
 %token BOOL
-%token OSTREAM
-%token ISTREAM
+%token <str> OSTREAM
+%token <str> ISTREAM
 %token ENUM
 %token UNION
 %token CLASS_REF
@@ -493,9 +493,9 @@ const char *getTypeId()
 %token DOUBLE_COLON
 
 /* type tokens */
+%token <str> StdString
+%token <str> UnicodeString
 %token IdType
-%token StdString
-%token UnicodeString
 %token TypeInt8
 %token TypeUInt8
 %token TypeInt16
@@ -848,8 +848,10 @@ static_mod: STATIC {postSig("static ");}
 
 any_id: VTK_ID {postSig($<str>1);}
      | ID {postSig($<str>1);}
-     | StdString {postSig("vtkStdString");}
-     | UnicodeString {postSig("vtkUnicodeString");};
+     | ISTREAM {postSig($<str>1);}
+     | OSTREAM {postSig($<str>1);}
+     | StdString {postSig($<str>1);}
+     | UnicodeString {postSig($<str>1);};
 
 func_body: ';'
     | '{' maybe_other '}' ';'
@@ -1012,10 +1014,10 @@ scoped_id: class_id DOUBLE_COLON maybe_scoped_id
 
 class_id: ID { $<str>$ = $<str>1; }
         | VTK_ID { $<str>$ = $<str>1; }
-        | ISTREAM { $<str>$ = vtkstrdup("istream"); }
-        | OSTREAM { $<str>$ = vtkstrdup("ostream"); }
-        | StdString { $<str>$ = vtkstrdup("vtkStdString"); }
-        | UnicodeString { $<str>$ = vtkstrdup("vtkUnicodeString"); };
+        | ISTREAM { $<str>$ = $<str>1; }
+        | OSTREAM { $<str>$ = $<str>1; }
+        | StdString { $<str>$ = $<str>1; }
+        | UnicodeString { $<str>$ = $<str>1; };
 
 /* &          is VTK_PARSE_REF
    *          is VTK_PARSE_POINTER
@@ -1047,12 +1049,10 @@ type_indirection:
     { $<integer>$ = VTK_PARSE_BAD_INDIRECT;};
 
 type_red2:  type_primitive { $<integer>$ = $<integer>1;}
- | StdString { typeSig("vtkStdString"); $<integer>$ = VTK_PARSE_STRING;}
- | UnicodeString
-   { typeSig("vtkUnicodeString"); $<integer>$ = VTK_PARSE_UNICODE_STRING;}
- | OSTREAM
-    { typeSig("ostream"); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | ISTREAM { typeSig("istream"); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | StdString { typeSig($<str>1); $<integer>$ = VTK_PARSE_STRING;}
+ | UnicodeString { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNICODE_STRING;}
+ | OSTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | ISTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
  | ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
  | VTK_ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_VTK_OBJECT; };
 
