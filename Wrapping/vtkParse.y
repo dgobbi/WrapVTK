@@ -1068,7 +1068,7 @@ type_primitive:
   TypeUInt64 { typeSig("vtkTypeUInt64"); $<integer>$ = VTK_PARSE_UINT64; } |
   TypeFloat32 { typeSig("vtkTypeFloat32"); $<integer>$ = VTK_PARSE_FLOAT32; } |
   TypeFloat64 { typeSig("vtkTypeFloat64"); $<integer>$ = VTK_PARSE_FLOAT64; } |
-  SIGNED {typeSig("signed");} type_integer { $<integer>$ = $<integer>2;}; |
+  SIGNED {typeSig("signed");} type_integer { $<integer>$ = $<integer>3;}; |
   UNSIGNED {typeSig("unsigned");}
    type_integer { $<integer>$ = (VTK_PARSE_UNSIGNED | $<integer>3);} |
   type_integer { $<integer>$ = $<integer>1;};

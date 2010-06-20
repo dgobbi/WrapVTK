@@ -1205,7 +1205,7 @@ static const char *const yytname[] =
   "maybe_var_array", "var_array", "$@24", "maybe_static_type", "type",
   "type_red", "type_red1", "$@25", "templated_id", "$@26", "$@27", "types",
   "$@28", "maybe_scoped_id", "scoped_id", "class_id", "type_indirection",
-  "$@29", "$@30", "$@31", "type_red2", "type_primitive", "@32", "$@33",
+  "$@29", "$@30", "$@31", "type_red2", "type_primitive", "$@32", "$@33",
   "type_integer", "optional_scope", "scope_list", "scope_list_item",
   "scope_type", "literal", "literal2", "macro", "$@34", "$@35", "$@36",
   "$@37", "$@38", "$@39", "$@40", "$@41", "$@42", "$@43", "$@44", "$@45",
@@ -4832,7 +4832,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 1071 "vtkParse.y"
-    { (yyval.integer) = (yyvsp[(2) - (3)].integer);}
+    { (yyval.integer) = (yyvsp[(3) - (3)].integer);}
     break;
 
   case 276:
