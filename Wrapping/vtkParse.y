@@ -23,8 +23,10 @@ Run yacc like this:
   yacc -b vtkParse vtkParse.y
 
 Modify vtkParse.tab.c:
-  - remove TABs
-  - remove yyerrorlab stuff in range ["goto yyerrlab1;", "yyerrstatus = 3;")
+  - convert TABs to spaces (eight per tab)
+  - remove spaces from ends of lines, s/ *$//g
+  - remove the "goto yyerrlab1;" that appears right before yyerrlab1:
+  - remove the #defined constants that appear right after the enums
 
 */
 
@@ -441,6 +443,7 @@ const char *getTypeId()
 %token CONST_EQUAL
 %token OPERATOR
 %token UNSIGNED
+%token SIGNED
 %token FRIEND
 %token INLINE
 %token MUTABLE
@@ -1065,6 +1068,7 @@ type_primitive:
   TypeUInt64 { typeSig("vtkTypeUInt64"); $<integer>$ = VTK_PARSE_UINT64; } |
   TypeFloat32 { typeSig("vtkTypeFloat32"); $<integer>$ = VTK_PARSE_FLOAT32; } |
   TypeFloat64 { typeSig("vtkTypeFloat64"); $<integer>$ = VTK_PARSE_FLOAT64; } |
+  SIGNED {typeSig("signed");} type_integer { $<integer>$ = $<integer>2;}; |
   UNSIGNED {typeSig("unsigned");}
    type_integer { $<integer>$ = (VTK_PARSE_UNSIGNED | $<integer>3);} |
   type_integer { $<integer>$ = $<integer>1;};

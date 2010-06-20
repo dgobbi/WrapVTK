@@ -373,8 +373,8 @@ static void yy_fatal_error (yyconst char msg[]  );
         *yy_cp = '\0'; \
         (yy_c_buf_p) = yy_cp;
 
-#define YY_NUM_RULES 151
-#define YY_END_OF_BUFFER 152
+#define YY_NUM_RULES 152
+#define YY_END_OF_BUFFER 153
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -384,125 +384,125 @@ struct yy_trans_info
         };
 static yyconst flex_int16_t yy_accept[1110] =
     {   0,
-        0,    0,  152,  150,  120,  120,  149,  150,  149,  149,
-      150,  149,  149,  149,  149,  149,  149,  149,  111,  111,
-      149,  149,  149,  149,  117,  117,  117,  117,  117,  147,
-      148,  149,  117,  117,  117,  117,  117,  117,  117,  117,
-      117,  117,  117,  117,  117,  117,  117,  117,  149,  120,
-       13,   13,  150,  149,  142,    0,  112,    0,  133,  139,
-      134,    0,    0,    0,  118,  119,    0,    0,  131,    0,
-      127,  129,  128,  130,  125,    0,    1,   15,  132,  109,
-      111,    0,  111,  111,    0,    0,  146,  123,  143,  141,
-      144,  126,  117,  117,  117,  117,  117,  117,    0,    0,
+        0,    0,  153,  151,  121,  121,  150,  151,  150,  150,
+      151,  150,  150,  150,  150,  150,  150,  150,  112,  112,
+      150,  150,  150,  150,  118,  118,  118,  118,  118,  148,
+      149,  150,  118,  118,  118,  118,  118,  118,  118,  118,
+      118,  118,  118,  118,  118,  118,  118,  118,  150,  121,
+       13,   13,  151,  150,  143,    0,  113,    0,  134,  140,
+      135,    0,    0,    0,  119,  120,    0,    0,  132,    0,
+      128,  130,  129,  131,  126,    0,    1,   15,  133,  110,
+      112,    0,  112,  112,    0,    0,  147,  124,  144,  142,
+      145,  127,  118,  118,  118,  118,  118,  118,    0,    0,
 
-      136,  117,  117,  117,  117,  117,  117,  117,  117,  117,
-      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
-      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
-      117,  117,  135,  140,    0,   13,    0,    0,    0,    0,
-      115,    0,    0,    0,    0,   14,  112,  137,  113,  113,
-        0,    0,    0,  124,  145,   15,  109,    0,  109,    0,
-      110,  121,  122,  117,  117,  117,  117,    0,    0,   21,
-      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
-      117,  117,   41,  117,  117,  117,  117,   64,  117,  117,
-      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
+      137,  118,  118,  118,  118,  118,  118,  118,  118,  118,
+      118,  118,  118,  118,  118,  118,  118,  118,  118,  118,
+      118,  118,  118,  118,  118,  118,  118,  118,  118,  118,
+      118,  118,  136,  141,    0,   13,    0,    0,    0,    0,
+      116,    0,    0,    0,    0,   14,  113,  138,  114,  114,
+        0,    0,    0,  125,  146,   15,  110,    0,  110,    0,
+      111,  122,  123,  118,  118,  118,  118,    0,    0,   21,
+      118,  118,  118,  118,  118,  118,  118,  118,  118,  118,
+      118,  118,   41,  118,  118,  118,  118,   65,  118,  118,
+      118,  118,  118,  118,  118,  118,  118,  118,  118,  118,
 
-      117,  117,  117,  117,  116,  138,    0,    0,   14,  115,
+      118,  118,  118,  118,  117,  139,    0,    0,   14,  116,
         0,    0,    0,    0,   14,   14,   14,   14,    0,    0,
-        0,  109,    0,  110,  110,  117,  117,  117,  117,  117,
-      117,   48,   47,  117,  117,  117,  117,   49,  117,  117,
-      117,    0,  117,  117,  117,   44,  117,  117,  117,  117,
-      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
-      117,  117,  117,   46,  116,  116,  116,  116,  116,  116,
-      116,  116,  116,  116,  116,  116,  116,    0,    0,   14,
+        0,  110,    0,  111,  111,  118,  118,  118,  118,  118,
+      118,   48,   47,  118,  118,  118,  118,   49,  118,  118,
+      118,    0,  118,  118,  118,   44,  118,  118,  118,  118,
+      118,  118,  118,  118,  118,  118,  118,  118,  118,  118,
+      118,  118,  118,   46,  117,  117,  117,  117,  117,  117,
+      117,  117,  117,  117,  117,  117,  117,    0,    0,   14,
        14,   14,   14,    0,    0,    0,    0,   14,   14,   14,
-       14,   14,    0,    0,  117,  117,  117,  117,  117,  117,
+       14,   14,    0,    0,  118,  118,  118,  118,  118,  118,
 
-      117,  117,   36,   52,  117,  117,   42,  117,  117,    0,
-        0,  117,  117,  117,    0,  117,  117,  117,  117,  117,
-      117,  117,  117,  117,   43,  117,  117,  117,  117,  117,
-      117,   50,  117,   63,  117,    0,    0,  116,  116,  116,
-      116,  116,  116,  116,  116,  116,  116,  116,  116,  116,
+      118,  118,   36,   52,  118,  118,   42,  118,  118,    0,
+        0,  118,  118,  118,    0,  118,  118,  118,  118,  118,
+      118,  118,  118,  118,   43,  118,  118,  118,  118,  118,
+      118,   50,  118,   64,  118,    0,    0,  117,  117,  117,
+      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
         0,    0,    0,   14,   14,   14,   14,   14,    0,    0,
-        0,   14,   14,   14,   14,   14,   14,  107,    0,  117,
-      117,  117,  117,  117,   19,  117,  117,    0,    0,  108,
-       65,   45,   56,   57,    0,    0,  117,  117,  117,    0,
-        0,  117,  117,  117,  117,  117,  117,  117,  117,   38,
+        0,   14,   14,   14,   14,   14,   14,  108,    0,  118,
+      118,  118,  118,  118,   19,  118,  118,    0,    0,  109,
+       66,   45,   57,   58,    0,    0,  118,  118,  118,    0,
+        0,  118,  118,  118,  118,  118,  118,  118,  118,   38,
 
-        0,  117,  117,   58,   37,  117,  117,  117,  117,  117,
-        0,    0,  116,  116,  116,  116,  116,  116,  116,  116,
-      116,  116,  116,  116,  116,    0,    0,   14,   14,   14,
+        0,  118,   56,   59,   37,  118,  118,  118,  118,  118,
+        0,    0,  117,  117,  117,  117,  117,  117,  117,  117,
+      117,  117,  117,  117,  117,    0,    0,   14,   14,   14,
        14,   14,   14,    0,    0,    6,    0,    0,   14,   14,
-       14,   14,    3,   14,    2,   14,    4,    0,  117,  117,
-      117,  117,  117,   16,   32,    0,    0,    0,    0,   28,
-      117,   35,    0,    0,   26,  117,   53,  117,  117,   34,
-       39,  117,    0,  117,    0,  117,    0,  117,   61,  117,
-      117,   51,    0,    0,    0,  116,  116,  116,  116,  116,
-      116,  116,  116,  116,  116,  116,  116,  116,  116,  116,
+       14,   14,    3,   14,    2,   14,    4,    0,  118,  118,
+      118,  118,  118,   16,   32,    0,    0,    0,    0,   28,
+      118,   35,    0,    0,   26,  118,   53,  118,  118,   34,
+       39,  118,    0,  118,    0,  118,    0,  118,   62,  118,
+      118,   51,    0,    0,    0,  117,  117,  117,  117,  117,
+      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
 
-      116,  116,  116,  116,  116,    0,    6,    0,   14,   14,
+      117,  117,  117,  117,  117,    0,    6,    0,   14,   14,
        14,   14,   14,   14,    0,    6,    0,    0,    0,   14,
-       14,   14,   16,   17,   18,  117,  117,  117,    0,    0,
-        0,   22,    0,    0,    0,   28,    0,    0,  117,   27,
-       26,    0,   29,  117,   54,  117,    0,   25,    0,  117,
-        0,   59,   60,   55,    0,    0,  116,  116,  116,  116,
-      116,  116,  116,  116,  116,  116,  116,  116,  116,  116,
-      116,  116,  116,  116,  116,  116,  116,  116,  116,  116,
+       14,   14,   16,   17,   18,  118,  118,  118,    0,    0,
+        0,   22,    0,    0,    0,   28,    0,    0,  118,   27,
+       26,    0,   29,  118,   54,  118,    0,   25,    0,  118,
+        0,   60,   61,   55,    0,    0,  117,  117,  117,  117,
+      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
+      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
         0,    0,   14,   14,   14,    0,    0,    7,   14,   14,
-      117,  117,  117,    0,    0,    0,    0,    0,   27,  117,
+      118,  118,  118,    0,    0,    0,    0,    0,   27,  118,
 
-       29,    0,  117,   62,   40,   25,    0,  117,    0,    0,
-        0,   23,    0,    0,    0,    0,  116,  116,  116,  116,
-      116,  116,  116,   67,  116,  116,  116,  116,  116,  116,
-      116,  116,  116,  116,  116,  116,  116,  116,  116,  116,
-        0,    7,   14,   14,    0,    0,    7,   14,   14,  117,
-       94,  117,    0,    0,    0,    0,    0,  117,    0,  117,
-        0,   33,    0,    0,    0,    0,  116,  116,  116,  116,
-      116,  116,  116,  116,  116,  116,  116,  116,  116,  116,
-      116,  116,  116,  116,  116,  116,  116,  116,   16,    0,
-        7,   14,   14,    0,    0,   14,   14,  117,  117,    0,
+       29,    0,  118,   63,   40,   25,    0,  118,    0,    0,
+        0,   23,    0,    0,    0,    0,  117,  117,  117,  117,
+      117,  117,  117,   68,  117,  117,  117,  117,  117,  117,
+      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
+        0,    7,   14,   14,    0,    0,    7,   14,   14,  118,
+       95,  118,    0,    0,    0,    0,    0,  118,    0,  118,
+        0,   33,    0,    0,    0,    0,  117,  117,  117,  117,
+      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
+      117,  117,  117,  117,  117,  117,  117,  117,   16,    0,
+        7,   14,   14,    0,    0,   14,   14,  118,  118,    0,
 
         0,    0,    0,    0,   30,    0,   31,   33,    0,    0,
-        0,  116,  116,  116,   71,  116,  116,  116,    0,    0,
-      116,   70,  116,  116,  116,  116,  116,  116,  116,  116,
-       97,  116,  116,  116,  116,  116,  116,    0,   14,   14,
-        0,    0,   14,   14,  117,  117,    0,    0,    0,   30,
-       31,    0,    0,  116,  116,  116,  116,  116,  116,    0,
-       20,  116,  116,  116,  116,   68,  116,   99,  101,  103,
-       92,  116,  116,  116,  116,   98,  116,  116,  116,    0,
-       14,   14,    0,    0,   14,   14,  117,  117,    0,    0,
-        0,    0,  116,  116,  116,  116,  116,  116,  116,  116,
+        0,  117,  117,  117,   72,  117,  117,  117,    0,    0,
+      117,   71,  117,  117,  117,  117,  117,  117,  117,  117,
+       98,  117,  117,  117,  117,  117,  117,    0,   14,   14,
+        0,    0,   14,   14,  118,  118,    0,    0,    0,   30,
+       31,    0,    0,  117,  117,  117,  117,  117,  117,    0,
+       20,  117,  117,  117,  117,   69,  117,  100,  102,  104,
+       93,  117,  117,  117,  117,   99,  117,  117,  117,    0,
+       14,   14,    0,    0,   14,   14,  118,  118,    0,    0,
+        0,    0,  117,  117,  117,  117,  117,  117,  117,  117,
 
-      116,  116,  116,  116,  116,  116,  116,  116,  116,  116,
-      116,  116,  116,  100,  102,  104,  116,  116,  116,    0,
-       14,   14,    0,    0,   14,   14,   14,   14,   14,  117,
-      117,    0,    0,   24,  116,  116,  116,  116,  116,  116,
-      116,  116,  116,  116,  116,  116,  116,  116,  116,  116,
-      116,  116,  105,  106,  116,  116,  116,  116,    0,   14,
-       14,   14,   14,   14,    0,  114,    0,    0,    0,   14,
-       14,   14,   14,   14,  117,   95,    0,   77,  116,  116,
-      116,  116,  116,  116,  116,  116,  116,  116,  116,  116,
-      116,  116,  116,  116,  116,  116,  116,  116,  116,    0,
+      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
+      117,  117,  117,  101,  103,  105,  117,  117,  117,    0,
+       14,   14,    0,    0,   14,   14,   14,   14,   14,  118,
+      118,    0,    0,   24,  117,  117,  117,  117,  117,  117,
+      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
+      117,  117,  106,  107,  117,  117,  117,  117,    0,   14,
+       14,   14,   14,   14,    0,  115,    0,    0,    0,   14,
+       14,   14,   14,   14,  118,   96,    0,   78,  117,  117,
+      117,  117,  117,  117,  117,  117,  117,  117,  117,  117,
+      117,  117,  117,  117,  117,  117,  117,  117,  117,    0,
 
-       14,   14,   14,   14,   14,  114,    0,    0,   14,   14,
-       14,   14,   12,  117,  116,  116,  116,  116,  116,  116,
-      116,  116,  116,  116,   74,  116,  116,  116,  116,  116,
-      116,  116,  116,   69,  116,  116,    0,   14,   14,   14,
-       14,   12,    0,   14,   14,   14,   14,   12,  117,  116,
-      116,  116,   76,   73,  116,  116,  116,  116,   87,   75,
-       72,  116,  116,  116,  116,   86,  116,  116,  116,    0,
+       14,   14,   14,   14,   14,  115,    0,    0,   14,   14,
+       14,   14,   12,  118,  117,  117,  117,  117,  117,  117,
+      117,  117,  117,  117,   75,  117,  117,  117,  117,  117,
+      117,  117,  117,   70,  117,  117,    0,   14,   14,   14,
+       14,   12,    0,   14,   14,   14,   14,   12,  118,  117,
+      117,  117,   77,   74,  117,  117,  117,  117,   88,   76,
+       73,  117,  117,  117,  117,   87,  117,  117,  117,    0,
        14,   14,   14,   14,   12,    0,   14,   14,   14,   14,
-       96,  116,  116,  116,   82,   83,   84,   85,   78,   79,
-       80,   81,  116,  116,  116,    0,   14,   14,   14,   14,
+       97,  117,  117,  117,   83,   84,   85,   86,   79,   80,
+       81,   82,  117,  117,  117,    0,   14,   14,   14,   14,
 
-        0,   14,   14,   14,   14,  116,  116,  116,  116,  116,
-      116,    0,   14,   14,   14,   14,    0,   11,   14,   14,
-       14,   90,  116,   66,   93,  116,  116,    0,   11,   14,
-       14,   14,    0,   11,   14,    9,   10,  116,  116,  116,
-        0,   11,   14,    9,   10,    0,   14,    9,   10,  116,
-      116,  116,    0,   14,    9,   10,    0,   14,  116,  116,
-       89,    0,   14,    0,    8,  116,  116,    0,    8,    0,
-        8,  116,  116,    0,    8,    0,  116,   88,    0,    0,
-      116,    0,    0,   91,    0,    0,    0,    0,    0,    0,
+        0,   14,   14,   14,   14,  117,  117,  117,  117,  117,
+      117,    0,   14,   14,   14,   14,    0,   11,   14,   14,
+       14,   91,  117,   67,   94,  117,  117,    0,   11,   14,
+       14,   14,    0,   11,   14,    9,   10,  117,  117,  117,
+        0,   11,   14,    9,   10,    0,   14,    9,   10,  117,
+      117,  117,    0,   14,    9,   10,    0,   14,  117,  117,
+       90,    0,   14,    0,    8,  117,  117,    0,    8,    0,
+        8,  117,  117,    0,    8,    0,  117,   89,    0,    0,
+      117,    0,    0,   92,    0,    0,    0,    0,    0,    0,
         0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
 
         0,    0,    5,    0,    0,    5,    5,    0,    0
@@ -1458,16 +1458,16 @@ static yyconst flex_int16_t yy_chk[2887] =
     } ;
 
 /* Table of booleans, true if rule could match eol. */
-static yyconst flex_int32_t yy_rule_can_match_eol[152] =
+static yyconst flex_int32_t yy_rule_can_match_eol[153] =
     {   0,
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     };
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1,
+    1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,     };
 
 static yy_state_type yy_last_accepting_state;
 static char *yy_last_accepting_cpos;
@@ -2246,177 +2246,177 @@ return(UNSIGNED);
 case 56:
 YY_RULE_SETUP
 #line 264 "vtkParse.l"
-return(FRIEND);
+return(SIGNED);
         YY_BREAK
 case 57:
 YY_RULE_SETUP
 #line 265 "vtkParse.l"
-return(INLINE);
+return(FRIEND);
         YY_BREAK
 case 58:
 YY_RULE_SETUP
 #line 266 "vtkParse.l"
-return(STATIC);
+return(INLINE);
         YY_BREAK
 case 59:
 YY_RULE_SETUP
 #line 267 "vtkParse.l"
-return(TEMPLATE);
+return(STATIC);
         YY_BREAK
 case 60:
 YY_RULE_SETUP
 #line 268 "vtkParse.l"
-return(TYPENAME);
+return(TEMPLATE);
         YY_BREAK
 case 61:
 YY_RULE_SETUP
 #line 269 "vtkParse.l"
-return(TYPEDEF);
+return(TYPENAME);
         YY_BREAK
 case 62:
 YY_RULE_SETUP
 #line 270 "vtkParse.l"
-return(NAMESPACE);
+return(TYPEDEF);
         YY_BREAK
 case 63:
 YY_RULE_SETUP
 #line 271 "vtkParse.l"
-return(USING);
+return(NAMESPACE);
         YY_BREAK
 case 64:
 YY_RULE_SETUP
 #line 272 "vtkParse.l"
-return(NEW);
+return(USING);
         YY_BREAK
 case 65:
 YY_RULE_SETUP
 #line 273 "vtkParse.l"
-return(DELETE);
+return(NEW);
         YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 275 "vtkParse.l"
-return(DOUBLE);
+#line 274 "vtkParse.l"
+return(DELETE);
         YY_BREAK
 case 67:
 YY_RULE_SETUP
 #line 276 "vtkParse.l"
-return(IdType);
+return(DOUBLE);
         YY_BREAK
 case 68:
 YY_RULE_SETUP
 #line 277 "vtkParse.l"
-return(StdString);
+return(IdType);
         YY_BREAK
 case 69:
 YY_RULE_SETUP
 #line 278 "vtkParse.l"
-return(UnicodeString);
+return(StdString);
         YY_BREAK
 case 70:
 YY_RULE_SETUP
 #line 279 "vtkParse.l"
-return(SetMacro);
+return(UnicodeString);
         YY_BREAK
 case 71:
 YY_RULE_SETUP
 #line 280 "vtkParse.l"
-return(GetMacro);
+return(SetMacro);
         YY_BREAK
 case 72:
 YY_RULE_SETUP
 #line 281 "vtkParse.l"
-return(SetStringMacro);
+return(GetMacro);
         YY_BREAK
 case 73:
 YY_RULE_SETUP
 #line 282 "vtkParse.l"
-return(GetStringMacro);
+return(SetStringMacro);
         YY_BREAK
 case 74:
 YY_RULE_SETUP
 #line 283 "vtkParse.l"
-return(SetClampMacro);
+return(GetStringMacro);
         YY_BREAK
 case 75:
 YY_RULE_SETUP
 #line 284 "vtkParse.l"
-return(SetObjectMacro);
+return(SetClampMacro);
         YY_BREAK
 case 76:
 YY_RULE_SETUP
 #line 285 "vtkParse.l"
-return(GetObjectMacro);
+return(SetObjectMacro);
         YY_BREAK
 case 77:
 YY_RULE_SETUP
 #line 286 "vtkParse.l"
-return(BooleanMacro);
+return(GetObjectMacro);
         YY_BREAK
 case 78:
 YY_RULE_SETUP
 #line 287 "vtkParse.l"
-return(SetVector2Macro);
+return(BooleanMacro);
         YY_BREAK
 case 79:
 YY_RULE_SETUP
 #line 288 "vtkParse.l"
-return(SetVector3Macro);
+return(SetVector2Macro);
         YY_BREAK
 case 80:
 YY_RULE_SETUP
 #line 289 "vtkParse.l"
-return(SetVector4Macro);
+return(SetVector3Macro);
         YY_BREAK
 case 81:
 YY_RULE_SETUP
 #line 290 "vtkParse.l"
-return(SetVector6Macro);
+return(SetVector4Macro);
         YY_BREAK
 case 82:
 YY_RULE_SETUP
 #line 291 "vtkParse.l"
-return(GetVector2Macro);
+return(SetVector6Macro);
         YY_BREAK
 case 83:
 YY_RULE_SETUP
 #line 292 "vtkParse.l"
-return(GetVector3Macro);
+return(GetVector2Macro);
         YY_BREAK
 case 84:
 YY_RULE_SETUP
 #line 293 "vtkParse.l"
-return(GetVector4Macro);
+return(GetVector3Macro);
         YY_BREAK
 case 85:
 YY_RULE_SETUP
 #line 294 "vtkParse.l"
-return(GetVector6Macro);
+return(GetVector4Macro);
         YY_BREAK
 case 86:
 YY_RULE_SETUP
 #line 295 "vtkParse.l"
-return(SetVectorMacro);
+return(GetVector6Macro);
         YY_BREAK
 case 87:
 YY_RULE_SETUP
 #line 296 "vtkParse.l"
-return(GetVectorMacro);
+return(SetVectorMacro);
         YY_BREAK
 case 88:
 YY_RULE_SETUP
 #line 297 "vtkParse.l"
-return(ViewportCoordinateMacro);
+return(GetVectorMacro);
         YY_BREAK
 case 89:
 YY_RULE_SETUP
 #line 298 "vtkParse.l"
-return(WorldCoordinateMacro);
+return(ViewportCoordinateMacro);
         YY_BREAK
 case 90:
 YY_RULE_SETUP
 #line 299 "vtkParse.l"
-return(TypeMacro);
+return(WorldCoordinateMacro);
         YY_BREAK
 case 91:
 YY_RULE_SETUP
@@ -2436,83 +2436,88 @@ return(TypeMacro);
 case 94:
 YY_RULE_SETUP
 #line 303 "vtkParse.l"
-return(VTK_LEGACY);
+return(TypeMacro);
         YY_BREAK
 case 95:
 YY_RULE_SETUP
 #line 304 "vtkParse.l"
-;
+return(VTK_LEGACY);
         YY_BREAK
 case 96:
 YY_RULE_SETUP
 #line 305 "vtkParse.l"
-return(VTK_BYTE_SWAP_DECL);
+;
         YY_BREAK
 case 97:
 YY_RULE_SETUP
 #line 306 "vtkParse.l"
-return(TypeInt8);
+return(VTK_BYTE_SWAP_DECL);
         YY_BREAK
 case 98:
 YY_RULE_SETUP
 #line 307 "vtkParse.l"
-return(TypeUInt8);
+return(TypeInt8);
         YY_BREAK
 case 99:
 YY_RULE_SETUP
 #line 308 "vtkParse.l"
-return(TypeInt16);
+return(TypeUInt8);
         YY_BREAK
 case 100:
 YY_RULE_SETUP
 #line 309 "vtkParse.l"
-return(TypeUInt16);
+return(TypeInt16);
         YY_BREAK
 case 101:
 YY_RULE_SETUP
 #line 310 "vtkParse.l"
-return(TypeInt32);
+return(TypeUInt16);
         YY_BREAK
 case 102:
 YY_RULE_SETUP
 #line 311 "vtkParse.l"
-return(TypeUInt32);
+return(TypeInt32);
         YY_BREAK
 case 103:
 YY_RULE_SETUP
 #line 312 "vtkParse.l"
-return(TypeInt64);
+return(TypeUInt32);
         YY_BREAK
 case 104:
 YY_RULE_SETUP
 #line 313 "vtkParse.l"
-return(TypeUInt64);
+return(TypeInt64);
         YY_BREAK
 case 105:
 YY_RULE_SETUP
 #line 314 "vtkParse.l"
-return(TypeFloat32);
+return(TypeUInt64);
         YY_BREAK
 case 106:
 YY_RULE_SETUP
 #line 315 "vtkParse.l"
-return(TypeFloat64);
+return(TypeFloat32);
         YY_BREAK
 case 107:
-/* rule 107 can match eol */
 YY_RULE_SETUP
-#line 317 "vtkParse.l"
-return(CONST_PTR);
+#line 316 "vtkParse.l"
+return(TypeFloat64);
         YY_BREAK
 case 108:
 /* rule 108 can match eol */
 YY_RULE_SETUP
 #line 318 "vtkParse.l"
-return(CONST_EQUAL);
+return(CONST_PTR);
         YY_BREAK
 case 109:
+/* rule 109 can match eol */
 YY_RULE_SETUP
-#line 320 "vtkParse.l"
+#line 319 "vtkParse.l"
+return(CONST_EQUAL);
+        YY_BREAK
+case 110:
+YY_RULE_SETUP
+#line 321 "vtkParse.l"
 {
                      yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
@@ -2520,9 +2525,9 @@ YY_RULE_SETUP
                      return(FLOAT_LITERAL);
                     }
         YY_BREAK
-case 110:
+case 111:
 YY_RULE_SETUP
-#line 326 "vtkParse.l"
+#line 327 "vtkParse.l"
 {
                      yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
@@ -2530,19 +2535,19 @@ YY_RULE_SETUP
                      return(HEX_LITERAL);
                     }
         YY_BREAK
-case 111:
+case 112:
 YY_RULE_SETUP
-#line 332 "vtkParse.l"
+#line 333 "vtkParse.l"
 { yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
                      return(INT_LITERAL);
                     }
         YY_BREAK
-case 112:
-/* rule 112 can match eol */
+case 113:
+/* rule 113 can match eol */
 YY_RULE_SETUP
-#line 338 "vtkParse.l"
+#line 339 "vtkParse.l"
 {
                 yylval.str = (char *)malloc(yyleng + 1);
                 memcpy(yylval.str,yytext,yyleng);
@@ -2550,10 +2555,10 @@ YY_RULE_SETUP
                 return(STRING_LITERAL);
                 }
         YY_BREAK
-case 113:
-/* rule 113 can match eol */
+case 114:
+/* rule 114 can match eol */
 YY_RULE_SETUP
-#line 345 "vtkParse.l"
+#line 346 "vtkParse.l"
 {
                 yylval.str = (char *)malloc(yyleng + 1);
                 memcpy(yylval.str,yytext,yyleng);
@@ -2561,12 +2566,12 @@ YY_RULE_SETUP
                 return(CHAR_LITERAL);
                 }
         YY_BREAK
-case 114:
+case 115:
 *yy_cp = (yy_hold_char); /* undo effects of setting up yytext */
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 352 "vtkParse.l"
+#line 353 "vtkParse.l"
 {
                 int i;
                 for (i = 0; i < yyleng && yytext[i] != 'V'; i++) { ; };
@@ -2575,43 +2580,43 @@ YY_RULE_SETUP
                 yylval.str[yyleng-i] = '\0';
                 return (VTK_CONSTANT_DEF); }
         YY_BREAK
-case 115:
-/* rule 115 can match eol */
+case 116:
+/* rule 116 can match eol */
 *yy_cp = (yy_hold_char); /* undo effects of setting up yytext */
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 360 "vtkParse.l"
+#line 361 "vtkParse.l"
 ;
         YY_BREAK
-case 116:
+case 117:
 YY_RULE_SETUP
-#line 363 "vtkParse.l"
+#line 364 "vtkParse.l"
 { yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
                      return(VTK_ID);
                     }
         YY_BREAK
-case 117:
+case 118:
 YY_RULE_SETUP
-#line 369 "vtkParse.l"
+#line 370 "vtkParse.l"
 { yylval.str = (char *)malloc(yyleng + 1);
                           memcpy(yylval.str,yytext,yyleng);
                           yylval.str[yyleng] = '\0';
                           return(ID);
                         }
         YY_BREAK
-case 118:
-/* rule 118 can match eol */
-YY_RULE_SETUP
-#line 375 "vtkParse.l"
-return(LPAREN_AMPERSAND);
-        YY_BREAK
 case 119:
 /* rule 119 can match eol */
 YY_RULE_SETUP
 #line 376 "vtkParse.l"
+return(LPAREN_AMPERSAND);
+        YY_BREAK
+case 120:
+/* rule 120 can match eol */
+YY_RULE_SETUP
+#line 377 "vtkParse.l"
 {
                 int i = 1;
                 int j;
@@ -2625,146 +2630,141 @@ YY_RULE_SETUP
                 return(LPAREN_POINTER);
                 }
         YY_BREAK
-case 120:
-/* rule 120 can match eol */
-YY_RULE_SETUP
-#line 389 "vtkParse.l"
-;
-        YY_BREAK
 case 121:
+/* rule 121 can match eol */
 YY_RULE_SETUP
-#line 391 "vtkParse.l"
-return(OP_LSHIFT_EQ);
+#line 390 "vtkParse.l"
+;
         YY_BREAK
 case 122:
 YY_RULE_SETUP
 #line 392 "vtkParse.l"
-return(OP_RSHIFT_EQ);
+return(OP_LSHIFT_EQ);
         YY_BREAK
 case 123:
 YY_RULE_SETUP
 #line 393 "vtkParse.l"
-return(OP_LSHIFT);
+return(OP_RSHIFT_EQ);
         YY_BREAK
 case 124:
 YY_RULE_SETUP
 #line 394 "vtkParse.l"
-return(OP_ARROW_POINTER);
+return(OP_LSHIFT);
         YY_BREAK
 case 125:
 YY_RULE_SETUP
 #line 395 "vtkParse.l"
-return(OP_ARROW);
+return(OP_ARROW_POINTER);
         YY_BREAK
 case 126:
 YY_RULE_SETUP
 #line 396 "vtkParse.l"
-return(OP_RSHIFT);
+return(OP_ARROW);
         YY_BREAK
 case 127:
 YY_RULE_SETUP
 #line 397 "vtkParse.l"
-return(OP_INCR);
+return(OP_RSHIFT);
         YY_BREAK
 case 128:
 YY_RULE_SETUP
 #line 398 "vtkParse.l"
-return(OP_DECR);
+return(OP_INCR);
         YY_BREAK
 case 129:
 YY_RULE_SETUP
 #line 399 "vtkParse.l"
-return(OP_PLUS_EQ);
+return(OP_DECR);
         YY_BREAK
 case 130:
 YY_RULE_SETUP
 #line 400 "vtkParse.l"
-return(OP_MINUS_EQ);
+return(OP_PLUS_EQ);
         YY_BREAK
 case 131:
 YY_RULE_SETUP
 #line 401 "vtkParse.l"
-return(OP_TIMES_EQ);
+return(OP_MINUS_EQ);
         YY_BREAK
 case 132:
 YY_RULE_SETUP
 #line 402 "vtkParse.l"
-return(OP_DIVIDE_EQ);
+return(OP_TIMES_EQ);
         YY_BREAK
 case 133:
 YY_RULE_SETUP
 #line 403 "vtkParse.l"
-return(OP_REMAINDER_EQ);
+return(OP_DIVIDE_EQ);
         YY_BREAK
 case 134:
 YY_RULE_SETUP
 #line 404 "vtkParse.l"
-return(OP_AND_EQ);
+return(OP_REMAINDER_EQ);
         YY_BREAK
 case 135:
 YY_RULE_SETUP
 #line 405 "vtkParse.l"
-return(OP_OR_EQ);
+return(OP_AND_EQ);
         YY_BREAK
 case 136:
 YY_RULE_SETUP
 #line 406 "vtkParse.l"
-return(OP_XOR_EQ);
+return(OP_OR_EQ);
         YY_BREAK
 case 137:
 YY_RULE_SETUP
 #line 407 "vtkParse.l"
-return(OP_LOGIC_AND_EQ);
+return(OP_XOR_EQ);
         YY_BREAK
 case 138:
 YY_RULE_SETUP
 #line 408 "vtkParse.l"
-return(OP_LOGIC_OR_EQ);
+return(OP_LOGIC_AND_EQ);
         YY_BREAK
 case 139:
 YY_RULE_SETUP
 #line 409 "vtkParse.l"
-return(OP_LOGIC_AND);
+return(OP_LOGIC_OR_EQ);
         YY_BREAK
 case 140:
 YY_RULE_SETUP
 #line 410 "vtkParse.l"
-return(OP_LOGIC_OR);
+return(OP_LOGIC_AND);
         YY_BREAK
 case 141:
 YY_RULE_SETUP
 #line 411 "vtkParse.l"
-return(OP_LOGIC_EQ);
+return(OP_LOGIC_OR);
         YY_BREAK
 case 142:
 YY_RULE_SETUP
 #line 412 "vtkParse.l"
-return(OP_LOGIC_NEQ);
+return(OP_LOGIC_EQ);
         YY_BREAK
 case 143:
 YY_RULE_SETUP
 #line 413 "vtkParse.l"
-return(OP_LOGIC_LEQ);
+return(OP_LOGIC_NEQ);
         YY_BREAK
 case 144:
 YY_RULE_SETUP
 #line 414 "vtkParse.l"
-return(OP_LOGIC_GEQ);
+return(OP_LOGIC_LEQ);
         YY_BREAK
 case 145:
 YY_RULE_SETUP
 #line 415 "vtkParse.l"
-return(ELLIPSIS);
+return(OP_LOGIC_GEQ);
         YY_BREAK
 case 146:
 YY_RULE_SETUP
 #line 416 "vtkParse.l"
-return(DOUBLE_COLON);
+return(ELLIPSIS);
         YY_BREAK
 case 147:
 YY_RULE_SETUP
-#line 418 "vtkParse.l"
-{ return(yytext[0]); }
+#line 417 "vtkParse.l"
+return(DOUBLE_COLON);
         YY_BREAK
 case 148:
 YY_RULE_SETUP
@@ -2773,20 +2773,25 @@ YY_RULE_SETUP
         YY_BREAK
 case 149:
 YY_RULE_SETUP
-#line 421 "vtkParse.l"
+#line 420 "vtkParse.l"
 { return(yytext[0]); }
         YY_BREAK
 case 150:
 YY_RULE_SETUP
-#line 423 "vtkParse.l"
-return(OTHER);
+#line 422 "vtkParse.l"
+{ return(yytext[0]); }
         YY_BREAK
 case 151:
 YY_RULE_SETUP
 #line 424 "vtkParse.l"
+return(OTHER);
+        YY_BREAK
+case 152:
+YY_RULE_SETUP
+#line 425 "vtkParse.l"
 ECHO;
         YY_BREAK
-#line 2790 "lex.yy.c"
+#line 2795 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
         yyterminate();
 
@@ -3757,5 +3762,5 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 424 "vtkParse.l"
+#line 425 "vtkParse.l"
 

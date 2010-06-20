@@ -261,6 +261,7 @@ Modify lex.yy.c:
 "mutable"       return(MUTABLE);
 "operator"      return(OPERATOR);
 "unsigned"      return(UNSIGNED);
+"signed"        return(SIGNED);
 "friend"        return(FRIEND);
 "inline"        return(INLINE);
 "static"        return(STATIC);
