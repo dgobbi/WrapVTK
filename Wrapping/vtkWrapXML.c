@@ -285,12 +285,37 @@ void vtkWrapXML_FileFooter(FILE *fp, const FileInfo *data, int indentation)
   fprintf(fp, "%s</File>\n", indent(indentation));
 }
 
+/* Check for strings that are NULL, empty, or whitespace */
+int vtkWrapXML_EmptyString(const char *cp)
+{
+  if (cp)
+    {
+    while (*cp != '\0')
+      {
+      if (!isspace(*cp++))
+        {
+        return 0;
+        }
+      }
+    }
+
+  return 1;
+}
+
 /* Write out the documentation for the class */
 void vtkWrapXML_FileDoc(FILE *fp, FileInfo *data, int indentation)
 {
   size_t n;
   char temp[500];
   const char *cp;
+
+  if (vtkWrapXML_EmptyString(data->NameComment) &&
+      vtkWrapXML_EmptyString(data->Description) &&
+      vtkWrapXML_EmptyString(data->Caveats) &&
+      vtkWrapXML_EmptyString(data->SeeAlso))
+    {
+    return;
+    }
 
   fprintf(fp, "%s<Comment>\n", indent(indentation++));
 
