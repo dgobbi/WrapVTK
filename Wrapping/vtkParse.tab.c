@@ -166,7 +166,8 @@ static int vtkParseTypeMap[] =
 /* Define the division between type and array count */
 #define VTK_PARSE_COUNT_START 0x10000
 
-static void vtkParseDebug(const char* s1, const char* s2);
+#define vtkParseDebug(s1, s2) \
+  if ( parseDebug ) { fprintf(stderr, "   %s %s\n", s1, s2); }
 
 /* the tokenizer */
 int yylex(void);
@@ -176,6 +177,7 @@ FileInfo data;
 ClassInfo *currentClass = NULL;
 FunctionInfo *currentFunction = NULL;
 
+int parseDebug;
 char temps[2048];
 int  in_public;
 int  in_protected;
@@ -188,8 +190,6 @@ size_t sigMark[10];
 size_t sigMarkDepth = 0;
 unsigned int sigAllocatedLength;
 char *currentId = 0;
-
-int parseDebug = 0;
 
 void start_class(const char *classname);
 void output_function(void);
@@ -6241,7 +6241,6 @@ yyerrorlab:
   yylen = 0;
   YY_STACK_PRINT (yyss, yyssp);
   yystate = *yyssp;
-  goto yyerrlab1;
 
 
 /*-------------------------------------------------------------.
@@ -6343,14 +6342,6 @@ yyreturn:
 
 #include <string.h>
 #include "lex.yy.c"
-
-static void vtkParseDebug(const char* s1, const char* s2)
-{
-  if ( parseDebug )
-    {
-    fprintf(stderr, "   %s %s\n", s1, s2);
-    }
-}
 
 /* initialize the structure */
 void InitFunction(FunctionInfo *func)
@@ -6550,7 +6541,7 @@ void outputGetVectorMacro(
 FileInfo *vtkParse_ParseFile(
   const char *filename, int concrete, FILE *ifile, FILE *errfile)
 {
-  int i, j;
+  int i, j, lineno;
   int ret;
   FileInfo *file_info;
   char *main_class;
@@ -6570,9 +6561,11 @@ FileInfo *vtkParse_ParseFile(
     parseDebug = 1;
     }
 
-  yyin = ifile;
-  yyout = errfile;
+  yyset_in(ifile);
+  yyset_out(errfile);
   ret = yyparse();
+  lineno = yyget_lineno();
+  yylex_destroy();
 
   free(currentFunction);
 
@@ -6581,7 +6574,7 @@ FileInfo *vtkParse_ParseFile(
     fprintf(errfile,
             "*** SYNTAX ERROR found in parsing the header file %s "
             "before line %d ***\n",
-            filename, yylineno);
+            filename, lineno);
     return NULL;
     }
 
