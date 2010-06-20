@@ -40,7 +40,6 @@ MACRO(VTK_WRAP_HIERARCHY TARGET OUTPUT_DIR SOURCES)
 
     # if we should wrap it
     IF (TMP_WRAP_SPECIAL OR IGNORE_WRAP_EXCLUDE OR NOT TMP_WRAP_EXCLUDE)
-
       # what is the filename without the extension
       GET_FILENAME_COMPONENT(TMP_FILENAME ${FILE} NAME_WE)
 
@@ -54,13 +53,18 @@ MACRO(VTK_WRAP_HIERARCHY TARGET OUTPUT_DIR SOURCES)
         SET(TMP_INPUT ${KIT_HEADER_DIR}/${TMP_FILENAME}.h)
       ENDIF (TMP_FILEPATH)
 
-      # add to the INPUT_FILES
-      SET(INPUT_FILES ${INPUT_FILES} ${TMP_INPUT})
+      IF(NOT "${KIT_NAME}" STREQUAL "Filtering" OR
+         NOT "${TMP_FILENAME}" STREQUAL "vtkInformation")
 
-      # add the info to the init file
-      SET(VTK_WRAPPER_INIT_DATA
-        "${VTK_WRAPPER_INIT_DATA}${TMP_INPUT}\n")
+        # add to the INPUT_FILES
+        SET(INPUT_FILES ${INPUT_FILES} ${TMP_INPUT})
 
+        # add the info to the init file
+        SET(VTK_WRAPPER_INIT_DATA
+          "${VTK_WRAPPER_INIT_DATA}${TMP_INPUT}\n")
+
+      ENDIF(NOT "${KIT_NAME}" STREQUAL "Filtering" OR
+            NOT "${TMP_FILENAME}" STREQUAL "vtkInformation")
     ENDIF (TMP_WRAP_SPECIAL OR IGNORE_WRAP_EXCLUDE OR NOT TMP_WRAP_EXCLUDE)
   ENDFOREACH(FILE)
 
