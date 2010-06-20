@@ -800,10 +800,8 @@ func_sig: any_id '('
       sprintf($<str>$, "%s%s", $<str>1, cp);
     } args_list ')' { $<str>$ = $<str>7; };
 
-constructor: constructor_sig { postSig(")"); } maybe_initializers
+constructor: constructor_sig { postSig(");"); closeSig(); } maybe_initializers
     {
-      postSig(";");
-      closeSig();
       currentFunction->Name = $<str>1;
       if (HaveComment)
         {
