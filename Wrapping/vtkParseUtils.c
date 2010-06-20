@@ -70,6 +70,11 @@ const char *vtkParse_BaseTypeAsString(int type, const char *vtkname)
 
   int baseType;
 
+  if (vtkname && vtkname[0] != '\0')
+    {
+    return vtkname;
+    }
+
   if (vtkParse_TypeIsFunction(type))
     {
     return "function";
@@ -79,12 +84,6 @@ const char *vtkParse_BaseTypeAsString(int type, const char *vtkname)
   if (baseType > 35 || baseType < 0)
     {
     baseType = 0;
-    }
-
-  if ((baseType == VTK_PARSE_VTK_OBJECT ||
-      (baseType == VTK_PARSE_UNKNOWN)) && vtkname != 0)
-    {
-    return vtkname;
     }
 
   return vtkParseTypeNameMap[baseType];
