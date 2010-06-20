@@ -383,6 +383,8 @@ void setTypeId(const char *text)
 /* set the signature and type together */
 void typeSig(const char *text)
 {
+  int n;
+
   postSig(text);
   postSig(" ");
 
@@ -390,10 +392,12 @@ void typeSig(const char *text)
     {
     setTypeId(text);
     }
-  else if (currentId[0] == 'u' && !strcmp(currentId, "unsigned"))
+  else if ((currentId[0] == 'u' && strcmp(currentId, "unsigned") == 0) ||
+           (currentId[0] == 's' && strcmp(currentId, "signed") == 0))
     {
-    currentId[8] = ' ';
-    strcpy(&currentId[9], text);
+    n = strlen(currentId);
+    currentId[n] = ' ';
+    strcpy(&currentId[n+1], text);
     }
 }
 
