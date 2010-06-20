@@ -10,6 +10,10 @@ IF (VTK_FOUND)
 ENDIF (VTK_FOUND)
 
 #-----------------------------------------------------------------------------
+# Options
+OPTION(IGNORE_WRAP_EXCLUDE "Even wrap items marked WRAP_EXCLUDE." OFF)
+
+#-----------------------------------------------------------------------------
 # Output directories.
 IF(NOT LIBRARY_OUTPUT_PATH)
   SET(LIBRARY_OUTPUT_PATH ${WrapVTK_BINARY_DIR}/bin CACHE INTERNAL
