@@ -32,6 +32,7 @@
 typedef struct _FunctionInfo
 {
   char *Name;
+  char *Namespace;
   int   IsVirtual;
   int   IsPureVirtual;
   int   IsPublic;
@@ -54,6 +55,7 @@ typedef struct _FunctionInfo
 typedef struct _ClassInfo
 {
   char *ClassName;
+  char *Namespace;
   int   IsAbstract;
   int   HasDelete;
   int   NumberOfSuperClasses;

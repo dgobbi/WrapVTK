@@ -133,6 +133,7 @@ size_t sigMark[10];
 size_t sigMarkDepth = 0;
 unsigned int sigAllocatedLength;
 char *currentId = 0;
+char *currentNamespace = 0;
 
 void start_class(const char *classname);
 void end_class();
@@ -154,6 +155,45 @@ char *vtkstrdup(const char *in)
     strcpy(res,in);
     }
   return res;
+}
+
+/* enter a namespace */
+void pushNamespace(const char *name)
+{
+  char *cp = currentNamespace;
+  if (cp)
+    {
+    currentNamespace = (char *)malloc(strlen(cp) + strlen(name) + 3);
+    sprintf(currentNamespace, "%s::%s", cp, name);
+    free(cp);
+    }
+  else
+    {
+    currentNamespace = (char *)malloc(strlen(name) + 1);
+    strcpy(currentNamespace, name);
+    }
+}
+
+/* leave the namespace */
+void popNamespace()
+{
+  char *cp = currentNamespace;
+  int i = strlen(cp);
+  while (i > 0 && cp[i-1] != ':') { i--; }
+  while (i > 0 && cp[i-1] == ':') { i--; }
+  cp[i] = '\0';
+
+  if (i == 0)
+    {
+    free(cp);
+    currentNamespace = 0;
+    }
+}
+
+/* get the namespace */
+const char *getNamespace()
+{
+  return currentNamespace;
 }
 
 /* reallocate Signature if "arg" cannot be appended */
@@ -541,7 +581,7 @@ const char *getTypeId()
  * Here is the start of the grammer
  */
 
-strt: | strt file_item;
+strt: | strt { delSig(); clearTypeId(); } file_item;
 
 file_item:
      var
@@ -559,7 +599,7 @@ file_item:
    | CLASS_REF
    | operator func_body { output_function(); }
    | INLINE operator func_body { output_function(); }
-   | EXTERN operator func_body { reject_function(); }
+   | EXTERN operator func_body { output_function(); }
    | template operator func_body { output_function(); }
    | template INLINE operator func_body { output_function(); }
    | scoped_operator func_body { reject_function(); }
@@ -567,8 +607,8 @@ file_item:
    | EXTERN scoped_operator func_body { reject_function(); }
    | function func_body { output_function(); }
    | INLINE function func_body { output_function(); }
-   | EXTERN function func_body { reject_function(); }
-   | EXTERN STRING_LITERAL function func_body { reject_function(); }
+   | EXTERN function func_body { output_function(); }
+   | EXTERN STRING_LITERAL function func_body { output_function(); }
    | scoped_method func_body { reject_function(); }
    | INLINE scoped_method func_body { reject_function(); }
    | EXTERN scoped_method func_body { reject_function(); }
@@ -671,7 +711,8 @@ union: UNION '{' maybe_other '}' maybe_other_no_semi ';';
 
 using: USING maybe_other_no_semi ';';
 
-namespace: NAMESPACE class_id '{' strt '}';
+namespace: NAMESPACE class_id { pushNamespace($<str>2); }
+     '{' strt '}' { popNamespace(); };
 
 extern: EXTERN STRING_LITERAL '{' strt '}';
 
@@ -1795,6 +1836,7 @@ typedef_ignore_body : | CLASS typedef_ignore_body
 void InitFunction(FunctionInfo *func)
 {
   func->Name = NULL;
+  func->Namespace = NULL;
   func->NumberOfArguments = 0;
   func->ArrayFailure = 0;
   func->IsVirtual = 0;
@@ -1818,6 +1860,7 @@ void InitFunction(FunctionInfo *func)
 void InitClass(ClassInfo *cls)
 {
   cls->ClassName = NULL;
+  cls->Namespace = NULL;
   cls->IsAbstract = 0;
   cls->HasDelete = 0;
   cls->NumberOfSuperClasses = 0;
@@ -1841,6 +1884,10 @@ void start_class(const char *classname)
   currentClass = (ClassInfo *)malloc(sizeof(ClassInfo));
   InitClass(currentClass);
   currentClass->ClassName = vtkstrdup(classname);
+  if (getNamespace())
+    {
+    currentClass->Namespace = vtkstrdup(getNamespace());
+    }
 
   data.Classes[data.NumberOfClasses++] = currentClass;
 
@@ -1933,6 +1980,12 @@ void output_function()
     }
   else
     {
+    /* set the namespace */
+    if (getNamespace())
+      {
+      currentFunction->Namespace = vtkstrdup(getNamespace());
+      }
+
     /* make sure this function isn't a repeat */
     match = 0;
     for (i = 0; i < data.NumberOfFunctions; i++)
