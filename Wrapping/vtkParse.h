@@ -44,6 +44,8 @@ typedef struct _FunctionInfo
   int   ArgTypes[MAX_ARGS];
   int   ArgCounts[MAX_ARGS];
   char *ArgClasses[MAX_ARGS];
+  char *ArgNames[MAX_ARGS];
+  char *ArgValues[MAX_ARGS];
   int   ReturnType;
   char *ReturnClass;
   int   HaveHint;

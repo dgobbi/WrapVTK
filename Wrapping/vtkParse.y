@@ -133,6 +133,8 @@ size_t sigMark[10];
 size_t sigMarkDepth = 0;
 unsigned int sigAllocatedLength;
 char *currentId = 0;
+char *currentVarName = 0;
+char *currentVarValue = 0;
 char *currentNamespace = 0;
 
 void start_class(const char *classname);
@@ -402,6 +404,46 @@ void delSig(void)
 void legacySig(void)
 {
   currentFunction->IsLegacy = 1;
+}
+
+/* clear the var Id */
+void clearVarName(void)
+{
+  currentVarName = NULL;
+}
+
+/* set the var Id */
+void setVarName(const char *text)
+{
+  static char static_text[2048];
+  currentVarName = static_text;
+  strcpy(static_text, text);
+}
+
+/* return the var id */
+const char *getVarName()
+{
+  return currentVarName;
+}
+
+/* clear the var value */
+void clearVarValue(void)
+{
+  currentVarValue = NULL;
+}
+
+/* set the var value */
+void setVarValue(const char *text)
+{
+  static char static_text[2048];
+  currentVarValue = static_text;
+  strcpy(static_text, text);
+}
+
+/* return the var value */
+const char *getVarValue()
+{
+  return currentVarValue;
 }
 
 /* clear the current Id */
@@ -978,24 +1020,44 @@ more_args: ELLIPSIS { postSig("...");}
     { clearTypeId(); currentFunction->NumberOfArguments++; postSig(", "); }
     more_args;
 
-arg: type maybe_var_array
+arg: type { clearVarName(); clearVarValue(); } maybe_var_array
     {
       int i = currentFunction->NumberOfArguments;
-      int array_type = ($<integer>2 % VTK_PARSE_COUNT_START);
-      int array_count = ($<integer>2 / VTK_PARSE_COUNT_START);
+      int array_type = ($<integer>3 % VTK_PARSE_COUNT_START);
+      int array_count = ($<integer>3 / VTK_PARSE_COUNT_START);
       currentFunction->ArgCounts[i] = array_count;
       currentFunction->ArgTypes[i] = $<integer>1 + array_type;
       currentFunction->ArgClasses[i] = vtkstrdup(getTypeId());
-    } maybe_var_assign
-  | type var_id
+      if (getVarName())
+        {
+        currentFunction->ArgNames[i] = vtkstrdup(getVarName());
+        }
+    } maybe_var_assign {
+      int i = currentFunction->NumberOfArguments;
+      if (getVarValue())
+        {
+        currentFunction->ArgValues[i] = vtkstrdup(getVarValue());
+        }
+    }
+  | type { clearVarName(); clearVarValue(); } var_id
     {
       int i = currentFunction->NumberOfArguments;
-      int array_type = ($<integer>2 % VTK_PARSE_COUNT_START);
-      int array_count = ($<integer>2 / VTK_PARSE_COUNT_START);
+      int array_type = ($<integer>3 % VTK_PARSE_COUNT_START);
+      int array_count = ($<integer>3 / VTK_PARSE_COUNT_START);
       currentFunction->ArgCounts[i] = array_count;
       currentFunction->ArgTypes[i] = $<integer>1 + array_type;
       currentFunction->ArgClasses[i] = vtkstrdup(getTypeId());
-    } maybe_var_assign
+      if (getVarName())
+        {
+        currentFunction->ArgNames[i] = vtkstrdup(getVarName());
+        }
+    } maybe_var_assign {
+      int i = currentFunction->NumberOfArguments;
+      if (getVarValue())
+        {
+        currentFunction->ArgValues[i] = vtkstrdup(getVarValue());
+        }
+    }
   | VAR_FUNCTION
     {
       int i = currentFunction->NumberOfArguments;
@@ -1004,22 +1066,32 @@ arg: type maybe_var_array
       currentFunction->ArgTypes[i] = VTK_PARSE_FUNCTION;
       currentFunction->ArgClasses[i] = vtkstrdup("function");
     }
-  | type LPAREN_AMPERSAND { postSig("(&"); } maybe_id ')'
+  | type LPAREN_AMPERSAND { postSig("(&"); clearVarName(); }
+    maybe_var_id ')'
     {
       int i = currentFunction->NumberOfArguments;
       postSig(") ");
       currentFunction->ArgCounts[i] = 0;
       currentFunction->ArgTypes[i] = ($<integer>1 | VTK_PARSE_REF);
       currentFunction->ArgClasses[i] = vtkstrdup(getTypeId());
+      if (getVarName())
+        {
+        currentFunction->ArgNames[i] = vtkstrdup(getVarName());
+        }
     }
-  | type LPAREN_POINTER { postSig("("); postSig($<str>2); postSig("*"); }
-    maybe_id ')' '(' { postSig(")("); } ignore_args_list ')'
+  | type LPAREN_POINTER { postSig("("); postSig($<str>2); postSig("*");
+      clearVarName(); }
+    maybe_var_id ')' '(' { postSig(")("); } ignore_args_list ')'
     {
       int i = currentFunction->NumberOfArguments;
       postSig(")");
       currentFunction->ArgCounts[i] = 0;
       currentFunction->ArgTypes[i] = VTK_PARSE_UNKNOWN;
       currentFunction->ArgClasses[i] = vtkstrdup("function");
+      if (getVarName())
+        {
+        currentFunction->ArgNames[i] = vtkstrdup(getVarName());
+        }
     };
 
 maybe_id: | any_id;
@@ -1028,7 +1100,8 @@ maybe_indirect_id: any_id | type_indirection any_id;
 
 maybe_var_assign: | var_assign;
 
-var_assign: '=' literal {postSig("="); postSig($<str>2);};
+var_assign: '=' literal {
+       postSig("="); postSig($<str>2); setVarValue($<str>2); };
 
 var: CLASS any_id var_ids ';'
      | CLASS any_id type_indirection var_ids ';'
@@ -1056,9 +1129,12 @@ maybe_indirect_var_ids: var_id_maybe_assign
                 | type_indirection var_id_maybe_assign ','
                   maybe_indirect_var_ids;
 
-var_id_maybe_assign: var_id maybe_var_assign;
+var_id_maybe_assign: var_id {clearVarValue();} maybe_var_assign;
 
-var_id: any_id maybe_var_array {$<integer>$ = $<integer>2;};
+maybe_var_id: | any_id {setVarName($<str>1);};
+
+var_id: any_id maybe_var_array {
+    $<integer>$ = $<integer>2; setVarName($<str>1);};
 
 /*
  [n]       = VTK_PARSE_POINTER
@@ -1835,6 +1911,8 @@ typedef_ignore_body : | CLASS typedef_ignore_body
 /* initialize the structure */
 void InitFunction(FunctionInfo *func)
 {
+  int i;
+
   func->Name = NULL;
   func->Namespace = NULL;
   func->NumberOfArguments = 0;
@@ -1854,6 +1932,15 @@ void InitFunction(FunctionInfo *func)
   sigClosed = 0;
   sigMarkDepth = 0;
   sigMark[0] = 0;
+
+  for (i = 0; i < MAX_ARGS; i++)
+    {
+    func->ArgTypes[i] = 0;
+    func->ArgClasses[i] = 0;
+    func->ArgCounts[i] = 0;
+    func->ArgNames[i] = 0;
+    func->ArgValues[i] = 0;
+    }
 }
 
 /* initialize the structure */
@@ -2192,7 +2279,7 @@ int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
     for (i = 0; i < file_info->NumberOfClasses; i++)
       {
       class_info = file_info->Classes[i];
-      
+
       if (strcmp(h_cls, class_info->ClassName) == 0)
         {
         /* find the matching function */
@@ -2265,7 +2352,7 @@ void vtkParse_Free(FileInfo *file_info)
     func_info = file_info->Functions[j];
     free(func_info);
     }
- 
+
   free(file_info);
 }
 
