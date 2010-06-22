@@ -592,7 +592,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       }
     /* "void AddValue(vtkObject *)" or "void RemoveValue(vtkObject *)" */
     else if (((isAddMethod(func->Name) || isRemoveMethod(func->Name)) &&
-             vtkParse_BaseType(func->ArgTypes[indexed]) == VTK_PARSE_VTK_OBJECT &&
+             vtkParse_BaseType(func->ArgTypes[indexed]) == VTK_PARSE_OBJECT &&
              vtkParse_TypeIndirection(func->ArgTypes[indexed]) == VTK_PARSE_POINTER))
       {
       attrs->HasProperty = 1;
@@ -880,7 +880,7 @@ static int methodMatchesProperty(
     }
 
   /* if vtkObject, check that classes match */
-  if (vtkParse_BaseType(methType) == VTK_PARSE_VTK_OBJECT)
+  if (vtkParse_BaseType(methType) == VTK_PARSE_OBJECT)
     {
     if (meth->IsMultiValue || !vtkParse_TypeIsPointer(methType) ||
         meth->Count != 0 ||
