@@ -237,6 +237,12 @@ void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(data->ClassName, 500));
 
+  if (data->Namespace)
+    {
+    fprintf(fp, "%s<Namespace>%s</Namespace>\n", indent(indentation),
+            vtkWrapXML_Quote(data->Namespace, 500));
+    }
+
   /* actually, vtk classes never have more than one superclass */
   n = data->NumberOfSuperClasses;
   for (i = 0; i < n; i++)
@@ -461,6 +467,81 @@ void vtkWrapXML_Type(
       fprintf(fp, "%s<Size>%i</Size>\n", indent(indentation), count);
       }
     }
+}
+
+/* Print out a function in XML format */
+void vtkWrapXML_Function(
+  FILE *fp, FunctionInfo *func, int indentation)
+{
+  size_t i, n;
+  char temp[500];
+  const char *cp;
+
+  if (func->ArrayFailure)
+    {
+    return;
+    }
+
+  fprintf(fp, "\n");
+  fprintf(fp, "%s<Function>\n", indent(indentation++));
+  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
+          vtkWrapXML_Quote(func->Name, 500));
+
+  if (func->Namespace)
+    {
+    fprintf(fp, "%s<Namespace>%s</Namespace>\n", indent(indentation),
+            vtkWrapXML_Quote(func->Namespace, 500));
+    }
+
+  if (vtkParse_TypeIsStatic(func->ReturnType))
+    {
+    fprintf(fp, "%s<Flag>static</Flag>\n", indent(indentation));
+    }
+
+  if (func->IsLegacy)
+    {
+    fprintf(fp, "%s<Flag>legacy</Flag>\n", indent(indentation));
+    }
+
+  fprintf(fp, "%s<Signature>\n", indent(indentation++));
+
+  cp = func->Signature;
+  for (i = 0; i < 400 && cp && cp[i] != '\0' && cp[i] != ';'; i++)
+    {
+    temp[i] = cp[i];
+    }
+  temp[i] = '\0';
+
+  fprintf(fp, "%s %s\n", indent(indentation), vtkWrapXML_Quote(temp, 500));
+
+  fprintf(fp, "%s</Signature>\n", indent(--indentation));
+
+  if (func->Comment)
+    {
+    fprintf(fp, "%s<Comment>\n", indent(indentation++));
+    vtkWrapXML_MultiLineText(fp, func->Comment, indentation);
+    fprintf(fp, "%s</Comment>\n", indent(--indentation));
+    }
+
+  fprintf(fp, "%s<Return>\n", indent(indentation++));
+
+  vtkWrapXML_Type(fp, func->ReturnType, func->ReturnClass,
+                  (func->HaveHint ? func->HintSize : 0),
+                  indentation);
+
+  fprintf(fp, "%s</Return>\n", indent(--indentation));
+
+  n = func->NumberOfArguments;
+  for (i = 0; i < n; i++)
+    {
+    fprintf(fp, "%s<Arg>\n", indent(indentation++));
+
+    vtkWrapXML_Type(fp, func->ArgTypes[i], func->ArgClasses[i],
+                    func->ArgCounts[i], indentation);
+
+    fprintf(fp, "%s</Arg>\n", indent(--indentation));
+    }
+  fprintf(fp, "%s</Function>\n", indent(--indentation));
 }
 
 /* print a bitfield of class property access methods */
@@ -982,6 +1063,16 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
 
     /* print the class footer */
     vtkWrapXML_ClassFooter(fp, classInfo, --indentation);
+    }
+
+  /* print all functions */
+  for (i = 0; i < data->NumberOfFunctions; i++)
+    {
+    vtkWrapXML_Function(fp, data->Functions[i], indentation);
+    if (i == data->NumberOfFunctions-1)
+      {
+      fprintf(fp, "\n");
+      }
     }
 
   vtkWrapXML_FileFooter(fp, data, indentation);
