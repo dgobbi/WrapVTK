@@ -237,12 +237,6 @@ void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(data->ClassName, 500));
 
-  if (data->Namespace)
-    {
-    fprintf(fp, "%s<Namespace>%s</Namespace>\n", indent(indentation),
-            vtkWrapXML_Quote(data->Namespace, 500));
-    }
-
   /* actually, vtk classes never have more than one superclass */
   n = data->NumberOfSuperClasses;
   for (i = 0; i < n; i++)
@@ -555,12 +549,6 @@ void vtkWrapXML_Function(
   fprintf(fp, "%s<Function>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(func->Name, 500));
-
-  if (func->Namespace)
-    {
-    fprintf(fp, "%s<Namespace>%s</Namespace>\n", indent(indentation),
-            vtkWrapXML_Quote(func->Namespace, 500));
-    }
 
   vtkWrapXML_FunctionCommon(fp, func, 1, indentation);
 
