@@ -5242,7 +5242,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 1245 "vtkParse.y"
-    { typeSig((yyvsp[(1) - (1)].str)); (yyval.integer) = VTK_PARSE_VTK_OBJECT; }
+    { typeSig((yyvsp[(1) - (1)].str)); (yyval.integer) = VTK_PARSE_OBJECT; }
     break;
 
   case 314:
@@ -5764,7 +5764,7 @@ yyreduce:
      currentFunction->Comment = vtkstrdup(CommentText);
      }
    currentFunction->NumberOfArguments = 1;
-   currentFunction->ArgTypes[0] = VTK_PARSE_VTK_OBJECT_PTR;
+   currentFunction->ArgTypes[0] = VTK_PARSE_OBJECT_PTR;
    currentFunction->ArgClasses[0] = vtkstrdup(getTypeId());
    currentFunction->ArgCounts[0] = 1;
    output_function();
@@ -5804,7 +5804,7 @@ yyreduce:
      {
      currentFunction->Comment = vtkstrdup(CommentText);
      }
-   currentFunction->ReturnType = VTK_PARSE_VTK_OBJECT_PTR;
+   currentFunction->ReturnType = VTK_PARSE_OBJECT_PTR;
    currentFunction->ReturnClass = vtkstrdup(getTypeId());
    output_function();
    }
@@ -6056,7 +6056,7 @@ yyreduce:
        currentFunction->Comment = vtkstrdup(CommentText);
        }
      currentFunction->NumberOfArguments = 0;
-     currentFunction->ReturnType = VTK_PARSE_VTK_OBJECT_PTR;
+     currentFunction->ReturnType = VTK_PARSE_OBJECT_PTR;
      currentFunction->ReturnClass = "vtkCoordinate";
      output_function();
 
@@ -6127,7 +6127,7 @@ yyreduce:
        currentFunction->Comment = vtkstrdup(CommentText);
        }
      currentFunction->NumberOfArguments = 0;
-     currentFunction->ReturnType = VTK_PARSE_VTK_OBJECT_PTR;
+     currentFunction->ReturnType = VTK_PARSE_OBJECT_PTR;
      currentFunction->ReturnClass = "vtkCoordinate";
      output_function();
 
@@ -6232,7 +6232,7 @@ yyreduce:
      currentFunction->Comment = vtkstrdup(CommentText);
      }
    currentFunction->NumberOfArguments = 0;
-   currentFunction->ReturnType = VTK_PARSE_VTK_OBJECT_PTR;
+   currentFunction->ReturnType = VTK_PARSE_OBJECT_PTR;
    currentFunction->ReturnClass = vtkstrdup((yyvsp[(3) - (6)].str));
    output_function();
 
@@ -6249,10 +6249,10 @@ yyreduce:
        currentFunction->Comment = vtkstrdup(CommentText);
        }
      currentFunction->NumberOfArguments = 1;
-     currentFunction->ArgTypes[0] = VTK_PARSE_VTK_OBJECT_PTR;
+     currentFunction->ArgTypes[0] = VTK_PARSE_OBJECT_PTR;
      currentFunction->ArgCounts[0] = 1;
      currentFunction->ArgClasses[0] = vtkstrdup("vtkObject");
-     currentFunction->ReturnType = (VTK_PARSE_STATIC | VTK_PARSE_VTK_OBJECT_PTR);
+     currentFunction->ReturnType = (VTK_PARSE_STATIC | VTK_PARSE_OBJECT_PTR);
      currentFunction->ReturnClass = vtkstrdup((yyvsp[(3) - (6)].str));
      output_function();
      }
@@ -6305,7 +6305,7 @@ yyreduce:
      currentFunction->Comment = vtkstrdup(CommentText);
      }
    currentFunction->NumberOfArguments = 0;
-   currentFunction->ReturnType = VTK_PARSE_VTK_OBJECT_PTR;
+   currentFunction->ReturnType = VTK_PARSE_OBJECT_PTR;
    currentFunction->ReturnClass = vtkstrdup((yyvsp[(3) - (7)].str));
    output_function();
 
@@ -6322,10 +6322,10 @@ yyreduce:
        currentFunction->Comment = vtkstrdup(CommentText);
        }
      currentFunction->NumberOfArguments = 1;
-     currentFunction->ArgTypes[0] = VTK_PARSE_VTK_OBJECT_PTR;
+     currentFunction->ArgTypes[0] = VTK_PARSE_OBJECT_PTR;
      currentFunction->ArgCounts[0] = 1;
      currentFunction->ArgClasses[0] = vtkstrdup("vtkObject");
-     currentFunction->ReturnType = (VTK_PARSE_STATIC|VTK_PARSE_VTK_OBJECT_PTR);
+     currentFunction->ReturnType = (VTK_PARSE_STATIC|VTK_PARSE_OBJECT_PTR);
      currentFunction->ReturnClass = vtkstrdup((yyvsp[(3) - (7)].str));
      output_function();
      }
@@ -7039,7 +7039,7 @@ void output_function()
             if (data.Functions[i]->ArgTypes[j] ==
                 currentFunction->ArgTypes[j])
               {
-              if (currentFunction->ArgTypes[j] == VTK_PARSE_VTK_OBJECT &&
+              if (currentFunction->ArgTypes[j] == VTK_PARSE_OBJECT &&
                   strcmp(data.Functions[i]->ArgClasses[j],
                          currentFunction->ArgClasses[j]) == 0)
                 {

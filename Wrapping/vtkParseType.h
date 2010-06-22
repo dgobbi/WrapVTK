@@ -94,7 +94,7 @@
 #define VTK_PARSE_UNSIGNED_LONG       0x16
 #define VTK_PARSE_DOUBLE              0x07
 #define VTK_PARSE_UNKNOWN             0x08
-#define VTK_PARSE_VTK_OBJECT          0x09
+#define VTK_PARSE_OBJECT              0x09
 #define VTK_PARSE_ID_TYPE             0x0A
 #define VTK_PARSE_UNSIGNED_ID_TYPE    0x1A
 #define VTK_PARSE_LONG_LONG           0x0B
@@ -122,7 +122,7 @@
 #define VTK_PARSE_UNSIGNED_LONG_PTR       0x316
 #define VTK_PARSE_DOUBLE_PTR              0x307
 #define VTK_PARSE_UNKNOWN_PTR             0x308
-#define VTK_PARSE_VTK_OBJECT_PTR          0x309
+#define VTK_PARSE_OBJECT_PTR              0x309
 #define VTK_PARSE_ID_TYPE_PTR             0x30A
 #define VTK_PARSE_UNSIGNED_ID_TYPE_PTR    0x31A
 #define VTK_PARSE_LONG_LONG_PTR           0x30B
@@ -150,7 +150,7 @@
 #define VTK_PARSE_UNSIGNED_LONG_REF       0x116
 #define VTK_PARSE_DOUBLE_REF              0x107
 #define VTK_PARSE_UNKNOWN_REF             0x108
-#define VTK_PARSE_VTK_OBJECT_REF          0x109
+#define VTK_PARSE_OBJECT_REF              0x109
 #define VTK_PARSE_ID_TYPE_REF             0x10A
 #define VTK_PARSE_UNSIGNED_ID_TYPE_REF    0x11A
 #define VTK_PARSE_LONG_LONG_REF           0x10B
@@ -161,5 +161,10 @@
 #define VTK_PARSE_BOOL_REF                0x10E
 #define VTK_PARSE_STRING_REF              0x121
 #define VTK_PARSE_UNICODE_STRING_REF      0x122
+
+/* For backwards compatibility */
+#define VTK_PARSE_VTK_OBJECT        VTK_PARSE_OBJECT
+#define VTK_PARSE_VTK_OBJECT_PTR    VTK_PARSE_OBJECT_PTR
+#define VTK_PARSE_VTK_OBJECT_PTR    VTK_PARSE_OBJECT_PTR
 
 #endif

@@ -1242,7 +1242,7 @@ type_red2:  type_primitive { $<integer>$ = $<integer>1;}
  | OSTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
  | ISTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
  | ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | VTK_ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_VTK_OBJECT; };
+ | VTK_ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_OBJECT; };
 
 type_primitive:
   VOID   { typeSig("void"); $<integer>$ = VTK_PARSE_VOID;} |
@@ -1424,7 +1424,7 @@ macro:
      currentFunction->Comment = vtkstrdup(CommentText);
      }
    currentFunction->NumberOfArguments = 1;
-   currentFunction->ArgTypes[0] = VTK_PARSE_VTK_OBJECT_PTR;
+   currentFunction->ArgTypes[0] = VTK_PARSE_OBJECT_PTR;
    currentFunction->ArgClasses[0] = vtkstrdup(getTypeId());
    currentFunction->ArgCounts[0] = 1;
    output_function();
@@ -1439,7 +1439,7 @@ macro:
      {
      currentFunction->Comment = vtkstrdup(CommentText);
      }
-   currentFunction->ReturnType = VTK_PARSE_VTK_OBJECT_PTR;
+   currentFunction->ReturnType = VTK_PARSE_OBJECT_PTR;
    currentFunction->ReturnClass = vtkstrdup(getTypeId());
    output_function();
    }
@@ -1563,7 +1563,7 @@ macro:
        currentFunction->Comment = vtkstrdup(CommentText);
        }
      currentFunction->NumberOfArguments = 0;
-     currentFunction->ReturnType = VTK_PARSE_VTK_OBJECT_PTR;
+     currentFunction->ReturnType = VTK_PARSE_OBJECT_PTR;
      currentFunction->ReturnClass = "vtkCoordinate";
      output_function();
 
@@ -1629,7 +1629,7 @@ macro:
        currentFunction->Comment = vtkstrdup(CommentText);
        }
      currentFunction->NumberOfArguments = 0;
-     currentFunction->ReturnType = VTK_PARSE_VTK_OBJECT_PTR;
+     currentFunction->ReturnType = VTK_PARSE_OBJECT_PTR;
      currentFunction->ReturnClass = "vtkCoordinate";
      output_function();
 
@@ -1729,7 +1729,7 @@ macro:
      currentFunction->Comment = vtkstrdup(CommentText);
      }
    currentFunction->NumberOfArguments = 0;
-   currentFunction->ReturnType = VTK_PARSE_VTK_OBJECT_PTR;
+   currentFunction->ReturnType = VTK_PARSE_OBJECT_PTR;
    currentFunction->ReturnClass = vtkstrdup($<str>3);
    output_function();
 
@@ -1746,10 +1746,10 @@ macro:
        currentFunction->Comment = vtkstrdup(CommentText);
        }
      currentFunction->NumberOfArguments = 1;
-     currentFunction->ArgTypes[0] = VTK_PARSE_VTK_OBJECT_PTR;
+     currentFunction->ArgTypes[0] = VTK_PARSE_OBJECT_PTR;
      currentFunction->ArgCounts[0] = 1;
      currentFunction->ArgClasses[0] = vtkstrdup("vtkObject");
-     currentFunction->ReturnType = (VTK_PARSE_STATIC | VTK_PARSE_VTK_OBJECT_PTR);
+     currentFunction->ReturnType = (VTK_PARSE_STATIC | VTK_PARSE_OBJECT_PTR);
      currentFunction->ReturnClass = vtkstrdup($<str>3);
      output_function();
      }
@@ -1797,7 +1797,7 @@ macro:
      currentFunction->Comment = vtkstrdup(CommentText);
      }
    currentFunction->NumberOfArguments = 0;
-   currentFunction->ReturnType = VTK_PARSE_VTK_OBJECT_PTR;
+   currentFunction->ReturnType = VTK_PARSE_OBJECT_PTR;
    currentFunction->ReturnClass = vtkstrdup($<str>3);
    output_function();
 
@@ -1814,10 +1814,10 @@ macro:
        currentFunction->Comment = vtkstrdup(CommentText);
        }
      currentFunction->NumberOfArguments = 1;
-     currentFunction->ArgTypes[0] = VTK_PARSE_VTK_OBJECT_PTR;
+     currentFunction->ArgTypes[0] = VTK_PARSE_OBJECT_PTR;
      currentFunction->ArgCounts[0] = 1;
      currentFunction->ArgClasses[0] = vtkstrdup("vtkObject");
-     currentFunction->ReturnType = (VTK_PARSE_STATIC|VTK_PARSE_VTK_OBJECT_PTR);
+     currentFunction->ReturnType = (VTK_PARSE_STATIC|VTK_PARSE_OBJECT_PTR);
      currentFunction->ReturnClass = vtkstrdup($<str>3);
      output_function();
      }
@@ -2088,7 +2088,7 @@ void output_function()
             if (data.Functions[i]->ArgTypes[j] ==
                 currentFunction->ArgTypes[j])
               {
-              if (currentFunction->ArgTypes[j] == VTK_PARSE_VTK_OBJECT &&
+              if (currentFunction->ArgTypes[j] == VTK_PARSE_OBJECT &&
                   strcmp(data.Functions[i]->ArgClasses[j],
                          currentFunction->ArgClasses[j]) == 0)
                 {
