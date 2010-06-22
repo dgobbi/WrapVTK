@@ -72,6 +72,8 @@ typedef struct _FileInfo
   char *SeeAlso;
   int   NumberOfClasses;
   ClassInfo *Classes[MAX_CLASSES];
+  int   NumberOfFunctions;
+  FunctionInfo *Functions[MAX_FUNCTIONS];
 } FileInfo;
 
 #ifdef __cplusplus

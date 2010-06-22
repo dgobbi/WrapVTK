@@ -126,6 +126,26 @@ Modify lex.yy.c:
          }
      };
 
+^[\t ]*("@interface"|"@implementation") {
+       int c1 = 0, c2 = 0, c3 = 0, c4 = input();
+       for (;;)
+         {
+         if (c4 == 0)
+           {
+           fprintf(yyout,"Cannot find matching @end.\n");
+           break;
+           }
+         if (c1 == '@' && c2 == 'e' && c3 == 'n' && c4 == 'd') break;
+         c1 = c2; c2 = c3; c3 = c4; c4 = input();
+         }
+       for (;;)
+         {
+         if (c4 == 0) break;
+         if (c4 == '\n') break;
+         c4 = input();
+         }
+     };
+
 ^[\t ]*"// .NAME".* {
      int pos = 1;
      while (yytext[pos-1] != 'M' || yytext[pos] != 'E')
@@ -193,10 +213,6 @@ Modify lex.yy.c:
 
 [A-Za-z0-9_]*"_EXPORT" ;
 
-"APIENTRY" ;
-"CALLBACK" ;
-"WINAPI" ;
-
 "vtkNotUsed"[ ]*"("[^)]*")" {
      int i; int j = 0;
      while (yytext[j]!='(') { j++; }
@@ -262,6 +278,7 @@ Modify lex.yy.c:
 "friend"        return(FRIEND);
 "inline"        return(INLINE);
 "static"        return(STATIC);
+"extern"        return(EXTERN);
 "template"      return(TEMPLATE);
 "typename"      return(TYPENAME);
 "typedef"       return(TYPEDEF);
@@ -319,13 +336,13 @@ Modify lex.yy.c:
                      yylval.str[yyleng] = '\0';
                      return(FLOAT_LITERAL); }
 
-"0x"[0-9a-fA-F]+[uU]?[lL]?      {
+"0x"[0-9a-fA-F]+[uU]?[l]?[lL]?      {
                      yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
                      return(HEX_LITERAL); }
 
-[0-9]+[uU]?[lL]?      { yylval.str = (char *)malloc(yyleng + 1);
+[0-9]+[uU]?[l]?[lL]?      { yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
                      return(INT_LITERAL); }
@@ -351,6 +368,34 @@ Modify lex.yy.c:
                 return (VTK_CONSTANT_DEF); }
 
 ^"#"(\\\n|\\\r\n|[^\n])*$     ;
+
+"("[\t\n\r ]*"&"  return(LPAREN_AMPERSAND);
+
+"("[\t\n\r ]*([a-zA-Z_][a-zA-Z0-9_]*::)*"*" {
+                int i = 1;
+                int j;
+                while (yytext[i]==' ' || yytext[i]=='\t' ||
+                       yytext[i]=='\r' || yytext[i]=='\n') { i++; }
+                j = i;
+                while (yytext[j]!='*') { j++; }
+                yylval.str = (char *)malloc(j-i+1);
+                if (j > i) { strncpy(yylval.str, &yytext[i], j-i); }
+                yylval.str[j-i] = '\0';
+                return(LPAREN_POINTER); }
+
+"("[\t\n\r ]*("APIENTRY"|"CALLBACK"|"WINAPI")[\t\n\r ]*"*" {
+                yylval.str = (char *)malloc(1);
+                yylval.str[0] = '\0';
+                return(LPAREN_POINTER); }
+
+"("[\t\n\r ]*("APIENTRYP"|"CALLBACKP"|"WINAPIP") {
+                yylval.str = (char *)malloc(1);
+                yylval.str[0] = '\0';
+                return(LPAREN_POINTER); }
+
+"APIENTRY" ;
+"CALLBACK" ;
+"WINAPI" ;
 
 "vtkStdString"     { yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
@@ -381,19 +426,6 @@ Modify lex.yy.c:
                           memcpy(yylval.str,yytext,yyleng);
                           yylval.str[yyleng] = '\0';
                           return(ID); }
-
-"("[\t\n\r ]*"&"  return(LPAREN_AMPERSAND);
-"("[\t\n\r ]*([a-zA-Z_][a-zA-Z0-9_]*::)*"*" {
-                int i = 1;
-                int j;
-                while (yytext[i]==' ' || yytext[i]=='\t' ||
-                       yytext[i]=='\r' || yytext[i]=='\n') { i++; }
-                j = i;
-                while (yytext[j]!='*') { j++; }
-                yylval.str = (char *)malloc(j-i+1);
-                if (j > i) { strncpy(yylval.str, &yytext[i], j-i); }
-                yylval.str[j-i] = '\0';
-                return(LPAREN_POINTER); }
 
 [\t\n\r ] ;
 
