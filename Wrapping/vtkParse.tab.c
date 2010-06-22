@@ -5221,14 +5221,14 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 1242 "vtkParse.y"
-    { typeSig((yyvsp[(1) - (1)].str)); (yyval.integer) = VTK_PARSE_UNKNOWN; }
+    { typeSig((yyvsp[(1) - (1)].str)); (yyval.integer) = VTK_PARSE_OSTREAM; }
     break;
 
   case 311:
 
 /* Line 1455 of yacc.c  */
 #line 1243 "vtkParse.y"
-    { typeSig((yyvsp[(1) - (1)].str)); (yyval.integer) = VTK_PARSE_UNKNOWN; }
+    { typeSig((yyvsp[(1) - (1)].str)); (yyval.integer) = VTK_PARSE_ISTREAM; }
     break;
 
   case 312:

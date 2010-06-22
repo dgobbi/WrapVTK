@@ -1239,8 +1239,8 @@ type_indirection:
 type_red2:  type_primitive { $<integer>$ = $<integer>1;}
  | StdString { typeSig($<str>1); $<integer>$ = VTK_PARSE_STRING;}
  | UnicodeString { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNICODE_STRING;}
- | OSTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | ISTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | OSTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_OSTREAM; }
+ | ISTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_ISTREAM; }
  | ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
  | VTK_ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_OBJECT; };
 

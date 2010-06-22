@@ -105,6 +105,8 @@
 #define VTK_PARSE_BOOL                0x0E
 #define VTK_PARSE_STRING              0x21
 #define VTK_PARSE_UNICODE_STRING      0x22
+#define VTK_PARSE_OSTREAM             0x23
+#define VTK_PARSE_ISTREAM             0x24
 
 /*
  * Basic pointer types
@@ -133,6 +135,8 @@
 #define VTK_PARSE_BOOL_PTR                0x30E
 #define VTK_PARSE_STRING_PTR              0x321
 #define VTK_PARSE_UNICODE_STRING_PTR      0x322
+#define VTK_PARSE_OSTREAM_PTR             0x323
+#define VTK_PARSE_ISTREAM_PTR             0x324
 
 /*
  * Basic reference types
@@ -161,6 +165,8 @@
 #define VTK_PARSE_BOOL_REF                0x10E
 #define VTK_PARSE_STRING_REF              0x121
 #define VTK_PARSE_UNICODE_STRING_REF      0x122
+#define VTK_PARSE_OSTREAM_REF             0x123
+#define VTK_PARSE_ISTREAM_REF             0x124
 
 /* For backwards compatibility */
 #define VTK_PARSE_VTK_OBJECT        VTK_PARSE_OBJECT
