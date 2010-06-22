@@ -529,13 +529,13 @@ void vtkWrapXML_FunctionCommon(
     if (func->ArgNames[i])
       {
       fprintf(fp, "%s<Name>%s</Name>\n",
-              indent(indentation), func->ArgNames[i]);
+              indent(indentation), vtkWrapXML_Quote(func->ArgNames[i], 500));
       }
 
     if (func->ArgValues[i])
       {
       fprintf(fp, "%s<Dval>%s</Dval>\n",
-              indent(indentation), func->ArgValues[i]);
+              indent(indentation), vtkWrapXML_Quote(func->ArgValues[i], 500));
       }
 
     fprintf(fp, "%s</Arg>\n", indent(--indentation));
