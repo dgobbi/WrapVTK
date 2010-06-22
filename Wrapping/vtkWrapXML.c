@@ -469,29 +469,13 @@ void vtkWrapXML_Type(
     }
 }
 
-/* Print out a function in XML format */
-void vtkWrapXML_Function(
-  FILE *fp, FunctionInfo *func, int indentation)
+/* Print out items that are common to functions and methods */
+void vtkWrapXML_FunctionCommon(
+  FILE *fp, FunctionInfo *func, int printReturn, int indentation)
 {
   size_t i, n;
   char temp[500];
   const char *cp;
-
-  if (func->ArrayFailure)
-    {
-    return;
-    }
-
-  fprintf(fp, "\n");
-  fprintf(fp, "%s<Function>\n", indent(indentation++));
-  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          vtkWrapXML_Quote(func->Name, 500));
-
-  if (func->Namespace)
-    {
-    fprintf(fp, "%s<Namespace>%s</Namespace>\n", indent(indentation),
-            vtkWrapXML_Quote(func->Namespace, 500));
-    }
 
   if (vtkParse_TypeIsStatic(func->ReturnType))
     {
@@ -523,13 +507,16 @@ void vtkWrapXML_Function(
     fprintf(fp, "%s</Comment>\n", indent(--indentation));
     }
 
-  fprintf(fp, "%s<Return>\n", indent(indentation++));
+  if (printReturn)
+    {
+    fprintf(fp, "%s<Return>\n", indent(indentation++));
 
-  vtkWrapXML_Type(fp, func->ReturnType, func->ReturnClass,
-                  (func->HaveHint ? func->HintSize : 0),
-                  indentation);
+    vtkWrapXML_Type(fp, func->ReturnType, func->ReturnClass,
+                    (func->HaveHint ? func->HintSize : 0),
+                    indentation);
 
-  fprintf(fp, "%s</Return>\n", indent(--indentation));
+    fprintf(fp, "%s</Return>\n", indent(--indentation));
+    }
 
   n = func->NumberOfArguments;
   for (i = 0; i < n; i++)
@@ -539,8 +526,44 @@ void vtkWrapXML_Function(
     vtkWrapXML_Type(fp, func->ArgTypes[i], func->ArgClasses[i],
                     func->ArgCounts[i], indentation);
 
+    if (func->ArgNames[i])
+      {
+      fprintf(fp, "%s<Name>%s</Name>\n",
+              indent(indentation), func->ArgNames[i]);
+      }
+
+    if (func->ArgValues[i])
+      {
+      fprintf(fp, "%s<Dval>%s</Dval>\n",
+              indent(indentation), func->ArgValues[i]);
+      }
+
     fprintf(fp, "%s</Arg>\n", indent(--indentation));
     }
+}
+
+/* Print out a function in XML format */
+void vtkWrapXML_Function(
+  FILE *fp, FunctionInfo *func, int indentation)
+{
+  if (func->ArrayFailure)
+    {
+    return;
+    }
+
+  fprintf(fp, "\n");
+  fprintf(fp, "%s<Function>\n", indent(indentation++));
+  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
+          vtkWrapXML_Quote(func->Name, 500));
+
+  if (func->Namespace)
+    {
+    fprintf(fp, "%s<Namespace>%s</Namespace>\n", indent(indentation),
+            vtkWrapXML_Quote(func->Namespace, 500));
+    }
+
+  vtkWrapXML_FunctionCommon(fp, func, 1, indentation);
+
   fprintf(fp, "%s</Function>\n", indent(--indentation));
 }
 
@@ -568,10 +591,8 @@ void vtkWrapXML_ClassMethod(
   const char *propname, int indentation)
 {
   static const char *accessLevel[] = {"private", "public", "protected"};
-  size_t i, n;
   int access;
-  char temp[500];
-  const char *cp;
+  int needsReturnValue = 0;
 
   if (func->ArrayFailure)
     {
@@ -607,11 +628,6 @@ void vtkWrapXML_ClassMethod(
   fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation),
           accessLevel[access]);
 
-  if (vtkParse_TypeIsStatic(func->ReturnType))
-    {
-    fprintf(fp, "%s<Flag>static</Flag>\n", indent(indentation));
-    }
-
   if (func->IsVirtual)
     {
     fprintf(fp, "%s<Flag>virtual</Flag>\n", indent(indentation));
@@ -622,53 +638,14 @@ void vtkWrapXML_ClassMethod(
     fprintf(fp, "%s<Flag>pure</Flag>\n", indent(indentation));
     }
 
-  if (func->IsLegacy)
-    {
-    fprintf(fp, "%s<Flag>legacy</Flag>\n", indent(indentation));
-    }
-
-  fprintf(fp, "%s<Signature>\n", indent(indentation++));
-
-  cp = func->Signature;
-  for (i = 0; i < 400 && cp && cp[i] != '\0' && cp[i] != ';'; i++)
-    {
-    temp[i] = cp[i];
-    }
-  temp[i] = '\0';
-
-  fprintf(fp, "%s %s\n", indent(indentation), vtkWrapXML_Quote(temp, 500));
-
-  fprintf(fp, "%s</Signature>\n", indent(--indentation));
-
-  if (func->Comment)
-    {
-    fprintf(fp, "%s<Comment>\n", indent(indentation++));
-    vtkWrapXML_MultiLineText(fp, func->Comment, indentation);
-    fprintf(fp, "%s</Comment>\n", indent(--indentation));
-    }
-
   if (data == NULL || !(strcmp(data->ClassName, func->Name) == 0 ||
       (func->Name[0] == '~' && strcmp(data->ClassName, &func->Name[1]) == 0)))
     {
-    fprintf(fp, "%s<Return>\n", indent(indentation++));
-
-    vtkWrapXML_Type(fp, func->ReturnType, func->ReturnClass,
-                    (func->HaveHint ? func->HintSize : 0),
-                    indentation);
-
-    fprintf(fp, "%s</Return>\n", indent(--indentation));
+    needsReturnValue = 1;
     }
 
-  n = func->NumberOfArguments;
-  for (i = 0; i < n; i++)
-    {
-    fprintf(fp, "%s<Arg>\n", indent(indentation++));
+  vtkWrapXML_FunctionCommon(fp, func, needsReturnValue, indentation);
 
-    vtkWrapXML_Type(fp, func->ArgTypes[i], func->ArgClasses[i],
-                    func->ArgCounts[i], indentation);
-
-    fprintf(fp, "%s</Arg>\n", indent(--indentation));
-    }
   fprintf(fp, "%s</Method>\n", indent(--indentation));
 }
 
