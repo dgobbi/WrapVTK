@@ -282,6 +282,7 @@ void vtkWrapXML_FileHeader(FILE *fp, const FileInfo *data, int indentation)
 /* write the file footer */
 void vtkWrapXML_FileFooter(FILE *fp, const FileInfo *data, int indentation)
 {
+  fprintf(fp, "\n");
   fprintf(fp, "%s</File>\n", indent(indentation));
 }
 
@@ -463,6 +464,23 @@ void vtkWrapXML_Type(
     }
 }
 
+/* Print a constant */
+void vtkWrapXML_Constant(
+  FILE *fp, ConstantInfo *con, int indentation)
+{
+  fprintf(fp, "\n");
+  fprintf(fp, "%s<Constant>\n", indent(indentation++));
+  if (con->Type)
+    {
+    vtkWrapXML_Type(fp, con->Type, con->TypeClass, 0, indentation);
+    }
+  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
+          vtkWrapXML_Quote(con->Name, 500));
+  fprintf(fp, "%s<Value>%s</Value>\n", indent(indentation),
+          vtkWrapXML_Quote(con->Value, 500));
+  fprintf(fp, "%s</Constant>\n", indent(--indentation));
+}
+
 /* Print out items that are common to functions and methods */
 void vtkWrapXML_FunctionCommon(
   FILE *fp, FunctionInfo *func, int printReturn, int indentation)
@@ -528,7 +546,7 @@ void vtkWrapXML_FunctionCommon(
 
     if (func->ArgValues[i])
       {
-      fprintf(fp, "%s<Dval>%s</Dval>\n",
+      fprintf(fp, "%s<Value>%s</Value>\n",
               indent(indentation), vtkWrapXML_Quote(func->ArgValues[i], 500));
       }
 
@@ -976,21 +994,18 @@ MergeInfo *vtkWrapXML_MergeSuperClasses(
   return info;
 }
 
-/* main functions that takes a parsed FileInfo from vtk and produces a
- * specific vtkXML format for desired functions to be incorporated in SimVTK
- * (ie. certain add, remove, get and set methods). */
-void vtkParseOutput(FILE *fp, FileInfo *data)
+void vtkWrapXML_Body(FILE *fp, FileInfo *data, int indentation)
 {
-  int indentation = 0;
   ClassProperties *properties;
   MergeInfo *merge = NULL;
   ClassInfo *classInfo;
-  int i;
+  int i, j;
 
-  vtkWrapXML_FileHeader(fp, data, indentation);
-
-  /* print the documentation */
-  vtkWrapXML_FileDoc(fp, data, indentation);
+  /* print all constants for the file or namespace */
+  for (i = 0; i < data->NumberOfConstants; i++)
+    {
+    vtkWrapXML_Constant(fp, data->Constants[i], indentation);
+    }
 
   for (i = 0; i < data->NumberOfClasses; i++)
     {
@@ -1010,6 +1025,12 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
 
     /* get information about the properties */
     properties = vtkParseProperties_Create(classInfo);
+
+    /* print all enums and constant variables */
+    for (j = 0; j < classInfo->NumberOfConstants; j++)
+      {
+      vtkWrapXML_Constant(fp, classInfo->Constants[j], indentation);
+      }
 
     /* print the methods section */
     vtkWrapXML_ClassMethods(fp, classInfo, properties, merge, indentation);
@@ -1034,11 +1055,37 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
   for (i = 0; i < data->NumberOfFunctions; i++)
     {
     vtkWrapXML_Function(fp, data->Functions[i], indentation);
-    if (i == data->NumberOfFunctions-1)
-      {
-      fprintf(fp, "\n");
-      }
     }
 
+  /* print all namespaces */
+  for (i = 0; i < data->NumberOfNamespaces; i++)
+    {
+    fprintf(fp, "\n");
+    fprintf(fp, "%s<Namespace>\n", indent(indentation++));
+    fprintf(fp, "%s<Name>%s</Name>\n",
+            indent(indentation), data->Namespaces[i]->Name);
+    vtkWrapXML_Body(fp, data->Namespaces[i], indentation);
+    fprintf(fp, "\n");
+    fprintf(fp, "%s</Namespace>\n", indent(--indentation));
+    }
+}
+
+/* main functions that takes a parsed FileInfo from vtk and produces a
+ * specific vtkXML format for desired functions to be incorporated in SimVTK
+ * (ie. certain add, remove, get and set methods). */
+void vtkParseOutput(FILE *fp, FileInfo *data)
+{
+  int indentation = 0;
+
+  /* print the lead-in */
+  vtkWrapXML_FileHeader(fp, data, indentation);
+
+  /* print the documentation */
+  vtkWrapXML_FileDoc(fp, data, indentation);
+
+  /* print the main body */
+  vtkWrapXML_Body(fp, data, indentation);
+
+  /* print the closing tag */
   vtkWrapXML_FileFooter(fp, data, indentation);
 }
