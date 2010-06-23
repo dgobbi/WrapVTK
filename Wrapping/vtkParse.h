@@ -58,6 +58,8 @@ typedef struct _ConstantInfo
   int   Type;
   char *TypeClass;
   int   IsEnum;
+  int   IsPublic;
+  int   IsProtected;
 } ConstantInfo;
 
 typedef struct _ClassInfo

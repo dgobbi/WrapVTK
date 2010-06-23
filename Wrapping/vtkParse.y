@@ -2008,6 +2008,8 @@ void InitConstant(ConstantInfo *con)
   con->Type = 0;
   con->TypeClass = NULL;
   con->IsEnum = 0;
+  con->IsProtected = 0;
+  con->IsPublic = 0;
 }
 
 /* initialize the structure */
@@ -2060,6 +2062,8 @@ void start_class(const char *classname, int is_struct)
 void end_class()
 {
   currentClass = NULL;
+  in_public = 1;
+  in_protected = 0;
 }
 
 /* start a new enum */
@@ -2145,14 +2149,18 @@ void add_constant(const char *name, const char *value,
 
   if (flag == 1)
     {
+    con->IsPublic = 1;
     vtkParse_AddItemMacro(&data, Constants, con);
     }
   else if (currentClass)
     {
+    con->IsPublic = in_public;
+    con->IsProtected = in_protected;
     vtkParse_AddItemMacro(currentClass, Constants, con);
     }
   else
     {
+    con->IsPublic = 1;
     vtkParse_AddItemMacro(currentNamespace, Constants, con);
     }
 }
@@ -2242,8 +2250,16 @@ void output_function()
     }
 
   /* set public, protected */
-  currentFunction->IsPublic = in_public;
-  currentFunction->IsProtected = in_protected;
+  if (currentClass)
+    {
+    currentFunction->IsPublic = in_public;
+    currentFunction->IsProtected = in_protected;
+    }
+  else
+    {
+    currentFunction->IsPublic = 1;
+    currentFunction->IsProtected = 0;
+    }
 
   /* look for VAR FUNCTIONS */
   if (currentFunction->NumberOfArguments
