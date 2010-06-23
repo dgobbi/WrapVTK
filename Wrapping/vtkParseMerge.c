@@ -306,9 +306,9 @@ int vtkParseMerge_Merge(
       }
     if (!match)
       {
-      merge->NumberOfFunctions = m+1;
-      merge->Functions[m] = (FunctionInfo *)malloc(sizeof(FunctionInfo));
-      copy_function(merge->Functions[m], func);
+      FunctionInfo *newFunc = (FunctionInfo *)malloc(sizeof(FunctionInfo));
+      vtkParse_AddItemMacro(merge, Functions, newFunc);
+      copy_function(newFunc, func);
       vtkParseMerge_PushFunction(info, depth);
       m++;
       }
