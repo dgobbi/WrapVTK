@@ -710,14 +710,14 @@ class_def_item: scope_type ':'
    | FRIEND operator func_body { ClassInfo *tmpc = currentClass;
      currentClass = NULL; output_function(); currentClass = tmpc; }
    | INLINE operator func_body { output_function(); }
-   | template_operator func_body { output_function(); }
-   | INLINE template_operator func_body { output_function(); }
+   | template operator func_body { output_function(); }
+   | template INLINE operator func_body { output_function(); }
    | method func_body { output_function(); }
    | FRIEND method func_body { ClassInfo *tmpc = currentClass;
      currentClass = NULL; output_function(); currentClass = tmpc; }
    | INLINE method func_body { output_function(); }
-   | template_method func_body { output_function(); }
-   | INLINE template_method func_body { output_function(); }
+   | template method func_body { output_function(); }
+   | template INLINE method func_body { output_function(); }
    | legacy_method func_body { legacySig(); output_function(); }
    | VTK_BYTE_SWAP_DECL '(' maybe_other ')' ';'
    | macro
@@ -808,10 +808,6 @@ typedef: TYPEDEF type var_id ';'
  | TYPEDEF anonymous_struct
  | TYPEDEF VAR_FUNCTION ';';
 
-template_method: template method;
-
-template_operator: template operator;
-
 template: TEMPLATE '<' '>' { postSig("template<> "); clearTypeId(); }
         | TEMPLATE '<' { postSig("template<"); }
           template_args '>' { postSig("> "); clearTypeId(); };
@@ -819,11 +815,7 @@ template: TEMPLATE '<' '>' { postSig("template<> "); clearTypeId(); }
 template_args: template_arg
              | template_arg ',' { postSig(", "); } template_args;
 
-template_arg: template_type maybe_id | template maybe_id;
-
-template_type: TYPENAME { postSig("typename "); }
-             | CLASS { postSig("class "); }
-             | INT { postSig("int "); };
+template_arg: type_red maybe_id | template maybe_id;
 
 legacy_function: VTK_LEGACY '(' function ')' ;
 
@@ -888,7 +880,7 @@ typecast_op_func:
       postSig("(");
       currentFunction->ReturnClass = vtkstrdup(getTypeId());
     }
-  args_list ')' { postSig(")"); } maybe_const
+  args_list ')' { postSig(")"); } func_trailer
     {
       $<integer>$ = $<integer>2;
       postSig(";");
@@ -903,7 +895,7 @@ typecast_op_func:
       vtkParseDebug("Parsed operator", "operator typecast");
     };
 
-op_func: op_sig { postSig(")"); } maybe_const
+op_func: op_sig { postSig(")"); } func_trailer
     {
       postSig(";");
       closeSig();
@@ -913,22 +905,6 @@ op_func: op_sig { postSig(")"); } maybe_const
         currentFunction->Comment = vtkstrdup(CommentText);
         }
       vtkParseDebug("Parsed operator", currentFunction->Name);
-    }
-  | op_sig pure_virtual
-    {
-      postSig(";");
-      closeSig();
-      currentFunction->Name = $<str>1;
-      if (HaveComment)
-        {
-        currentFunction->Comment = vtkstrdup(CommentText);
-        }
-      vtkParseDebug("Parsed operator", currentFunction->Name);
-      if (currentClass)
-        {
-        currentFunction->IsPureVirtual = 1;
-        currentClass->IsAbstract = 1;
-        }
     };
 
 op_sig: OPERATOR op_token {postSig($<str>2);} '('
@@ -939,7 +915,7 @@ op_sig: OPERATOR op_token {postSig($<str>2);} '('
     }
     args_list ')' { $<str>$ = $<str>2; };
 
-func: func_sig { postSig(")"); } maybe_const
+func: func_sig { postSig(")"); } func_trailer
     {
       postSig(";");
       closeSig();
@@ -949,28 +925,33 @@ func: func_sig { postSig(")"); } maybe_const
         currentFunction->Comment = vtkstrdup(CommentText);
         }
       vtkParseDebug("Parsed func", currentFunction->Name);
-    }
-  | func_sig pure_virtual
+    };
+
+func_trailer:
+  | '=' INT_LITERAL
     {
-      postSig(";");
-      closeSig();
-      currentFunction->Name = $<str>1;
-      if (HaveComment)
-        {
-        currentFunction->Comment = vtkstrdup(CommentText);
-        }
-      vtkParseDebug("Parsed func", currentFunction->Name);
+      postSig(" = 0");
       if (currentClass)
         {
         currentFunction->IsPureVirtual = 1;
         currentClass->IsAbstract = 1;
         }
+    }
+ | CONST_EQUAL INT_LITERAL
+    {
+      postSig(" const = 0");
+      currentFunction->IsConst = 1;
+      if (currentClass)
+        {
+        currentFunction->IsPureVirtual = 1;
+        currentClass->IsAbstract = 1;
+        }
+    }
+ | CONST
+    {
+      postSig(" const");
+      currentFunction->IsConst = 1;
     };
-
-pure_virtual: '=' INT_LITERAL {postSig(") = 0");}
-            | CONST_EQUAL INT_LITERAL {postSig(") const = 0");};
-
-maybe_const: | CONST {postSig(" const");};
 
 func_sig: any_id '('
     {
@@ -1202,8 +1183,8 @@ type_red1: type_red2
       {postSig(" "); setTypeId($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN;}
     | scoped_id
       {postSig(" "); setTypeId($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN;}
-    | TYPENAME {postSig("typename ");} scoped_id
-      {postSig(" "); setTypeId($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN;};
+    | TYPENAME {postSig("typename ");} maybe_scoped_id
+      {postSig(" "); setTypeId($<str>3); $<integer>$ = VTK_PARSE_UNKNOWN;};
 
 templated_id:
    VTK_ID '<' { markSig(); postSig($<str>1); postSig("<");} types '>'
@@ -1281,7 +1262,7 @@ type_red2:  type_primitive { $<integer>$ = $<integer>1;}
  | UNION ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
  | UNION VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
  | ENUM ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | ENUM VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | ENUM VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; };
 
 type_primitive:
   VOID   { typeSig("void"); $<integer>$ = VTK_PARSE_VOID;} |
@@ -1981,6 +1962,7 @@ void InitFunction(FunctionInfo *func)
   func->IsPureVirtual = 0;
   func->IsPublic = 0;
   func->IsOperator = 0;
+  func->IsConst = 0;
   func->HaveHint = 0;
   func->HintSize = 0;
   func->ReturnType = VTK_PARSE_VOID;

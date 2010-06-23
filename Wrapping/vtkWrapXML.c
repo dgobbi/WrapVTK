@@ -597,6 +597,11 @@ void vtkWrapXML_ClassMethod(
   fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation),
           accessLevel[access]);
 
+  if (func->IsConst)
+    {
+    fprintf(fp, "%s<Flag>const</Flag>\n", indent(indentation));
+    }
+
   if (func->IsVirtual)
     {
     fprintf(fp, "%s<Flag>virtual</Flag>\n", indent(indentation));

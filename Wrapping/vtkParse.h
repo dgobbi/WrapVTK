@@ -52,6 +52,7 @@ typedef struct _FunctionInfo
   int   IsPublic;
   int   IsProtected;
   int   IsOperator;
+  int   IsConst;
   int   IsLegacy;
   int   ArrayFailure;
   int   NumberOfArguments;
