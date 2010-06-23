@@ -138,11 +138,16 @@ unsigned int sigAllocatedLength;
 char *currentId = 0;
 char *currentVarName = 0;
 char *currentVarValue = 0;
+char *currentEnumName = 0;
+char *currentEnumValue = 0;
 
 void start_class(const char *classname, int is_struct);
 void end_class();
 void output_function(void);
 void reject_function(void);
+void start_enum(const char *enumname);
+void add_enum(const char *name, const char *value);
+void end_enum();
 void add_constant(const char *name, const char *value,
                   int type, const char *typeclass, int global);
 
@@ -719,13 +724,16 @@ class_def_item: scope_type ':'
  * just make sure that the IDs are properly scoped.
  */
 
-named_enum: ENUM any_id '{' enum_list '}' maybe_other_no_semi ';';
+named_enum: ENUM any_id {start_enum($<str>2);} '{' enum_list '}'
+   {end_enum();} maybe_other_no_semi ';';
 
-anonymous_enum: ENUM '{' enum_list '}' maybe_other_no_semi ';';
+anonymous_enum: ENUM {start_enum(NULL);} '{' enum_list '}'
+   {end_enum();} maybe_other_no_semi ';';
 
 enum_list: | enum_item | enum_item ',' enum_list;
 
-enum_item: any_id | any_id '=' enum_math;
+enum_item: any_id {add_enum($<str>1, NULL);}
+         | any_id '=' enum_math {add_enum($<str>1, $<str>3);};
 
 /* "any_id" -> "vtkClass::any_id" if it's a previously defined anonymous_enum const */
 
@@ -1118,7 +1126,17 @@ maybe_var_assign: | var_assign;
 var_assign: '=' literal {
        postSig("="); postSig($<str>2); setVarValue($<str>2); };
 
-var:   maybe_static_type var_ids ';'
+var:   maybe_static_type var_id_maybe_assign ';'
+        {
+        int type = ($<integer>1 | $<integer>2);
+        if (getVarValue() && ((type & VTK_PARSE_CONST) != 0) &&
+            ((type & VTK_PARSE_INDIRECT) == 0))
+          {
+          add_constant(getVarName(), getVarValue(),
+                       (type & VTK_PARSE_UNQUALIFIED_TYPE), getTypeId(), 0);
+          }
+        }
+     | maybe_static_type var_ids ';'
      | VAR_FUNCTION ';'
      | STATIC VAR_FUNCTION ';'
      | maybe_static_type LPAREN_AMPERSAND any_id ')' ';'
@@ -1129,8 +1147,7 @@ var:   maybe_static_type var_ids ';'
      | maybe_static_type LPAREN_POINTER maybe_indirect_id ')'
        '(' ignore_args_list ')' ';'
 
-var_ids: var_id_maybe_assign
-       | var_id_maybe_assign ',' maybe_indirect_var_ids;
+var_ids: var_id_maybe_assign ',' maybe_indirect_var_ids;
 
 maybe_indirect_var_ids: var_id_maybe_assign
                 | var_id_maybe_assign ',' maybe_indirect_var_ids;
@@ -1138,7 +1155,8 @@ maybe_indirect_var_ids: var_id_maybe_assign
                 | type_indirection var_id_maybe_assign ','
                   maybe_indirect_var_ids;
 
-var_id_maybe_assign: var_id {clearVarValue();} maybe_var_assign;
+var_id_maybe_assign: var_id {clearVarValue();} maybe_var_assign {
+    $<integer>$ = $<integer>1; };
 
 maybe_var_id: | any_id {setVarName($<str>1);};
 
@@ -1980,6 +1998,7 @@ void InitConstant(ConstantInfo *con)
   con->Value = NULL;
   con->Type = 0;
   con->TypeClass = NULL;
+  con->IsEnum = 0;
 }
 
 /* initialize the structure */
@@ -2035,9 +2054,72 @@ void end_class()
   currentClass = NULL;
 }
 
+/* start a new enum */
+void start_enum(const char *name)
+{
+  static char text[256];
+  currentEnumName = NULL;
+  currentEnumValue = NULL;
+  if (name)
+    {
+    currentEnumName = text;
+    strcpy(currentEnumName, name);
+    }
+}
+
+/* finish the enum */
+void end_enum()
+{
+  currentEnumName = NULL;
+  currentEnumValue = NULL;
+}
+
+/* add a constant to the enum */
+void add_enum(const char *name, const char *value)
+{
+  static char text[256];
+  int i, j;
+
+  if (value)
+    {
+    currentEnumValue = text;
+    strcpy(currentEnumValue, value);
+    }
+  else if (currentEnumValue)
+    {
+    i = strlen(currentEnumValue);
+    while (i > 0 && currentEnumValue[i-1] >= '0' &&
+           currentEnumValue[i-1] <= '9') { i--; }
+
+    if (i == 0 || currentEnumValue[i-1] == ' ' ||
+        (i > 1 && currentEnumValue[i-2] == ' ' &&
+         (currentEnumValue[i-1] == '-' || currentEnumValue[i-1] == '+')))
+      {
+      if (i > 0 && currentEnumValue[i-1] != ' ')
+        {
+        i--;
+        }
+      j = atol(&currentEnumValue[i]);
+      sprintf(&currentEnumValue[i], "%i", j+1);
+      }
+    else
+      {
+      i = strlen(currentEnumValue);
+      strcpy(&currentEnumValue[i], " + 1");
+      }
+    }
+  else
+    {
+    currentEnumValue = text;
+    strcpy(currentEnumValue, "0");
+    }
+
+  add_constant(name, currentEnumValue, VTK_PARSE_INT, currentEnumName, 2);
+}
+
 /* add a constant to the current class or namespace */
 void add_constant(const char *name, const char *value,
-                  int type, const char *typeclass, int global)
+                  int type, const char *typeclass, int flag)
 {
   ConstantInfo *con = (ConstantInfo *)malloc(sizeof(ConstantInfo));
   InitConstant(con);
@@ -2048,8 +2130,12 @@ void add_constant(const char *name, const char *value,
     {
     con->TypeClass = vtkstrdup(typeclass);
     }
+  if (flag == 2)
+    {
+    con->IsEnum = 1;
+    }
 
-  if (global)
+  if (flag == 1)
     {
     data.Constants[data.NumberOfConstants++] = con;
     }

@@ -26,7 +26,7 @@
 
 #define MAX_ARGS 20
 #define MAX_FUNCTIONS 1000
-#define MAX_CONSTANTS 1000
+#define MAX_CONSTANTS 10000
 #define MAX_CLASSES 20
 #define MAX_SUPERCLASSES 10
 #define MAX_NAMESPACES 10
@@ -61,6 +61,7 @@ typedef struct _ConstantInfo
   char *Value;
   int   Type;
   char *TypeClass;
+  int   IsEnum;
 } ConstantInfo;
 
 typedef struct _ClassInfo
