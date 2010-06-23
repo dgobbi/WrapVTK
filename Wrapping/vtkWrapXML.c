@@ -470,6 +470,10 @@ void vtkWrapXML_Constant(
 {
   fprintf(fp, "\n");
   fprintf(fp, "%s<Constant>\n", indent(indentation++));
+  if (con->IsEnum)
+    {
+    fprintf(fp, "%s<Flag>enum<Flag>\n", indent(indentation));
+    }
   if (con->Type)
     {
     vtkWrapXML_Type(fp, con->Type, con->TypeClass, 0, indentation);
