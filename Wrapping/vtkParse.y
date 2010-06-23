@@ -26,7 +26,7 @@ Modify vtkParse.tab.c:
   - convert TABs to spaces (eight per tab)
   - remove spaces from ends of lines, s/ *$//g
   - remove the "goto yyerrlab1;" that appears right before yyerrlab1:
-  - remove the #defined constants that appear right after the enums
+  - remove the #defined constants that appear right after the anonymous_enums
 
 */
 
@@ -60,7 +60,7 @@ Modify vtkParse.tab.c:
 # pragma warn -8066 /* unreachable code */
 #endif
 
-/* Map from the type enumeration in vtkType.h to the VTK wrapping type
+/* Map from the type anonymous_enumeration in vtkType.h to the VTK wrapping type
    system number for the type. */
 
 #include "vtkParse.h"
@@ -139,7 +139,7 @@ char *currentId = 0;
 char *currentVarName = 0;
 char *currentVarValue = 0;
 
-void start_class(const char *classname);
+void start_class(const char *classname, int is_struct);
 void end_class();
 void output_function(void);
 void reject_function(void);
@@ -502,6 +502,7 @@ const char *getTypeId()
   int   integer;
 }
 
+%token STRUCT
 %token CLASS
 %token PUBLIC
 %token PRIVATE
@@ -633,10 +634,11 @@ strt: | strt { delSig(); clearTypeId(); } file_item;
 file_item:
      var
    | EXTERN var
-   | enum
+   | anonymous_enum
    | named_enum
-   | union
+   | anonymous_union
    | named_union
+   | anonymous_struct
    | using
    | namespace
    | extern
@@ -669,20 +671,25 @@ file_item:
    | VTK_ID '(' maybe_other ')'
    | ';';
 
-class_def: CLASS any_id { start_class($<str>2); }
+class_def: CLASS any_id { start_class($<str>2, 0); }
     optional_scope '{' class_def_body '}' { end_class(); }
-  | CLASS any_id '<' types '>' { start_class($<str>2); }
+  | CLASS any_id '<' types '>' { start_class($<str>2, 0); }
     optional_scope '{' class_def_body '}' { end_class(); }
+  | STRUCT any_id { start_class($<str>2, 1); }
+    optional_scope '{' class_def_body '}' { end_class(); }
+  | STRUCT any_id '<' types '>' { start_class($<str>2, 1); }
+    optional_scope '{' class_def_body '}' { end_class(); };
 
 class_def_body: | class_def_body { delSig(); clearTypeId(); } class_def_item;
 
 class_def_item: scope_type ':'
    | var
    | MUTABLE var
-   | enum
+   | anonymous_enum
    | named_enum
-   | union
+   | anonymous_union
    | named_union
+   | anonymous_struct
    | using
    | typedef
    | internal_class
@@ -714,13 +721,13 @@ class_def_item: scope_type ':'
 
 named_enum: ENUM any_id '{' enum_list '}' maybe_other_no_semi ';';
 
-enum: ENUM '{' enum_list '}' maybe_other_no_semi ';';
+anonymous_enum: ENUM '{' enum_list '}' maybe_other_no_semi ';';
 
 enum_list: | enum_item | enum_item ',' enum_list;
 
 enum_item: any_id | any_id '=' enum_math;
 
-/* "any_id" -> "vtkClass::any_id" if it's a previously defined enum const */
+/* "any_id" -> "vtkClass::any_id" if it's a previously defined anonymous_enum const */
 
 enum_value: enum_literal | any_id | scoped_id | templated_id;
 
@@ -752,9 +759,11 @@ math_binary_op:  '-' { $<str>$ = "-"; } | '+' { $<str>$ = "+"; }
                | '%' { $<str>$ = "%"; } | '&' { $<str>$ = "&"; }
                | '|' { $<str>$ = "|"; } | '^' { $<str>$ = "^"; };
 
+anonymous_struct: STRUCT '{' maybe_other '}' maybe_other_no_semi ';';
+
 named_union: UNION any_id '{' maybe_other '}' maybe_other_no_semi ';';
 
-union: UNION '{' maybe_other '}' maybe_other_no_semi ';';
+anonymous_union: UNION '{' maybe_other '}' maybe_other_no_semi ';';
 
 using: USING maybe_other_no_semi ';';
 
@@ -765,24 +774,25 @@ extern: EXTERN STRING_LITERAL '{' strt '}';
 
 template_internal_class: template internal_class;
 
-internal_class: CLASS any_id internal_class_body;
+internal_class: CLASS any_id internal_class_body
+              | STRUCT any_id internal_class_body;
 
 internal_class_body: ';'
     | '{' maybe_other '}' ';'
     | ':' maybe_other_no_semi ';';
 
 typedef: TYPEDEF type var_id ';'
- | TYPEDEF CLASS any_id maybe_indirect_id ';'
  | TYPEDEF CLASS any_id '{' maybe_other '}' maybe_indirect_id ';'
- | TYPEDEF CLASS '{' maybe_other '}' maybe_indirect_id ';';
+ | TYPEDEF STRUCT any_id '{' maybe_other '}' maybe_indirect_id ';'
  | TYPEDEF type LPAREN_POINTER maybe_indirect_id ')'
    '(' ignore_args_list ')' ';'
  | TYPEDEF type LPAREN_AMPERSAND maybe_indirect_id ')'
    '(' ignore_args_list ')' ';'
- | TYPEDEF enum
+ | TYPEDEF anonymous_enum
  | TYPEDEF named_enum
- | TYPEDEF union
+ | TYPEDEF anonymous_union
  | TYPEDEF named_union
+ | TYPEDEF anonymous_struct
  | TYPEDEF VAR_FUNCTION ';';
 
 template_method: template method;
@@ -1108,13 +1118,7 @@ maybe_var_assign: | var_assign;
 var_assign: '=' literal {
        postSig("="); postSig($<str>2); setVarValue($<str>2); };
 
-var: CLASS any_id var_ids ';'
-     | CLASS any_id type_indirection var_ids ';'
-     | ENUM any_id var_ids ';'
-     | ENUM any_id type_indirection var_ids ';'
-     | UNION any_id var_ids ';'
-     | UNION any_id type_indirection var_ids ';'
-     | maybe_static_type var_ids ';'
+var:   maybe_static_type var_ids ';'
      | VAR_FUNCTION ';'
      | STATIC VAR_FUNCTION ';'
      | maybe_static_type LPAREN_AMPERSAND any_id ')' ';'
@@ -1247,7 +1251,15 @@ type_red2:  type_primitive { $<integer>$ = $<integer>1;}
  | OSTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_OSTREAM; }
  | ISTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_ISTREAM; }
  | ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | VTK_ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_OBJECT; };
+ | VTK_ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_OBJECT; }
+ | CLASS ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | CLASS VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_OBJECT; }
+ | STRUCT ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | STRUCT VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_OBJECT; }
+ | UNION ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | UNION VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | ENUM ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | ENUM VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
 
 type_primitive:
   VOID   { typeSig("void"); $<integer>$ = VTK_PARSE_VOID;} |
@@ -1283,14 +1295,16 @@ optional_scope: | ':' scope_list;
 
 scope_list: scope_list_item | scope_list_item ',' scope_list;
 
-scope_list_item: scope_type maybe_scoped_id
+scope_list_item: maybe_scoped_id
+  | PRIVATE maybe_scoped_id
+  | PROTECTED maybe_scoped_id
+  | PUBLIC maybe_scoped_id
     {
       currentClass->SuperClasses[currentClass->NumberOfSuperClasses++] =
         vtkstrdup($<str>2);
     };
 
-scope_type: {in_public = 0; in_protected = 0;}
-          | PUBLIC {in_public = 1; in_protected = 0;}
+scope_type: PUBLIC {in_public = 1; in_protected = 0;}
           | PRIVATE {in_public = 0; in_protected = 0;}
           | PROTECTED {in_public = 0; in_protected = 1;};
 
@@ -1903,29 +1917,23 @@ vtk_constant_def: VTK_CONSTANT_DEF
  */
 maybe_other : | maybe_other other_stuff;
 maybe_other_no_semi : | maybe_other_no_semi other_stuff_no_semi;
-maybe_other_class : | maybe_other_class other_stuff_or_class;
 
-other_stuff_or_class : CLASS | TEMPLATE | other_stuff;
+other_stuff : ';' | other_stuff_no_semi;
 
-other_stuff : ';' | other_stuff_no_semi | typedef_ignore;
-
-other_stuff_no_semi : OTHER | braces | parens | brackets
-   | op_token_no_delim | ':' | '.' | type_red2 | DOUBLE_COLON
-   | INT_LITERAL | HEX_LITERAL | FLOAT_LITERAL | CHAR_LITERAL
-   | STRING_LITERAL | CLASS_REF | CONST | CONST_PTR | CONST_EQUAL
+other_stuff_no_semi : OTHER | braces | parens | brackets | TYPEDEF
+   | op_token_no_delim | ':' | '.' | DOUBLE_COLON | CLASS | TEMPLATE
+   | ISTREAM | OSTREAM | StdString | UnicodeString | type_primitive 
+   | ID | VTK_ID | INT_LITERAL | HEX_LITERAL | FLOAT_LITERAL | CHAR_LITERAL
+   | STRING_LITERAL | CLASS_REF | CONST | CONST_PTR | CONST_EQUAL | STRUCT
    | OPERATOR | STATIC | INLINE | VIRTUAL | ENUM | UNION | TYPENAME
    | ARRAY_NUM | VAR_FUNCTION | ELLIPSIS | PUBLIC | PROTECTED | PRIVATE
    | NAMESPACE | USING | EXTERN | vtk_constant_def;
 
-braces: '{' maybe_other_class '}';
+braces: '{' maybe_other '}';
 parens: '(' maybe_other ')'
        | LPAREN_POINTER maybe_other ')'
        | LPAREN_AMPERSAND maybe_other ')';
 brackets: '[' maybe_other ']';
-typedef_ignore: TYPEDEF typedef_ignore_body ';';
-
-typedef_ignore_body : | CLASS typedef_ignore_body
-                      | other_stuff_no_semi typedef_ignore_body;
 
 %%
 #include <string.h>
@@ -2003,13 +2011,20 @@ void InitFile(FileInfo *file_info)
 }
 
 /* check whether this is the class we are looking for */
-void start_class(const char *classname)
+void start_class(const char *classname, int is_struct)
 {
   currentClass = (ClassInfo *)malloc(sizeof(ClassInfo));
   InitClass(currentClass);
   currentClass->ClassName = vtkstrdup(classname);
   currentNamespace->Classes[currentNamespace->NumberOfClasses++] =
       currentClass;
+
+  in_public = 0;
+  in_protected = 0;
+  if (is_struct)
+    {
+    in_public = 1;
+    }
 
   InitFunction(currentFunction);
 }

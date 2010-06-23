@@ -255,7 +255,7 @@ Modify lex.yy.c:
 "signed"[\t\n\r ]*"char"  return(SIGNED_CHAR);
 
 "class"         return(CLASS);
-"struct"        return(CLASS);
+"struct"        return(STRUCT);
 "public"        return(PUBLIC);
 "private"       return(PRIVATE);
 "protected"     return(PROTECTED);

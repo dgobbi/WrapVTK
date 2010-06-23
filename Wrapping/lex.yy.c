@@ -2197,7 +2197,7 @@ return(CLASS);
 case 33:
 YY_RULE_SETUP
 #line 258 "vtkParse.l"
-return(CLASS);
+return(STRUCT);
         YY_BREAK
 case 34:
 YY_RULE_SETUP
