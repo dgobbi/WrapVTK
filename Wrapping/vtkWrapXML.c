@@ -466,10 +466,28 @@ void vtkWrapXML_Type(
 
 /* Print a constant */
 void vtkWrapXML_Constant(
-  FILE *fp, ConstantInfo *con, int indentation)
+  FILE *fp, ConstantInfo *con, int inClass, int indentation)
 {
+  static const char *accessLevel[] = {"private", "public", "protected"};
+  int access = 0;
+  if (con->IsPublic)
+    {
+    access = 1;
+    }
+  else if (con->IsProtected)
+    {
+    access = 2;
+    }
+
   fprintf(fp, "\n");
   fprintf(fp, "%s<Constant>\n", indent(indentation++));
+
+  if (inClass)
+    {
+    fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation),
+            accessLevel[access]);
+    }
+
   if (con->IsEnum)
     {
     fprintf(fp, "%s<Flag>enum<Flag>\n", indent(indentation));
@@ -1008,7 +1026,7 @@ void vtkWrapXML_Body(FILE *fp, FileInfo *data, int indentation)
   /* print all constants for the file or namespace */
   for (i = 0; i < data->NumberOfConstants; i++)
     {
-    vtkWrapXML_Constant(fp, data->Constants[i], indentation);
+    vtkWrapXML_Constant(fp, data->Constants[i], 0, indentation);
     }
 
   for (i = 0; i < data->NumberOfClasses; i++)
@@ -1033,7 +1051,7 @@ void vtkWrapXML_Body(FILE *fp, FileInfo *data, int indentation)
     /* print all enums and constant variables */
     for (j = 0; j < classInfo->NumberOfConstants; j++)
       {
-      vtkWrapXML_Constant(fp, classInfo->Constants[j], indentation);
+      vtkWrapXML_Constant(fp, classInfo->Constants[j], 1, indentation);
       }
 
     /* print the methods section */
