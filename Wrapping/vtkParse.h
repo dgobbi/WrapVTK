@@ -25,11 +25,7 @@
 #include <stdio.h>
 
 #define MAX_ARGS 20
-#define MAX_FUNCTIONS 1000
-#define MAX_CONSTANTS 10000
-#define MAX_CLASSES 20
 #define MAX_SUPERCLASSES 10
-#define MAX_NAMESPACES 10
 
 typedef struct _FunctionInfo
 {
@@ -70,11 +66,11 @@ typedef struct _ClassInfo
   int   IsAbstract;
   int   HasDelete;
   int   NumberOfSuperClasses;
-  char *SuperClasses[MAX_SUPERCLASSES];
+  char **SuperClasses;
   int   NumberOfFunctions;
-  FunctionInfo *Functions[MAX_FUNCTIONS];
+  FunctionInfo **Functions;
   int   NumberOfConstants;
-  ConstantInfo *Constants[MAX_CONSTANTS];
+  ConstantInfo **Constants;
 } ClassInfo;
 
 typedef struct _FileInfo
@@ -88,13 +84,13 @@ typedef struct _FileInfo
   /* namespace information, Name is NULL in global namespace */
   char *Name;
   int   NumberOfClasses;
-  ClassInfo *Classes[MAX_CLASSES];
+  ClassInfo **Classes;
   int   NumberOfFunctions;
-  FunctionInfo *Functions[MAX_FUNCTIONS];
+  FunctionInfo **Functions;
   int   NumberOfConstants;
-  ConstantInfo *Constants[MAX_CONSTANTS];
+  ConstantInfo **Constants;
   int   NumberOfNamespaces;
-  struct _FileInfo *Namespaces[MAX_NAMESPACES];
+  struct _FileInfo **Namespaces;
 } FileInfo;
 
 #ifdef __cplusplus
@@ -110,6 +106,14 @@ int vtkParse_ReadHints(FileInfo *data, FILE *hfile, FILE *errfile);
 
 /* Free the FileInfo struct returned by vtkParse_ParseFile() */
 void vtkParse_Free(FileInfo *data);
+
+/* This macro is used to add elements to the above structs, it serves
+ * the same purpose as an stl vector of pointers */
+#define vtkParse_AddItemMacro(theStruct, theElement, theValue) \
+  vtkParse_AddPointerToArray(&(theStruct)->theElement, \
+    &(theStruct)->NumberOf##theElement, theValue)
+
+void vtkParse_AddPointerToArray(void *valueArray, int *count, void *value);
 
 #ifdef __cplusplus
 } /* extern "C" */

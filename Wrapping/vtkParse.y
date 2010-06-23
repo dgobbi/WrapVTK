@@ -195,8 +195,7 @@ void pushNamespace(const char *name)
     currentNamespace = (FileInfo *)malloc(sizeof(FileInfo));
     InitFile(currentNamespace);
     currentNamespace->Name = vtkstrdup(name);
-    oldNamespace->Namespaces[oldNamespace->NumberOfNamespaces++] =
-      currentNamespace;
+    vtkParse_AddItemMacro(oldNamespace, Namespaces, currentNamespace);
     }
 
   namespaceStack[namespaceDepth++] = oldNamespace;
@@ -1318,8 +1317,7 @@ scope_list_item: maybe_scoped_id
   | PROTECTED maybe_scoped_id
   | PUBLIC maybe_scoped_id
     {
-      currentClass->SuperClasses[currentClass->NumberOfSuperClasses++] =
-        vtkstrdup($<str>2);
+      vtkParse_AddItemMacro(currentClass, SuperClasses, vtkstrdup($<str>2));
     };
 
 scope_type: PUBLIC {in_public = 1; in_protected = 0;}
@@ -1940,7 +1938,7 @@ other_stuff : ';' | other_stuff_no_semi;
 
 other_stuff_no_semi : OTHER | braces | parens | brackets | TYPEDEF
    | op_token_no_delim | ':' | '.' | DOUBLE_COLON | CLASS | TEMPLATE
-   | ISTREAM | OSTREAM | StdString | UnicodeString | type_primitive 
+   | ISTREAM | OSTREAM | StdString | UnicodeString | type_primitive
    | ID | VTK_ID | INT_LITERAL | HEX_LITERAL | FLOAT_LITERAL | CHAR_LITERAL
    | STRING_LITERAL | CLASS_REF | CONST | CONST_PTR | CONST_EQUAL | STRUCT
    | OPERATOR | STATIC | INLINE | VIRTUAL | ENUM | UNION | TYPENAME
@@ -2035,8 +2033,7 @@ void start_class(const char *classname, int is_struct)
   currentClass = (ClassInfo *)malloc(sizeof(ClassInfo));
   InitClass(currentClass);
   currentClass->ClassName = vtkstrdup(classname);
-  currentNamespace->Classes[currentNamespace->NumberOfClasses++] =
-      currentClass;
+  vtkParse_AddItemMacro(currentNamespace, Classes, currentClass);
 
   in_public = 0;
   in_protected = 0;
@@ -2137,15 +2134,15 @@ void add_constant(const char *name, const char *value,
 
   if (flag == 1)
     {
-    data.Constants[data.NumberOfConstants++] = con;
+    vtkParse_AddItemMacro(&data, Constants, con);
     }
   else if (currentClass)
     {
-    currentClass->Constants[currentClass->NumberOfConstants++] = con;
+    vtkParse_AddItemMacro(currentClass, Constants, con);
     }
   else
     {
-    currentNamespace->Constants[currentNamespace->NumberOfConstants++] = con;
+    vtkParse_AddItemMacro(currentNamespace, Constants, con);
     }
 }
 
@@ -2222,8 +2219,7 @@ void output_function()
       currentClass->HasDelete = 1;
       }
 
-    currentClass->Functions[currentClass->NumberOfFunctions++]
-      = currentFunction;
+    vtkParse_AddItemMacro(currentClass, Functions, currentFunction);
 
     currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
     }
@@ -2264,8 +2260,7 @@ void output_function()
 
     if (!match)
       {
-      currentNamespace->Functions[currentNamespace->NumberOfFunctions++] =
-        currentFunction;
+      vtkParse_AddItemMacro(currentNamespace, Functions, currentFunction);
 
       currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
       }
@@ -2332,6 +2327,38 @@ void outputGetVectorMacro(
   output_function();
 
   free(local);
+}
+
+/* Parse a header file and return a FileInfo struct */
+void vtkParse_AddPointerToArray(void *valueArray, int *count, void *value)
+{
+  void **newvalues = 0;
+  void **values = *(void ***)valueArray;
+  int n = *count;
+  int i;
+
+  /* if empty, alloc for the first time */
+  if (n == 0)
+    {
+    values = (void **)malloc(1*sizeof(void*));
+    }
+  /* if count is power of two, reallocate with double size */
+  else if ((n & (n-1)) == 0)
+    {
+    newvalues = (void **)malloc((n << 1)*sizeof(void*));
+
+    for (i = 0; i < n; i++)
+      {
+      newvalues[i] = values[i];
+      }
+
+    free(values);
+    values = newvalues;
+    }
+
+  values[n++] = value;
+  *count = n;
+  *(void ***)valueArray = values;
 }
 
 /* Parse a header file and return a FileInfo struct */
@@ -2493,17 +2520,41 @@ void vtkParse_Free(FileInfo *file_info)
   int i, j, n, m;
   ClassInfo *class_info;
   FunctionInfo *func_info;
+  ConstantInfo *const_info;
 
   n = file_info->NumberOfClasses;
   for (i = 0; i < n; i++)
     {
     class_info = file_info->Classes[i];
+
+    m = class_info->NumberOfSuperClasses;
+    if (m > 0)
+      {
+      free(class_info->SuperClasses);
+      }
+
     m = class_info->NumberOfFunctions;
     for (j = 0; j < m; j++)
       {
       func_info = class_info->Functions[j];
       free(func_info);
       }
+    if (m > 0)
+      {
+      free(class_info->Functions);
+      }
+
+    m = class_info->NumberOfConstants;
+    for (j = 0; j < m; j++)
+      {
+      const_info = class_info->Constants[j];
+      free(const_info);
+      }
+    if (m > 0)
+      {
+      free(class_info->Constants);
+      }
+
     free(class_info);
     }
 
@@ -2512,6 +2563,21 @@ void vtkParse_Free(FileInfo *file_info)
     {
     func_info = file_info->Functions[j];
     free(func_info);
+    }
+  if (m > 0)
+    {
+    free(file_info->Functions);
+    }
+
+  m = file_info->NumberOfConstants;
+  for (j = 0; j < m; j++)
+    {
+    const_info = file_info->Constants[j];
+    free(const_info);
+    }
+  if (m > 0)
+    {
+    free(file_info->Constants);
     }
 
   m = file_info->NumberOfNamespaces;
