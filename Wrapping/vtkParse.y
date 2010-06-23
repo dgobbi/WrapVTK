@@ -150,6 +150,7 @@ void add_enum(const char *name, const char *value);
 void end_enum();
 void add_constant(const char *name, const char *value,
                   int type, const char *typeclass, int global);
+const char *add_const_scope(const char *name);
 
 void outputSetVectorMacro(
   const char *var, int argType, const char *typeText, int n);
@@ -274,6 +275,48 @@ void postSig(const char *arg)
     }
 }
 
+/* prepend a scope:: to a name */
+void prepend_scope(char *cp, const char *arg)
+{
+  size_t i, m, n, depth;
+
+  m = strlen(cp);
+  n = strlen(arg);
+  i = m;
+  while (i > 0 &&
+         ((cp[i-1] >= 'a' && cp[i-1] <= 'z') ||
+          (cp[i-1] >= 'A' && cp[i-1] <= 'Z') ||
+          (cp[i-1] >= '0' && cp[i-1] <= '9') ||
+          cp[i-1] == '_' || cp[i-1] == ':' ||
+          cp[i-1] == '>'))
+    {
+    i--;
+    if (cp[i] == '>')
+      {
+      depth = 1;
+      while (i > 0)
+        {
+        i--;
+        if (cp[i] == '<')
+          {
+          if (--depth == 0)
+            {
+            break;
+            }
+          }
+        if (cp[i] == '>')
+          {
+          depth++;
+          }
+        }
+      }
+    }
+
+  memmove(&cp[i+n+2], &cp[i], m+1);
+  strncpy(&cp[i], arg, n);
+  strncpy(&cp[i+n], "::", 2);
+}
+
 /* prepend a scope:: to the ID at the end of the signature */
 void preScopeSig(const char *arg)
 {
@@ -285,45 +328,8 @@ void preScopeSig(const char *arg)
     }
   else if (!sigClosed)
     {
-    size_t i, m, n, depth;
-    char *cp;
     checkSigSize(arg);
-    cp = currentFunction->Signature;
-    m = strlen(cp);
-    n = strlen(arg);
-    i = m;
-    while (i > 0 &&
-           ((cp[i-1] >= 'a' && cp[i-1] <= 'z') ||
-            (cp[i-1] >= 'A' && cp[i-1] <= 'Z') ||
-            (cp[i-1] >= '0' && cp[i-1] <= '9') ||
-            cp[i-1] == '_' || cp[i-1] == ':' ||
-            cp[i-1] == '>'))
-      {
-      i--;
-      if (cp[i] == '>')
-        {
-        depth = 1;
-        while (i > 0)
-          {
-          i--;
-          if (cp[i] == '<')
-            {
-            if (--depth == 0)
-              {
-              break;
-              }
-            }
-          if (cp[i] == '>')
-            {
-            depth++;
-            }
-          }
-        }
-      }
-
-    memmove(&cp[i+n+2], &cp[i], m+1);
-    strncpy(&cp[i], arg, n);
-    strncpy(&cp[i+n], "::", 2);
+    prepend_scope(currentFunction->Signature, arg);
     }
 }
 
@@ -1122,8 +1128,7 @@ maybe_indirect_id: any_id | type_indirection any_id;
 
 maybe_var_assign: | var_assign;
 
-var_assign: '=' literal {
-       postSig("="); postSig($<str>2); setVarValue($<str>2); };
+var_assign: '=' { postSig("="); } literal { setVarValue($<str>3); };
 
 var:   maybe_static_type var_id_maybe_assign ';'
         {
@@ -1325,24 +1330,30 @@ scope_type: PUBLIC {in_public = 1; in_protected = 0;}
           | PROTECTED {in_public = 0; in_protected = 1;};
 
 literal:  literal2 {$<str>$ = $<str>1;}
-          | '+' literal2 {$<str>$ = $<str>2;}
-          | '-' literal2 {$<str>$ = (char *)malloc(strlen($<str>2)+2);
-                        sprintf($<str>$, "-%s", $<str>2); }
-          | STRING_LITERAL {$<str>$ = $<str>1;}
-          | '(' literal ')' {$<str>$ = $<str>2;}
-          | ID '<' type_red '>' '(' literal2 ')'
+          | '+' {postSig("+");} literal2 {$<str>$ = $<str>3;}
+          | '-' {postSig("-");} literal2 {
+             $<str>$ = (char *)malloc(strlen($<str>3)+2);
+             sprintf($<str>$, "-%s", $<str>3); }
+          | STRING_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
+          | '(' {postSig("(");} literal ')' {postSig(")"); $<str>$ = $<str>3;}
+          | ID '<' {postSig($<str>1); postSig("<");}
+            type_red '>' '(' {postSig("<(");} literal2 ')'
             {
+            postSig(")");
             $<str>$ = (char *)malloc(strlen($<str>1) + strlen(getTypeId()) +
-                                     strlen($<str>6) + 5);
-            sprintf($<str>$, "%s<%s>(%s)", $<str>1, getTypeId(), $<str>6);
+                                     strlen($<str>8) + 5);
+            sprintf($<str>$, "%s<%s>(%s)", $<str>1, getTypeId(), $<str>8);
             };
 
-literal2: INT_LITERAL {$<str>$ = $<str>1;}
-          | HEX_LITERAL {$<str>$ = $<str>1;}
-          | FLOAT_LITERAL {$<str>$ = $<str>1;}
-          | CHAR_LITERAL {$<str>$ = $<str>1;}
-          | ID {$<str>$ = $<str>1;}
-          | VTK_ID {$<str>$ = $<str>1;};
+literal2: INT_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
+          | HEX_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
+          | FLOAT_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
+          | CHAR_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
+          | ID {$<str>$ = vtkstrdup(add_const_scope($<str>1));
+                postSig($<str>1);}
+          | VTK_ID {$<str>$ = vtkstrdup(add_const_scope($<str>1));
+                postSig($<str>1);};
+
 macro:
   SetMacro '(' any_id ',' {preSig("void Set"); postSig("(");} type ')'
    {
@@ -2144,6 +2155,56 @@ void add_constant(const char *name, const char *value,
     {
     vtkParse_AddItemMacro(currentNamespace, Constants, con);
     }
+}
+
+/* if the name is a const in this namespace, the scope it */
+const char *add_const_scope(const char *name)
+{
+  static char text[256];
+  FileInfo *scope = currentNamespace;
+  int i, j;
+  int addscope = 0;
+
+  strcpy(text, name);
+
+  if (currentClass)
+    {
+    for (j = 0; j < currentClass->NumberOfConstants; j++)
+      {
+      if (strcmp(currentClass->Constants[j]->Name, text) == 0)
+        {
+        prepend_scope(text, currentClass->ClassName);
+        addscope = 1;
+        }
+      }
+    }
+  i = namespaceDepth;
+  while (scope && scope->Name)
+    {
+    if (addscope)
+      {
+      prepend_scope(text, scope->Name);
+      }
+    else
+      {
+      for (j = 0; j < scope->NumberOfConstants; j++)
+        {
+        if (strcmp(scope->Constants[j]->Name, text) == 0)
+          {
+          prepend_scope(text, scope->Name);
+          addscope = 1;
+          }
+        }
+      }
+
+    scope = 0;
+    if (i > 0)
+      {
+      scope = namespaceStack[--i];
+      }
+    }
+
+  return text;
 }
 
 /* reject the function, do not output it */
