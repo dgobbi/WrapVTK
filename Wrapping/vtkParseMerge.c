@@ -159,7 +159,7 @@ MergeInfo *vtkParseMerge_CreateMergeInfo(ClassInfo *classInfo)
   info->NumberOfClasses = 0;
   info->NumberOfFunctions = 0;
 
-  vtkParseMerge_PushClass(info, classInfo->ClassName);
+  vtkParseMerge_PushClass(info, classInfo->Name);
   n = classInfo->NumberOfFunctions;
   for (i = 0; i < n; i++)
     {
@@ -260,7 +260,7 @@ int vtkParseMerge_Merge(
   const FunctionInfo *func;
   FunctionInfo *f2;
 
-  depth = vtkParseMerge_PushClass(info, super->ClassName);
+  depth = vtkParseMerge_PushClass(info, super->Name);
 
   m = merge->NumberOfFunctions;
   n = super->NumberOfFunctions;
@@ -274,9 +274,9 @@ int vtkParseMerge_Merge(
       }
 
     /* constructors and destructors are not inherited */
-    if ((strcmp(func->Name, super->ClassName) == 0) ||
+    if ((strcmp(func->Name, super->Name) == 0) ||
         (func->Name[0] == '~' &&
-         strcmp(&func->Name[1], super->ClassName) == 0))
+         strcmp(&func->Name[1], super->Name) == 0))
       {
       continue;
       }

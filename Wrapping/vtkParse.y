@@ -1322,7 +1322,9 @@ scope_list_item: maybe_scoped_id
   | PROTECTED maybe_scoped_id
   | PUBLIC maybe_scoped_id
     {
-      vtkParse_AddItemMacro(currentClass, SuperClasses, vtkstrdup($<str>2));
+      vtkParse_AddPointerToArray(&currentClass->SuperClasses,
+                                 &currentClass->NumberOfSuperClasses,
+                                 vtkstrdup($<str>2));
     };
 
 scope_type: PUBLIC {in_public = 1; in_protected = 0;}
@@ -1972,6 +1974,7 @@ void InitFunction(FunctionInfo *func)
   int i;
 
   func->Name = NULL;
+  func->ItemType = VTK_FUNCTION_INFO;
   func->NumberOfArguments = 0;
   func->ArrayFailure = 0;
   func->IsVirtual = 0;
@@ -2004,6 +2007,7 @@ void InitFunction(FunctionInfo *func)
 void InitConstant(ConstantInfo *con)
 {
   con->Name = NULL;
+  con->ItemType = VTK_CONSTANT_INFO;
   con->Value = NULL;
   con->Type = 0;
   con->TypeClass = NULL;
@@ -2015,29 +2019,34 @@ void InitConstant(ConstantInfo *con)
 /* initialize the structure */
 void InitClass(ClassInfo *cls)
 {
-  cls->ClassName = NULL;
+  cls->Name = NULL;
+  cls->ItemType = VTK_CLASS_INFO;
   cls->IsAbstract = 0;
   cls->HasDelete = 0;
   cls->NumberOfSuperClasses = 0;
   cls->NumberOfFunctions = 0;
   cls->NumberOfConstants = 0;
+  cls->NumberOfItems = 0;
 }
 
 /* initialize the structure */
 void InitFile(FileInfo *file_info)
 {
+  /* namespace info */
+  file_info->Name = NULL;
+  file_info->ItemType = VTK_NAMESPACE_INFO;
+  file_info->NumberOfClasses = 0;
+  file_info->NumberOfFunctions = 0;
+  file_info->NumberOfConstants = 0;
+  file_info->NumberOfNamespaces = 0;
+  file_info->NumberOfItems = 0;
+
+  /* file info */
   file_info->FileName = NULL;
   file_info->NameComment = NULL;
   file_info->Description = NULL;
   file_info->Caveats = NULL;
   file_info->SeeAlso = NULL;
-
-  /* namespace info */
-  file_info->Name = NULL;
-  file_info->NumberOfClasses = 0;
-  file_info->NumberOfFunctions = 0;
-  file_info->NumberOfConstants = 0;
-  file_info->NumberOfNamespaces = 0;
 }
 
 /* check whether this is the class we are looking for */
@@ -2045,7 +2054,7 @@ void start_class(const char *classname, int is_struct)
 {
   currentClass = (ClassInfo *)malloc(sizeof(ClassInfo));
   InitClass(currentClass);
-  currentClass->ClassName = vtkstrdup(classname);
+  currentClass->Name = vtkstrdup(classname);
   vtkParse_AddItemMacro(currentNamespace, Classes, currentClass);
 
   in_public = 0;
@@ -2181,7 +2190,7 @@ const char *add_const_scope(const char *name)
       {
       if (strcmp(currentClass->Constants[j]->Name, text) == 0)
         {
-        prepend_scope(text, currentClass->ClassName);
+        prepend_scope(text, currentClass->Name);
         addscope = 1;
         }
       }
@@ -2501,19 +2510,13 @@ FileInfo *vtkParse_ParseFile(
   strncpy(main_class, &currentNamespace->FileName[i], j-i);
   main_class[j-i] = '\0';
 
-  /* move the main class to the first position */
+  /* special treatment of the main class in the file */
   for (i = 0; i < currentNamespace->NumberOfClasses; i++)
     {
-    if (strcmp(currentNamespace->Classes[i]->ClassName, main_class) == 0)
+    if (strcmp(currentNamespace->Classes[i]->Name, main_class) == 0)
       {
-      ClassInfo *temp = currentNamespace->Classes[i];
-      for (j = i; j > 0; j--)
-        {
-        currentNamespace->Classes[j] = currentNamespace->Classes[j-1];
-        }
-      currentNamespace->Classes[0] = temp;
       /* override "IsAbstract" with the "IsConcrete" set by CMake */
-      currentNamespace->Classes[0]->IsAbstract = !is_concrete;
+      currentNamespace->Classes[i]->IsAbstract = !is_concrete;
       break;
       }
     }
@@ -2545,7 +2548,7 @@ int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
       {
       class_info = file_info->Classes[i];
 
-      if (strcmp(h_cls, class_info->ClassName) == 0)
+      if (strcmp(h_cls, class_info->Name) == 0)
         {
         /* find the matching function */
         for (j = 0; j < class_info->NumberOfFunctions; j++)
@@ -2632,6 +2635,11 @@ void vtkParse_Free(FileInfo *file_info)
       free(class_info->Constants);
       }
 
+    if (class_info->NumberOfItems > 0)
+      {
+      free(class_info->Items);
+      }
+
     free(class_info);
     }
 
@@ -2661,6 +2669,11 @@ void vtkParse_Free(FileInfo *file_info)
   for (i = 0; i < m; i++)
     {
     vtkParse_Free(file_info->Namespaces[i]);
+    }
+
+  if (file_info->NumberOfItems > 0)
+    {
+    free(file_info->Items);
     }
 
   free(file_info);

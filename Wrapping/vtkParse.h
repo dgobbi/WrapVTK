@@ -25,11 +25,28 @@
 #include <stdio.h>
 
 #define MAX_ARGS 20
-#define MAX_SUPERCLASSES 10
 
+/* ItemType constants */
+enum ItemTypeInfo
+{
+  VTK_NAMESPACE_INFO = 1,
+  VTK_CLASS_INFO     = 2,
+  VTK_FUNCTION_INFO  = 3,
+  VTK_CONSTANT_INFO  = 4
+};
+
+/* ItemInfo is a "base class" for items in the header file */
+typedef struct _ItemInfo
+{
+  char *Name;
+  int   ItemType;
+} ItemInfo;
+
+/* FunctionInfo is for functions and methods */
 typedef struct _FunctionInfo
 {
   char *Name;
+  int   ItemType;
   int   IsVirtual;
   int   IsPureVirtual;
   int   IsPublic;
@@ -51,9 +68,11 @@ typedef struct _FunctionInfo
   char *Signature;
 } FunctionInfo;
 
+/* ConstantInfo is for enum constants, macro constants, and const vars */
 typedef struct _ConstantInfo
 {
   char *Name;
+  int   ItemType;
   char *Value;
   int   Type;
   char *TypeClass;
@@ -62,9 +81,11 @@ typedef struct _ConstantInfo
   int   IsProtected;
 } ConstantInfo;
 
+/* ClassInfo is for classes and structs */
 typedef struct _ClassInfo
 {
-  char *ClassName;
+  char *Name;
+  int   ItemType;
   int   IsAbstract;
   int   HasDelete;
   int   NumberOfSuperClasses;
@@ -73,18 +94,16 @@ typedef struct _ClassInfo
   FunctionInfo **Functions;
   int   NumberOfConstants;
   ConstantInfo **Constants;
+  int   NumberOfItems;
+  ItemInfo **Items;
 } ClassInfo;
 
+/* FileInfo is for files and namespaces */
 typedef struct _FileInfo
 {
-  /* file information */
-  char *FileName;
-  char *NameComment;
-  char *Description;
-  char *Caveats;
-  char *SeeAlso;
   /* namespace information, Name is NULL in global namespace */
   char *Name;
+  int   ItemType;
   int   NumberOfClasses;
   ClassInfo **Classes;
   int   NumberOfFunctions;
@@ -93,6 +112,14 @@ typedef struct _FileInfo
   ConstantInfo **Constants;
   int   NumberOfNamespaces;
   struct _FileInfo **Namespaces;
+  int   NumberOfItems;
+  ItemInfo **Items;
+   /* file information */
+  char *FileName;
+  char *NameComment;
+  char *Description;
+  char *Caveats;
+  char *SeeAlso;
 } FileInfo;
 
 #ifdef __cplusplus
@@ -113,8 +140,11 @@ void vtkParse_Free(FileInfo *data);
  * the same purpose as an stl vector of pointers */
 #define vtkParse_AddItemMacro(theStruct, theElement, theValue) \
   vtkParse_AddPointerToArray(&(theStruct)->theElement, \
-    &(theStruct)->NumberOf##theElement, theValue)
+    &(theStruct)->NumberOf##theElement, theValue); \
+  vtkParse_AddPointerToArray(&(theStruct)->Items, \
+    &(theStruct)->NumberOfItems, theValue)
 
+/* This function is the back-end to vtkParse_AddItemMacro */
 void vtkParse_AddPointerToArray(void *valueArray, int *count, void *value);
 
 #ifdef __cplusplus

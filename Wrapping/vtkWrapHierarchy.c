@@ -60,7 +60,7 @@ static int parse_header_file(FILE *fp, const char *filename, char *lines[])
     {
     class_info = data->Classes[i];
 
-    sprintf(cp, "%s ", class_info->ClassName);
+    sprintf(cp, "%s ", class_info->Name);
     cp += strlen(cp);
     if (class_info->NumberOfSuperClasses)
       {

@@ -38,66 +38,6 @@
 /* the indentation string, default is two spaces */
 #define VTKXML_INDENT "  "
 
-/* ----- name sorting functions ----- */
-
-/* swap integer item "i" with item "j" */
-#define vtkWrapXML_Swap(arr, i, j) \
-{ \
-  int temp = arr[i]; \
-  arr[i] = arr[j]; \
-  arr[j] = temp; \
-}
-
-/* sort functions lexically between indices "start" and "ends" */
-static void vtkWrapXML_SortMethods(
-  ClassInfo *data, int functionList[], int start, int ends)
-{
-  int i;
-  int location = start;
-
-  if (ends <= start)
-    {
-    return;
-    }
-  for (i = start; i < ends; i++)
-    {
-    if (strcmp(data->Functions[functionList[ends]]->Name,
-               data->Functions[functionList[i]]->Name) > 0)
-      {
-      vtkWrapXML_Swap(functionList, location, i);
-      location++;
-      }
-    }
-  vtkWrapXML_Swap(functionList, location, ends);
-  vtkWrapXML_SortMethods(data, functionList, start, location - 1);
-  vtkWrapXML_SortMethods(data, functionList, location + 1, ends);
-}
-
-/* sort properties lexically between indices "start" and "ends" */
-static void vtkWrapXML_SortProperties(
-  ClassProperties *properties, int propertyList[], int start, int ends)
-{
-  int i;
-  int location = start;
-
-  if (ends <= start)
-    {
-    return;
-    }
-  for (i = start; i < ends; i++)
-    {
-    if (strcmp(properties->Properties[propertyList[ends]]->Name,
-               properties->Properties[propertyList[i]]->Name) > 0)
-      {
-      vtkWrapXML_Swap(propertyList, location, i);
-      location++;
-      }
-    }
-  vtkWrapXML_Swap(propertyList, location, ends);
-  vtkWrapXML_SortProperties(properties, propertyList, start, location - 1);
-  vtkWrapXML_SortProperties(properties, propertyList, location + 1, ends);
-}
-
 /* ----- XML utility functions ----- */
 
 /* indent to the specified indentation level (max 5 levels) */
@@ -235,7 +175,7 @@ void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
   fprintf(fp, "\n");
   fprintf(fp, "%s<Class>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          vtkWrapXML_Quote(data->ClassName, 500));
+          vtkWrapXML_Quote(data->Name, 500));
 
   /* actually, vtk classes never have more than one superclass */
   n = data->NumberOfSuperClasses;
@@ -637,6 +577,7 @@ void vtkWrapXML_ClassMethod(
     access = 2;
     }
 
+  fprintf(fp, "\n");
   fprintf(fp, "%s<Method>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(func->Name, 500));
@@ -666,8 +607,8 @@ void vtkWrapXML_ClassMethod(
     fprintf(fp, "%s<Flag>pure</Flag>\n", indent(indentation));
     }
 
-  if (data == NULL || !(strcmp(data->ClassName, func->Name) == 0 ||
-      (func->Name[0] == '~' && strcmp(data->ClassName, &func->Name[1]) == 0)))
+  if (data == NULL || !(strcmp(data->Name, func->Name) == 0 ||
+      (func->Name[0] == '~' && strcmp(data->Name, &func->Name[1]) == 0)))
     {
     needsReturnValue = 1;
     }
@@ -684,6 +625,7 @@ void vtkWrapXML_ClassProperty(
   const char *access = 0;
   int i;
 
+  fprintf(fp, "\n");
   fprintf(fp, "%s<Property>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           property->Name);
@@ -778,106 +720,6 @@ void vtkWrapXML_ClassProperty(
   fprintf(fp, "%s</Property>\n", indent(--indentation));
 }
 
-/* print information about all the methods in the class */
-void vtkWrapXML_ClassMethods(
-  FILE *fp, ClassInfo *data, ClassProperties *properties, MergeInfo *merge,
-  int indentation)
-{
-  int i, n;
-  int numFunctions;
-  const char *classname = 0;
-  const char *propname = 0;
-  int *idList = (int *)malloc(sizeof(int)*data->NumberOfFunctions);
-
-  /* create a list of function ids */
-  numFunctions = data->NumberOfFunctions;
-  n = 0;
-  for (i = 0; i < numFunctions; i++)
-    {
-    if (data->Functions[i]->Name &&
-        !data->Functions[i]->ArrayFailure)
-      {
-      idList[n++] = i;
-      }
-    }
-
-  /* sort function id list based on function name */
-  vtkWrapXML_SortMethods(data, idList, 0, n-1);
-
-  /* function handling code */
-  for (i = 0; i < n; i++)
-    {
-    if (merge && merge->NumberOfOverrides[idList[i]])
-      {
-      classname = merge->ClassNames[merge->OverrideClasses[idList[i]][0]];
-      }
-    if (properties && properties->MethodProperties[idList[i]] >= 0)
-      {
-      propname =
-        properties->Properties[properties->MethodProperties[idList[i]]]->Name;
-      }
-    fprintf(fp, "\n");
-    vtkWrapXML_ClassMethod(fp, data, data->Functions[idList[i]],
-                           classname, propname, indentation);
-    }
-
-  free(idList);
-}
-
-/* print information about all the properties in the class */
-void vtkWrapXML_ClassProperties(
-  FILE *fp, ClassInfo *data, ClassProperties *properties, MergeInfo *merge,
-  int indentation)
-{
-  int i, j, n;
-  int *idList = 0;
-  int classId = 0;
-  const char *classname = 0;
-
-  /* create a list of property ids */
-  n = properties->NumberOfProperties;
-  idList = (int *)malloc(sizeof(int)*n);
-  for (i = 0; i < n; i++)
-    {
-    idList[i] = i;
-    }
-
-  /* sort function id list based on function name */
-  vtkWrapXML_SortProperties(properties, idList, 0, n-1);
-
-  /* property handling code */
-  for (i = 0; i < n; i++)
-    {
-    /* Find the least-deep class this property has an accessor method in */
-    classname = NULL;
-    if (merge)
-      {
-      classId = -1;
-      for (j = 0; j < properties->NumberOfMethods; j++)
-        {
-        if (properties->MethodProperties[j] == idList[i])
-          {
-          if (merge->NumberOfOverrides[j])
-            {
-            if (classId < 0 || merge->OverrideClasses[j][0] < classId)
-              {
-              classId = merge->OverrideClasses[j][0];
-              classname = merge->ClassNames[classId];
-              }
-            }
-          }
-        }
-      }
-
-    fprintf(fp, "\n");
-    vtkWrapXML_ClassProperty(fp, properties->Properties[idList[i]], classname,
-                             indentation);
-    }
-  fprintf(fp, "\n");
-
-  free(idList);
-}
-
 /* Recursive suproutine to add the methods of "classname" and all its
  * superclasses to "merge" */
 void vtkWrapXML_MergeHelper(
@@ -895,7 +737,7 @@ void vtkWrapXML_MergeHelper(
   n = data->NumberOfClasses;
   for (i = 0; i < n; i++)
     {
-    if (strcmp(data->Classes[i]->ClassName, classname) == 0)
+    if (strcmp(data->Classes[i]->Name, classname) == 0)
       {
       cinfo = data->Classes[i];
       break;
@@ -945,7 +787,7 @@ void vtkWrapXML_MergeHelper(
     n = data->NumberOfClasses;
     for (i = 0; i < n; i++)
       {
-      if (strcmp(data->Classes[i]->ClassName, classname) == 0)
+      if (strcmp(data->Classes[i]->Name, classname) == 0)
         {
         cinfo = data->Classes[i];
         break;
@@ -981,7 +823,7 @@ MergeInfo *vtkWrapXML_MergeSuperClasses(
   const char *classname;
   int i, n;
 
-  classname = classInfo->ClassName;
+  classname = classInfo->Name;
   oinfo = vtkParse_GetCommandLineOptions();
 
   if (oinfo->HierarchyFileName)
@@ -1016,80 +858,166 @@ MergeInfo *vtkWrapXML_MergeSuperClasses(
   return info;
 }
 
-void vtkWrapXML_Body(FILE *fp, FileInfo *data, int indentation)
+/* look for additional information before printing a method */
+void vtkWrapXML_MethodHelper(
+  FILE *fp, MergeInfo *merge, ClassProperties *properties,
+  ClassInfo *classInfo, FunctionInfo *funcInfo, int indentation)
+{
+  const char *classname = 0;
+  const char *propname = 0;
+  PropertyInfo *property = NULL;
+  int i, j, n;
+
+  n = classInfo->NumberOfFunctions;
+
+  for (i = 0; i < n; i++)
+    {
+    if (classInfo->Functions[i] == funcInfo)
+      {
+      break;
+      }
+    }
+
+  if (i < n)
+    {
+    if (merge && merge->NumberOfOverrides[i])
+      {
+      classname = merge->ClassNames[merge->OverrideClasses[i][0]];
+      }
+    if (properties && properties->MethodProperties[i] >= 0)
+      {
+      property = properties->Properties[properties->MethodProperties[i]];
+      propname = property->Name;
+      for (j = 0; j < i; j++)
+        {
+        /* only print property if this is the first occurrence */
+        if (properties->MethodProperties[j] >= 0 &&
+            property ==
+            properties->Properties[properties->MethodProperties[j]])
+          {
+          property = NULL;
+          break;
+          }
+        }
+      }
+    }
+
+  if (property)
+    {
+    vtkWrapXML_ClassProperty(fp, property, classname, indentation);
+    }
+
+  vtkWrapXML_ClassMethod(fp, classInfo, funcInfo,
+                         classname, propname, indentation);
+}
+
+/* print a class as xml */
+void vtkWrapXML_Class(
+  FILE *fp, FileInfo *data, ClassInfo *classInfo, int indentation)
 {
   ClassProperties *properties;
   MergeInfo *merge = NULL;
-  ClassInfo *classInfo;
-  int i, j;
+  int i;
+
+  /* start new XML section for class */
+  vtkWrapXML_ClassHeader(fp, classInfo, indentation++);
+
+  /* merge all the superclass information */
+  merge = vtkWrapXML_MergeSuperClasses(data, classInfo);
+
+  if (merge)
+    {
+    fprintf(fp, "\n");
+    vtkWrapXML_ClassInheritance(fp, merge, indentation);
+    }
+
+  /* get information about the properties */
+  properties = vtkParseProperties_Create(classInfo);
+
+  /* print all members of the class */
+  for (i = 0; i < classInfo->NumberOfItems; i++)
+    {
+    switch (classInfo->Items[i]->ItemType)
+      {
+      case VTK_CONSTANT_INFO:
+        {
+        vtkWrapXML_Constant(fp, (ConstantInfo *)classInfo->Items[i], 1,
+                            indentation);
+        break;
+        }
+      case VTK_FUNCTION_INFO:
+        {
+        vtkWrapXML_MethodHelper(fp, merge, properties, classInfo,
+                                (FunctionInfo *)classInfo->Items[i],
+                                indentation);
+        break;
+        }
+      }
+    }
+
+  /* release the information about the properties */
+  vtkParseProperties_Free(properties);
+
+  /* release the info about what was merged from superclasses */
+  if (merge)
+    {
+    vtkParseMerge_FreeMergeInfo(merge);
+    }
+
+  /* print the class footer */
+  vtkWrapXML_ClassFooter(fp, classInfo, --indentation);
+}
+
+/* needed for vtkWrapXML_Body */
+void vtkWrapXML_Namespace(FILE *fp, FileInfo *data, int indentation);
+
+/* Print the body of a file or namespace */
+void vtkWrapXML_Body(FILE *fp, FileInfo *data, int indentation)
+{
+  int i;
 
   /* print all constants for the file or namespace */
-  for (i = 0; i < data->NumberOfConstants; i++)
+  for (i = 0; i < data->NumberOfItems; i++)
     {
-    vtkWrapXML_Constant(fp, data->Constants[i], 0, indentation);
-    }
-
-  for (i = 0; i < data->NumberOfClasses; i++)
-    {
-    classInfo = data->Classes[i];
-
-    /* start new XML section for class */
-    vtkWrapXML_ClassHeader(fp, classInfo, indentation++);
-
-    /* merge all the superclass information */
-    merge = vtkWrapXML_MergeSuperClasses(data, classInfo);
-
-    if (merge)
+    switch (data->Items[i]->ItemType)
       {
-      fprintf(fp, "\n");
-      vtkWrapXML_ClassInheritance(fp, merge, indentation);
+      case VTK_CONSTANT_INFO:
+        {
+        vtkWrapXML_Constant(fp, (ConstantInfo *)data->Items[i], 0,
+                            indentation);
+        break;
+        }
+      case VTK_CLASS_INFO:
+        {
+        vtkWrapXML_Class(fp, data, (ClassInfo *)data->Items[i],
+                         indentation);
+        break;
+        }
+      case VTK_FUNCTION_INFO:
+        {
+        vtkWrapXML_Function(fp, (FunctionInfo *)data->Items[i],
+                            indentation);
+        break;
+        }
+      case VTK_NAMESPACE_INFO:
+        {
+        vtkWrapXML_Namespace(fp, (FileInfo *)data->Items[i],
+                             indentation);
+        break;
+        }
       }
-
-    /* get information about the properties */
-    properties = vtkParseProperties_Create(classInfo);
-
-    /* print all enums and constant variables */
-    for (j = 0; j < classInfo->NumberOfConstants; j++)
-      {
-      vtkWrapXML_Constant(fp, classInfo->Constants[j], 1, indentation);
-      }
-
-    /* print the methods section */
-    vtkWrapXML_ClassMethods(fp, classInfo, properties, merge, indentation);
-
-    /* print the properties section */
-    vtkWrapXML_ClassProperties(fp, classInfo, properties, merge, indentation);
-
-    /* release the information about the properties */
-    vtkParseProperties_Free(properties);
-
-    /* release the info about what was merged from superclasses */
-    if (merge)
-      {
-      vtkParseMerge_FreeMergeInfo(merge);
-      }
-
-    /* print the class footer */
-    vtkWrapXML_ClassFooter(fp, classInfo, --indentation);
     }
+}
 
-  /* print all functions */
-  for (i = 0; i < data->NumberOfFunctions; i++)
-    {
-    vtkWrapXML_Function(fp, data->Functions[i], indentation);
-    }
-
-  /* print all namespaces */
-  for (i = 0; i < data->NumberOfNamespaces; i++)
-    {
-    fprintf(fp, "\n");
-    fprintf(fp, "%s<Namespace>\n", indent(indentation++));
-    fprintf(fp, "%s<Name>%s</Name>\n",
-            indent(indentation), data->Namespaces[i]->Name);
-    vtkWrapXML_Body(fp, data->Namespaces[i], indentation);
-    fprintf(fp, "\n");
-    fprintf(fp, "%s</Namespace>\n", indent(--indentation));
-    }
+/* print a namespace as xml */
+void vtkWrapXML_Namespace(FILE *fp, FileInfo *data, int indentation)
+{
+  fprintf(fp, "\n");
+  fprintf(fp, "%s<Namespace>\n", indent(indentation++));
+  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation), data->Name);
+  vtkWrapXML_Body(fp, data, indentation);
+  fprintf(fp, "\n");
+  fprintf(fp, "%s</Namespace>\n", indent(--indentation));
 }
 
 /* main functions that takes a parsed FileInfo from vtk and produces a
