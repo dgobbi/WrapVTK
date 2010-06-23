@@ -117,6 +117,9 @@ int yylex(void);
 
 /* global variables */
 FileInfo data;
+FileInfo *namespaceStack[10];
+int namespaceDepth = 0;
+FileInfo *currentNamespace = NULL;
 ClassInfo *currentClass = NULL;
 FunctionInfo *currentFunction = NULL;
 
@@ -135,17 +138,24 @@ unsigned int sigAllocatedLength;
 char *currentId = 0;
 char *currentVarName = 0;
 char *currentVarValue = 0;
-char *currentNamespace = 0;
 
 void start_class(const char *classname);
 void end_class();
 void output_function(void);
 void reject_function(void);
+void add_constant(const char *name, const char *value,
+                  int type, const char *typeclass, int global);
 
 void outputSetVectorMacro(
   const char *var, int argType, const char *typeText, int n);
 void outputGetVectorMacro(
   const char *var, int argType, const char *typeText, int n);
+
+/* initializer functions */
+void InitFile(FileInfo *file_info);
+void InitClass(ClassInfo *cls);
+void InitFunction(FunctionInfo *func);
+void InitConstant(ConstantInfo *con);
 
 /* duplicate a string */
 char *vtkstrdup(const char *in)
@@ -162,40 +172,35 @@ char *vtkstrdup(const char *in)
 /* enter a namespace */
 void pushNamespace(const char *name)
 {
-  char *cp = currentNamespace;
-  if (cp)
+  int i;
+  FileInfo *oldNamespace = currentNamespace;
+
+  for (i = 0; i < oldNamespace->NumberOfNamespaces; i++)
     {
-    currentNamespace = (char *)malloc(strlen(cp) + strlen(name) + 3);
-    sprintf(currentNamespace, "%s::%s", cp, name);
-    free(cp);
+    /* see if the namespace already exists */
+    if (strcmp(name, oldNamespace->Namespaces[i]->Name) == 0)
+      {
+      currentNamespace = oldNamespace->Namespaces[i];
+      }
     }
-  else
+
+  /* create a new namespace */
+  if (i == oldNamespace->NumberOfNamespaces)
     {
-    currentNamespace = (char *)malloc(strlen(name) + 1);
-    strcpy(currentNamespace, name);
+    currentNamespace = (FileInfo *)malloc(sizeof(FileInfo));
+    InitFile(currentNamespace);
+    currentNamespace->Name = vtkstrdup(name);
+    oldNamespace->Namespaces[oldNamespace->NumberOfNamespaces++] =
+      currentNamespace;
     }
+
+  namespaceStack[namespaceDepth++] = oldNamespace;
 }
 
 /* leave the namespace */
 void popNamespace()
 {
-  char *cp = currentNamespace;
-  int i = strlen(cp);
-  while (i > 0 && cp[i-1] != ':') { i--; }
-  while (i > 0 && cp[i-1] == ':') { i--; }
-  cp[i] = '\0';
-
-  if (i == 0)
-    {
-    free(cp);
-    currentNamespace = 0;
-    }
-}
-
-/* get the namespace */
-const char *getNamespace()
-{
-  return currentNamespace;
+  currentNamespace = namespaceStack[--namespaceDepth];
 }
 
 /* reallocate Signature if "arg" cannot be appended */
@@ -1873,7 +1878,25 @@ op_token_no_delim: '=' { $<str>$ = "operator="; }
  * "VTK_CONSTANT some_value"
  */
 
-vtk_constant_def: VTK_CONSTANT_DEF;
+vtk_constant_def: VTK_CONSTANT_DEF
+  {
+  static char name[256];
+  static char value[256];
+  int i = 0;
+  char *cp = $<str>1;
+  while ((*cp >= 'a' && *cp <= 'z') ||
+         (*cp >= 'A' && *cp <= 'Z') ||
+         (*cp >= '0' && *cp <= '9') ||
+         *cp == '_') { name[i++] = *cp++; }
+  name[i] = '\0';
+  while (*cp == ' ' || *cp == '\t') { cp++; }
+  strcpy(value, cp);
+  i = strlen(value);
+  while (i > 0 && (value[i-1] == '\n' || value[i-1] == '\r' ||
+                   value[i-1] == '\t' || value[i-1] == ' ')) { i--; }
+  value[i] = '\0';
+  add_constant(name, value, 0, NULL, 1);
+  };
 
 /*
  * These just eat up misc garbage
@@ -1914,7 +1937,6 @@ void InitFunction(FunctionInfo *func)
   int i;
 
   func->Name = NULL;
-  func->Namespace = NULL;
   func->NumberOfArguments = 0;
   func->ArrayFailure = 0;
   func->IsVirtual = 0;
@@ -1944,16 +1966,26 @@ void InitFunction(FunctionInfo *func)
 }
 
 /* initialize the structure */
+void InitConstant(ConstantInfo *con)
+{
+  con->Name = NULL;
+  con->Value = NULL;
+  con->Type = 0;
+  con->TypeClass = NULL;
+}
+
+/* initialize the structure */
 void InitClass(ClassInfo *cls)
 {
   cls->ClassName = NULL;
-  cls->Namespace = NULL;
   cls->IsAbstract = 0;
   cls->HasDelete = 0;
   cls->NumberOfSuperClasses = 0;
   cls->NumberOfFunctions = 0;
+  cls->NumberOfConstants = 0;
 }
 
+/* initialize the structure */
 void InitFile(FileInfo *file_info)
 {
   file_info->FileName = NULL;
@@ -1961,8 +1993,13 @@ void InitFile(FileInfo *file_info)
   file_info->Description = NULL;
   file_info->Caveats = NULL;
   file_info->SeeAlso = NULL;
+
+  /* namespace info */
+  file_info->Name = NULL;
   file_info->NumberOfClasses = 0;
   file_info->NumberOfFunctions = 0;
+  file_info->NumberOfConstants = 0;
+  file_info->NumberOfNamespaces = 0;
 }
 
 /* check whether this is the class we are looking for */
@@ -1971,12 +2008,8 @@ void start_class(const char *classname)
   currentClass = (ClassInfo *)malloc(sizeof(ClassInfo));
   InitClass(currentClass);
   currentClass->ClassName = vtkstrdup(classname);
-  if (getNamespace())
-    {
-    currentClass->Namespace = vtkstrdup(getNamespace());
-    }
-
-  data.Classes[data.NumberOfClasses++] = currentClass;
+  currentNamespace->Classes[currentNamespace->NumberOfClasses++] =
+      currentClass;
 
   InitFunction(currentFunction);
 }
@@ -1985,6 +2018,34 @@ void start_class(const char *classname)
 void end_class()
 {
   currentClass = NULL;
+}
+
+/* add a constant to the current class or namespace */
+void add_constant(const char *name, const char *value,
+                  int type, const char *typeclass, int global)
+{
+  ConstantInfo *con = (ConstantInfo *)malloc(sizeof(ConstantInfo));
+  InitConstant(con);
+  con->Name = vtkstrdup(name);
+  con->Value = vtkstrdup(value);
+  con->Type = type;
+  if (typeclass)
+    {
+    con->TypeClass = vtkstrdup(typeclass);
+    }
+
+  if (global)
+    {
+    data.Constants[data.NumberOfConstants++] = con;
+    }
+  else if (currentClass)
+    {
+    currentClass->Constants[currentClass->NumberOfConstants++] = con;
+    }
+  else
+    {
+    currentNamespace->Constants[currentNamespace->NumberOfConstants++] = con;
+    }
 }
 
 /* reject the function, do not output it */
@@ -2067,29 +2128,24 @@ void output_function()
     }
   else
     {
-    /* set the namespace */
-    if (getNamespace())
-      {
-      currentFunction->Namespace = vtkstrdup(getNamespace());
-      }
-
     /* make sure this function isn't a repeat */
     match = 0;
-    for (i = 0; i < data.NumberOfFunctions; i++)
+    for (i = 0; i < currentNamespace->NumberOfFunctions; i++)
       {
-      if (data.Functions[i]->Name &&
-          strcmp(data.Functions[i]->Name, currentFunction->Name) == 0)
+      if (currentNamespace->Functions[i]->Name &&
+          strcmp(currentNamespace->Functions[i]->Name,
+                 currentFunction->Name) == 0)
         {
-        if (data.Functions[i]->NumberOfArguments ==
+        if (currentNamespace->Functions[i]->NumberOfArguments ==
             currentFunction->NumberOfArguments)
           {
           for (j = 0; j < currentFunction->NumberOfArguments; j++)
             {
-            if (data.Functions[i]->ArgTypes[j] ==
+            if (currentNamespace->Functions[i]->ArgTypes[j] ==
                 currentFunction->ArgTypes[j])
               {
               if (currentFunction->ArgTypes[j] == VTK_PARSE_OBJECT &&
-                  strcmp(data.Functions[i]->ArgClasses[j],
+                  strcmp(currentNamespace->Functions[i]->ArgClasses[j],
                          currentFunction->ArgClasses[j]) == 0)
                 {
                 break;
@@ -2107,7 +2163,9 @@ void output_function()
 
     if (!match)
       {
-      data.Functions[data.NumberOfFunctions++] = currentFunction;
+      currentNamespace->Functions[currentNamespace->NumberOfFunctions++] =
+        currentFunction;
+
       currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
       }
     }
@@ -2190,6 +2248,8 @@ FileInfo *vtkParse_ParseFile(
   is_concrete = concrete;
 
   CommentState = 0;
+  namespaceDepth = 0;
+  currentNamespace = &data;
   currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
   InitFunction(currentFunction);
 
@@ -2233,22 +2293,22 @@ FileInfo *vtkParse_ParseFile(
       }
     }
   main_class = (char *)malloc(j-i+1);
-  strncpy(main_class, &data.FileName[i], j-i);
+  strncpy(main_class, &currentNamespace->FileName[i], j-i);
   main_class[j-i] = '\0';
 
   /* move the main class to the first position */
-  for (i = 0; i < data.NumberOfClasses; i++)
+  for (i = 0; i < currentNamespace->NumberOfClasses; i++)
     {
-    if (strcmp(data.Classes[i]->ClassName, main_class) == 0)
+    if (strcmp(currentNamespace->Classes[i]->ClassName, main_class) == 0)
       {
-      ClassInfo *temp = data.Classes[i];
+      ClassInfo *temp = currentNamespace->Classes[i];
       for (j = i; j > 0; j--)
         {
-        data.Classes[j] = data.Classes[j-1];
+        currentNamespace->Classes[j] = currentNamespace->Classes[j-1];
         }
-      data.Classes[0] = temp;
+      currentNamespace->Classes[0] = temp;
       /* override "IsAbstract" with the "IsConcrete" set by CMake */
-      data.Classes[0]->IsAbstract = !is_concrete;
+      currentNamespace->Classes[0]->IsAbstract = !is_concrete;
       break;
       }
     }
@@ -2351,6 +2411,12 @@ void vtkParse_Free(FileInfo *file_info)
     {
     func_info = file_info->Functions[j];
     free(func_info);
+    }
+
+  m = file_info->NumberOfNamespaces;
+  for (i = 0; i < m; i++)
+    {
+    vtkParse_Free(file_info->Namespaces[i]);
     }
 
   free(file_info);

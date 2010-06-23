@@ -26,13 +26,14 @@
 
 #define MAX_ARGS 20
 #define MAX_FUNCTIONS 1000
+#define MAX_CONSTANTS 1000
 #define MAX_CLASSES 20
 #define MAX_SUPERCLASSES 10
+#define MAX_NAMESPACES 10
 
 typedef struct _FunctionInfo
 {
   char *Name;
-  char *Namespace;
   int   IsVirtual;
   int   IsPureVirtual;
   int   IsPublic;
@@ -54,16 +55,25 @@ typedef struct _FunctionInfo
   char *Signature;
 } FunctionInfo;
 
+typedef struct _ConstantInfo
+{
+  char *Name;
+  char *Value;
+  int   Type;
+  char *TypeClass;
+} ConstantInfo;
+
 typedef struct _ClassInfo
 {
   char *ClassName;
-  char *Namespace;
   int   IsAbstract;
   int   HasDelete;
   int   NumberOfSuperClasses;
   char *SuperClasses[MAX_SUPERCLASSES];
   int   NumberOfFunctions;
   FunctionInfo *Functions[MAX_FUNCTIONS];
+  int   NumberOfConstants;
+  ConstantInfo *Constants[MAX_CONSTANTS];
 } ClassInfo;
 
 typedef struct _FileInfo
@@ -74,10 +84,16 @@ typedef struct _FileInfo
   char *Description;
   char *Caveats;
   char *SeeAlso;
+  /* namespace information, Name is NULL in global namespace */
+  char *Name;
   int   NumberOfClasses;
   ClassInfo *Classes[MAX_CLASSES];
   int   NumberOfFunctions;
   FunctionInfo *Functions[MAX_FUNCTIONS];
+  int   NumberOfConstants;
+  ConstantInfo *Constants[MAX_CONSTANTS];
+  int   NumberOfNamespaces;
+  struct _FileInfo *Namespaces[MAX_NAMESPACES];
 } FileInfo;
 
 #ifdef __cplusplus
