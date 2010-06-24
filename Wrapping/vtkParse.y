@@ -201,6 +201,7 @@ void pushNamespace(const char *name)
     currentNamespace = (FileInfo *)malloc(sizeof(FileInfo));
     InitFile(currentNamespace);
     currentNamespace->Name = vtkstrdup(name);
+    currentNamespace->ItemType = VTK_NAMESPACE_INFO;
     vtkParse_AddItemMacro(oldNamespace, Namespaces, currentNamespace);
     }
 
@@ -2105,7 +2106,7 @@ void InitFile(FileInfo *file_info)
 {
   /* namespace info */
   file_info->Name = NULL;
-  file_info->ItemType = VTK_NAMESPACE_INFO;
+  file_info->ItemType = VTK_FILE_INFO;
   file_info->NumberOfClasses = 0;
   file_info->NumberOfFunctions = 0;
   file_info->NumberOfConstants = 0;
@@ -2126,6 +2127,10 @@ void start_class(const char *classname, int is_struct)
   currentClass = (ClassInfo *)malloc(sizeof(ClassInfo));
   InitClass(currentClass);
   currentClass->Name = vtkstrdup(classname);
+  if (is_struct)
+    {
+    currentClass->ItemType = VTK_STRUCT_INFO;
+    }
   vtkParse_AddItemMacro(currentNamespace, Classes, currentClass);
 
   /* template information */

@@ -29,10 +29,12 @@
 /* ItemType constants */
 enum ItemTypeInfo
 {
-  VTK_NAMESPACE_INFO = 1,
-  VTK_CLASS_INFO     = 2,
-  VTK_FUNCTION_INFO  = 3,
-  VTK_CONSTANT_INFO  = 4
+  VTK_FILE_INFO      = 1,
+  VTK_NAMESPACE_INFO = 2,
+  VTK_CLASS_INFO     = 3,
+  VTK_STRUCT_INFO    = 4,
+  VTK_FUNCTION_INFO  = 5,
+  VTK_CONSTANT_INFO  = 6
 };
 
 /* ItemInfo is a "base class" for items in the header file */

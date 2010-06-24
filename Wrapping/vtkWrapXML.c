@@ -173,7 +173,14 @@ void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
   int n;
 
   fprintf(fp, "\n");
-  fprintf(fp, "%s<Class>\n", indent(indentation++));
+  if (data->ItemType == VTK_STRUCT_INFO)
+    {
+    fprintf(fp, "%s<Struct>\n", indent(indentation++));
+    }
+  else
+    {
+    fprintf(fp, "%s<Class>\n", indent(indentation++));
+    }
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(data->Name, 500));
 
@@ -197,7 +204,14 @@ void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
 /* Write out the class footer */
 void vtkWrapXML_ClassFooter(FILE *fp, ClassInfo *data, int indentation)
 {
-  fprintf(fp, "%s</Class>\n", indent(indentation));
+  if (data->ItemType == VTK_STRUCT_INFO)
+    {
+    fprintf(fp, "%s</Struct>\n", indent(indentation++));
+    }
+  else
+    {
+    fprintf(fp, "%s</Class>\n", indent(indentation++));
+    }
 }
 
 /* write the file header */
@@ -990,7 +1004,10 @@ void vtkWrapXML_Class(
     }
 
   /* merge all the superclass information */
-  merge = vtkWrapXML_MergeSuperClasses(data, classInfo);
+  if (classInfo->NumberOfSuperClasses)
+    {
+    merge = vtkWrapXML_MergeSuperClasses(data, classInfo);
+    }
 
   if (merge)
     {
@@ -1055,6 +1072,7 @@ void vtkWrapXML_Body(FILE *fp, FileInfo *data, int indentation)
         break;
         }
       case VTK_CLASS_INFO:
+      case VTK_STRUCT_INFO:
         {
         vtkWrapXML_Class(fp, data, (ClassInfo *)data->Items[i],
                          indentation);
