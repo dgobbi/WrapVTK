@@ -881,7 +881,8 @@ template_arg: type_simple maybe_template_id
                currentTemplate->ArgValues[i] = vtkstrdup(getVarValue());
                };
 
-class_or_typename: CLASS | TYPENAME;
+class_or_typename: CLASS {postSig("class ");}
+                 | TYPENAME {postSig("typename ");};
 
 maybe_template_id: | any_id { setVarName($<str>1); clearVarValue(); }
                      maybe_var_assign;
