@@ -818,7 +818,8 @@ anonymous_union: UNION '{' maybe_other '}' maybe_other_no_semi ';';
 using: USING maybe_other_no_semi ';';
 
 namespace: NAMESPACE class_id { pushNamespace($<str>2); }
-     '{' strt '}' { popNamespace(); };
+            '{' strt '}' { popNamespace(); };
+         | NAMESPACE '{' maybe_other '}';
 
 extern: EXTERN STRING_LITERAL '{' strt '}';
 
