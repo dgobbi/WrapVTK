@@ -122,6 +122,9 @@ int namespaceDepth = 0;
 FileInfo *currentNamespace = NULL;
 ClassInfo *currentClass = NULL;
 FunctionInfo *currentFunction = NULL;
+TemplateArgs *templateStack[10];
+int templateDepth = 0;
+TemplateArgs *currentTemplate = NULL;
 
 int parseDebug;
 char temps[2048];
@@ -142,6 +145,7 @@ char *currentEnumName = 0;
 char *currentEnumValue = 0;
 
 void start_class(const char *classname, int is_struct);
+void reject_class(const char *classname, int is_struct);
 void end_class();
 void output_function(void);
 void reject_function(void);
@@ -162,6 +166,7 @@ void InitFile(FileInfo *file_info);
 void InitClass(ClassInfo *cls);
 void InitFunction(FunctionInfo *func);
 void InitConstant(ConstantInfo *con);
+void InitTemplate(TemplateArgs *arg);
 
 /* duplicate a string */
 char *vtkstrdup(const char *in)
@@ -206,6 +211,36 @@ void pushNamespace(const char *name)
 void popNamespace()
 {
   currentNamespace = namespaceStack[--namespaceDepth];
+}
+
+/* begin a template */
+void startTemplate()
+{
+  currentTemplate = (TemplateArgs *)malloc(sizeof(TemplateArgs));
+  InitTemplate(currentTemplate);
+}
+
+/* clear a template, if set */
+void clearTemplate()
+{
+  if (currentTemplate)
+    {
+    free(currentTemplate);
+    }
+  currentTemplate = NULL;
+}
+
+/* push the template onto the stack, and start a new one */
+void pushTemplate()
+{
+  templateStack[templateDepth++] = currentTemplate;
+  startTemplate();
+}
+
+/* pop a template off the stack */
+void popTemplate()
+{
+  currentTemplate = templateStack[--templateDepth];
 }
 
 /* reallocate Signature if "arg" cannot be appended */
@@ -639,7 +674,7 @@ const char *getTypeId()
  * Here is the start of the grammer
  */
 
-strt: | strt { delSig(); clearTypeId(); } file_item;
+strt: | strt { delSig(); clearTypeId(); clearTemplate(); } file_item;
 
 file_item:
      var
@@ -683,14 +718,15 @@ file_item:
 
 class_def: CLASS any_id { start_class($<str>2, 0); }
     optional_scope '{' class_def_body '}' { end_class(); }
-  | CLASS any_id '<' types '>' { start_class($<str>2, 0); }
+  | CLASS any_id '<' types '>' { reject_class($<str>2, 0); }
     optional_scope '{' class_def_body '}' { end_class(); }
   | STRUCT any_id { start_class($<str>2, 1); }
     optional_scope '{' class_def_body '}' { end_class(); }
-  | STRUCT any_id '<' types '>' { start_class($<str>2, 1); }
+  | STRUCT any_id '<' types '>' { reject_class($<str>2, 1); }
     optional_scope '{' class_def_body '}' { end_class(); };
 
-class_def_body: | class_def_body { delSig(); clearTypeId(); } class_def_item;
+class_def_body: | class_def_body { delSig(); clearTypeId(); clearTemplate(); }
+                  class_def_item;
 
 class_def_item: scope_type ':'
    | var
@@ -809,13 +845,44 @@ typedef: TYPEDEF type var_id ';'
  | TYPEDEF VAR_FUNCTION ';';
 
 template: TEMPLATE '<' '>' { postSig("template<> "); clearTypeId(); }
-        | TEMPLATE '<' { postSig("template<"); }
+        | TEMPLATE '<' { postSig("template<");
+          clearTypeId(); clearVarName(); clearVarValue(); startTemplate(); }
           template_args '>' { postSig("> "); clearTypeId(); };
 
 template_args: template_arg
-             | template_arg ',' { postSig(", "); } template_args;
+             | template_arg ',' { postSig(", ");
+                 clearTypeId(); clearVarName(); clearVarValue(); }
+               template_args;
 
-template_arg: type_red maybe_id | template maybe_id;
+template_arg: type_simple maybe_template_id
+               {
+               int i = currentTemplate->NumberOfArguments++;
+               currentTemplate->ArgTypes[i] = $<integer>1;
+               currentTemplate->ArgClasses[i] = vtkstrdup(getTypeId());
+               currentTemplate->ArgNames[i] = vtkstrdup(getVarName());
+               currentTemplate->ArgValues[i] = vtkstrdup(getVarValue());
+               }
+            | class_or_typename maybe_template_id
+               {
+               int i = currentTemplate->NumberOfArguments++;
+               currentTemplate->ArgNames[i] = vtkstrdup(getVarName());
+               currentTemplate->ArgValues[i] = vtkstrdup(getVarValue());
+               }
+            | { pushTemplate(); } template maybe_template_id
+               {
+               int i;
+               TemplateArgs *newTemplate = currentTemplate;
+               popTemplate();
+               i = currentTemplate->NumberOfArguments++;
+               currentTemplate->ArgTemplates[i] = newTemplate;
+               currentTemplate->ArgNames[i] = vtkstrdup(getVarName());
+               currentTemplate->ArgValues[i] = vtkstrdup(getVarValue());
+               };
+
+class_or_typename: CLASS | TYPENAME;
+
+maybe_template_id: | any_id { setVarName($<str>1); clearVarValue(); }
+                     maybe_var_assign;
 
 legacy_function: VTK_LEGACY '(' function ')' ;
 
@@ -1103,8 +1170,6 @@ arg: type { clearVarName(); clearVarValue(); } maybe_var_array
         }
     };
 
-maybe_id: | any_id;
-
 maybe_indirect_id: any_id | type_indirection any_id;
 
 maybe_var_assign: | var_assign;
@@ -1248,21 +1313,26 @@ type_indirection:
   | CONST_PTR CONST_PTR { postSig("*const *const ");} type_indirection
     { $<integer>$ = VTK_PARSE_BAD_INDIRECT;};
 
-type_red2:  type_primitive { $<integer>$ = $<integer>1;}
- | StdString { typeSig($<str>1); $<integer>$ = VTK_PARSE_STRING;}
+type_red2:
+   type_simple { $<integer>$ = $<integer>1;}
+ | CLASS type_id { $<integer>$ = $<integer>2; }
+ | STRUCT type_id { $<integer>$ = $<integer>2; }
+ | UNION ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | UNION VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | ENUM ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | ENUM VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; };
+
+type_simple:
+   type_primitive { $<integer>$ = $<integer>1;}
+ | type_id { $<integer>$ = $<integer>1;};
+
+type_id:
+   StdString { typeSig($<str>1); $<integer>$ = VTK_PARSE_STRING;}
  | UnicodeString { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNICODE_STRING;}
  | OSTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_OSTREAM; }
  | ISTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_ISTREAM; }
  | ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
  | VTK_ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_OBJECT; }
- | CLASS ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | CLASS VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_OBJECT; }
- | STRUCT ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | STRUCT VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_OBJECT; }
- | UNION ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | UNION VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | ENUM ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | ENUM VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; };
 
 type_primitive:
   VOID   { typeSig("void"); $<integer>$ = VTK_PARSE_VOID;} |
@@ -1950,12 +2020,30 @@ brackets: '[' maybe_other ']';
 #include "lex.yy.c"
 
 /* initialize the structure */
+void InitTemplate(TemplateArgs *args)
+{
+  int i;
+
+  args->NumberOfArguments = 0;
+
+  for (i = 0; i < MAX_ARGS; i++)
+    {
+    args->ArgTemplates[i] = NULL;
+    args->ArgTypes[i] = 0;
+    args->ArgClasses[i] = NULL;
+    args->ArgNames[i] = NULL;
+    args->ArgValues[i] = NULL;
+    }
+}
+
+/* initialize the structure */
 void InitFunction(FunctionInfo *func)
 {
   int i;
 
   func->Name = NULL;
   func->ItemType = VTK_FUNCTION_INFO;
+  func->Template = NULL;
   func->NumberOfArguments = 0;
   func->ArrayFailure = 0;
   func->IsVirtual = 0;
@@ -2003,6 +2091,7 @@ void InitClass(ClassInfo *cls)
 {
   cls->Name = NULL;
   cls->ItemType = VTK_CLASS_INFO;
+  cls->Template = NULL;
   cls->IsAbstract = 0;
   cls->HasDelete = 0;
   cls->NumberOfSuperClasses = 0;
@@ -2038,6 +2127,32 @@ void start_class(const char *classname, int is_struct)
   InitClass(currentClass);
   currentClass->Name = vtkstrdup(classname);
   vtkParse_AddItemMacro(currentNamespace, Classes, currentClass);
+
+  /* template information */
+  if (currentTemplate)
+    {
+    currentClass->Template = currentTemplate;
+    currentTemplate = NULL;
+    }
+
+  in_public = 0;
+  in_protected = 0;
+  if (is_struct)
+    {
+    in_public = 1;
+    }
+
+  InitFunction(currentFunction);
+}
+
+/* reject the class */
+void reject_class(const char *classname, int is_struct)
+{
+  static ClassInfo static_class;
+
+  currentClass = &static_class;
+  currentClass->Name = vtkstrdup(classname);
+  InitClass(currentClass);
 
   in_public = 0;
   in_protected = 0;
@@ -2222,6 +2337,13 @@ void output_function()
     {
     reject_function();
     return;
+    }
+
+  /* template information */
+  if (currentTemplate)
+    {
+    currentFunction->Template = currentTemplate;
+    currentTemplate = NULL;
     }
 
   /* a void argument is the same as no arguements */
@@ -2446,6 +2568,8 @@ FileInfo *vtkParse_ParseFile(
   CommentState = 0;
   namespaceDepth = 0;
   currentNamespace = &data;
+  templateDepth = 0;
+  currentTemplate = NULL;
   currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
   InitFunction(currentFunction);
 

@@ -42,6 +42,17 @@ typedef struct _ItemInfo
   int   ItemType;
 } ItemInfo;
 
+/* TemplateInfo holds template information */
+typedef struct _TemplateArgs
+{
+  int NumberOfArguments;
+  struct _TemplateArgs *ArgTemplates[MAX_ARGS];
+  int   ArgTypes[MAX_ARGS];
+  char *ArgClasses[MAX_ARGS];
+  char *ArgNames[MAX_ARGS];
+  char *ArgValues[MAX_ARGS];
+} TemplateArgs;
+
 /* FunctionInfo is for functions and methods */
 typedef struct _FunctionInfo
 {
@@ -55,6 +66,7 @@ typedef struct _FunctionInfo
   int   IsConst;
   int   IsLegacy;
   int   ArrayFailure;
+  TemplateArgs *Template;
   int   NumberOfArguments;
   int   ArgTypes[MAX_ARGS];
   int   ArgCounts[MAX_ARGS];
@@ -89,6 +101,7 @@ typedef struct _ClassInfo
   int   ItemType;
   int   IsAbstract;
   int   HasDelete;
+  TemplateArgs *Template;
   int   NumberOfSuperClasses;
   char **SuperClasses;
   int   NumberOfFunctions;
@@ -115,7 +128,8 @@ typedef struct _FileInfo
   struct _FileInfo **Namespaces;
   int   NumberOfItems;
   ItemInfo **Items;
-   /* file information */
+
+  /* file information */
   char *FileName;
   char *NameComment;
   char *Description;
