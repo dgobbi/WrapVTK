@@ -404,6 +404,48 @@ void vtkWrapXML_Type(
     }
 }
 
+/* Print a template */
+void vtkWrapXML_Template(
+  FILE *fp, TemplateArgs *args, int indentation)
+{
+  int i;
+
+  fprintf(fp, "%s<Template>\n", indent(indentation++));
+
+  for (i = 0; i < args->NumberOfArguments; i++)
+    {
+    if (args->ArgTemplates[i])
+      {
+      vtkWrapXML_Template(fp, args->ArgTemplates[i], indentation);   
+      }
+    else if (args->ArgTypes[i])
+      {
+      fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
+              vtkWrapXML_Quote(
+                vtkParse_BaseTypeAsString(args->ArgTypes[i],
+                                          args->ArgClasses[i]), 500));
+      }
+    else
+      {
+      fprintf(fp, "%s<Type>typename</Type>\n", indent(indentation));
+      }
+
+    if (args->ArgNames[i])
+      {
+      fprintf(fp, "%s<Name>%s</Name>\n",
+              indent(indentation), vtkWrapXML_Quote(args->ArgNames[i], 500));
+      }
+
+    if (args->ArgValues[i])
+      {
+      fprintf(fp, "%s<Value>%s</Value>\n",
+              indent(indentation), vtkWrapXML_Quote(args->ArgValues[i], 500));
+      }
+    }
+
+  fprintf(fp, "%s</Template>\n", indent(--indentation));
+}
+
 /* Print a constant */
 void vtkWrapXML_Constant(
   FILE *fp, ConstantInfo *con, int inClass, int indentation)
@@ -530,6 +572,13 @@ void vtkWrapXML_Function(
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(func->Name, 500));
 
+  if (func->Template)
+    {
+    fprintf(fp, "\n");
+    vtkWrapXML_Template(fp, func->Template, indentation);
+    fprintf(fp, "\n");
+    }
+
   vtkWrapXML_FunctionCommon(fp, func, 1, indentation);
 
   fprintf(fp, "%s</Function>\n", indent(--indentation));
@@ -581,6 +630,13 @@ void vtkWrapXML_ClassMethod(
   fprintf(fp, "%s<Method>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(func->Name, 500));
+
+  if (func->Template)
+    {
+    fprintf(fp, "\n");
+    vtkWrapXML_Template(fp, func->Template, indentation);
+    fprintf(fp, "\n");
+    }
 
   if (classname)
     {
@@ -926,6 +982,12 @@ void vtkWrapXML_Class(
 
   /* start new XML section for class */
   vtkWrapXML_ClassHeader(fp, classInfo, indentation++);
+
+  if (classInfo->Template)
+    {
+    fprintf(fp, "\n");
+    vtkWrapXML_Template(fp, classInfo->Template, indentation);
+    }
 
   /* merge all the superclass information */
   merge = vtkWrapXML_MergeSuperClasses(data, classInfo);
