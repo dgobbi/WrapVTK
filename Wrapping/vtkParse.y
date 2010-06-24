@@ -1412,6 +1412,7 @@ string_literal: STRING_LITERAL {$<str>$ = $<str>1;}
 
 literal2:   '0' {$<str>$ = vtkstrdup("0"); postSig("0");}
           | INT_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
+          | OCT_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
           | HEX_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
           | FLOAT_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
           | CHAR_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
