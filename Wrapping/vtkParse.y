@@ -558,6 +558,7 @@ const char *getTypeId()
 %token <str> STRING_LITERAL
 %token <str> INT_LITERAL
 %token <str> HEX_LITERAL
+%token <str> OCT_LITERAL
 %token <str> FLOAT_LITERAL
 %token <str> CHAR_LITERAL
 %token INT
@@ -781,7 +782,7 @@ enum_item: any_id {add_enum($<str>1, NULL);}
 
 enum_value: enum_literal | any_id | scoped_id | templated_id;
 
-enum_literal: INT_LITERAL | HEX_LITERAL | CHAR_LITERAL;
+enum_literal: '0' | INT_LITERAL | OCT_LITERAL | HEX_LITERAL | CHAR_LITERAL;
 
 enum_math: enum_value { $<str>$ = $<str>1; }
      | math_unary_op enum_math
@@ -998,7 +999,7 @@ func: func_sig { postSig(")"); } func_trailer
     };
 
 func_trailer:
-  | '=' INT_LITERAL
+  | '=' '0'
     {
       postSig(" = 0");
       if (currentClass)
@@ -1007,7 +1008,7 @@ func_trailer:
         currentClass->IsAbstract = 1;
         }
     }
- | CONST_EQUAL INT_LITERAL
+ | CONST_EQUAL '0'
     {
       postSig(" const = 0");
       currentFunction->IsConst = 1;
@@ -1390,7 +1391,7 @@ literal:  literal2 {$<str>$ = $<str>1;}
           | '-' {postSig("-");} literal2 {
              $<str>$ = (char *)malloc(strlen($<str>3)+2);
              sprintf($<str>$, "-%s", $<str>3); }
-          | STRING_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
+          | string_literal {$<str>$ = $<str>1; postSig($<str>1);}
           | '(' {postSig("(");} literal ')' {postSig(")"); $<str>$ = $<str>3;}
           | ID '<' {postSig($<str>1); postSig("<");}
             type_red '>' '(' {postSig("<(");} literal2 ')'
@@ -1401,7 +1402,16 @@ literal:  literal2 {$<str>$ = $<str>1;}
             sprintf($<str>$, "%s<%s>(%s)", $<str>1, getTypeId(), $<str>8);
             };
 
-literal2: INT_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
+string_literal: STRING_LITERAL {$<str>$ = $<str>1;}
+              | string_literal STRING_LITERAL {
+                int i = strlen($<str>1);
+                char *cp = (char *)malloc(i + strlen($<str>2) + 1);
+                strcpy(cp, $<str>1);
+                strcpy(&cp[i], $<str>2);
+                $<str>$ = cp; };
+
+literal2:   '0' {$<str>$ = vtkstrdup("0"); postSig("0");}
+          | INT_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
           | HEX_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
           | FLOAT_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
           | CHAR_LITERAL {$<str>$ = $<str>1; postSig($<str>1);}
@@ -2004,13 +2014,13 @@ maybe_other_no_semi : | maybe_other_no_semi other_stuff_no_semi;
 other_stuff : ';' | other_stuff_no_semi;
 
 other_stuff_no_semi : OTHER | braces | parens | brackets | TYPEDEF
-   | op_token_no_delim | ':' | '.' | DOUBLE_COLON | CLASS | TEMPLATE
+   | op_token_no_delim | '0' | ':' | '.' | DOUBLE_COLON | CLASS | TEMPLATE
    | ISTREAM | OSTREAM | StdString | UnicodeString | type_primitive
-   | ID | VTK_ID | INT_LITERAL | HEX_LITERAL | FLOAT_LITERAL | CHAR_LITERAL
+   | OCT_LITERAL | INT_LITERAL | HEX_LITERAL | FLOAT_LITERAL | CHAR_LITERAL
    | STRING_LITERAL | CLASS_REF | CONST | CONST_PTR | CONST_EQUAL | STRUCT
    | OPERATOR | STATIC | INLINE | VIRTUAL | ENUM | UNION | TYPENAME
    | ARRAY_NUM | VAR_FUNCTION | ELLIPSIS | PUBLIC | PROTECTED | PRIVATE
-   | NAMESPACE | USING | EXTERN | vtk_constant_def;
+   | NAMESPACE | USING | EXTERN | ID | VTK_ID | vtk_constant_def;
 
 braces: '{' maybe_other '}';
 parens: '(' maybe_other ')'

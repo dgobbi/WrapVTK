@@ -336,13 +336,19 @@ Modify lex.yy.c:
                      yylval.str[yyleng] = '\0';
                      return(FLOAT_LITERAL); }
 
-"0x"[0-9a-fA-F]+[uU]?[l]?[lL]?      {
+"0"[xX][0-9a-fA-F]+[uU]?[l]?[lL]?      {
                      yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
                      return(HEX_LITERAL); }
 
-[0-9]+[uU]?[l]?[lL]?      { yylval.str = (char *)malloc(yyleng + 1);
+"0"[0-9a-fA-F]+[uU]?[l]?[lL]?      {
+                     yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(OCT_LITERAL); }
+
+[1-9][0-9]*[uU]?[l]?[lL]?      { yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
                      return(INT_LITERAL); }
@@ -459,7 +465,7 @@ Modify lex.yy.c:
 "[" { return(yytext[0]); }
 "]" { return(yytext[0]); }
 
-[~{}()<>:;*/%=,&.!+|^\-] { return(yytext[0]); }
+[0~{}()<>:;*/%=,&.!+|^\-] { return(yytext[0]); }
 
 .                return(OTHER);
 %%
