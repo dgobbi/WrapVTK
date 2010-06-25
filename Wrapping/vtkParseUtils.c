@@ -39,10 +39,10 @@ const char *vtkParse_StorageClassAsString(int type)
 const char *vtkParse_IndirectionAsString(int type)
 {
   static const char *vtkIndirectionMap[16] = {
-    "", "&", "*const ", "*",
-    "*const &", "*&", 0, "**",
-    "*const *", 0, 0, 0,
-    0, 0, 0, 0,
+    "", "&", "*", "*&",
+    0,  0, "*const ", "*const &",
+    0,  0, "**", "**&",
+    0,  0, "*const *", 0,
   };
 
   int i = 0;

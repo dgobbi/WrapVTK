@@ -44,12 +44,6 @@
 #define VTK_PARSE_UNSIGNED   0x0010
 
 /*
- * Special function pointer type
- */
-
-#define VTK_PARSE_FUNCTION  0x5000
-
-/*
  * Storage qualifiers: static and const
  */
 
@@ -63,16 +57,52 @@
  * (note that []  and * are equivalent)
  */
 
+/*
+ * Indirection of types works as follows:
+ * type **(**&val[n])[m]
+ * Pointers on the left, arrays on the right,
+ * and optionally a set of parentheses and a ref.
+ *
+ * The 'type' may be preceeded or followed by const,
+ * which is handled by the VTK_PARSE_CONST flag.
+ *
+ * The leftmost [] is converted to a pointer, giving this:
+ * type **(***&val)[m]  with a separately stored Count=n
+ *
+ * Note that "type val[n][m]"  becomes  "type (*val)[m]",
+ * these two types are identical in C and C++.
+ *
+ * Any pointer can be followed by const, and any pointer
+ * can be preceeded by a parenthesis, but we assume
+ * there will be at most one set of parentheses.  Two
+ * sets of parentheses means "an array of pointers to an
+ * array of something", and that is just wrong...
+ *
+ * The Ref needs 1 bit total, it isn't repeatable.
+ *
+ * Pointers need 2 bits:
+ *
+ *  0 = nothing
+ *  1 = '*'
+ *  2 = '(*' which signals a multidimensional array
+ *  3 = '* const'
+ *
+ * The array info is stored separately, as a Dimensionality
+ * and as a set of Counts.  The first dimension and the
+ * first count are for the first pointer.
+ */
+
 #define VTK_PARSE_INDIRECT              0xF00
 #define VTK_PARSE_REF                   0x100
-#define VTK_PARSE_CONST_POINTER         0x200
-#define VTK_PARSE_POINTER               0x300
-#define VTK_PARSE_CONST_POINTER_REF     0x400
-#define VTK_PARSE_POINTER_REF           0x500
-#define VTK_PARSE_ARRAY_2D              0x600
-#define VTK_PARSE_POINTER_POINTER       0x700
-#define VTK_PARSE_POINTER_CONST_POINTER 0x800
-#define VTK_PARSE_ARRAY_3D              0x900
+#define VTK_PARSE_POINTER               0x200
+#define VTK_PARSE_POINTER_REF           0x300
+#define VTK_PARSE_ARRAY_MULTI           0x400
+#define VTK_PARSE_ARRAY_MULTI_REF       0x500
+#define VTK_PARSE_CONST_POINTER         0x600
+#define VTK_PARSE_CONST_POINTER_REF     0x700
+#define VTK_PARSE_POINTER_POINTER       0xA00
+#define VTK_PARSE_POINTER_POINTER_REF   0xB00
+#define VTK_PARSE_POINTER_CONST_POINTER 0xE00
 #define VTK_PARSE_BAD_INDIRECT          0xF00
 
 /*
@@ -107,36 +137,37 @@
 #define VTK_PARSE_UNICODE_STRING      0x22
 #define VTK_PARSE_OSTREAM             0x23
 #define VTK_PARSE_ISTREAM             0x24
+#define VTK_PARSE_FUNCTION            0x25
 
 /*
  * Basic pointer types
  */
 
-#define VTK_PARSE_FLOAT_PTR               0x301
-#define VTK_PARSE_VOID_PTR                0x302
-#define VTK_PARSE_CHAR_PTR                0x303
-#define VTK_PARSE_UNSIGNED_CHAR_PTR       0x313
-#define VTK_PARSE_INT_PTR                 0x304
-#define VTK_PARSE_UNSIGNED_INT_PTR        0x314
-#define VTK_PARSE_SHORT_PTR               0x305
-#define VTK_PARSE_UNSIGNED_SHORT_PTR      0x315
-#define VTK_PARSE_LONG_PTR                0x306
-#define VTK_PARSE_UNSIGNED_LONG_PTR       0x316
-#define VTK_PARSE_DOUBLE_PTR              0x307
-#define VTK_PARSE_UNKNOWN_PTR             0x308
-#define VTK_PARSE_OBJECT_PTR              0x309
-#define VTK_PARSE_ID_TYPE_PTR             0x30A
-#define VTK_PARSE_UNSIGNED_ID_TYPE_PTR    0x31A
-#define VTK_PARSE_LONG_LONG_PTR           0x30B
-#define VTK_PARSE_UNSIGNED_LONG_LONG_PTR  0x31B
-#define VTK_PARSE___INT64_PTR             0x30C
-#define VTK_PARSE_UNSIGNED___INT64_PTR    0x31C
-#define VTK_PARSE_SIGNED_CHAR_PTR         0x30D
-#define VTK_PARSE_BOOL_PTR                0x30E
-#define VTK_PARSE_STRING_PTR              0x321
-#define VTK_PARSE_UNICODE_STRING_PTR      0x322
-#define VTK_PARSE_OSTREAM_PTR             0x323
-#define VTK_PARSE_ISTREAM_PTR             0x324
+#define VTK_PARSE_FLOAT_PTR               0x201
+#define VTK_PARSE_VOID_PTR                0x202
+#define VTK_PARSE_CHAR_PTR                0x203
+#define VTK_PARSE_UNSIGNED_CHAR_PTR       0x213
+#define VTK_PARSE_INT_PTR                 0x204
+#define VTK_PARSE_UNSIGNED_INT_PTR        0x214
+#define VTK_PARSE_SHORT_PTR               0x205
+#define VTK_PARSE_UNSIGNED_SHORT_PTR      0x215
+#define VTK_PARSE_LONG_PTR                0x206
+#define VTK_PARSE_UNSIGNED_LONG_PTR       0x216
+#define VTK_PARSE_DOUBLE_PTR              0x207
+#define VTK_PARSE_UNKNOWN_PTR             0x208
+#define VTK_PARSE_OBJECT_PTR              0x209
+#define VTK_PARSE_ID_TYPE_PTR             0x20A
+#define VTK_PARSE_UNSIGNED_ID_TYPE_PTR    0x21A
+#define VTK_PARSE_LONG_LONG_PTR           0x20B
+#define VTK_PARSE_UNSIGNED_LONG_LONG_PTR  0x21B
+#define VTK_PARSE___INT64_PTR             0x20C
+#define VTK_PARSE_UNSIGNED___INT64_PTR    0x21C
+#define VTK_PARSE_SIGNED_CHAR_PTR         0x20D
+#define VTK_PARSE_BOOL_PTR                0x20E
+#define VTK_PARSE_STRING_PTR              0x221
+#define VTK_PARSE_UNICODE_STRING_PTR      0x222
+#define VTK_PARSE_OSTREAM_PTR             0x223
+#define VTK_PARSE_ISTREAM_PTR             0x224
 
 /*
  * Basic reference types

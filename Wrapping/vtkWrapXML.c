@@ -361,11 +361,14 @@ void vtkWrapXML_ClassInheritance(FILE *fp, MergeInfo *merge, int indentation)
 
 /* Print out a type in XML format */
 void vtkWrapXML_Type(
-  FILE *fp, int type, const char *vtkclass, int count, int indentation)
+  FILE *fp, int type, const char *vtkclass, char *sizes[],
+  int indentation)
 {
+  int reverse = 0;
+  int pcount = 0;
   int j = 0;
-  const char *cp;
-  const char *dctr;
+  int is_ref;
+  int bits;
 
   if (vtkParse_TypeIsConst(type))
     {
@@ -375,47 +378,82 @@ void vtkWrapXML_Type(
   fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
           vtkWrapXML_Quote(vtkParse_BaseTypeAsString(type, vtkclass), 500));
 
-  cp = vtkParse_IndirectionAsString(type);
+  type = (type & VTK_PARSE_INDIRECT);
+  
+  is_ref = (type & VTK_PARSE_REF);
 
-  if (cp == 0)
+  type = ((type >> 1) & VTK_PARSE_INDIRECT);
+
+  while (type)
     {
-    fprintf(fp, "%s<Dctr>unrecognized</Dctr>\n", indent(indentation));
-    return;
+    reverse <<= 2;
+    reverse = (reverse | (type & 0x3));
+    type >>= 2;
     }
 
-  j = strlen(cp);
-
-  while (j > 0)
+  while (reverse)
     {
-    dctr = "";
+    bits = ((reverse & 0x3) << 1);
+    reverse >>= 2;
 
-    do { j--; } while (j > 0 && cp[j] == ' ');
-
-    if (j >= 4 && cp[j] == 't' && cp[j-1] == 's' && cp[j-2] == 'n' &&
-        cp[j-3] == 'o' && cp[j-4] == 'c')
+    if (reverse == 0 && sizes[0] && sizes[0][0] != '\0')
       {
-      j -= 4;
-      dctr = "const";
+      fprintf(fp, "%s<Dctr>array</Dctr>\n", indent(indentation));
+      fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation), sizes[0]);
       }
-    else if (cp[j] == '&')
+    else if (bits == VTK_PARSE_ARRAY_MULTI)
       {
-      dctr = "reference";
+      fprintf(fp, "%s<Dctr>(<Dctr>\n", indent(indentation));
+      fprintf(fp, "%s<Dctr>pointer</Dctr>\n", indent(indentation));
+      pcount++;
       }
-    else if (cp[j] == '*')
+    else if (bits == VTK_PARSE_CONST_POINTER)
       {
-      dctr = "pointer";
-      if (count > 0)
-        {
-        dctr = "array";
-        }
+      fprintf(fp, "%s<Dctr>pointer</Dctr>\n", indent(indentation));
+      fprintf(fp, "%s<Dctr>const</Dctr>\n", indent(indentation));
       }
-
-    fprintf(fp, "%s<Dctr>%s</Dctr>\n", indent(indentation), dctr);
-    if (count)
+    else
       {
-      fprintf(fp, "%s<Size>%i</Size>\n", indent(indentation), count);
+      fprintf(fp, "%s<Dctr>pointer</Dctr>\n", indent(indentation));
       }
     }
+
+  if (sizes[0])
+    {
+    for (j = 1; j < MAX_ARRAY_DIMS && sizes[j]; j++)
+      {
+      fprintf(fp, "%s<Dctr>array</Dctr>\n", indent(indentation));
+      fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation), sizes[j]);
+      }
+    }
+
+  for (j = 0; j < pcount; j++)
+    {
+    fprintf(fp, "%s<Dctr>)</Dctr>\n", indent(indentation));
+    }
+
+  if (is_ref)
+    {
+    fprintf(fp, "%s<Dctr>reference</Dctr>\n", indent(indentation));
+    }
+}
+
+/* handle simple types */
+void vtkWrapXML_TypeSimple(
+  FILE *fp, int type, const char *classname, int size, int indentation)
+{
+  char temp[256];
+  char *sizes[2];
+
+  sizes[0] = 0;
+  sizes[1] = 0;
+  if (size > 0)
+    {
+    sprintf(temp, "%i", size);
+    sizes[0] = temp;
+    }
+
+  vtkWrapXML_Type(fp, type, classname, sizes, indentation);
 }
 
 /* Print a template */
@@ -464,15 +502,19 @@ void vtkWrapXML_Template(
 void vtkWrapXML_Constant(
   FILE *fp, ConstantInfo *con, int inClass, int indentation)
 {
-  static const char *accessLevel[] = {"private", "public", "protected"};
-  int access = 0;
-  if (con->IsPublic)
+  const char *access = "public";
+
+  switch (con->Access)
     {
-    access = 1;
-    }
-  else if (con->IsProtected)
-    {
-    access = 2;
+    case VTK_ACCESS_PUBLIC:
+      access = "public";
+      break;
+    case VTK_ACCESS_PROTECTED:
+      access = "protected";
+      break;
+    case VTK_ACCESS_PRIVATE:
+      access = "private";
+      break;
     }
 
   fprintf(fp, "\n");
@@ -480,8 +522,7 @@ void vtkWrapXML_Constant(
 
   if (inClass)
     {
-    fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation),
-            accessLevel[access]);
+    fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation), access);
     }
 
   if (con->IsEnum)
@@ -490,7 +531,7 @@ void vtkWrapXML_Constant(
     }
   if (con->Type)
     {
-    vtkWrapXML_Type(fp, con->Type, con->TypeClass, 0, indentation);
+    vtkWrapXML_TypeSimple(fp, con->Type, con->TypeClass, 0, indentation);
     }
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(con->Name, 500));
@@ -510,6 +551,11 @@ void vtkWrapXML_FunctionCommon(
   if (vtkParse_TypeIsStatic(func->ReturnType))
     {
     fprintf(fp, "%s<Flag>static</Flag>\n", indent(indentation));
+    }
+
+  if (func->IsVariadic)
+    {
+    fprintf(fp, "%s<Flag>variadic</Flag>\n", indent(indentation));
     }
 
   if (func->IsLegacy)
@@ -541,9 +587,9 @@ void vtkWrapXML_FunctionCommon(
     {
     fprintf(fp, "%s<Return>\n", indent(indentation++));
 
-    vtkWrapXML_Type(fp, func->ReturnType, func->ReturnClass,
-                    (func->HaveHint ? func->HintSize : 0),
-                    indentation);
+    vtkWrapXML_TypeSimple(fp, func->ReturnType, func->ReturnClass,
+                          (func->HaveHint ? func->HintSize : 0),
+                          indentation);
 
     fprintf(fp, "%s</Return>\n", indent(--indentation));
     }
@@ -554,7 +600,7 @@ void vtkWrapXML_FunctionCommon(
     fprintf(fp, "%s<Arg>\n", indent(indentation++));
 
     vtkWrapXML_Type(fp, func->ArgTypes[i], func->ArgClasses[i],
-                    func->ArgCounts[i], indentation);
+                    func->ArgDimensions[i], indentation);
 
     if (func->ArgNames[i])
       {
@@ -576,11 +622,6 @@ void vtkWrapXML_FunctionCommon(
 void vtkWrapXML_Function(
   FILE *fp, FunctionInfo *func, int indentation)
 {
-  if (func->ArrayFailure)
-    {
-    return;
-    }
-
   fprintf(fp, "\n");
   fprintf(fp, "%s<Function>\n", indent(indentation++));
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
@@ -621,23 +662,20 @@ void vtkWrapXML_ClassMethod(
   FILE *fp, ClassInfo *data, FunctionInfo *func, const char *classname,
   const char *propname, int indentation)
 {
-  static const char *accessLevel[] = {"private", "public", "protected"};
-  int access;
+  const char *access = "public";
   int needsReturnValue = 0;
 
-  if (func->ArrayFailure)
+  switch (func->Access)
     {
-    return;
-    }
-
-  access = 0;
-  if (func->IsPublic)
-    {
-    access = 1;
-    }
-  else if (func->IsProtected)
-    {
-    access = 2;
+    case VTK_ACCESS_PUBLIC:
+      access = "public";
+      break;
+    case VTK_ACCESS_PROTECTED:
+      access = "protected";
+      break;
+    case VTK_ACCESS_PRIVATE:
+      access = "private";
+      break;
     }
 
   fprintf(fp, "\n");
@@ -664,8 +702,7 @@ void vtkWrapXML_ClassMethod(
             propname);
     }
 
-  fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation),
-          accessLevel[access]);
+  fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation), access);
 
   if (func->IsConst)
     {
@@ -748,8 +785,8 @@ void vtkWrapXML_ClassProperty(
     fprintf(fp, "%s</Comment>\n", indent(--indentation));
     }
 
-  vtkWrapXML_Type(fp, property->Type, property->ClassName, property->Count,
-                  indentation);
+  vtkWrapXML_TypeSimple(fp, property->Type, property->ClassName,
+                        property->Count, indentation);
 
   if (property->EnumConstantNames)
     {
@@ -798,8 +835,8 @@ void vtkWrapXML_ClassProperty(
 /* Recursive suproutine to add the methods of "classname" and all its
  * superclasses to "merge" */
 void vtkWrapXML_MergeHelper(
-  const FileInfo *data, const HierarchyInfo *hinfo, const char *classname,
-  FILE *hintfile, MergeInfo *info, ClassInfo *merge)
+  const NamespaceInfo *data, const HierarchyInfo *hinfo,
+  const char *classname, FILE *hintfile, MergeInfo *info, ClassInfo *merge)
 {
   FILE *fp = NULL;
   ClassInfo *cinfo = NULL;
@@ -808,7 +845,7 @@ void vtkWrapXML_MergeHelper(
   char *filename;
   int i, n;
 
-  /* find out if "classname" is in the currently loaded FileInfo */
+  /* find out if "classname" is in the current namespace */
   n = data->NumberOfClasses;
   for (i = 0; i < n; i++)
     {
@@ -858,7 +895,8 @@ void vtkWrapXML_MergeHelper(
       vtkParse_ReadHints(finfo, hintfile, stderr);
       }
 
-    data = finfo;
+    data = finfo->Contents;
+
     n = data->NumberOfClasses;
     for (i = 0; i < n; i++)
       {
@@ -889,7 +927,7 @@ void vtkWrapXML_MergeHelper(
 
 /* Merge the methods from the superclasses */
 MergeInfo *vtkWrapXML_MergeSuperClasses(
-  FileInfo *data, ClassInfo *classInfo)
+  NamespaceInfo *data, ClassInfo *classInfo)
 {
   FILE *hintfile = NULL;
   HierarchyInfo *hinfo = NULL;
@@ -915,7 +953,8 @@ MergeInfo *vtkWrapXML_MergeSuperClasses(
     n = classInfo->NumberOfSuperClasses;
     for (i = 0; i < n; i++)
       {
-      vtkWrapXML_MergeHelper(data, hinfo, classInfo->SuperClasses[i],
+      vtkWrapXML_MergeHelper(data, hinfo,
+                             classInfo->SuperClasses[i],
                              hintfile, info, classInfo);
       }
 
@@ -988,7 +1027,7 @@ void vtkWrapXML_MethodHelper(
 
 /* print a class as xml */
 void vtkWrapXML_Class(
-  FILE *fp, FileInfo *data, ClassInfo *classInfo, int indentation)
+  FILE *fp, NamespaceInfo *data, ClassInfo *classInfo, int indentation)
 {
   ClassProperties *properties;
   MergeInfo *merge = NULL;
@@ -1036,6 +1075,14 @@ void vtkWrapXML_Class(
                                 indentation);
         break;
         }
+      case VTK_NAMESPACE_INFO:
+      case VTK_TYPEDEF_INFO:
+      case VTK_CLASS_INFO:
+      case VTK_STRUCT_INFO:
+      case VTK_UNION_INFO:
+      case VTK_VARIABLE_INFO:
+      case VTK_ENUM_INFO:
+        break;
       }
     }
 
@@ -1053,10 +1100,10 @@ void vtkWrapXML_Class(
 }
 
 /* needed for vtkWrapXML_Body */
-void vtkWrapXML_Namespace(FILE *fp, FileInfo *data, int indentation);
+void vtkWrapXML_Namespace(FILE *fp, NamespaceInfo *data, int indentation);
 
 /* Print the body of a file or namespace */
-void vtkWrapXML_Body(FILE *fp, FileInfo *data, int indentation)
+void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
 {
   int i;
 
@@ -1086,16 +1133,21 @@ void vtkWrapXML_Body(FILE *fp, FileInfo *data, int indentation)
         }
       case VTK_NAMESPACE_INFO:
         {
-        vtkWrapXML_Namespace(fp, (FileInfo *)data->Items[i],
+        vtkWrapXML_Namespace(fp, (NamespaceInfo *)data->Items[i],
                              indentation);
         break;
         }
+      case VTK_TYPEDEF_INFO:
+      case VTK_UNION_INFO:
+      case VTK_VARIABLE_INFO:
+      case VTK_ENUM_INFO:
+        break;
       }
     }
 }
 
 /* print a namespace as xml */
-void vtkWrapXML_Namespace(FILE *fp, FileInfo *data, int indentation)
+void vtkWrapXML_Namespace(FILE *fp, NamespaceInfo *data, int indentation)
 {
   fprintf(fp, "\n");
   fprintf(fp, "%s<Namespace>\n", indent(indentation++));
@@ -1119,7 +1171,7 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
   vtkWrapXML_FileDoc(fp, data, indentation);
 
   /* print the main body */
-  vtkWrapXML_Body(fp, data, indentation);
+  vtkWrapXML_Body(fp, data->Contents, indentation);
 
   /* print the closing tag */
   vtkWrapXML_FileFooter(fp, data, indentation);

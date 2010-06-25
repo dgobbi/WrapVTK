@@ -211,6 +211,28 @@ Modify lex.yy.c:
 
 "//".* ;
 
+^"#"[\t ]*"define"[\t ]+"VTK_"[a-zA-Z0-9_]+.*$ {
+                int i;
+                for (i = 0; i < yyleng && yytext[i] != 'V'; i++) { ; };
+                yylval.str = (char *)malloc(yyleng - i + 1);
+                memcpy(yylval.str, &yytext[i], yyleng-i);
+                yylval.str[yyleng-i] = '\0';
+                return (VTK_CONSTANT_DEF); }
+
+^"#"(\\\n|\\\r\n|[^\n])*$     ;
+
+\"([^\"]|\\\")*\"      {
+                yylval.str = (char *)malloc(yyleng + 1);
+                memcpy(yylval.str,yytext,yyleng);
+                yylval.str[yyleng] = '\0';
+                return(STRING_LITERAL); }
+
+\'([^\']|\\\')+\'      {
+                yylval.str = (char *)malloc(yyleng + 1);
+                memcpy(yylval.str,yytext,yyleng);
+                yylval.str[yyleng] = '\0';
+                return(CHAR_LITERAL); }
+
 [A-Za-z0-9_]*"_EXPORT" ;
 
 "vtkNotUsed"[ ]*"("[^)]*")" {
@@ -222,11 +244,6 @@ Modify lex.yy.c:
      if (j > i) { strncpy(yylval.str, &yytext[i], j-i); }
      yylval.str[j-i] = '\0';
      return(ID);
-     };
-
-"["[\t\n\r\ ]*[1-9][0-9]*[\t\n\r ]*"]"  {
-     sscanf(yytext+1,"%d",&yylval.integer);
-     return(ARRAY_NUM);
      };
 
 ("friend"[\t\n\r ]+)?("template"[\t\n\r ]*"<"[^>]*">"[\t\n\r ]*)?"class"[\t\n\r ]+[a-zA-Z_][a-zA-Z0-9_]*("::"[a-zA-Z_][a-zA-Z0-9_]*)*[\t\n\r ]*";" {
@@ -330,52 +347,17 @@ Modify lex.yy.c:
 "*"[\r\n\t ]*"const"   return(CONST_PTR);
 "const"[\r\n\t ]*"="   return(CONST_EQUAL);
 
-[0-9]+"."[0-9]*([eE][+-]?[0-9]+)?[fFlL]?  {
-                     yylval.str = (char *)malloc(yyleng + 1);
-                     memcpy(yylval.str,yytext,yyleng);
-                     yylval.str[yyleng] = '\0';
-                     return(FLOAT_LITERAL); }
-
-"0"[xX][0-9a-fA-F]+[uU]?[l]?[lL]?      {
-                     yylval.str = (char *)malloc(yyleng + 1);
-                     memcpy(yylval.str,yytext,yyleng);
-                     yylval.str[yyleng] = '\0';
-                     return(HEX_LITERAL); }
-
-"0"[0-9a-fA-F]+[uU]?[l]?[lL]?      {
-                     yylval.str = (char *)malloc(yyleng + 1);
-                     memcpy(yylval.str,yytext,yyleng);
-                     yylval.str[yyleng] = '\0';
-                     return(OCT_LITERAL); }
-
-[1-9][0-9]*[uU]?[l]?[lL]?      { yylval.str = (char *)malloc(yyleng + 1);
-                     memcpy(yylval.str,yytext,yyleng);
-                     yylval.str[yyleng] = '\0';
-                     return(INT_LITERAL); }
-
-\"([^\"]|\\\")*\"      {
-                yylval.str = (char *)malloc(yyleng + 1);
-                memcpy(yylval.str,yytext,yyleng);
-                yylval.str[yyleng] = '\0';
-                return(STRING_LITERAL); }
-
-\'([^\']|\\\')+\'      {
-                yylval.str = (char *)malloc(yyleng + 1);
-                memcpy(yylval.str,yytext,yyleng);
-                yylval.str[yyleng] = '\0';
-                return(CHAR_LITERAL); }
-
-^"#"[\t ]*"define"[\t ]+"VTK_"[a-zA-Z0-9_]+.*$ {
-                int i;
-                for (i = 0; i < yyleng && yytext[i] != 'V'; i++) { ; };
-                yylval.str = (char *)malloc(yyleng - i + 1);
-                memcpy(yylval.str, &yytext[i], yyleng-i);
-                yylval.str[yyleng-i] = '\0';
-                return (VTK_CONSTANT_DEF); }
-
-^"#"(\\\n|\\\r\n|[^\n])*$     ;
-
-"("[\t\n\r ]*"&"  return(LPAREN_AMPERSAND);
+"("[\t\n\r ]*([a-zA-Z_][a-zA-Z0-9_]*::)*"&" {
+                int i = 1;
+                int j;
+                while (yytext[i]==' ' || yytext[i]=='\t' ||
+                       yytext[i]=='\r' || yytext[i]=='\n') { i++; }
+                j = i;
+                while (yytext[j]!='*') { j++; }
+                yylval.str = (char *)malloc(j-i+1);
+                if (j > i) { strncpy(yylval.str, &yytext[i], j-i); }
+                yylval.str[j-i] = '\0';
+                return(LA); }
 
 "("[\t\n\r ]*([a-zA-Z_][a-zA-Z0-9_]*::)*"*" {
                 int i = 1;
@@ -387,17 +369,19 @@ Modify lex.yy.c:
                 yylval.str = (char *)malloc(j-i+1);
                 if (j > i) { strncpy(yylval.str, &yytext[i], j-i); }
                 yylval.str[j-i] = '\0';
-                return(LPAREN_POINTER); }
+                return(LP); }
 
 "("[\t\n\r ]*("APIENTRY"|"CALLBACK"|"WINAPI")[\t\n\r ]*"*" {
                 yylval.str = (char *)malloc(1);
                 yylval.str[0] = '\0';
-                return(LPAREN_POINTER); }
+                return(LP); }
 
 "("[\t\n\r ]*("APIENTRYP"|"CALLBACKP"|"WINAPIP") {
                 yylval.str = (char *)malloc(1);
                 yylval.str[0] = '\0';
-                return(LPAREN_POINTER); }
+                return(LP); }
+
+("APIENTRYP"|"CALLBACKP"|"WINAPIP") { return('*'); }
 
 "APIENTRY" ;
 "CALLBACK" ;
@@ -433,6 +417,34 @@ Modify lex.yy.c:
                           yylval.str[yyleng] = '\0';
                           return(ID); }
 
+[0-9]+"."[0-9]*([eE][+-]?[0-9]+)?[a-zA-Z_]*  {
+                     yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(FLOAT_LITERAL); }
+
+"0"[xX][0-9a-fA-F]+[g-zG-Z_]*      {
+                     yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(HEX_LITERAL); }
+
+"0"[0-9]+[a-zA-Z_]*   {
+                     yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(OCT_LITERAL); }
+
+[1-9][0-9]*[a-zA-Z_]* {
+                     yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(INT_LITERAL); }
+
+"0"                { yylval.str = (char *)malloc(2);
+                     strcpy(yylval.str, "0");
+                     return(ZERO); };
+
 [\t\n\r ] ;
 
 "<<="             return(OP_LSHIFT_EQ);
@@ -465,7 +477,7 @@ Modify lex.yy.c:
 "[" { return(yytext[0]); }
 "]" { return(yytext[0]); }
 
-[0~{}()<>:;*/%=,&.!+|^\-] { return(yytext[0]); }
+[~{}()<>:;*/%=,&.!+|^\-] { return(yytext[0]); }
 
 .                return(OTHER);
 %%

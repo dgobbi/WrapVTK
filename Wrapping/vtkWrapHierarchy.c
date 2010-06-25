@@ -56,9 +56,9 @@ static int parse_header_file(FILE *fp, const char *filename, char *lines[])
   cp = line;
 
   /* add a line for each class that is found */
-  for (i = 0; i < data->NumberOfClasses; i++)
+  for (i = 0; i < data->Contents->NumberOfClasses; i++)
     {
-    class_info = data->Classes[i];
+    class_info = data->Contents->Classes[i];
 
     sprintf(cp, "%s ", class_info->Name);
     cp += strlen(cp);
