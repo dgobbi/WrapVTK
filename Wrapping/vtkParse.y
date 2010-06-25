@@ -444,6 +444,33 @@ void legacySig(void)
 }
 
 /*----------------------------------------------------------------
+ * Storage type for vars and functions
+ */
+
+/* "private" variables */
+int storageType = 0;
+
+/* save the storage type */
+void setStorageType(int val)
+{
+  storageType = val;
+}
+
+/* modify the indirection (pointers, refs) in the storage type */
+void setStorageTypeIndirection(int ind)
+{
+  storageType = (storageType & ~VTK_PARSE_INDIRECT);
+  ind = (ind & VTK_PARSE_INDIRECT);
+  storageType = (storageType | ind);
+}
+
+/* retrieve the storage type */
+int getStorageType()
+{
+  return storageType;
+}
+
+/*----------------------------------------------------------------
  * Array information
  */
 
@@ -790,7 +817,6 @@ strt: | strt
 
 file_item:
      var
-   | EXTERN var
    | anonymous_enum
    | named_enum
    | anonymous_union
@@ -804,22 +830,11 @@ file_item:
    | template class_def
    | CLASS_REF
    | operator func_body { output_function(); }
-   | INLINE operator func_body { output_function(); }
-   | EXTERN operator func_body { output_function(); }
    | template operator func_body { output_function(); }
-   | template INLINE operator func_body { output_function(); }
    | scoped_operator func_body { reject_function(); }
-   | INLINE scoped_operator func_body { reject_function(); }
-   | EXTERN scoped_operator func_body { reject_function(); }
    | function func_body { output_function(); }
-   | INLINE function func_body { output_function(); }
-   | EXTERN function func_body { output_function(); }
-   | EXTERN STRING_LITERAL function func_body { output_function(); }
    | scoped_method func_body { reject_function(); }
-   | INLINE scoped_method func_body { reject_function(); }
-   | EXTERN scoped_method func_body { reject_function(); }
    | template function func_body { output_function(); }
-   | template INLINE function func_body { output_function(); }
    | legacy_function func_body { legacySig(); output_function(); }
    | macro
    | vtk_constant_def
@@ -861,7 +876,6 @@ class_def_body: | class_def_body
 
 class_def_item: scope_type ':'
    | var
-   | MUTABLE var
    | anonymous_enum
    | named_enum
    | anonymous_union
@@ -874,17 +888,13 @@ class_def_item: scope_type ':'
    | template_internal_class
    | CLASS_REF
    | operator func_body { output_function(); }
-   | INLINE operator func_body { output_function(); }
    | FRIEND operator func_body { ClassInfo *tmpc = currentClass;
      currentClass = NULL; output_function(); currentClass = tmpc; }
    | template operator func_body { output_function(); }
-   | template INLINE operator func_body { output_function(); }
    | method func_body { output_function(); }
-   | INLINE method func_body { output_function(); }
    | FRIEND method func_body { ClassInfo *tmpc = currentClass;
      currentClass = NULL; output_function(); currentClass = tmpc; }
    | template method func_body { output_function(); }
-   | template INLINE method func_body { output_function(); }
    | legacy_method func_body { legacySig(); output_function(); }
    | VTK_BYTE_SWAP_DECL '(' maybe_other ')' ';'
    | macro
@@ -1051,30 +1061,38 @@ legacy_method: VTK_LEGACY '(' method ')' ;
  * Functions and Methods
  */
 
-function: maybe_static_type func
+function: storage_type func
          {
          currentFunction->ReturnType = $<integer>1;
          };
 
-scoped_method: maybe_static_type scope func
+scoped_method: storage_type scope func
       | class_id DOUBLE_COLON '~' destructor
-      | class_id DOUBLE_COLON constructor;
+      | INLINE class_id DOUBLE_COLON '~' destructor
+      | class_id DOUBLE_COLON constructor
+      | INLINE class_id DOUBLE_COLON constructor
+      | class_id DOUBLE_COLON class_id DOUBLE_COLON '~' destructor
+      | INLINE class_id DOUBLE_COLON class_id DOUBLE_COLON '~' destructor
+      | class_id DOUBLE_COLON class_id DOUBLE_COLON constructor
+      | INLINE class_id DOUBLE_COLON class_id DOUBLE_COLON constructor;
 
 scope: class_id DOUBLE_COLON
       | scope class_id DOUBLE_COLON;
 
 method: '~' destructor {openSig(); preSig("~"); closeSig();}
+      | INLINE '~' destructor {openSig(); preSig("~"); closeSig();}
       | VIRTUAL '~' destructor
          {
          openSig(); preSig("virtual ~"); closeSig();
          currentFunction->IsVirtual = 1;
          }
       | constructor
-      | maybe_static_type func
+      | INLINE constructor
+      | storage_type func
          {
          currentFunction->ReturnType = $<integer>1;
          }
-      | VIRTUAL type func
+      | VIRTUAL storage_type func
          {
          openSig();
          preSig("virtual ");
@@ -1084,14 +1102,14 @@ method: '~' destructor {openSig(); preSig("~"); closeSig();}
          };
 
 scoped_operator: class_id DOUBLE_COLON typecast_op_func
-      | maybe_static_type scope op_func;
+      | storage_type scope op_func;
 
 operator:
         typecast_op_func
          {
          currentFunction->ReturnType = $<integer>1;
          }
-      | maybe_static_type op_func
+      | storage_type op_func
          {
          currentFunction->ReturnType = $<integer>1;
          }
@@ -1105,7 +1123,7 @@ operator:
          };
 
 typecast_op_func:
-  OPERATOR maybe_static_type '('
+  OPERATOR storage_type '('
     {
       postSig("(");
       currentFunction->ReturnClass = vtkstrdup(getTypeId());
@@ -1346,26 +1364,31 @@ var_assign: '=' { postSig("="); clearVarValue();}
  * Variables
  */
 
-var:   maybe_static_type complex_var_id maybe_var_assign
-        {
-        int type = $<integer>1;
-        if (getVarValue() && ((type & VTK_PARSE_CONST) != 0) &&
-            ((type & VTK_PARSE_INDIRECT) == 0) && getArrayNDims() == 0)
-          {
-          add_constant(getVarName(), getVarValue(),
-                       (type & VTK_PARSE_UNQUALIFIED_TYPE), getTypeId(), 0);
-          }
-        }
-       maybe_indirect_var_ids ';'
+var:   storage_type var_id_maybe_assign maybe_indirect_var_ids ';'
      | STATIC VAR_FUNCTION maybe_indirect_var_ids ';'
      | VAR_FUNCTION maybe_indirect_var_ids ';';
 
+var_id_maybe_assign: complex_var_id maybe_var_assign
+     {
+       int type = getStorageType();
+       if (getVarValue() && ((type & VTK_PARSE_CONST) != 0) &&
+           ((type & VTK_PARSE_INDIRECT) == 0) && getArrayNDims() == 0)
+         {
+         add_constant(getVarName(), getVarValue(),
+                       (type & VTK_PARSE_UNQUALIFIED_TYPE), getTypeId(), 0);
+         }
+     };
+
 complex_var_id: var_id maybe_var_array
-     | lp_or_la maybe_indirect_var_id ')' maybe_array_or_args;
+     | lp_or_la maybe_indirect_var_id ')' {postSig(")");} maybe_array_or_args;
 
-maybe_indirect_var_ids: | maybe_indirect_var_ids ',' maybe_indirect_var_id;
+maybe_indirect_var_ids:
+     | maybe_indirect_var_ids ',' {postSig(", ");} maybe_indirect_var_id;
 
-maybe_indirect_var_id: complex_var_id | type_indirection complex_var_id;
+maybe_indirect_var_id:
+       { setStorageTypeIndirection(0); } var_id_maybe_assign
+     | type_indirection { setStorageTypeIndirection($<integer>1); }
+       var_id_maybe_assign;
 
 maybe_var_id: {clearVarName();} | var_id;
 
@@ -1397,11 +1420,21 @@ any_id: VTK_ID {postSig($<str>1);}
  * Types
  */
 
-maybe_static_type: type {$<integer>$ = $<integer>1;}
-    | static_mod type {$<integer>$ = (VTK_PARSE_STATIC | $<integer>2);};
+storage_type:
+      type {$<integer>$ = $<integer>1; setStorageType($<integer>$);}
+    | MUTABLE type {$<integer>$ = $<integer>2; setStorageType($<integer>$);}
+    | EXTERN type {$<integer>$ = $<integer>2; setStorageType($<integer>$);}
+    | EXTERN STRING_LITERAL type
+      {$<integer>$ = $<integer>3; setStorageType($<integer>$);}
+    | INLINE type {$<integer>$ = $<integer>2; setStorageType($<integer>$);}
+    | static_mod type {$<integer>$ = ($<integer>1 | $<integer>2);
+      setStorageType($<integer>$);}
+    | INLINE static_mod type {$<integer>$ = ($<integer>2 | $<integer>3);
+      setStorageType($<integer>$);};
 
-static_mod: STATIC {postSig("static ");}
-          | STATIC INLINE {postSig("static ");};
+static_mod:
+      STATIC {postSig("static "); $<integer>$ = VTK_PARSE_STATIC; }
+    | STATIC INLINE {postSig("static "); $<integer>$ = VTK_PARSE_STATIC; };
 
 type: type_red {$<integer>$ = $<integer>1;}
     | type_red type_indirection {$<integer>$ = ($<integer>1 | $<integer>2);};
