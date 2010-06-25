@@ -981,7 +981,7 @@ internal_class_body: ';'
     | '{' maybe_other '}' ';'
     | ':' maybe_other_no_semi ';';
 
-typedef: TYPEDEF type var_id ';'
+typedef: TYPEDEF type var_id maybe_var_array';'
  | TYPEDEF CLASS any_id '{' maybe_other '}' maybe_indirect_id ';'
  | TYPEDEF STRUCT any_id '{' maybe_other '}' maybe_indirect_id ';'
  | TYPEDEF type LA maybe_indirect_id ')' maybe_var_array ';'
@@ -1001,12 +1001,11 @@ typedef: TYPEDEF type var_id ';'
 
 template: TEMPLATE '<' '>' { postSig("template<> "); clearTypeId(); }
         | TEMPLATE '<' { postSig("template<");
-          clearTypeId(); clearVarName(); clearVarValue(); startTemplate(); }
+          clearTypeId(); startTemplate(); }
           template_args '>' { postSig("> "); clearTypeId(); };
 
 template_args: template_arg
-             | template_arg ',' { postSig(", ");
-                 clearTypeId(); clearVarName(); clearVarValue(); }
+             | template_arg ',' { postSig(", "); clearTypeId(); }
                template_args;
 
 template_arg: type_simple maybe_template_id
@@ -1037,7 +1036,7 @@ template_arg: type_simple maybe_template_id
 class_or_typename: CLASS {postSig("class ");}
                  | TYPENAME {postSig("typename ");};
 
-maybe_template_id: | any_id { setVarName($<str>1); clearVarValue(); }
+maybe_template_id: | any_id { setVarName($<str>1); }
                      maybe_var_assign;
 
 /*
@@ -1254,7 +1253,7 @@ more_args:
     more_args;
 
 arg:
-    type { clearVarName(); } maybe_var_id { clearArray(); } maybe_var_array
+    type maybe_var_id maybe_var_array
     {
       int i = currentFunction->NumberOfArguments;
       int datatype = $<integer>1;
@@ -1290,7 +1289,6 @@ arg:
         {
         currentFunction->ArgNames[i] = vtkstrdup(getVarName());
         }
-      clearVarValue(); 
     }
     maybe_var_assign
     {
@@ -1307,7 +1305,7 @@ arg:
       currentFunction->ArgTypes[i] = VTK_PARSE_FUNCTION;
       currentFunction->ArgClasses[i] = vtkstrdup("function");
     }
-  | type lp_or_la { clearVarName(); } maybe_var_id ')' maybe_array_or_args
+  | type lp_or_la maybe_var_id ')' maybe_array_or_args
     {
       int i = currentFunction->NumberOfArguments;
       postSig(")");
@@ -1339,15 +1337,16 @@ maybe_array_or_args: { $<integer>$ = 0; }
 
 maybe_indirect_id: any_id | type_indirection any_id;
 
-maybe_var_assign: | var_assign;
+maybe_var_assign: {clearVarValue();} | var_assign;
 
-var_assign: '=' { postSig("="); } value { setVarValue($<str>3); };
+var_assign: '=' { postSig("="); clearVarValue();}
+            value { setVarValue($<str>3); };
 
 /*
  * Variables
  */
 
-var:   maybe_static_type complex_var_id
+var:   maybe_static_type complex_var_id maybe_var_assign
         {
         int type = $<integer>1;
         if (getVarValue() && ((type & VTK_PARSE_CONST) != 0) &&
@@ -1358,25 +1357,27 @@ var:   maybe_static_type complex_var_id
           }
         }
        maybe_indirect_var_ids ';'
-     | STATIC VAR_FUNCTION maybe_indirect_var_ids ';';
+     | STATIC VAR_FUNCTION maybe_indirect_var_ids ';'
      | VAR_FUNCTION maybe_indirect_var_ids ';';
 
-complex_var_id: var_id_maybe_assign
+complex_var_id: var_id maybe_var_array
      | lp_or_la maybe_indirect_var_id ')' maybe_array_or_args;
 
 maybe_indirect_var_ids: | maybe_indirect_var_ids ',' maybe_indirect_var_id;
 
 maybe_indirect_var_id: complex_var_id | type_indirection complex_var_id;
 
-var_id_maybe_assign: var_id {clearVarValue();} maybe_var_assign;
+maybe_var_id: {clearVarName();} | var_id;
 
-maybe_var_id: | any_id {setVarName($<str>1);};
+var_id: any_id {setVarName($<str>1);};
 
-var_id: any_id {setVarName($<str>1); clearArray();} maybe_var_array;
+maybe_var_array: {clearArray();} | var_array;
 
-maybe_var_array: | var_array;
+var_array: {clearArray();} array;
 
-var_array: maybe_var_array '[' {postSig("[");} array_size ']' {postSig("]");};
+array: more_array '[' {postSig("[");} array_size ']' {postSig("]");};
+
+more_array: | array;
 
 array_size: {pushArray("");}
     | integer_expression {pushArray($<str>1);};
