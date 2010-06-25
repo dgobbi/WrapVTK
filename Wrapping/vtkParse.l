@@ -255,6 +255,14 @@ Modify lex.yy.c:
      };
 
 "void"[\t\n\r ]*"("[\t\n\r ]*"*"[a-zA-Z0-9_]*[\t\n\r ]*")"[\t\n\r ]*"("[\t\n\r ]*"void"[\t\n\r ]*"*"[\n\t ]*")" {
+     int i = 0; int j = 0;
+     while (yytext[j] != '*') { i++; j++; }
+     i++; j++;
+     while (yytext[i] != ' ' && yytext[i] != '\t' &&
+            yytext[i] != '\n' && yytext[i] != '\r' && yytext[i] != ')') {i++;}
+     yylval.str = (char *)malloc(i-j+1);
+     yylval.str[i-j] = '\0';
+     if (i > j) { strncpy(yylval.str, &yytext[j], i-j); }
      return(VAR_FUNCTION);
      };
 

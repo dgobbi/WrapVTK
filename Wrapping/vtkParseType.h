@@ -93,6 +93,7 @@
  */
 
 #define VTK_PARSE_INDIRECT              0xF00
+#define VTK_PARSE_INDIRECT_LOWMASK      0x700
 #define VTK_PARSE_REF                   0x100
 #define VTK_PARSE_POINTER               0x200
 #define VTK_PARSE_POINTER_REF           0x300

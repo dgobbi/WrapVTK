@@ -607,6 +607,71 @@ const char *getTypeId()
 }
 
 /*----------------------------------------------------------------
+ * Function stack
+ *
+ * operates on: currentFunction
+ */
+
+/* "private" variables */
+FunctionInfo *functionStack[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+char *functionVarNameStack[10];
+char *functionTypeIdStack[10];
+int functionDepth = 0;
+
+void pushFunction()
+{
+  functionStack[functionDepth] = currentFunction;
+  currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
+  InitFunction(currentFunction);
+  if (functionStack[functionDepth])
+    {
+    currentFunction->Signature = functionStack[functionDepth]->Signature;
+    }
+  else
+    {
+    startSig();
+    }
+  functionVarNameStack[functionDepth] = vtkstrdup(getVarName());
+  functionTypeIdStack[functionDepth] = vtkstrdup(getTypeId());
+  clearVarName();
+  clearTypeId();
+  functionDepth++;
+  functionStack[functionDepth] = 0;
+}
+
+void popFunction()
+{
+  FunctionInfo *newFunction = currentFunction;
+
+  --functionDepth;
+  currentFunction = functionStack[functionDepth];
+  if (currentFunction)
+    {
+    currentFunction->Signature = newFunction->Signature;
+    }
+  newFunction->Signature = NULL;
+  clearVarName();
+  if (functionVarNameStack[functionDepth])
+    {
+    setVarName(functionVarNameStack[functionDepth]);
+    free(functionVarNameStack[functionDepth]);
+    }
+  clearTypeId();
+  if (functionTypeIdStack[functionDepth])
+    {
+    setTypeId(functionTypeIdStack[functionDepth]);
+    free(functionTypeIdStack[functionDepth]);
+    }
+
+  functionStack[functionDepth+1] = newFunction;
+}
+
+FunctionInfo *getFunction()
+{
+  return functionStack[functionDepth+1];
+}
+
+/*----------------------------------------------------------------
  * Utility methods
  */
 
@@ -664,7 +729,7 @@ int add_pointer_to_type(int tval, int ptr)
     {
     tmp = VTK_PARSE_BAD_INDIRECT;
     }
-  
+
   return (tval | tmp);
 }
 
@@ -731,7 +796,7 @@ int add_pointer_to_type(int tval, int ptr)
 %token <str> VTK_ID
 %token STATIC
 %token EXTERN
-%token VAR_FUNCTION
+%token <str> VAR_FUNCTION
 %token VTK_LEGACY
 %token NEW
 %token DELETE
@@ -1258,7 +1323,13 @@ destructor_sig: any_id '(' { postSig("(");} args_list ')';
 
 ignore_args_list: | ignore_more_args;
 
-ignore_more_args: ELLIPSIS | arg | arg ',' ignore_more_args;
+ignore_more_args: ELLIPSIS { postSig("..."); }
+  | ignore_arg | ignore_arg ',' { postSig(", "); } ignore_more_args;
+
+ignore_arg:
+    type maybe_complex_var_id maybe_var_assign
+  | VAR_FUNCTION { postSig("void (*func)(void *) "); };
+
 
 args_list: | {clearTypeId();} more_args;
 
@@ -1271,29 +1342,90 @@ more_args:
     more_args;
 
 arg:
-    type maybe_var_id maybe_var_array
+    { markSig(); }
+    type maybe_complex_var_id
     {
       int i = currentFunction->NumberOfArguments;
-      int datatype = $<integer>1;
+      int datatype = $<integer>2;
+      int extra = $<integer>3;
+      FunctionInfo *argFunction = 0;
       char *cp;
+      const char *sp = copySig();
       int j, n;
+
+      /* if "extra" was set, parentheses were involved */
+      if ((extra & VTK_PARSE_BASE_TYPE) == VTK_PARSE_FUNCTION)
+        {
+        /* the current type becomes the function return type */
+        argFunction = getFunction();
+        argFunction->ReturnType = datatype;
+        argFunction->ReturnClass = vtkstrdup(getTypeId());
+        argFunction->Signature = vtkstrdup(sp);
+        currentFunction->ArgFunctions[i] = argFunction;
+
+        /* the arg type is whatever was inside the parentheses */
+        clearTypeId();
+        setTypeId("function");
+        datatype = (extra & VTK_PARSE_UNQUALIFIED_TYPE);
+        }
+      else if ((extra & VTK_PARSE_INDIRECT) == VTK_PARSE_BAD_INDIRECT)
+        {
+        datatype = (datatype | VTK_PARSE_BAD_INDIRECT);
+        currentFunction->ArrayFailure = 1;
+        }
+      else if ((extra & VTK_PARSE_INDIRECT) != 0)
+        {
+        extra = (extra & VTK_PARSE_INDIRECT);
+
+        if (extra & VTK_PARSE_REF)
+          {
+          datatype = (datatype | VTK_PARSE_REF);
+          extra = (extra & ~VTK_PARSE_REF);
+          }
+
+        if (extra != 0)
+          {
+          if (getArrayNDims() > 0)
+            {
+            datatype = add_pointer_to_type(datatype, VTK_PARSE_ARRAY_MULTI);
+            extra = ((extra >> 2) & VTK_PARSE_INDIRECT_LOWMASK);
+            }
+          }
+        while (extra != 0)
+          {
+          datatype = add_pointer_to_type(datatype,
+                                         (extra & VTK_PARSE_INDIRECT_LOWMASK));
+          extra = ((extra >> 2) & VTK_PARSE_INDIRECT_LOWMASK);
+          }
+        }
 
       if (getArrayNDims() == 1)
         {
-        datatype = add_pointer_to_type(datatype, VTK_PARSE_POINTER);
-        cp = getArraySize(0);
-        while (*cp != '\0' && *cp >= '0' && *cp <= '9') { cp++; }
-        if (*cp == '\0')
+        /* if a 1D array was given, use its size as the ArgCount */
+        if ((datatype & VTK_PARSE_INDIRECT_LOWMASK) != VTK_PARSE_ARRAY_MULTI)
           {
-          currentFunction->ArgCounts[0] = (int)atol(getArraySize(0));
+          /* turn the first set of brackets into a pointer */
+          datatype = add_pointer_to_type(datatype, VTK_PARSE_POINTER);
+          cp = getArraySize(0);
+          while (*cp != '\0' && *cp >= '0' && *cp <= '9') { cp++; }
+          if (*cp == '\0')
+            {
+            currentFunction->ArgCounts[i] = (int)atol(getArraySize(0));
+            }
           }
         }
       else if (getArrayNDims() > 1)
         {
-        datatype = add_pointer_to_type(datatype, VTK_PARSE_ARRAY_MULTI);
+        /* first array brackets get turned into a pointer */
+        if ((datatype & VTK_PARSE_INDIRECT_LOWMASK) != VTK_PARSE_ARRAY_MULTI)
+          {
+          /* turn the first set of brackets into a pointer, mark multi-dim */
+          datatype = add_pointer_to_type(datatype, VTK_PARSE_ARRAY_MULTI);
+          }
         currentFunction->ArrayFailure = 1;
         }
 
+      /* copy contents of all brackets to the ArgDimensions */
       n = getArrayNDims();
       for (j = 0; j < n; j++)
         {
@@ -1319,39 +1451,33 @@ arg:
   | VAR_FUNCTION
     {
       int i = currentFunction->NumberOfArguments;
-      postSig("void (*func)(void *) ");
+      int j;
+      FunctionInfo *func;
+
+      markSig();
+      postSig("void (*");
+      postSig($<str>1);
+      postSig(")(void *) ");
       currentFunction->ArgTypes[i] = VTK_PARSE_FUNCTION;
       currentFunction->ArgClasses[i] = vtkstrdup("function");
-    }
-  | type lp_or_la maybe_var_id ')' maybe_array_or_args
-    {
-      int i = currentFunction->NumberOfArguments;
-      postSig(")");
-      currentFunction->ArgCounts[i] = 0;
-      currentFunction->ArgTypes[i] = VTK_PARSE_UNKNOWN;
-      currentFunction->ArgClasses[i] = vtkstrdup("unknown");
-      currentFunction->ArrayFailure = 1;
-      if (getVarName())
+      if ($<str>1[0] != '\0')
         {
-        currentFunction->ArgNames[i] = vtkstrdup(getVarName());
+        currentFunction->ArgNames[i] = vtkstrdup($<str>1);
         }
-     };
 
+      func = (FunctionInfo *)malloc(sizeof(FunctionInfo));
+      InitFunction(func);
+      func->NumberOfArguments = 1;
+      func->ArgTypes[0] = VTK_PARSE_VOID_PTR;
+      func->Signature = vtkstrdup(copySig());
+      j = strlen(func->Signature);
+      while (j > 0 && func->Signature[j-1] == ' ')
+        {
+        func->Signature[j-1] = '\0';
+        }
 
-lp_or_la: LP { postSig("("); postSig($<str>1); postSig("*");
-               $<integer>$ = VTK_PARSE_POINTER; }
-        | LA { postSig("("); postSig($<str>1); postSig("&");
-               $<integer>$ = VTK_PARSE_REF; };
-
-maybe_array_or_args: { $<integer>$ = 0; }
-   | '(' { postSig(")("); } ignore_args_list ')' {
-         postSig(")");
-         $<integer>$ = VTK_PARSE_FUNCTION;
-       }
-  | var_array
-       {
-         $<integer>$ = VTK_PARSE_ARRAY_MULTI;
-       };
+      currentFunction->ArgFunctions[i] = func;
+    };
 
 maybe_indirect_id: any_id | type_indirection any_id;
 
@@ -1364,9 +1490,9 @@ var_assign: '=' { postSig("="); clearVarValue();}
  * Variables
  */
 
-var:   storage_type var_id_maybe_assign maybe_indirect_var_ids ';'
-     | STATIC VAR_FUNCTION maybe_indirect_var_ids ';'
-     | VAR_FUNCTION maybe_indirect_var_ids ';';
+var:   storage_type var_id_maybe_assign maybe_other_vars ';'
+     | STATIC VAR_FUNCTION maybe_other_vars ';'
+     | VAR_FUNCTION maybe_other_vars ';';
 
 var_id_maybe_assign: complex_var_id maybe_var_assign
      {
@@ -1379,16 +1505,53 @@ var_id_maybe_assign: complex_var_id maybe_var_assign
          }
      };
 
-complex_var_id: var_id maybe_var_array
-     | lp_or_la maybe_indirect_var_id ')' {postSig(")");} maybe_array_or_args;
+maybe_other_vars:
+     | maybe_other_vars ',' {postSig(", ");} maybe_other_var;
 
-maybe_indirect_var_ids:
-     | maybe_indirect_var_ids ',' {postSig(", ");} maybe_indirect_var_id;
-
-maybe_indirect_var_id:
+maybe_other_var:
        { setStorageTypeIndirection(0); } var_id_maybe_assign
      | type_indirection { setStorageTypeIndirection($<integer>1); }
        var_id_maybe_assign;
+
+/* for args, the var_id is optional */
+maybe_complex_var_id: maybe_var_id maybe_var_array { $<integer>$ = 0; }
+     | p_or_lp_or_la maybe_indirect_maybe_var_id ')' { postSig(")"); }
+       maybe_array_or_args
+       { $<integer>$ = ($<integer>1 | $<integer>2 | $<integer>5); };
+
+/* for vars, the var_id is mandatory */
+complex_var_id: var_id maybe_var_array { $<integer>$ = 0; }
+     | lp_or_la maybe_indirect_var_id ')' { postSig(")"); }
+       maybe_array_or_args
+       { $<integer>$ = ($<integer>1 | $<integer>2 | $<integer>5); };
+
+p_or_lp_or_la: '(' { postSig("("); $<integer>$ = 0; }
+        | LP { postSig("("); postSig($<str>1); postSig("*");
+               $<integer>$ = VTK_PARSE_POINTER; }
+        | LA { postSig("("); postSig($<str>1); postSig("&");
+               $<integer>$ = VTK_PARSE_REF; };
+
+lp_or_la: LP { postSig("("); postSig($<str>1); postSig("*");
+               $<integer>$ = VTK_PARSE_POINTER; }
+        | LA { postSig("("); postSig($<str>1); postSig("&");
+               $<integer>$ = VTK_PARSE_REF; };
+
+maybe_array_or_args: { $<integer>$ = 0; }
+   | '(' { pushFunction(); postSig("("); } args_list ')'
+     { $<integer>$ = VTK_PARSE_FUNCTION; postSig(")"); popFunction(); }
+   | var_array { $<integer>$ = 0; };
+
+maybe_indirect_maybe_var_id:
+       maybe_complex_var_id
+       { if($<integer>1) { $<integer>$ = VTK_PARSE_BAD_INDIRECT; }; }
+     | type_indirection maybe_complex_var_id
+       { $<integer>$ = VTK_PARSE_BAD_INDIRECT; };
+
+maybe_indirect_var_id:
+       complex_var_id
+       { if($<integer>1) { $<integer>$ = VTK_PARSE_BAD_INDIRECT; }; }
+     | type_indirection complex_var_id
+       { $<integer>$ = VTK_PARSE_BAD_INDIRECT;};
 
 maybe_var_id: {clearVarName();} | var_id;
 

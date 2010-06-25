@@ -359,10 +359,14 @@ void vtkWrapXML_ClassInheritance(FILE *fp, MergeInfo *merge, int indentation)
   fprintf(fp, "%s</Inheritance>\n", indent(--indentation));
 }
 
+/* needed for type */
+void vtkWrapXML_FunctionCommon(
+  FILE *fp, FunctionInfo *func, int doReturn, int indentation);
+
 /* Print out a type in XML format */
 void vtkWrapXML_Type(
   FILE *fp, int type, const char *vtkclass, char *sizes[],
-  int indentation)
+  FunctionInfo *func, int indentation)
 {
   int reverse = 0;
   int pcount = 0;
@@ -377,6 +381,13 @@ void vtkWrapXML_Type(
 
   fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
           vtkWrapXML_Quote(vtkParse_BaseTypeAsString(type, vtkclass), 500));
+
+  if (func)
+    {
+    fprintf(fp, "%s<Function>\n", indent(indentation++));
+    vtkWrapXML_FunctionCommon(fp, func, 1, indentation);
+    fprintf(fp, "%s</Function>\n", indent(--indentation));
+    }
 
   type = (type & VTK_PARSE_INDIRECT);
   
@@ -453,7 +464,7 @@ void vtkWrapXML_TypeSimple(
     sizes[0] = temp;
     }
 
-  vtkWrapXML_Type(fp, type, classname, sizes, indentation);
+  vtkWrapXML_Type(fp, type, classname, sizes, NULL, indentation);
 }
 
 /* Print a template */
@@ -563,24 +574,27 @@ void vtkWrapXML_FunctionCommon(
     fprintf(fp, "%s<Flag>legacy</Flag>\n", indent(indentation));
     }
 
-  fprintf(fp, "%s<Signature>\n", indent(indentation++));
-
-  cp = func->Signature;
-  for (i = 0; i < 400 && cp && cp[i] != '\0' && cp[i] != ';'; i++)
+  if (func->Signature)
     {
-    temp[i] = cp[i];
-    }
-  temp[i] = '\0';
+    fprintf(fp, "%s<Signature>\n", indent(indentation++));
 
-  fprintf(fp, "%s %s\n", indent(indentation), vtkWrapXML_Quote(temp, 500));
+    cp = func->Signature;
+    for (i = 0; i < 400 && cp && cp[i] != '\0' && cp[i] != ';'; i++)
+      {
+      temp[i] = cp[i];
+      }
+    temp[i] = '\0';
 
-  fprintf(fp, "%s</Signature>\n", indent(--indentation));
+    fprintf(fp, "%s %s\n", indent(indentation), vtkWrapXML_Quote(temp, 500));
 
-  if (func->Comment)
-    {
-    fprintf(fp, "%s<Comment>\n", indent(indentation++));
-    vtkWrapXML_MultiLineText(fp, func->Comment, indentation);
-    fprintf(fp, "%s</Comment>\n", indent(--indentation));
+    fprintf(fp, "%s</Signature>\n", indent(--indentation));
+
+    if (func->Comment)
+      {
+      fprintf(fp, "%s<Comment>\n", indent(indentation++));
+      vtkWrapXML_MultiLineText(fp, func->Comment, indentation);
+      fprintf(fp, "%s</Comment>\n", indent(--indentation));
+      }
     }
 
   if (printReturn)
@@ -600,7 +614,8 @@ void vtkWrapXML_FunctionCommon(
     fprintf(fp, "%s<Arg>\n", indent(indentation++));
 
     vtkWrapXML_Type(fp, func->ArgTypes[i], func->ArgClasses[i],
-                    func->ArgDimensions[i], indentation);
+                    func->ArgDimensions[i], func->ArgFunctions[i],
+                    indentation);
 
     if (func->ArgNames[i])
       {
