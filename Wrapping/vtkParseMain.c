@@ -86,13 +86,13 @@ static int check_options(int argc, char *argv[])
     else if (strcmp(argv[i], "-I") == 0)
       {
       i++;
-      if (i >= argc || argv[i][0] == '-' ||
-          options.NumberOfIncludeDirectories + 1 >= MAX_INCLUDE_DIRS)
+      if (i >= argc || argv[i][0] == '-')
         {
         return -1;
         }
-      options.IncludeDirectories[options.NumberOfIncludeDirectories++]
-        = argv[i];
+      vtkParse_AddPointerToArray(&options.IncludeDirectories,
+                                 &options.NumberOfIncludeDirectories,
+                                 argv[i]);
       }
     }
 

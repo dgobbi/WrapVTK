@@ -13,17 +13,25 @@
 
 =========================================================================*/
 
-/*
-
-vtkParseMain.c is the main() function for the wrapper executables.
-
+/**
+ * vtkParseMain.c is the main() function for the wrapper executables.
+ *
+ * "Usage: vtkWrap [options] input_file output_file"
+ * " --concrete      concrete class (default)"
+ * "  --abstract      abstract class"
+ * "  --vtkobject     vtkObjectBase-derived class (default)"
+ * "  --special       non-vtkObjectBase class"
+ * "  --hints <file>  hints file"
+ * "  --hierarchy <file>  hierarchy file"
+ * "  -I <dir>        add an include directory"
 */
 
 #ifndef VTK_PARSE_MAIN_H
 #define VTK_PARSE_MAIN_H
 
-#define MAX_INCLUDE_DIRS 256
-
+/**
+ * Options for the wrappers
+ */
 typedef struct _OptionInfo
 {
   char *InputFileName;
@@ -33,20 +41,26 @@ typedef struct _OptionInfo
   int   IsVTKObject;
   int   IsConcrete;
   int   NumberOfIncludeDirectories;
-  char *IncludeDirectories[MAX_INCLUDE_DIRS];
+  char **IncludeDirectories;
 } OptionInfo;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Return the options provided on the command line */
+/**
+ * Return the options provided on the command line
+ */
 OptionInfo *vtkParse_GetCommandLineOptions();
 
-/* Return the full path to a header file given the paths in "options" */
+/**
+ * Return the full path to a header file given the paths in "options"
+ */
 char *vtkParse_FindPath(const char *filename);
 
-/* Free a path returned by FindPath */
+/**
+ * Free a path returned by FindPath
+ */
 void vtkParse_FreePath(char *filepath);
 
 #ifdef __cplusplus
