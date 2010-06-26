@@ -27,7 +27,9 @@
 #define MAX_ARGS 20
 #define MAX_ARRAY_DIMS 6
 
-/* ItemType constants */
+/**
+ * ItemType constants
+ */
 typedef enum _parse_item_t 
 {
   VTK_NAMESPACE_INFO = 2,
@@ -41,6 +43,9 @@ typedef enum _parse_item_t
   VTK_ENUM_INFO      = 10
 } parse_item_t;
 
+/**
+ * Access flags
+ */
 typedef enum _parse_access_t
 {
   VTK_ACCESS_PUBLIC = 0,
@@ -48,16 +53,9 @@ typedef enum _parse_access_t
   VTK_ACCESS_PRIVATE = 2
 } parse_access_t;
 
-/* ItemInfo is a "base class" for items in the header file */
-typedef struct _ItemInfo
-{
-  parse_item_t ItemType;
-  parse_access_t Access;
-  char *Name;
-  char *Comment;
-} ItemInfo;
-
-/* TemplateInfo holds template information */
+/**
+ * TemplateInfo holds template definitions
+ */
 typedef struct _TemplateArgs
 {
   int NumberOfArguments;
@@ -68,7 +66,20 @@ typedef struct _TemplateArgs
   char *ArgValues[MAX_ARGS];
 } TemplateArgs;
 
-/* FunctionInfo is for functions and methods */
+/**
+ * ItemInfo is a "base class" for items in the header file
+ */
+typedef struct _ItemInfo
+{
+  parse_item_t ItemType;
+  parse_access_t Access;
+  char *Name;
+  char *Comment;
+} ItemInfo;
+
+/**
+ * FunctionInfo is for functions and methods
+ */
 typedef struct _FunctionInfo
 {
   parse_item_t ItemType;
@@ -101,7 +112,9 @@ typedef struct _FunctionInfo
   int   ArrayFailure;
 } FunctionInfo;
 
-/* ConstantInfo is for enum constants, macro constants, and const vars */
+/**
+ * ConstantInfo is for enum constants, macro constants, and var constants
+ */
 typedef struct _ConstantInfo
 {
   parse_item_t ItemType;
@@ -114,7 +127,9 @@ typedef struct _ConstantInfo
   int   IsEnum;
 } ConstantInfo;
 
-/* VariableInfo is for variables */
+/**
+ * VariableInfo is for variables (not implemented yet)
+ */
 typedef struct _VariableInfo
 {
   parse_item_t ItemType;
@@ -129,7 +144,9 @@ typedef struct _VariableInfo
   int   IsStatic;
 } VariableInfo;
 
-/* EnumInfo is for enums */
+/**
+ * EnumInfo is for enums
+ */
 typedef struct _EnumInfo
 {
   parse_item_t ItemType;
@@ -138,7 +155,9 @@ typedef struct _EnumInfo
   char *Comment;
 } EnumInfo;
 
-/* UnionInfo is for unions */
+/**
+ * UnionInfo is for unions (not implemented yet)
+ */
 typedef struct _UnionInfo
 {
   parse_item_t ItemType;
@@ -149,7 +168,9 @@ typedef struct _UnionInfo
   VariableInfo **Members;
 } UnionInfo;
 
-/* TypedefInfo is for typedefs */
+/**
+ * TypedefInfo is for typedefs (not implemented yet)
+ */
 typedef struct _TypedefInfo
 {
   parse_item_t ItemType;
@@ -162,7 +183,9 @@ typedef struct _TypedefInfo
   FunctionInfo *Function; /* for function pointers */
 } TypedefInfo;
 
-/* ClassInfo is for classes and structs */
+/**
+ * ClassInfo is for classes and structs
+ */
 typedef struct _ClassInfo
 {
   parse_item_t ItemType;
@@ -184,7 +207,9 @@ typedef struct _ClassInfo
   int   HasDelete;
 } ClassInfo;
 
-/* Namespace is for namespaces */
+/**
+ * Namespace is for namespaces
+ */
 typedef struct _NamespaceInfo
 {
   parse_item_t ItemType;
@@ -205,10 +230,11 @@ typedef struct _NamespaceInfo
   struct _NamespaceInfo **Namespaces;
 } NamespaceInfo;
 
-/* FileInfo is for files */
+/**
+ * FileInfo is for files
+ */
 typedef struct _FileInfo
 {
-  /* file information */
   char *FileName;
   char *NameComment;
   char *Description;
@@ -222,25 +248,35 @@ typedef struct _FileInfo
 extern "C" {
 #endif
 
-/* Parse a header file and return a FileInfo struct */
+/**
+ * Parse a header file and return a FileInfo struct
+ */
 FileInfo *vtkParse_ParseFile(
   const char *filename, int concrete, FILE *ifile, FILE *errfile);
 
-/* Read a hints file and update the FileInfo */
+/**
+ * Read a hints file and update the FileInfo
+ */
 int vtkParse_ReadHints(FileInfo *data, FILE *hfile, FILE *errfile);
 
-/* Free the FileInfo struct returned by vtkParse_ParseFile() */
+/**
+ * Free the FileInfo struct returned by vtkParse_ParseFile()
+ */
 void vtkParse_Free(FileInfo *data);
 
-/* This macro is used to add elements to the above structs, it serves
- * the same purpose as an stl vector of pointers */
+/** 
+ * This macro is used to add elements to the above structs,
+ * it handles memory management and grows the arrays when needed.
+ */
 #define vtkParse_AddItemMacro(theStruct, theElement, theValue) \
   vtkParse_AddPointerToArray(&(theStruct)->theElement, \
     &(theStruct)->NumberOf##theElement, theValue); \
   vtkParse_AddPointerToArray(&(theStruct)->Items, \
     &(theStruct)->NumberOfItems, theValue)
 
-/* This function is the back-end to vtkParse_AddItemMacro */
+/**
+ * This function is the back-end to vtkParse_AddItemMacro()
+ */
 void vtkParse_AddPointerToArray(void *valueArray, int *count, void *value);
 
 #ifdef __cplusplus

@@ -16,48 +16,46 @@
 #ifndef VTK_PARSE_TYPE_H
 #define VTK_PARSE_TYPE_H
 
-/*
- * The parser identifies VTK types with 16-bit hexidecimal numbers:
+/**
+ * The parser identifies VTK types with 32-bit hexidecimal numbers:
  *
- * - The final two digits are the base type.
- * - The second digit is for indirection i.e. * and &
- * - The first digit is for const and static qualifiers
+ * - One byte is for the base type.
+ * - One byte is indirection i.e. & and * and "* const"
+ * - One byte is for qualifiers like const and static.
+ * - The final byte is reserved.
  *
  */
 
-/*
- * Mask for removing "const", "static" qualifiers
- */
-
-#define VTK_PARSE_UNQUALIFIED_TYPE 0x0FFF
-
-/*
+/**
  * Mask for removing everything but the base type
  */
+#define VTK_PARSE_BASE_TYPE  0x000000FF
 
-#define VTK_PARSE_BASE_TYPE  0x00FF
-
-/*
+/**
  * Mask for checking signed/unsigned
  */
+#define VTK_PARSE_UNSIGNED   0x00000010
 
-#define VTK_PARSE_UNSIGNED   0x0010
-
-/*
- * Storage qualifiers: static and const
+/**
+ * Mask for pointers and references
  */
+#define VTK_PARSE_INDIRECT   0x0000FF00
 
-#define VTK_PARSE_QUALIFIER   0x3000
-#define VTK_PARSE_CONST       0x1000
-#define VTK_PARSE_STATIC      0x2000
-#define VTK_PARSE_STATIC_CONST 0x3000
-
-/*
- * Pointers, arrays, and references
- * (note that []  and * are equivalent)
+/**
+ * Storage qualifiers: just static and const for now
  */
+#define VTK_PARSE_QUALIFIER   0x00FF0000
+#define VTK_PARSE_CONST       0x00010000
+#define VTK_PARSE_STATIC      0x00020000
 
-/*
+/**
+ * Mask for removing "const", "static" qualifiers
+ */
+#define VTK_PARSE_UNQUALIFIED_TYPE 0x0000FFFF
+
+/**
+ * Indirection, contained in VTK_PARSE_INDIRECT
+ *
  * Indirection of types works as follows:
  * type **(**&val[n])[m]
  * Pointers on the left, arrays on the right,
@@ -66,56 +64,57 @@
  * The 'type' may be preceeded or followed by const,
  * which is handled by the VTK_PARSE_CONST flag.
  *
- * The leftmost [] is converted to a pointer, giving this:
- * type **(***&val)[m]  with a separately stored Count=n
+ * The array dimensionality and sizes is stored
+ * elsewhere, it isn't stored in the bitfield.
  *
- * Note that "type val[n][m]"  becomes  "type (*val)[m]",
+ * The leftmost [] is converted to a pointer, unless
+ * it is outside the parenthesis.
+ * So "type val[n][m]"  becomes  "type (*val)[m]",
  * these two types are identical in C and C++.
+ * And "type val[n]" becomes "type *val".
  *
  * Any pointer can be followed by const, and any pointer
  * can be preceeded by a parenthesis, but we assume
  * there will be at most one set of parentheses.  Two
  * sets of parentheses means "an array of pointers to an
- * array of something", and that is just wrong...
+ * array of some type", and that is just wrong...
  *
- * The Ref needs 1 bit total, it isn't repeatable.
- *
- * Pointers need 2 bits:
+ * The Ref needs 1 bit total, and each pointer needs 2 bits:
  *
  *  0 = nothing
  *  1 = '*'
  *  2 = '(*' which signals a multidimensional array
  *  3 = '* const'
  *
- * The array info is stored separately, as a Dimensionality
- * and as a set of Counts.  The first dimension and the
- * first count are for the first pointer.
+ * The array info is stored separately.
  */
+#define VTK_PARSE_BAD_INDIRECT          0xFF00
+#define VTK_PARSE_INDIRECT_LOWMASK      0x0700
+#define VTK_PARSE_REF                   0x0100
+#define VTK_PARSE_POINTER               0x0200
+#define VTK_PARSE_POINTER_REF           0x0300
+#define VTK_PARSE_ARRAY_MULTI           0x0400
+#define VTK_PARSE_ARRAY_MULTI_REF       0x0500
+#define VTK_PARSE_CONST_POINTER         0x0600
+#define VTK_PARSE_CONST_POINTER_REF     0x0700
+#define VTK_PARSE_POINTER_POINTER       0x0A00
+#define VTK_PARSE_POINTER_POINTER_REF   0x0B00
+#define VTK_PARSE_POINTER_CONST_POINTER 0x0E00
 
-#define VTK_PARSE_INDIRECT              0xF00
-#define VTK_PARSE_BAD_INDIRECT          0xF00
-#define VTK_PARSE_INDIRECT_LOWMASK      0x700
-#define VTK_PARSE_REF                   0x100
-#define VTK_PARSE_POINTER               0x200
-#define VTK_PARSE_POINTER_REF           0x300
-#define VTK_PARSE_ARRAY_MULTI           0x400
-#define VTK_PARSE_ARRAY_MULTI_REF       0x500
-#define VTK_PARSE_CONST_POINTER         0x600
-#define VTK_PARSE_CONST_POINTER_REF     0x700
-#define VTK_PARSE_POINTER_POINTER       0xA00
-#define VTK_PARSE_POINTER_POINTER_REF   0xB00
-#define VTK_PARSE_POINTER_CONST_POINTER 0xE00
-
-/*
+/**
+ * Basic types contained in VTK_PARSE_BASE_TYPE
+ *
  * The lowest two hex digits describe the basic type,
  * where bit 0x10 is used to indicate unsigned types,
  * value 0x8 is used for unrecognized types, and
- * value 0x9 is used for all VTK objects.
+ * value 0x9 is used for types that start with "vtk".
  *
  * The bit 0x10 is reserved for "unsigned", and it
  * may only be present in unsigned types.
+ *
+ * Do not rearrange these types, they are hard-coded
+ * into the hints file.
 */
-
 #define VTK_PARSE_FLOAT               0x01
 #define VTK_PARSE_VOID                0x02
 #define VTK_PARSE_CHAR                0x03
@@ -143,10 +142,9 @@
 #define VTK_PARSE_ISTREAM             0x24
 #define VTK_PARSE_FUNCTION            0x25
 
-/*
+/**
  * Basic pointer types
  */
-
 #define VTK_PARSE_FLOAT_PTR               0x201
 #define VTK_PARSE_VOID_PTR                0x202
 #define VTK_PARSE_CHAR_PTR                0x203
@@ -172,11 +170,11 @@
 #define VTK_PARSE_UNICODE_STRING_PTR      0x222
 #define VTK_PARSE_OSTREAM_PTR             0x223
 #define VTK_PARSE_ISTREAM_PTR             0x224
+#define VTK_PARSE_FUNCTION_PTR            0x225
 
-/*
+/**
  * Basic reference types
  */
-
 #define VTK_PARSE_FLOAT_REF               0x101
 #define VTK_PARSE_VOID_REF                0x102
 #define VTK_PARSE_CHAR_REF                0x103
@@ -203,7 +201,9 @@
 #define VTK_PARSE_OSTREAM_REF             0x123
 #define VTK_PARSE_ISTREAM_REF             0x124
 
-/* For backwards compatibility */
+/**
+ * For backwards compatibility
+ */
 #define VTK_PARSE_VTK_OBJECT        VTK_PARSE_OBJECT
 #define VTK_PARSE_VTK_OBJECT_PTR    VTK_PARSE_OBJECT_PTR
 #define VTK_PARSE_VTK_OBJECT_PTR    VTK_PARSE_OBJECT_PTR
