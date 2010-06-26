@@ -542,12 +542,12 @@ void vtkWrapXML_Template(
 {
   int i;
 
-  fprintf(fp, "%s<Template>\n", indent(indentation++));
-
   for (i = 0; i < args->NumberOfArguments; i++)
     {
+    fprintf(fp, "%s<Template>\n", indent(indentation++));
     if (args->ArgTemplates[i])
       {
+      fprintf(fp, "%s<Type>template</Type>\n", indent(indentation));
       vtkWrapXML_Template(fp, args->ArgTemplates[i], indentation);
       }
     else if (args->ArgTypes[i])
@@ -573,9 +573,10 @@ void vtkWrapXML_Template(
       fprintf(fp, "%s<Value>%s</Value>\n",
               indent(indentation), vtkWrapXML_Quote(args->ArgValues[i], 500));
       }
+
+    fprintf(fp, "%s</Template>\n", indent(--indentation));
     }
 
-  fprintf(fp, "%s</Template>\n", indent(--indentation));
 }
 
 /**
