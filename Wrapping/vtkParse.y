@@ -157,6 +157,7 @@ void InitNamespace(NamespaceInfo *namespace_info);
 void InitClass(ClassInfo *cls);
 void InitFunction(FunctionInfo *func);
 void InitConstant(ConstantInfo *con);
+void InitEnum(EnumInfo *item);
 void InitTemplate(TemplateArgs *arg);
 
 /* duplicate a string */
@@ -2479,6 +2480,15 @@ void InitConstant(ConstantInfo *con)
 }
 
 /* initialize the structure */
+void InitEnum(EnumInfo *item)
+{
+  item->ItemType = VTK_ENUM_INFO;
+  item->Access = VTK_ACCESS_PUBLIC;
+  item->Name = NULL;
+  item->Comment = NULL;
+}
+
+/* initialize the structure */
 void InitClass(ClassInfo *cls)
 {
   cls->ItemType = VTK_CLASS_INFO;
@@ -2489,6 +2499,7 @@ void InitClass(ClassInfo *cls)
   cls->NumberOfSuperClasses = 0;
   cls->NumberOfItems = 0;
   cls->NumberOfFunctions = 0;
+  cls->NumberOfEnums = 0;
   cls->NumberOfConstants = 0;
   cls->IsAbstract = 0;
   cls->HasDelete = 0;
@@ -2506,6 +2517,7 @@ void InitNamespace(NamespaceInfo *name_info)
   name_info->NumberOfClasses = 0;
   name_info->NumberOfFunctions = 0;
   name_info->NumberOfConstants = 0;
+  name_info->NumberOfEnums = 0;
   name_info->NumberOfNamespaces = 0;
 }
 
@@ -2527,6 +2539,7 @@ void FreeNamespace(NamespaceInfo *namespace_info)
   ClassInfo *class_info;
   FunctionInfo *func_info;
   ConstantInfo *const_info;
+  EnumInfo *enum_info;
 
   int i, j, n, m;
 
@@ -2563,6 +2576,17 @@ void FreeNamespace(NamespaceInfo *namespace_info)
       free(class_info->Constants);
       }
 
+    m = class_info->NumberOfEnums;
+    for (j = 0; j < m; j++)
+      {
+      enum_info = class_info->Enums[j];
+      free(enum_info);
+      }
+    if (m > 0)
+      {
+      free(class_info->Enums);
+      }
+
     if (class_info->NumberOfItems > 0)
       {
       free(class_info->Items);
@@ -2591,6 +2615,17 @@ void FreeNamespace(NamespaceInfo *namespace_info)
   if (m > 0)
     {
     free(namespace_info->Constants);
+    }
+
+  m = namespace_info->NumberOfEnums;
+  for (j = 0; j < m; j++)
+    {
+    enum_info = namespace_info->Enums[j];
+    free(enum_info);
+    }
+  if (m > 0)
+    {
+    free(namespace_info->Enums);
     }
 
   m = namespace_info->NumberOfNamespaces;
@@ -2664,12 +2699,26 @@ void end_class()
 void start_enum(const char *name)
 {
   static char text[256];
+  EnumInfo *item;
+
   currentEnumName = NULL;
   currentEnumValue = NULL;
   if (name)
     {
     currentEnumName = text;
     strcpy(currentEnumName, name);
+    item = (EnumInfo *)malloc(sizeof(EnumInfo));
+    InitEnum(item);
+    item->Name = vtkstrdup(name);
+    item->Access = access_level;
+    if (currentClass)
+      {
+      vtkParse_AddItemMacro(currentClass, Enums, item);
+      }
+    else
+      {
+      vtkParse_AddItemMacro(currentNamespace, Enums, item);
+      }
     }
 }
 

@@ -178,6 +178,8 @@ typedef struct _ClassInfo
   FunctionInfo **Functions;
   int   NumberOfConstants;
   ConstantInfo **Constants;
+  int   NumberOfEnums;
+  EnumInfo **Enums;
   int   IsAbstract;
   int   HasDelete;
 } ClassInfo;
@@ -197,6 +199,8 @@ typedef struct _NamespaceInfo
   FunctionInfo **Functions;
   int   NumberOfConstants;
   ConstantInfo **Constants;
+  int   NumberOfEnums;
+  EnumInfo **Enums;
   int   NumberOfNamespaces;
   struct _NamespaceInfo **Namespaces;
 } NamespaceInfo;

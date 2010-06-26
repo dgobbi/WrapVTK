@@ -166,6 +166,40 @@ static void vtkWrapXML_MultiLineText(
     }
 }
 
+/* Print the comment */
+void vtkWrapXML_Comment(
+  FILE *fp, const char *comment, int indentation)
+{
+  if (comment)
+    {
+    fprintf(fp, "%s<Comment>\n", indent(indentation++));
+    vtkWrapXML_MultiLineText(fp, comment, indentation);
+    fprintf(fp, "%s</Comment>\n", indent(--indentation));
+    }
+}
+
+/* Print the access level */
+void vtkWrapXML_Access(
+  FILE *fp, parse_access_t access, int indentation)
+{
+  const char *cp = "public";
+
+  switch (access)
+    {
+    case VTK_ACCESS_PUBLIC:
+      cp = "public";
+      break;
+    case VTK_ACCESS_PROTECTED:
+      cp = "protected";
+      break;
+    case VTK_ACCESS_PRIVATE:
+      cp = "private";
+      break;
+    }
+
+  fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation), cp);
+}
+
 /* Write out the class header */
 void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
 {
@@ -183,6 +217,8 @@ void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
     }
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(data->Name, 500));
+
+  vtkWrapXML_Comment(fp, data->Comment, indentation);
 
   /* actually, vtk classes never have more than one superclass */
   n = data->NumberOfSuperClasses;
@@ -509,31 +545,33 @@ void vtkWrapXML_Template(
   fprintf(fp, "%s</Template>\n", indent(--indentation));
 }
 
+/* Print an enum */
+void vtkWrapXML_Enum(
+  FILE *fp, EnumInfo *item, int inClass, int indentation)
+{
+  fprintf(fp, "\n");
+  fprintf(fp, "%s<Enum>\n", indent(indentation++));
+
+  if (inClass)
+    {
+    vtkWrapXML_Access(fp, item->Access, indentation);
+    }
+
+  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
+          vtkWrapXML_Quote(item->Name, 500));
+  fprintf(fp, "%s</Enum>\n", indent(--indentation));
+}
+
 /* Print a constant */
 void vtkWrapXML_Constant(
   FILE *fp, ConstantInfo *con, int inClass, int indentation)
 {
-  const char *access = "public";
-
-  switch (con->Access)
-    {
-    case VTK_ACCESS_PUBLIC:
-      access = "public";
-      break;
-    case VTK_ACCESS_PROTECTED:
-      access = "protected";
-      break;
-    case VTK_ACCESS_PRIVATE:
-      access = "private";
-      break;
-    }
-
   fprintf(fp, "\n");
   fprintf(fp, "%s<Constant>\n", indent(indentation++));
 
   if (inClass)
     {
-    fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation), access);
+    vtkWrapXML_Access(fp, con->Access, indentation);
     }
 
   if (con->IsEnum)
@@ -548,6 +586,9 @@ void vtkWrapXML_Constant(
           vtkWrapXML_Quote(con->Name, 500));
   fprintf(fp, "%s<Value>%s</Value>\n", indent(indentation),
           vtkWrapXML_Quote(con->Value, 500));
+
+  vtkWrapXML_Comment(fp, con->Comment, indentation);
+
   fprintf(fp, "%s</Constant>\n", indent(--indentation));
 }
 
@@ -588,14 +629,9 @@ void vtkWrapXML_FunctionCommon(
     fprintf(fp, "%s %s\n", indent(indentation), vtkWrapXML_Quote(temp, 500));
 
     fprintf(fp, "%s</Signature>\n", indent(--indentation));
+  }
 
-    if (func->Comment)
-      {
-      fprintf(fp, "%s<Comment>\n", indent(indentation++));
-      vtkWrapXML_MultiLineText(fp, func->Comment, indentation);
-      fprintf(fp, "%s</Comment>\n", indent(--indentation));
-      }
-    }
+  vtkWrapXML_Comment(fp, func->Comment, indentation);
 
   if (printReturn)
     {
@@ -677,21 +713,7 @@ void vtkWrapXML_ClassMethod(
   FILE *fp, ClassInfo *data, FunctionInfo *func, const char *classname,
   const char *propname, int indentation)
 {
-  const char *access = "public";
   int needsReturnValue = 0;
-
-  switch (func->Access)
-    {
-    case VTK_ACCESS_PUBLIC:
-      access = "public";
-      break;
-    case VTK_ACCESS_PROTECTED:
-      access = "protected";
-      break;
-    case VTK_ACCESS_PRIVATE:
-      access = "private";
-      break;
-    }
 
   fprintf(fp, "\n");
   fprintf(fp, "%s<Method>\n", indent(indentation++));
@@ -717,7 +739,7 @@ void vtkWrapXML_ClassMethod(
             propname);
     }
 
-  fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation), access);
+  vtkWrapXML_Access(fp, func->Access, indentation);
 
   if (func->IsConst)
     {
@@ -793,12 +815,7 @@ void vtkWrapXML_ClassProperty(
     fprintf(fp, "%s<Flag>legacy</Flag>\n", indent(indentation));
     }
 
-  if (property->Comment)
-    {
-    fprintf(fp, "%s<Comment>\n", indent(indentation++));
-    vtkWrapXML_MultiLineText(fp, property->Comment, indentation);
-    fprintf(fp, "%s</Comment>\n", indent(--indentation));
-    }
+  vtkWrapXML_Comment(fp, property->Comment, indentation);
 
   vtkWrapXML_TypeSimple(fp, property->Type, property->ClassName,
                         property->Count, indentation);
@@ -1083,6 +1100,12 @@ void vtkWrapXML_Class(
                             indentation);
         break;
         }
+      case VTK_ENUM_INFO:
+        {
+        vtkWrapXML_Enum(fp, (EnumInfo *)classInfo->Items[i], 1,
+                        indentation);
+        break;
+        }
       case VTK_FUNCTION_INFO:
         {
         vtkWrapXML_MethodHelper(fp, merge, properties, classInfo,
@@ -1096,7 +1119,6 @@ void vtkWrapXML_Class(
       case VTK_STRUCT_INFO:
       case VTK_UNION_INFO:
       case VTK_VARIABLE_INFO:
-      case VTK_ENUM_INFO:
         break;
       }
     }
@@ -1133,6 +1155,12 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
                             indentation);
         break;
         }
+      case VTK_ENUM_INFO:
+        {
+        vtkWrapXML_Enum(fp, (EnumInfo *)data->Items[i], 0,
+                        indentation);
+        break;
+        }
       case VTK_CLASS_INFO:
       case VTK_STRUCT_INFO:
         {
@@ -1155,7 +1183,6 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
       case VTK_TYPEDEF_INFO:
       case VTK_UNION_INFO:
       case VTK_VARIABLE_INFO:
-      case VTK_ENUM_INFO:
         break;
       }
     }

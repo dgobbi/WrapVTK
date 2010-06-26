@@ -22,8 +22,8 @@
  * - The final two digits are the base type.
  * - The second digit is for indirection i.e. * and &
  * - The first digit is for const and static qualifiers
- * - The special value 0x5000 is for function pointers
-*/
+ *
+ */
 
 /*
  * Mask for removing "const", "static" qualifiers
