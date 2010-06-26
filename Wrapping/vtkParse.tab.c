@@ -8369,7 +8369,7 @@ int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
 {
   char h_cls[80];
   char h_func[80];
-  unsigned int  h_type;
+  unsigned int h_type;
   int  h_value;
   FunctionInfo *func_info;
   ClassInfo *class_info;
@@ -8381,8 +8381,8 @@ int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
   /* read each hint line in succession */
   while (fscanf(hfile,"%s %s %x %i", h_cls, h_func, &h_type, &h_value) != EOF)
     {
-    /* erase "ref" from hint type */
-    h_type = (h_type & ~VTK_PARSE_REF);
+    /* erase "ref" and qualifiers from hint type */
+    h_type = ((h_type & ~VTK_PARSE_REF) & VTK_PARSE_INDIRECT_LOWMASK);
 
     /* find the matching class */
     for (i = 0; i < contents->NumberOfClasses; i++)
@@ -8398,7 +8398,8 @@ int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
 
           if (func_info->HaveHint == 0 && func_info->Name &&
               (strcmp(h_func, func_info->Name) == 0) &&
-              ((int)h_type == (func_info->ReturnType & ~VTK_PARSE_REF)))
+              ((int)h_type == ((func_info->ReturnType & ~VTK_PARSE_REF) &
+                               VTK_PARSE_UNQUALIFIED_TYPE)))
             {
             /* types that hints are accepted for */
             switch (func_info->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE)

@@ -408,7 +408,7 @@ void vtkWrapXML_Type(
   int pcount = 0;
   int j = 0;
   int is_ref;
-  int bits;
+  int bits, mask;
 
   if (vtkParse_TypeIsConst(type))
     {
@@ -425,23 +425,26 @@ void vtkWrapXML_Type(
     fprintf(fp, "%s</Function>\n", indent(--indentation));
     }
 
-  type = (type & VTK_PARSE_INDIRECT);
-  
-  is_ref = (type & VTK_PARSE_REF);
+  if ((type & VTK_PARSE_INDIRECT) == VTK_PARSE_BAD_INDIRECT)
+    {
+    fprintf(fp, "%s<Dctr>unknown</Dctr>\n", indent(indentation));
+    return;
+    }
 
-  type = ((type >> 1) & VTK_PARSE_INDIRECT);
+  mask = (VTK_PARSE_INDIRECT_LOWMASK & ~VTK_PARSE_REF);
+  is_ref = (type & VTK_PARSE_REF);
+  type = ((type & VTK_PARSE_INDIRECT) & ~VTK_PARSE_REF);
 
   while (type)
     {
-    reverse <<= 2;
-    reverse = (reverse | (type & 0x3));
-    type >>= 2;
+    reverse = ((reverse << 2) | (type & mask));
+    type = ((type & ~mask) >> 2);
     }
 
   while (reverse)
     {
-    bits = ((reverse & 0x3) << 1);
-    reverse >>= 2;
+    bits = (reverse & mask);
+    reverse = ((reverse & ~mask) >> 2);
 
     if (reverse == 0 && sizes[0] && sizes[0][0] != '\0')
       {
@@ -515,7 +518,7 @@ void vtkWrapXML_Template(
     {
     if (args->ArgTemplates[i])
       {
-      vtkWrapXML_Template(fp, args->ArgTemplates[i], indentation);   
+      vtkWrapXML_Template(fp, args->ArgTemplates[i], indentation);
       }
     else if (args->ArgTypes[i])
       {

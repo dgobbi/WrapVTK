@@ -93,6 +93,7 @@
  */
 
 #define VTK_PARSE_INDIRECT              0xF00
+#define VTK_PARSE_BAD_INDIRECT          0xF00
 #define VTK_PARSE_INDIRECT_LOWMASK      0x700
 #define VTK_PARSE_REF                   0x100
 #define VTK_PARSE_POINTER               0x200
@@ -104,13 +105,15 @@
 #define VTK_PARSE_POINTER_POINTER       0xA00
 #define VTK_PARSE_POINTER_POINTER_REF   0xB00
 #define VTK_PARSE_POINTER_CONST_POINTER 0xE00
-#define VTK_PARSE_BAD_INDIRECT          0xF00
 
 /*
  * The lowest two hex digits describe the basic type,
  * where bit 0x10 is used to indicate unsigned types,
  * value 0x8 is used for unrecognized types, and
  * value 0x9 is used for all VTK objects.
+ *
+ * The bit 0x10 is reserved for "unsigned", and it
+ * may only be present in unsigned types.
 */
 
 #define VTK_PARSE_FLOAT               0x01
