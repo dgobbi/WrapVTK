@@ -24,6 +24,25 @@
  * - One byte is for qualifiers like const and static.
  * - The final byte is reserved.
  *
+ * There is some type information that cannot be stored within
+ * this bitfield.  This info falls into three categories:
+ *
+ * 1) Function pointers are stored in a FunctionInfo struct.
+ *    However, if the type is VTK_PARSE_FUNCTION with no POINTER,
+ *    it is guaranteed to be "void func(void *)" which is the
+ *    old VTK-style callback.
+ *
+ * 2) Multi-dimensional arrays are stored in a char *[MAX_ARRAY_DIMS]
+ *    array with a NULL pointer indicating there are no more brackets.
+ *    If the type is a pointer and the first value is not NULL, then
+ *    that value gives the array size for that pointer.  The reason
+ *    that "char *" is used is because the sizes might be template
+ *    parameters or constants defined elsewhere.  However, most often
+ *    the sizes are integer literals, and the first size will be
+ *    stored as an int in ArgCounts.
+ *
+ * 3) The ID for VTK_PARSE_OBJECT is stored in ArgClasses.
+ * 
  */
 
 /**
@@ -74,19 +93,23 @@
  * And "type val[n]" becomes "type *val".
  *
  * Any pointer can be followed by const, and any pointer
- * can be preceeded by a parenthesis, but we assume
- * there will be at most one set of parentheses.  Two
- * sets of parentheses means "an array of pointers to an
- * array of some type", and that is just wrong...
+ * can be preceeded by a parenthesis. However, you will
+ * never see a parenthesis anywhere except for just before
+ * the leftmost pointer.
+ *
+ * These are good: "(*val)[n]",  "**(*val)[n]", "(*&val)[n]"
+ * Not so good: "(**val)[n]" 
  *
  * The Ref needs 1 bit total, and each pointer needs 2 bits:
  *
- *  0 = nothing
- *  1 = '*'
- *  2 = '(*' which signals a multidimensional array
- *  3 = '* const'
+ *  0 = nothing 
+ *  1 = '*'       = VTK_PARSE_POINTER
+ *  2 = '(*'      = VTK_PARSE_ARRAY_MULTI
+ *  3 = '* const' = VTK_PARSE_CONST_POINTER
  *
- * The array info is stored separately.
+ * The VTK_PARSE_ARRAY_MULTI flag means "this pointer is actually
+ * the first item in a multi-dimensional array" with the array
+ * info stored separately.
  */
 #define VTK_PARSE_BAD_INDIRECT          0xFF00
 #define VTK_PARSE_INDIRECT_LOWMASK      0x0700
@@ -114,7 +137,7 @@
  *
  * Do not rearrange these types, they are hard-coded
  * into the hints file.
-*/
+ */
 #define VTK_PARSE_FLOAT               0x01
 #define VTK_PARSE_VOID                0x02
 #define VTK_PARSE_CHAR                0x03
