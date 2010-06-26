@@ -12,7 +12,7 @@
 
 =========================================================================*/
 
-/*
+/**
  This file contains utility functions for merging together the
  methods for a class with those inherited from all superclasses.
  If you include this header, you must also include vtkParse.h
@@ -22,8 +22,10 @@
 #ifndef VTK_PARSE_MERGE_H
 #define VTK_PARSE_MERGE_H
 
-/* This struct is meant to supplement ClassInfo, it gives information
- * about which class (or classes) each method was inherited from */
+/**
+ * This struct is meant to supplement ClassInfo, it gives information
+ * about which class (or classes) each method was inherited from
+ */
 typedef struct _MergeInfo
 {
   int NumberOfClasses;     /* number of classes in geneology */
@@ -42,13 +44,19 @@ struct _HierarchyInfo;
 extern "C" {
 #endif
 
-/* return an initialized MergeInfo */
+/**
+ * Return an initialized MergeInfo
+ */
 MergeInfo *vtkParseMerge_CreateMergeInfo(struct _ClassInfo *classInfo);
 
-/* free the MergeInfo */
+/**
+ * Free the MergeInfo
+ */
 void vtkParseMerge_FreeMergeInfo(MergeInfo *info);
 
-/* add newclass methods to the merge */
+/**
+ * Add newclass methods to the merge
+ */
 int vtkParseMerge_Merge(
   MergeInfo *info,
   struct _ClassInfo *merge,

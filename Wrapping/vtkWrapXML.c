@@ -15,7 +15,7 @@
 
 =========================================================================*/
 
-/*
+/**
  The vtkWrapXML program will read VTK header files and produce an XML
  representation of the interface to the VTK classes.  The main entry
  point in this file is  vtkParseOutput(FILE *fp, FileInfo *data)
@@ -35,12 +35,12 @@
 #include "vtkParseMain.h"
 #include "vtkConfigure.h"
 
-/* the indentation string, default is two spaces */
-#define VTKXML_INDENT "  "
-
 /* ----- XML utility functions ----- */
 
-/* indent to the specified indentation level (max 5 levels) */
+/* The indentation string, default is two spaces */
+#define VTKXML_INDENT "  "
+
+/* indent to the specified indentation level */
 static const char *indent(int indentation)
 {
   static const char *indentString[6] = {
@@ -52,12 +52,15 @@ static const char *indent(int indentation)
     VTKXML_INDENT VTKXML_INDENT VTKXML_INDENT VTKXML_INDENT VTKXML_INDENT,
   };
 
+  /* after 6 indentation levels, go back to zero */
   return indentString[indentation % 6];
 }
 
-/* convert special characters in a string into their escape codes,
+/**
+ * Convert special characters in a string into their escape codes,
  * so that the string can be quoted in an xml file (the specified
- * maxlen must be at least 32 chars)*/
+ * maxlen must be at least 32 chars)
+ */
 static const char *vtkWrapXML_Quote(const char *comment, int maxlen)
 {
   static char *result = 0;
@@ -133,7 +136,9 @@ static const char *vtkWrapXML_Quote(const char *comment, int maxlen)
   return result;
 }
 
-/* print multi-line text at the specified indentation level. */
+/**
+ * Print multi-line text at the specified indentation level.
+ */
 static void vtkWrapXML_MultiLineText(
   FILE *fp, const char *cp, int indentation)
 {
@@ -166,7 +171,9 @@ static void vtkWrapXML_MultiLineText(
     }
 }
 
-/* Print the comment */
+/**
+ * Print the comment as multi-line text
+ */
 void vtkWrapXML_Comment(
   FILE *fp, const char *comment, int indentation)
 {
@@ -178,7 +185,9 @@ void vtkWrapXML_Comment(
     }
 }
 
-/* Print the access level */
+/**
+ * Print the access level
+ */
 void vtkWrapXML_Access(
   FILE *fp, parse_access_t access, int indentation)
 {
@@ -200,7 +209,9 @@ void vtkWrapXML_Access(
   fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation), cp);
 }
 
-/* Write out the class header */
+/**
+ * Write out a class or struct header
+ */
 void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
 {
   int i = 0;
@@ -237,7 +248,9 @@ void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
     }
 }
 
-/* Write out the class footer */
+/**
+ * Write out the class or struct footer
+ */
 void vtkWrapXML_ClassFooter(FILE *fp, ClassInfo *data, int indentation)
 {
   if (data->ItemType == VTK_STRUCT_INFO)
@@ -250,7 +263,9 @@ void vtkWrapXML_ClassFooter(FILE *fp, ClassInfo *data, int indentation)
     }
 }
 
-/* write the file header */
+/**
+ * Write the file header
+ */
 void vtkWrapXML_FileHeader(FILE *fp, const FileInfo *data, int indentation)
 {
   const char *cp = data->FileName;
@@ -269,14 +284,18 @@ void vtkWrapXML_FileHeader(FILE *fp, const FileInfo *data, int indentation)
     }
 }
 
-/* write the file footer */
+/**
+ * Write the file footer
+ */
 void vtkWrapXML_FileFooter(FILE *fp, const FileInfo *data, int indentation)
 {
   fprintf(fp, "\n");
   fprintf(fp, "%s</File>\n", indent(indentation));
 }
 
-/* Check for strings that are NULL, empty, or whitespace */
+/**
+ * Check for strings that are NULL, empty, or whitespace
+ */
 int vtkWrapXML_EmptyString(const char *cp)
 {
   if (cp)
@@ -293,7 +312,9 @@ int vtkWrapXML_EmptyString(const char *cp)
   return 1;
 }
 
-/* Write out the documentation for the class */
+/**
+ * Write out the VTK-style documentation for the file
+ */
 void vtkWrapXML_FileDoc(FILE *fp, FileInfo *data, int indentation)
 {
   size_t n;
@@ -379,6 +400,9 @@ void vtkWrapXML_FileDoc(FILE *fp, FileInfo *data, int indentation)
   fprintf(fp, "%s</Comment>\n", indent(--indentation));
 }
 
+/**
+ * Write the inheritance section
+ */
 void vtkWrapXML_ClassInheritance(FILE *fp, MergeInfo *merge, int indentation)
 {
   int i, n;
@@ -399,7 +423,9 @@ void vtkWrapXML_ClassInheritance(FILE *fp, MergeInfo *merge, int indentation)
 void vtkWrapXML_FunctionCommon(
   FILE *fp, FunctionInfo *func, int doReturn, int indentation);
 
-/* Print out a type in XML format */
+/**
+ * Print out a type in XML format
+ */
 void vtkWrapXML_Type(
   FILE *fp, int type, const char *vtkclass, char *sizes[],
   FunctionInfo *func, int indentation)
@@ -488,7 +514,9 @@ void vtkWrapXML_Type(
     }
 }
 
-/* handle simple types */
+/**
+ * Print out a simple type types
+ */
 void vtkWrapXML_TypeSimple(
   FILE *fp, int type, const char *classname, int size, int indentation)
 {
@@ -506,7 +534,9 @@ void vtkWrapXML_TypeSimple(
   vtkWrapXML_Type(fp, type, classname, sizes, NULL, indentation);
 }
 
-/* Print a template */
+/**
+ * Print a template
+ */
 void vtkWrapXML_Template(
   FILE *fp, TemplateArgs *args, int indentation)
 {
@@ -548,7 +578,9 @@ void vtkWrapXML_Template(
   fprintf(fp, "%s</Template>\n", indent(--indentation));
 }
 
-/* Print an enum */
+/**
+ * Print an enum
+ */
 void vtkWrapXML_Enum(
   FILE *fp, EnumInfo *item, int inClass, int indentation)
 {
@@ -565,7 +597,9 @@ void vtkWrapXML_Enum(
   fprintf(fp, "%s</Enum>\n", indent(--indentation));
 }
 
-/* Print a constant */
+/**
+ * Print a constant
+ */
 void vtkWrapXML_Constant(
   FILE *fp, ConstantInfo *con, int inClass, int indentation)
 {
@@ -595,7 +629,9 @@ void vtkWrapXML_Constant(
   fprintf(fp, "%s</Constant>\n", indent(--indentation));
 }
 
-/* Print out items that are common to functions and methods */
+/**
+ * Print out items that are common to functions and methods
+ */
 void vtkWrapXML_FunctionCommon(
   FILE *fp, FunctionInfo *func, int printReturn, int indentation)
 {
@@ -672,7 +708,9 @@ void vtkWrapXML_FunctionCommon(
     }
 }
 
-/* Print out a function in XML format */
+/**
+ * Print out a function in XML format
+ */
 void vtkWrapXML_Function(
   FILE *fp, FunctionInfo *func, int indentation)
 {
@@ -693,7 +731,9 @@ void vtkWrapXML_Function(
   fprintf(fp, "%s</Function>\n", indent(--indentation));
 }
 
-/* print a bitfield of class property access methods */
+/**
+ * Print a bitfield of class property access methods
+ */
 void vtkWrapXML_ClassPropertyMethods(
   FILE *fp, unsigned int methodBitfield, int indentation)
 {
@@ -711,7 +751,9 @@ void vtkWrapXML_ClassPropertyMethods(
     }
 }
 
-/* Print out a function in XML format */
+/**
+ * Print out a method in XML format
+ */
 void vtkWrapXML_ClassMethod(
   FILE *fp, ClassInfo *data, FunctionInfo *func, const char *classname,
   const char *propname, int indentation)
@@ -770,7 +812,9 @@ void vtkWrapXML_ClassMethod(
   fprintf(fp, "%s</Method>\n", indent(--indentation));
 }
 
-/* Print out a property in XML format */
+/**
+ * Print out a property in XML format
+ */
 void vtkWrapXML_ClassProperty(
   FILE *fp, PropertyInfo *property, const char *classname, int indentation)
 {
@@ -867,8 +911,10 @@ void vtkWrapXML_ClassProperty(
   fprintf(fp, "%s</Property>\n", indent(--indentation));
 }
 
-/* Recursive suproutine to add the methods of "classname" and all its
- * superclasses to "merge" */
+/**
+ * Recursive suproutine to add the methods of "classname" and all its
+ * superclasses to "merge"
+ */
 void vtkWrapXML_MergeHelper(
   const NamespaceInfo *data, const HierarchyInfo *hinfo,
   const char *classname, FILE *hintfile, MergeInfo *info, ClassInfo *merge)
@@ -960,7 +1006,9 @@ void vtkWrapXML_MergeHelper(
     }
 }
 
-/* Merge the methods from the superclasses */
+/**
+ * Merge the methods from the superclasses
+ */
 MergeInfo *vtkWrapXML_MergeSuperClasses(
   NamespaceInfo *data, ClassInfo *classInfo)
 {
@@ -1007,7 +1055,9 @@ MergeInfo *vtkWrapXML_MergeSuperClasses(
   return info;
 }
 
-/* look for additional information before printing a method */
+/**
+ * Synthesize additional information before printing a method
+ */
 void vtkWrapXML_MethodHelper(
   FILE *fp, MergeInfo *merge, ClassProperties *properties,
   ClassInfo *classInfo, FunctionInfo *funcInfo, int indentation)
@@ -1060,7 +1110,9 @@ void vtkWrapXML_MethodHelper(
                          classname, propname, indentation);
 }
 
-/* print a class as xml */
+/**
+ * Print a class as xml
+ */
 void vtkWrapXML_Class(
   FILE *fp, NamespaceInfo *data, ClassInfo *classInfo, int indentation)
 {
@@ -1142,7 +1194,9 @@ void vtkWrapXML_Class(
 /* needed for vtkWrapXML_Body */
 void vtkWrapXML_Namespace(FILE *fp, NamespaceInfo *data, int indentation);
 
-/* Print the body of a file or namespace */
+/**
+ * Print the body of a file or namespace
+ */
 void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
 {
   int i;
@@ -1191,7 +1245,9 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
     }
 }
 
-/* print a namespace as xml */
+/**
+ * Print a namespace as xml
+ */
 void vtkWrapXML_Namespace(FILE *fp, NamespaceInfo *data, int indentation)
 {
   fprintf(fp, "\n");
@@ -1202,9 +1258,13 @@ void vtkWrapXML_Namespace(FILE *fp, NamespaceInfo *data, int indentation)
   fprintf(fp, "%s</Namespace>\n", indent(--indentation));
 }
 
-/* main functions that takes a parsed FileInfo from vtk and produces a
+/**
+ * Main function that takes a parsed FileInfo from vtk and produces a
  * specific vtkXML format for desired functions to be incorporated in SimVTK
- * (ie. certain add, remove, get and set methods). */
+ * (ie. certain add, remove, get and set methods).
+ *
+ * This method is called from vtkParseMain.c
+ */
 void vtkParseOutput(FILE *fp, FileInfo *data)
 {
   int indentation = 0;
@@ -1221,3 +1281,4 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
   /* print the closing tag */
   vtkWrapXML_FileFooter(fp, data, indentation);
 }
+

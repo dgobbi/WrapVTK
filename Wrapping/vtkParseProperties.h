@@ -12,13 +12,16 @@
 
 =========================================================================*/
 
-/* structures and methods for finding properties based on the Set and Get
- * functions defined in the ClassInfo struct created by vtkParse */
+/**
+ * This file contains structures and methods for finding properties
+ * based on the Set and Get functions defined in the ClassInfo struct
+ * created by vtkParse
+ */
 
 #ifndef VTK_PARSE_PROPERTIES_H
 #define VTK_PARSE_PROPERTIES_H
 
-/*-------------------------------------------------------------------
+/**
  * bitfield values to say what methods are available for a property
  *
  * BASIC_GET is "type GetValue()" or "type *GetValue()"
@@ -49,8 +52,7 @@
  *
  * Items marked with two asterisks are not yet implemented.
  *
- * */
-
+ */
 #define VTK_METHOD_BASIC_GET  0x00000001
 #define VTK_METHOD_BASIC_SET  0x00000002
 #define VTK_METHOD_MULTI_GET  0x00000004
@@ -77,10 +79,10 @@
 #define VTK_METHOD_INDEX_REM  0x04000000
 #define VTK_METHOD_REMOVEALL  0x08000000
 
-/*-------------------------------------------------------------------
+/**
  * A struct that contains all the property information that
- * can be ascertained from the vtkParse info */
-
+ * can be ascertained from the vtkParse info
+ */
 typedef struct _PropertyInfo
 {
   const char *Name;          /* property name */
@@ -96,8 +98,9 @@ typedef struct _PropertyInfo
   const char *Comment;       /* comment from header file */
 } PropertyInfo;
 
-/* List of methods for accessing/changing properties */
-
+/**
+ * List of methods for accessing/changing properties
+ */
 typedef struct _ClassProperties
 {
   int NumberOfProperties;      /* total number of properties found */
@@ -107,19 +110,27 @@ typedef struct _ClassProperties
   int *MethodProperties;       /* discovered property for each method */
 } ClassProperties;
 
+/* forward declaration of _ClassInfo */
 struct _ClassInfo;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* function to build the ClassProperties struct from a ClassInfo struct */
-
+/**
+ * Build the ClassProperties struct from a ClassInfo struct
+ */
 ClassProperties *vtkParseProperties_Create(struct _ClassInfo *data);
+
+/**
+ * Free a ClassProperties struct
+ */
 void vtkParseProperties_Free(ClassProperties *properties);
 
-/* function to convert a method bitfield value to a string */
-
+/**
+ * Convert a method bitfield to a string,
+ * e.g. VTK_METHOD_BASIC_GET -> "METHOD_BASIC_GET"
+ */
 const char *vtkParseProperties_MethodTypeAsString(unsigned int methodType);
 
 #ifdef __cplusplus

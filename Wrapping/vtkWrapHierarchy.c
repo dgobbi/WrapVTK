@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   Visualization Toolkit
-  Module:    vtkBuildHierarchy.c
+  Module:    vtkWrapHierarchy.c
 
   Copyright (c) 2010 David Gobbi
   All rights reserved.
@@ -12,8 +12,8 @@
 
 =========================================================================*/
 
-/*
- The vtkBuildHierarchy program builds a text file that describes the
+/**
+ The vtkWrapHierarchy program builds a text file that describes the
  class hierarchy.
  For each class, the output file will have a line in the following
  format:
@@ -29,8 +29,11 @@
 
 #define MAX_NUM_CLASSES 10000
 
-/* read a header file with vtkParse.tab.c */
-static int parse_header_file(FILE *fp, const char *filename, char *lines[])
+/**
+ * Read a header file with vtkParse.tab.c
+ */
+static int vtkWrapHierarchy_ParseHeaderFile(
+  FILE *fp, const char *filename, char *lines[])
 {
   char line[2048];
   char *cp;
@@ -97,8 +100,10 @@ static int parse_header_file(FILE *fp, const char *filename, char *lines[])
   return 1;
 }
 
-/* read a hierarchy file into "lines" without duplicating lines */
-static int read_text_file(FILE *fp, char *lines[])
+/**
+ * Read a hierarchy file into "lines" without duplicating lines
+ */
+static int vtkWrapHierarchy_ReadHierarchyFile(FILE *fp, char *lines[])
 {
   char line[2048];
   int i, n;
@@ -130,7 +135,7 @@ static int read_text_file(FILE *fp, char *lines[])
       if (i+1 >= MAX_NUM_CLASSES)
         {
         fclose(fp);
-        fprintf(stderr, "In vtkBuildHierarchy: "
+        fprintf(stderr, "In vtkWrapHierarchy: "
                 "Number of classes exceeds MAX_NUM_CLASSES\n");
         exit(1);
         }
@@ -148,8 +153,10 @@ static int read_text_file(FILE *fp, char *lines[])
   return 1;
 }
 
-/* compare a file to "lines", return 0 if they are different */
-static int compare_file(FILE *fp, char *lines[])
+/**
+ * Compare a file to "lines", return 0 if they are different
+ */
+static int vtkWrapHierarchy_CompareHierachyFile(FILE *fp, char *lines[])
 {
   char line[2048];
   unsigned char *matched;
@@ -209,8 +216,10 @@ static int compare_file(FILE *fp, char *lines[])
   return 1;
 }
 
-/* write "lines" to a file */
-static int write_text_file(FILE *fp, char *lines[])
+/**
+ * Write "lines" to a hierarchy file
+ */
+static int vtkWrapHierarchy_WriteHierarchyFile(FILE *fp, char *lines[])
 {
   int i;
 
@@ -225,8 +234,11 @@ static int write_text_file(FILE *fp, char *lines[])
   return 1;
 }
 
-/* try to parse a header file, print error and exit if fail */
-static int try_parse_header_file(const char *file_name, char *lines[])
+/**
+ * Try to parse a header file, print error and exit if fail
+ */
+static int vtkWrapHierarchy_TryParseHeaderFile(
+  const char *file_name, char *lines[])
 {
   FILE *input_file;
 
@@ -234,12 +246,12 @@ static int try_parse_header_file(const char *file_name, char *lines[])
 
   if (!input_file)
     {
-    fprintf(stderr, "vtkBuildHierarchy: couldn't open file %s\n",
+    fprintf(stderr, "vtkWrapHierarchy: couldn't open file %s\n",
             file_name);
     exit(1);
     }
 
-  if (!parse_header_file(input_file, file_name, lines))
+  if (!vtkWrapHierarchy_ParseHeaderFile(input_file, file_name, lines))
     {
     fclose(input_file);
     exit(1);
@@ -249,23 +261,26 @@ static int try_parse_header_file(const char *file_name, char *lines[])
   return 0;
 }
 
-/* try to read a file, print error and exit if fail */
-static int try_read_text_file(const char *file_name, char *lines[])
+/**
+ * Try to read a file, print error and exit if fail
+ */
+static int vtkWrapHierarchy_TryReadHierarchyFile(
+  const char *file_name, char *lines[])
 {
   FILE *input_file;
 
   input_file = fopen(file_name, "r");
   if (!input_file)
     {
-    fprintf(stderr, "vtkBuildHierarchy: couldn't open file %s\n",
+    fprintf(stderr, "vtkWrapHierarchy: couldn't open file %s\n",
             file_name);
     exit(1);
     }
 
-  if (!read_text_file(input_file, lines))
+  if (!vtkWrapHierarchy_ReadHierarchyFile(input_file, lines))
     {
     fclose(input_file);
-    fprintf(stderr, "vtkBuildHierarchy: error reading file %s\n",
+    fprintf(stderr, "vtkWrapHierarchy: error reading file %s\n",
             file_name);
     exit(1);
     }
@@ -274,14 +289,17 @@ static int try_read_text_file(const char *file_name, char *lines[])
   return 0;
 }
 
-/* try to write a file, print error and exit if fail */
-static int try_write_text_file(const char *file_name, char *lines[])
+/**
+ * Try to write a file, print error and exit if fail
+ */
+static int vtkWrapHierarchy_TryWriteHierarchyFile(
+  const char *file_name, char *lines[])
 {
   FILE *output_file;
   int matched = 0;
 
   output_file = fopen(file_name, "r");
-  if (output_file && compare_file(output_file, lines))
+  if (output_file && vtkWrapHierarchy_CompareHierachyFile(output_file, lines))
     {
     matched = 1;
     }
@@ -295,14 +313,14 @@ static int try_write_text_file(const char *file_name, char *lines[])
     output_file = fopen(file_name, "w");
     if (!output_file)
       {
-      fprintf(stderr, "vtkBuildHierarchy: error opening file %s\n",
+      fprintf(stderr, "vtkWrapHierarchy: error opening file %s\n",
               file_name);
       exit(1);
       }
-    if (!write_text_file(output_file, lines))
+    if (!vtkWrapHierarchy_WriteHierarchyFile(output_file, lines))
       {
       fclose(output_file);
-      fprintf(stderr, "vtkBuildHierarchy: error writing file %s\n",
+      fprintf(stderr, "vtkWrapHierarchy: error writing file %s\n",
               file_name);
       exit(1);
       }
@@ -351,22 +369,22 @@ int main(int argc, char *argv[])
   files[0] = NULL;
 
   /* read the data file */
-  try_read_text_file(argv[argi++], files);
+  vtkWrapHierarchy_TryReadHierarchyFile(argv[argi++], files);
 
   /* read in all the prior files */
   while (argi < argc)
     {
-    try_read_text_file(argv[argi++], lines);
+    vtkWrapHierarchy_TryReadHierarchyFile(argv[argi++], lines);
     }
 
   /* merge the files listed in the data file */
   for (i = 0; files[i] != NULL; i++)
     {
-    try_parse_header_file(files[i], lines);
+    vtkWrapHierarchy_TryParseHeaderFile(files[i], lines);
     }
 
   /* write the file, if it has changed */
-  try_write_text_file(output_filename, lines);
+  vtkWrapHierarchy_TryWriteHierarchyFile(output_filename, lines);
 
   free(files);
   free(lines);
