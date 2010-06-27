@@ -812,6 +812,8 @@ int add_indirection(int type1, int type2)
 %token CHAR
 %token SIGNED_CHAR
 %token BOOL
+%token SSIZE_T
+%token SIZE_T
 %token <str> OSTREAM
 %token <str> ISTREAM
 %token ENUM
@@ -1682,6 +1684,8 @@ type_primitive:
   FLOAT  { typeSig("float"); $<integer>$ = VTK_PARSE_FLOAT;} |
   DOUBLE { typeSig("double"); $<integer>$ = VTK_PARSE_DOUBLE;} |
   BOOL { typeSig("bool"); $<integer>$ = VTK_PARSE_BOOL;} |
+  SSIZE_T { typeSig("ssize_t"); $<integer>$ = VTK_PARSE_SSIZE_T;} |
+  SIZE_T { typeSig("size_t"); $<integer>$ = VTK_PARSE_SIZE_T;} |
   SIGNED_CHAR {typeSig("signed char"); $<integer>$ = VTK_PARSE_SIGNED_CHAR;} |
   TypeInt8 { typeSig("vtkTypeInt8"); $<integer>$ = VTK_PARSE_INT8; } |
   TypeUInt8 { typeSig("vtkTypeUInt8"); $<integer>$ = VTK_PARSE_UINT8; } |

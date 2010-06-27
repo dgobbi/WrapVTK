@@ -160,6 +160,8 @@
 #define VTK_PARSE_UNSIGNED___INT64    0x1C
 #define VTK_PARSE_SIGNED_CHAR         0x0D
 #define VTK_PARSE_BOOL                0x0E
+#define VTK_PARSE_SSIZE_T             0x0F
+#define VTK_PARSE_SIZE_T              0x1F
 #define VTK_PARSE_STRING              0x21
 #define VTK_PARSE_UNICODE_STRING      0x22
 #define VTK_PARSE_OSTREAM             0x23
@@ -190,6 +192,8 @@
 #define VTK_PARSE_UNSIGNED___INT64_PTR    0x21C
 #define VTK_PARSE_SIGNED_CHAR_PTR         0x20D
 #define VTK_PARSE_BOOL_PTR                0x20E
+#define VTK_PARSE_SSIZE_T_PTR             0x20F
+#define VTK_PARSE_SIZE_T_PTR              0x21F
 #define VTK_PARSE_STRING_PTR              0x221
 #define VTK_PARSE_UNICODE_STRING_PTR      0x222
 #define VTK_PARSE_OSTREAM_PTR             0x223
@@ -220,6 +224,8 @@
 #define VTK_PARSE_UNSIGNED___INT64_REF    0x11C
 #define VTK_PARSE_SIGNED_CHAR_REF         0x10D
 #define VTK_PARSE_BOOL_REF                0x10E
+#define VTK_PARSE_SSIZE_T_REF             0x10F
+#define VTK_PARSE_SIZE_T_REF              0x11F
 #define VTK_PARSE_STRING_REF              0x121
 #define VTK_PARSE_UNICODE_STRING_REF      0x122
 #define VTK_PARSE_OSTREAM_REF             0x123

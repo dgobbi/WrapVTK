@@ -233,6 +233,9 @@ static int skip_ahead_until(const char *text);
 
 "signed"[\t\n\r ]*"char"  return(SIGNED_CHAR);
 
+"size_t"        return(SIZE_T);
+"ssize_t"       return(SSIZE_T);
+
 "class"         return(CLASS);
 "struct"        return(STRUCT);
 "public"        return(PUBLIC);
