@@ -144,7 +144,9 @@ void add_constant(const char *name, const char *value,
                   int type, const char *typeclass, int global);
 const char *add_const_scope(const char *name);
 void prepend_scope(char *cp, const char *arg);
-int add_pointer_to_type(int tval, int ptr);
+int add_indirection(int tval, int ptr);
+int handle_complex_type(int datatype, int extra, char *array_sizes[],
+                        FunctionInfo **func_ptr, const char *sp);
 
 void outputSetVectorMacro(
   const char *var, int argType, const char *typeText, int n);
@@ -425,13 +427,13 @@ void swapSig()
     }
 }
 
-/* chop the last char from the signature */
+/* chop the last space from the signature */
 void chopSig(void)
 {
   if (currentFunction->Signature)
     {
     size_t n = strlen(currentFunction->Signature);
-    if (n > 0)
+    if (n > 0 && currentFunction->Signature[n-1] == ' ')
       {
       currentFunction->Signature[n-1] = '\0';
       }
@@ -486,12 +488,29 @@ void clearArray(void)
 }
 
 /* add another dimension */
-void pushArray(const char *size)
+void pushArraySize(const char *size)
 {
   if (numberOfDimensions < MAX_ARRAY_DIMS)
     {
     arrayDimensions[numberOfDimensions++] = vtkstrdup(size);
     }
+}
+
+/* add another dimension to the front */
+void pushArrayFront(const char *size)
+{
+  int i = numberOfDimensions;
+
+  if (i >= MAX_ARRAY_DIMS) { i--; }
+  else { numberOfDimensions++; }
+
+  while (i > 0)
+    {
+    arrayDimensions[i] = arrayDimensions[i-1];
+    i--;
+    }
+
+  arrayDimensions[0] = vtkstrdup(size);
 }
 
 /* get the number of dimensions */
@@ -718,20 +737,39 @@ void prepend_scope(char *cp, const char *arg)
   strncpy(&cp[i+n], "::", 2);
 }
 
-/* expand a type by one pointer */
-int add_pointer_to_type(int tval, int ptr)
+/* expand a type by including pointers from another */
+int add_indirection(int type1, int type2)
 {
-  int mask = (VTK_PARSE_INDIRECT & ~VTK_PARSE_REF);
-  int tmp = (tval & mask);
-  tval = (tval & ~mask);
+  int ptr1 = (type1 & VTK_PARSE_POINTER_MASK);
+  int ptr2 = (type2 & VTK_PARSE_POINTER_MASK);
+  int reverse = 0;
+  int result;
 
-  tmp = ((tmp << 2) | ptr);
-  if ((tmp & mask) != tmp)
+  /* one of type1 or type2 will only have VTK_PARSE_INDIRECT, but
+   * we don't know which one. */
+  result = ((type1 & ~VTK_PARSE_POINTER_MASK) |
+            (type2 & ~VTK_PARSE_POINTER_MASK));
+
+  while (ptr2)
     {
-    tmp = VTK_PARSE_BAD_INDIRECT;
+    reverse = ((reverse << 2) | (ptr2 & VTK_PARSE_POINTER_LOWMASK));
+    ptr2 = ((ptr2 >> 2) & VTK_PARSE_POINTER_MASK);
     }
 
-  return (tval | tmp);
+  while (reverse)
+   {
+   ptr1 = ((ptr1 << 2) | (reverse & VTK_PARSE_POINTER_LOWMASK));
+   reverse = ((reverse >> 2) & VTK_PARSE_POINTER_MASK);
+
+   /* make sure we don't exceed the VTK_PARSE_POINTER bitfield */
+   if ((ptr1 & VTK_PARSE_POINTER_MASK) != ptr1)
+     {
+     ptr1 = VTK_PARSE_BAD_INDIRECT;
+     break;
+     }
+   }
+
+  return (ptr1 | result);
 }
 
 %}
@@ -1349,90 +1387,22 @@ arg:
       int i = currentFunction->NumberOfArguments;
       int datatype = $<integer>2;
       int extra = $<integer>3;
-      FunctionInfo *argFunction = 0;
       char *cp;
-      const char *sp = copySig();
-      int j, n;
 
-      /* if "extra" was set, parentheses were involved */
-      if ((extra & VTK_PARSE_BASE_TYPE) == VTK_PARSE_FUNCTION)
-        {
-        /* the current type becomes the function return type */
-        argFunction = getFunction();
-        argFunction->ReturnType = datatype;
-        argFunction->ReturnClass = vtkstrdup(getTypeId());
-        argFunction->Signature = vtkstrdup(sp);
-        currentFunction->ArgFunctions[i] = argFunction;
+      datatype = handle_complex_type(
+        datatype, extra, currentFunction->ArgDimensions[i],
+        &currentFunction->ArgFunctions[i], copySig());
 
-        /* the arg type is whatever was inside the parentheses */
-        clearTypeId();
-        setTypeId("function");
-        datatype = (extra & VTK_PARSE_UNQUALIFIED_TYPE);
-        }
-      else if ((extra & VTK_PARSE_INDIRECT) == VTK_PARSE_BAD_INDIRECT)
-        {
-        datatype = (datatype | VTK_PARSE_BAD_INDIRECT);
-        currentFunction->ArrayFailure = 1;
-        }
-      else if ((extra & VTK_PARSE_INDIRECT) != 0)
-        {
-        extra = (extra & VTK_PARSE_INDIRECT);
-
-        if (extra & VTK_PARSE_REF)
+      cp = currentFunction->ArgDimensions[i][0];
+      if (cp)
+        { 
+        while (*cp != '\0' && *cp >= '0' && *cp <= '9') { cp++; }
+        if (*cp == '\0')
           {
-          datatype = (datatype | VTK_PARSE_REF);
-          extra = (extra & ~VTK_PARSE_REF);
-          }
-
-        if (extra != 0)
-          {
-          if (getArrayNDims() > 0)
-            {
-            datatype = add_pointer_to_type(datatype, VTK_PARSE_ARRAY_MULTI);
-            extra = ((extra >> 2) & VTK_PARSE_INDIRECT_LOWMASK);
-            }
-          }
-        while (extra != 0)
-          {
-          datatype = add_pointer_to_type(datatype,
-                                         (extra & VTK_PARSE_INDIRECT_LOWMASK));
-          extra = ((extra >> 2) & VTK_PARSE_INDIRECT_LOWMASK);
+          cp = currentFunction->ArgDimensions[i][0];
+          currentFunction->ArgCounts[i] = (int)atol(cp);
           }
         }
-
-      if (getArrayNDims() == 1)
-        {
-        /* if a 1D array was given, use its size as the ArgCount */
-        if ((datatype & VTK_PARSE_INDIRECT_LOWMASK) != VTK_PARSE_ARRAY_MULTI)
-          {
-          /* turn the first set of brackets into a pointer */
-          datatype = add_pointer_to_type(datatype, VTK_PARSE_POINTER);
-          cp = getArraySize(0);
-          while (*cp != '\0' && *cp >= '0' && *cp <= '9') { cp++; }
-          if (*cp == '\0')
-            {
-            currentFunction->ArgCounts[i] = (int)atol(getArraySize(0));
-            }
-          }
-        }
-      else if (getArrayNDims() > 1)
-        {
-        /* first array brackets get turned into a pointer */
-        if ((datatype & VTK_PARSE_INDIRECT_LOWMASK) != VTK_PARSE_ARRAY_MULTI)
-          {
-          /* turn the first set of brackets into a pointer, mark multi-dim */
-          datatype = add_pointer_to_type(datatype, VTK_PARSE_ARRAY_MULTI);
-          }
-        currentFunction->ArrayFailure = 1;
-        }
-
-      /* copy contents of all brackets to the ArgDimensions */
-      n = getArrayNDims();
-      for (j = 0; j < n; j++)
-        {
-        currentFunction->ArgDimensions[i][j] = getArraySize(j);
-        }
-      numberOfDimensions = 0;
 
       currentFunction->ArgTypes[i] = datatype;
       currentFunction->ArgClasses[i] = vtkstrdup(getTypeId());
@@ -1507,9 +1477,9 @@ var_id_maybe_assign: complex_var_id maybe_var_assign
      };
 
 maybe_other_vars:
-     | maybe_other_vars ',' {postSig(", ");} maybe_other_var;
+     | maybe_other_vars ',' {postSig(", ");} other_var;
 
-maybe_other_var:
+other_var:
        { setStorageTypeIndirection(0); } var_id_maybe_assign
      | type_indirection { setStorageTypeIndirection($<integer>1); }
        var_id_maybe_assign;
@@ -1518,13 +1488,15 @@ maybe_other_var:
 maybe_complex_var_id: maybe_var_id maybe_var_array { $<integer>$ = 0; }
      | p_or_lp_or_la maybe_indirect_maybe_var_id ')' { postSig(")"); }
        maybe_array_or_args
-       { $<integer>$ = ($<integer>1 | $<integer>2 | $<integer>5); };
+       { $<integer>$ = add_indirection($<integer>1,
+                       add_indirection($<integer>2, $<integer>5)); };
 
 /* for vars, the var_id is mandatory */
 complex_var_id: var_id maybe_var_array { $<integer>$ = 0; }
      | lp_or_la maybe_indirect_var_id ')' { postSig(")"); }
        maybe_array_or_args
-       { $<integer>$ = ($<integer>1 | $<integer>2 | $<integer>5); };
+       { $<integer>$ = add_indirection($<integer>1,
+                       add_indirection($<integer>2, $<integer>5)); };
 
 p_or_lp_or_la: '(' { postSig("("); $<integer>$ = 0; }
         | LP { postSig("("); postSig($<str>1); postSig("*");
@@ -1543,18 +1515,16 @@ maybe_array_or_args: { $<integer>$ = 0; }
    | var_array { $<integer>$ = 0; };
 
 maybe_indirect_maybe_var_id:
-       maybe_complex_var_id
-       { if($<integer>1) { $<integer>$ = VTK_PARSE_BAD_INDIRECT; }; }
+       maybe_complex_var_id { $<integer>$ = $<integer>1; }
      | type_indirection maybe_complex_var_id
-       { $<integer>$ = VTK_PARSE_BAD_INDIRECT; };
+       { $<integer>$ = add_indirection($<integer>1, $<integer>2);};
 
 maybe_indirect_var_id:
-       complex_var_id
-       { if($<integer>1) { $<integer>$ = VTK_PARSE_BAD_INDIRECT; }; }
+       complex_var_id { $<integer>$ = $<integer>1; }
      | type_indirection complex_var_id
-       { $<integer>$ = VTK_PARSE_BAD_INDIRECT;};
+       { $<integer>$ = add_indirection($<integer>1, $<integer>2);};
 
-maybe_var_id: {clearVarName();} | var_id;
+maybe_var_id: {clearVarName(); chopSig();} | var_id;
 
 var_id: any_id {setVarName($<str>1);};
 
@@ -1566,8 +1536,8 @@ array: more_array '[' {postSig("[");} array_size ']' {postSig("]");};
 
 more_array: | array;
 
-array_size: {pushArray("");}
-    | integer_expression {pushArray($<str>1);};
+array_size: {pushArraySize("");}
+    | integer_expression {pushArraySize($<str>1);};
 
 /*
  * Any Id, evaluates to string and sigs itself
@@ -2857,6 +2827,88 @@ const char *add_const_scope(const char *name)
   return text;
 }
 
+/* deal with types that include function pointers or arrays */
+int handle_complex_type(
+  int datatype, int extra, char *array_info[],
+  FunctionInfo **func_ptr, const char *func_sig)
+{
+  FunctionInfo *argFunction = 0;
+  int j, n;
+
+  /* if "extra" was set, parentheses were involved */
+  if ((extra & VTK_PARSE_BASE_TYPE) == VTK_PARSE_FUNCTION)
+    {
+    /* the current type becomes the function return type */
+    argFunction = getFunction();
+    argFunction->ReturnType = datatype;
+    argFunction->ReturnClass = vtkstrdup(getTypeId());
+    argFunction->Signature = vtkstrdup(func_sig);
+    *func_ptr = argFunction;
+
+    /* the arg type is whatever was inside the parentheses */
+    clearTypeId();
+    setTypeId("function");
+    datatype = (extra & VTK_PARSE_UNQUALIFIED_TYPE);
+    }
+  else if ((extra & VTK_PARSE_INDIRECT) == VTK_PARSE_BAD_INDIRECT)
+    {
+    datatype = (datatype | VTK_PARSE_BAD_INDIRECT);
+    }
+  else if ((extra & VTK_PARSE_INDIRECT) != 0)
+    {
+    extra = (extra & VTK_PARSE_INDIRECT);
+
+    if ((extra & VTK_PARSE_REF) != 0)
+      {
+      datatype = (datatype | VTK_PARSE_REF);
+      extra = (extra & ~VTK_PARSE_REF);
+      }
+
+    if (extra != 0 && getArrayNDims() > 0)
+      {
+      /* pointer represents an unsized array bracket */
+      datatype = add_indirection(datatype, VTK_PARSE_ARRAY);
+      extra = ((extra >> 2) & VTK_PARSE_POINTER_MASK);
+      }
+
+    datatype = add_indirection(datatype, extra);
+    }
+
+  if (getArrayNDims() == 1)
+    {
+    if ((datatype & VTK_PARSE_POINTER_LOWMASK) != VTK_PARSE_ARRAY)
+      {
+      /* turn the first set of brackets into a pointer */
+      if (getArrayNDims() == 1)
+        {
+        datatype = add_indirection(datatype, VTK_PARSE_POINTER);
+        }
+      }
+    }
+  else if (getArrayNDims() > 1)
+    {
+    if ((datatype & VTK_PARSE_POINTER_LOWMASK) != VTK_PARSE_ARRAY)
+      {
+      /* turn the first set of brackets into a pointer */
+      datatype = add_indirection(datatype, VTK_PARSE_ARRAY);
+      }
+    else
+      {
+      pushArrayFront("");
+      }
+    }
+
+  /* copy contents of all brackets to the ArgDimensions */
+  n = getArrayNDims();
+  for (j = 0; j < n; j++)
+    {
+    array_info[j] = getArraySize(j);
+    }
+  clearArray();
+
+  return datatype;
+}
+
 /* reject the function, do not output it */
 void reject_function()
 {
@@ -2920,7 +2972,7 @@ void output_function()
     currentFunction->IsProtected = 0;
     }
 
-  /* look for VAR FUNCTIONS */
+  /* look for legacy VAR FUNCTIONS */
   if (currentFunction->NumberOfArguments
       && (currentFunction->ArgTypes[0] == VTK_PARSE_FUNCTION))
     {
@@ -2934,15 +2986,20 @@ void output_function()
       }
     }
 
-  /* reject multi-dimensional arrays from wrappers */
+  /* also legacy: tell old wrappers that multi-dimensional arrays are bad */
   for (i = 0; i < currentFunction->NumberOfArguments; i++)
     {
-    switch (currentFunction->ArgTypes[i] & VTK_PARSE_INDIRECT)
+    if ((currentFunction->ArgTypes[i] & VTK_PARSE_POINTER_MASK) != 0)
       {
-      case VTK_PARSE_ARRAY_MULTI:
-      case VTK_PARSE_BAD_INDIRECT:
-        currentFunction->ArrayFailure = 1;
-        break;
+      if (((currentFunction->ArgTypes[i] & VTK_PARSE_BASE_TYPE) ==
+           VTK_PARSE_FUNCTION) ||
+          ((currentFunction->ArgTypes[i] & VTK_PARSE_INDIRECT) ==
+           VTK_PARSE_BAD_INDIRECT) ||
+          ((currentFunction->ArgTypes[i] & VTK_PARSE_POINTER_LOWMASK) !=
+           VTK_PARSE_POINTER))
+       {
+       currentFunction->ArrayFailure = 1;
+       }
       }
     }
 
@@ -3203,7 +3260,8 @@ int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
   while (fscanf(hfile,"%s %s %x %i", h_cls, h_func, &h_type, &h_value) != EOF)
     {
     /* erase "ref" and qualifiers from hint type */
-    h_type = ((h_type & ~VTK_PARSE_REF) & VTK_PARSE_INDIRECT_LOWMASK);
+    h_type = ((h_type & VTK_PARSE_BASE_TYPE) |
+              (h_type & VTK_PARSE_POINTER_LOWMASK));
 
     /* find the matching class */
     for (i = 0; i < contents->NumberOfClasses; i++)

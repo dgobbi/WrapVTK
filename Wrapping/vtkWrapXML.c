@@ -431,15 +431,9 @@ void vtkWrapXML_Type(
   FunctionInfo *func, int indentation)
 {
   int reverse = 0;
-  int pcount = 0;
+  int eat = 0;
   int j = 0;
-  int is_ref;
-  int bits, mask;
-
-  if (vtkParse_TypeIsConst(type))
-    {
-    fprintf(fp, "%s<Dctr>const</Dctr>\n", indent(indentation));
-    }
+  int bits;
 
   fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
           vtkWrapXML_Quote(vtkParse_BaseTypeAsString(type, vtkclass), 500));
@@ -451,67 +445,62 @@ void vtkWrapXML_Type(
     fprintf(fp, "%s</Function>\n", indent(--indentation));
     }
 
+  if (vtkParse_TypeIsConst(type))
+    {
+    fprintf(fp, "%s<Flag>const</Flag>\n", indent(indentation));
+    }
+
+  if ((type & VTK_PARSE_REF) != 0)
+    {
+    fprintf(fp, "%s<Flag>reference</Flag>\n", indent(indentation));
+    }
+
+  type = (type & VTK_PARSE_POINTER_MASK);
+
   if ((type & VTK_PARSE_INDIRECT) == VTK_PARSE_BAD_INDIRECT)
     {
-    fprintf(fp, "%s<Dctr>unknown</Dctr>\n", indent(indentation));
+    fprintf(fp, "%s<Pntr>unknown</Pntr>\n", indent(indentation));
     return;
     }
 
-  mask = (VTK_PARSE_INDIRECT_LOWMASK & ~VTK_PARSE_REF);
-  is_ref = (type & VTK_PARSE_REF);
-  type = ((type & VTK_PARSE_INDIRECT) & ~VTK_PARSE_REF);
-
   while (type)
     {
-    reverse = ((reverse << 2) | (type & mask));
-    type = ((type & ~mask) >> 2);
+    reverse = ((reverse << 2) | (type & VTK_PARSE_POINTER_LOWMASK));
+    type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
     }
 
   while (reverse)
     {
-    bits = (reverse & mask);
-    reverse = ((reverse & ~mask) >> 2);
+    bits = (reverse & VTK_PARSE_POINTER_LOWMASK);
+    reverse = ((reverse >> 2) & VTK_PARSE_POINTER_MASK);
 
-    if (reverse == 0 && sizes[0] && sizes[0][0] != '\0')
+    if (reverse == 0 && sizes[0])
       {
-      fprintf(fp, "%s<Dctr>array</Dctr>\n", indent(indentation));
       fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation), sizes[0]);
+      eat = 1;
       }
-    else if (bits == VTK_PARSE_ARRAY_MULTI)
+    else if (bits == VTK_PARSE_ARRAY)
       {
-      fprintf(fp, "%s<Dctr>(<Dctr>\n", indent(indentation));
-      fprintf(fp, "%s<Dctr>pointer</Dctr>\n", indent(indentation));
-      pcount++;
+      fprintf(fp, "%s<Pntr>array pointer</Pntr>\n", indent(indentation));
       }
     else if (bits == VTK_PARSE_CONST_POINTER)
       {
-      fprintf(fp, "%s<Dctr>pointer</Dctr>\n", indent(indentation));
-      fprintf(fp, "%s<Dctr>const</Dctr>\n", indent(indentation));
+      fprintf(fp, "%s<Pntr>const pointer</Pntr>\n", indent(indentation));
       }
     else
       {
-      fprintf(fp, "%s<Dctr>pointer</Dctr>\n", indent(indentation));
+      fprintf(fp, "%s<Pntr>pointer</Pntr>\n", indent(indentation));
       }
     }
 
   if (sizes[0])
     {
-    for (j = 1; j < MAX_ARRAY_DIMS && sizes[j]; j++)
+    for (j = eat; j < MAX_ARRAY_DIMS && sizes[j]; j++)
       {
-      fprintf(fp, "%s<Dctr>array</Dctr>\n", indent(indentation));
       fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation), sizes[j]);
       }
     }
 
-  for (j = 0; j < pcount; j++)
-    {
-    fprintf(fp, "%s<Dctr>)</Dctr>\n", indent(indentation));
-    }
-
-  if (is_ref)
-    {
-    fprintf(fp, "%s<Dctr>reference</Dctr>\n", indent(indentation));
-    }
 }
 
 /**

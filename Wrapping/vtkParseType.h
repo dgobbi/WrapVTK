@@ -104,20 +104,21 @@
  *
  *  0 = nothing 
  *  1 = '*'       = VTK_PARSE_POINTER
- *  2 = '(*'      = VTK_PARSE_ARRAY_MULTI
+ *  2 = '(*'      = VTK_PARSE_ARRAY
  *  3 = '* const' = VTK_PARSE_CONST_POINTER
  *
- * The VTK_PARSE_ARRAY_MULTI flag means "this pointer is actually
- * the first item in a multi-dimensional array" with the array
+ * The VTK_PARSE_ARRAY flag means "this pointer is actually
+ * the first bracket in a multi-dimensional array" with the array
  * info stored separately.
  */
 #define VTK_PARSE_BAD_INDIRECT          0xFF00
-#define VTK_PARSE_INDIRECT_LOWMASK      0x0700
+#define VTK_PARSE_POINTER_MASK          0xFE00
+#define VTK_PARSE_POINTER_LOWMASK       0x0600
 #define VTK_PARSE_REF                   0x0100
 #define VTK_PARSE_POINTER               0x0200
 #define VTK_PARSE_POINTER_REF           0x0300
-#define VTK_PARSE_ARRAY_MULTI           0x0400
-#define VTK_PARSE_ARRAY_MULTI_REF       0x0500
+#define VTK_PARSE_ARRAY                 0x0400
+#define VTK_PARSE_ARRAY_REF             0x0500
 #define VTK_PARSE_CONST_POINTER         0x0600
 #define VTK_PARSE_CONST_POINTER_REF     0x0700
 #define VTK_PARSE_POINTER_POINTER       0x0A00
