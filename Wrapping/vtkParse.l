@@ -44,6 +44,15 @@ Modify lex.yy.c:
 #pragma warning ( disable : 4786 )
 #endif
 
+#define SKIP_MATCH_MAXLEN 15
+
+/*
+ * Skip ahead until one of the strings is found,
+ * then skip to the end of the line.
+ */
+static int skip_ahead_multi(const char *strings[]);
+static int skip_ahead_until(const char *text);
+
 %}
 
 
@@ -63,23 +72,7 @@ Modify lex.yy.c:
      };
 
 ^[\t ]*"//BWX".*$ {
-       int c1 = 0, c2 = 0, c3 = 0, c4 = 0, c5 = input();
-       for (;;)
-         {
-         if (c5 == 0)
-           {
-           fprintf(yyout,"Cannot find matching //EWX.\n");
-           break;
-           }
-         if (c1 == '/' && c2 == '/' && c3 == 'E' && c4 == 'W' && c5 == 'X') break;
-         c1 = c2; c2 = c3; c3 = c4; c4 = c5; c5 = input();
-         }
-       for (;;)
-         {
-         if (c5 == 0) break;
-         if (c5 == '\n') break;
-         c5 = input();
-         }
+       skip_ahead_until("//EWX");
      };
 
 
@@ -87,63 +80,24 @@ Modify lex.yy.c:
 ^[\t ]*"//ETX".*$ ;
 
 ^[\t ]*"#ifdef"[\t ]*"VTK_WORKAROUND_WINDOWS_MANGLE".*$ {
-       int c1 = 0, c2 = 0, c3 = 0, c4 = 0, c5 = 0, c6 = input();
-       for (;;)
-         {
-         if (c6 == 0)
-           {
-           fprintf(yyout,"Cannot find matching #endif.\n");
-           break;
-           }
-         if (c1 == '#' && c2 == 'e' && c3 == 'n' && c4 == 'd' && c5 == 'i' && c6 == 'f') break;
-         c1 = c2; c2 = c3; c3 = c4; c4 = c5; c5 = c6; c6 = input();
-         }
-       for (;;)
-         {
-         if (c6 == 0) break;
-         if (c6 == '\n') break;
-         c6 = input();
-         }
+       const char *strings[] = {"#endif", "#elif", "#else", NULL};
+       skip_ahead_multi(strings);
+     };
+
+
+^[\t ]*"#ifdef "("WIN32"|"_WIN32").*$ {
+#ifndef _WIN32
+       const char *strings[] = {"#endif", "#elif", "#else", NULL};
+       skip_ahead_multi(strings);
+#endif
      };
 
 ^[\t ]*"#"("else"|"elif").*$ {
-       int c1 = 0, c2 = 0, c3 = 0, c4 = 0, c5 = 0, c6 = input();
-       for (;;)
-         {
-         if (c6 == 0)
-           {
-           fprintf(yyout,"Cannot find matching #endif.\n");
-           break;
-           }
-         if (c1 == '#' && c2 == 'e' && c3 == 'n' && c4 == 'd' && c5 == 'i' && c6 == 'f') break;
-         c1 = c2; c2 = c3; c3 = c4; c4 = c5; c5 = c6; c6 = input();
-         }
-       for (;;)
-         {
-         if (c6 == 0) break;
-         if (c6 == '\n') break;
-         c6 = input();
-         }
+       skip_ahead_until("#endif");
      };
 
 ^[\t ]*("@interface"|"@implementation") {
-       int c1 = 0, c2 = 0, c3 = 0, c4 = input();
-       for (;;)
-         {
-         if (c4 == 0)
-           {
-           fprintf(yyout,"Cannot find matching @end.\n");
-           break;
-           }
-         if (c1 == '@' && c2 == 'e' && c3 == 'n' && c4 == 'd') break;
-         c1 = c2; c2 = c3; c3 = c4; c4 = input();
-         }
-       for (;;)
-         {
-         if (c4 == 0) break;
-         if (c4 == '\n') break;
-         c4 = input();
-         }
+       skip_ahead_until("@end");
      };
 
 ^[\t ]*"// .NAME".* {
@@ -275,7 +229,7 @@ Modify lex.yy.c:
 "int"[\t\n\r ]*"long"[\t\n\r ]*"long"  return(LONG_LONG);
 "long"[\t\n\r ]*"long"[\t\n\r ]*"int"  return(LONG_LONG);
 
-"__int64"  return(INT64__);
+"__int64"        return(INT64__);
 
 "signed"[\t\n\r ]*"char"  return(SIGNED_CHAR);
 
@@ -395,7 +349,20 @@ Modify lex.yy.c:
 "CALLBACK" ;
 "WINAPI" ;
 
-"vtkStdString"     { yylval.str = (char *)malloc(yyleng + 1);
+("vtkstd::"|"std::")?"ostream" { 
+                     yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(OSTREAM); }
+
+("vtkstd::"|"std::")?"istream" { 
+                     yylval.str = (char *)malloc(yyleng + 1);
+                     memcpy(yylval.str,yytext,yyleng);
+                     yylval.str[yyleng] = '\0';
+                     return(ISTREAM); }
+
+("vtkStdString"|("vtkstd::"|"std::")?"string") {
+                     yylval.str = (char *)malloc(yyleng + 1);
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
                      return(StdString); }
@@ -409,16 +376,6 @@ Modify lex.yy.c:
                      memcpy(yylval.str,yytext,yyleng);
                      yylval.str[yyleng] = '\0';
                      return(VTK_ID); }
-
-"ostream"          { yylval.str = (char *)malloc(yyleng + 1);
-                     memcpy(yylval.str,yytext,yyleng);
-                     yylval.str[yyleng] = '\0';
-                     return(OSTREAM); }
-
-"istream"          { yylval.str = (char *)malloc(yyleng + 1);
-                     memcpy(yylval.str,yytext,yyleng);
-                     yylval.str[yyleng] = '\0';
-                     return(ISTREAM); }
 
 [a-zA-Z_][0-9a-zA-Z_]*  { yylval.str = (char *)malloc(yyleng + 1);
                           memcpy(yylval.str,yytext,yyleng);
@@ -489,4 +446,68 @@ Modify lex.yy.c:
 
 .                return(OTHER);
 %%
+
+/*
+ * Skip ahead until one of the strings is found,
+ * then skip to the end of the line.
+ */
+int skip_ahead_multi(const char *strings[])
+{
+  char textbuf[SKIP_MATCH_MAXLEN+1];
+  char c = 0;
+  int i;
+
+  for (i = 0; i < (SKIP_MATCH_MAXLEN+1); i++)
+    {
+    textbuf[i] = '\0';
+    }
+
+  for (;;)
+    {
+    for (i = 0; i < SKIP_MATCH_MAXLEN; i++)
+      {
+      textbuf[i] = textbuf[i+1];
+      }
+
+    if ((c = (char)input()) == '\0')
+      {
+      fprintf(yyout, "Cannot find matching %s.\n", strings[0]);
+      return 0;
+      }
+
+    textbuf[SKIP_MATCH_MAXLEN-1] = c;
+
+    for (i = 0; strings[i]; i++)
+      {
+      if (strcmp(&textbuf[SKIP_MATCH_MAXLEN-strlen(strings[i])],
+                 strings[i]) == 0)
+        {
+        break;
+        }
+      }
+    if (strings[i])
+      {
+      break;
+      }
+    }
+
+  while (c != '\0' && c != '\n')
+    {
+    c = (char)input();
+    }
+
+  return 0;
+}
+
+/*
+ * Skip ahead until the string is found,
+ */
+int skip_ahead_until(const char *text)
+{
+  const char *strings[2];
+  strings[0] = text;
+  strings[1] = NULL;
+
+  return skip_ahead_multi(strings);
+}
 
