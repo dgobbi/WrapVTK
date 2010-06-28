@@ -62,6 +62,12 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename);
 void vtkParseHierarchy_Free(HierarchyInfo *info);
 
 /**
+ * Check whether a class is outside the heirarchy
+ */
+int vtkParseHierarchy_IsExtern(
+  const HierarchyInfo *intp, const char *classname);
+
+/**
  * Check whether class 1 is a subclass of class 2
  */
 int vtkParseHierarchy_IsTypeOf(

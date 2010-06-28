@@ -253,6 +253,25 @@ int vtkParseHierarchy_IsTypeOf(
   return 0;
 }
 
+/* check if the specified class is external to the hierarchy */
+int vtkParseHierarchy_IsExtern(
+  const HierarchyInfo *info, const char *classname)
+{
+  HierarchyEntry *entry;
+  int i;
+
+  for (i = 0; i < info->NumberOfClasses; i++)
+    {
+    entry = &info->Classes[i];
+    if (strcmp(classname, entry->ClassName) == 0)
+      {
+      return 0;
+      }
+    }
+
+  return 1;
+}
+
 /* get the header file for the specified class */
 const char *vtkParseHierarchy_ClassHeader(
   const HierarchyInfo *info, const char *classname)
