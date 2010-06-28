@@ -211,20 +211,20 @@ static int superclass_helper(
           i = -2;
           ((HierarchyEntry *)entry)->SuperClassIndex[j] = i;
           }
-        if (i >= 0)
+        }
+      if (i >= 0)
+        {
+        if (entry->SuperClasses[j+1] == NULL)
           {
-          if (entry->SuperClasses[j+1] == NULL)
-            {
-            iterating = 1;
-            entry = &info->Classes[i];
-            break;
-            } 
+          iterating = 1;
+          entry = &info->Classes[i];
+          break;
+          } 
 
-          /* recurse for multiple inheritance */
-          if (superclass_helper(info, &info->Classes[i], superclass)) 
-            {
-            return 1;
-            }
+        /* recurse for multiple inheritance */
+        if (superclass_helper(info, &info->Classes[i], superclass)) 
+          {
+          return 1;
           }
         }
       }
