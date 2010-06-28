@@ -90,21 +90,20 @@
  * it is outside the parenthesis.
  * So "type val[n][m]"  becomes  "type (*val)[m]",
  * these two types are identical in C and C++.
- * And "type val[n]" becomes "type *val".
  *
  * Any pointer can be followed by const, and any pointer
  * can be preceeded by a parenthesis. However, you will
  * never see a parenthesis anywhere except for just before
  * the leftmost pointer.
  *
- * These are good: "(*val)[n]",  "**(*val)[n]", "(*&val)[n]"
- * Not so good: "(**val)[n]" 
+ * These are good: "(*val)[n]", "**(*val)[n]", "(*&val)[n]"
+ * Not so good: "(**val)[n]" (is actually like (*val)[][n])
  *
  * The Ref needs 1 bit total, and each pointer needs 2 bits:
  *
  *  0 = nothing 
  *  1 = '*'       = VTK_PARSE_POINTER
- *  2 = '(*'      = VTK_PARSE_ARRAY
+ *  2 = '[]'      = VTK_PARSE_ARRAY
  *  3 = '* const' = VTK_PARSE_CONST_POINTER
  *
  * The VTK_PARSE_ARRAY flag means "this pointer is actually

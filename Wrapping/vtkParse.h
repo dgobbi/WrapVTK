@@ -91,9 +91,10 @@ typedef struct _FunctionInfo
   int   NumberOfArguments;
   int   ArgTypes[MAX_ARGS];
   int   ArgCounts[MAX_ARGS];
+  int   ArgNDims[MAX_ARGS];
+  char *ArgDimensions[MAX_ARGS][MAX_ARRAY_DIMS];
   char *ArgClasses[MAX_ARGS];
   char *ArgNames[MAX_ARGS];
-  char *ArgDimensions[MAX_ARGS][MAX_ARRAY_DIMS];
   char *ArgValues[MAX_ARGS];
   struct _FunctionInfo *ArgFunctions[MAX_ARGS]; /* for function pointers */
   int   ReturnType;

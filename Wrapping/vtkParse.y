@@ -145,7 +145,8 @@ void add_constant(const char *name, const char *value,
 const char *add_const_scope(const char *name);
 void prepend_scope(char *cp, const char *arg);
 int add_indirection(int tval, int ptr);
-int handle_complex_type(int datatype, int extra, char *array_sizes[],
+int handle_complex_type(int datatype, int extra, int *array_ndims,
+                        char *array_sizes[],
                         FunctionInfo **func_ptr, const char *sp);
 
 void outputSetVectorMacro(
@@ -1392,7 +1393,8 @@ arg:
       char *cp;
 
       datatype = handle_complex_type(
-        datatype, extra, currentFunction->ArgDimensions[i],
+        datatype, extra, &currentFunction->ArgNDims[i],
+        currentFunction->ArgDimensions[i],
         &currentFunction->ArgFunctions[i], copySig());
 
       cp = currentFunction->ArgDimensions[i][0];
@@ -1490,15 +1492,15 @@ other_var:
 maybe_complex_var_id: maybe_var_id maybe_var_array { $<integer>$ = 0; }
      | p_or_lp_or_la maybe_indirect_maybe_var_id ')' { postSig(")"); }
        maybe_array_or_args
-       { $<integer>$ = add_indirection($<integer>1,
-                       add_indirection($<integer>2, $<integer>5)); };
+       { $<integer>$ = add_indirection($<integer>5,
+                       add_indirection($<integer>1, $<integer>2)); };
 
 /* for vars, the var_id is mandatory */
 complex_var_id: var_id maybe_var_array { $<integer>$ = 0; }
      | lp_or_la maybe_indirect_var_id ')' { postSig(")"); }
        maybe_array_or_args
-       { $<integer>$ = add_indirection($<integer>1,
-                       add_indirection($<integer>2, $<integer>5)); };
+       { $<integer>$ = add_indirection($<integer>5,
+                       add_indirection($<integer>1, $<integer>2)); };
 
 p_or_lp_or_la: '(' { postSig("("); $<integer>$ = 0; }
         | LP { postSig("("); postSig($<str>1); postSig("*");
@@ -2431,6 +2433,7 @@ void InitFunction(FunctionInfo *func)
     func->ArgClasses[i] = 0;
     func->ArgCounts[i] = 0;
     func->ArgNames[i] = 0;
+    func->ArgNDims[i] = 0;
     for (j = 0; j < MAX_ARRAY_DIMS; j++)
       {
       func->ArgDimensions[i][j] = NULL;
@@ -2833,7 +2836,7 @@ const char *add_const_scope(const char *name)
 
 /* deal with types that include function pointers or arrays */
 int handle_complex_type(
-  int datatype, int extra, char *array_info[],
+  int datatype, int extra, int *array_ndims, char *array_info[],
   FunctionInfo **func_ptr, const char *func_sig)
 {
   FunctionInfo *argFunction = 0;
@@ -2908,6 +2911,7 @@ int handle_complex_type(
     {
     array_info[j] = getArraySize(j);
     }
+  *array_ndims = n;
   clearArray();
 
   return datatype;

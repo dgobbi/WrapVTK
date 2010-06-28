@@ -427,23 +427,11 @@ void vtkWrapXML_FunctionCommon(
  * Print out a type in XML format
  */
 void vtkWrapXML_Type(
-  FILE *fp, int type, const char *vtkclass, char *sizes[],
+  FILE *fp, int type, const char *vtkclass, int ndims, char *sizes[],
   FunctionInfo *func, int indentation)
 {
-  int reverse = 0;
-  int eat = 0;
   int j = 0;
   int bits;
-
-  fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
-          vtkWrapXML_Quote(vtkParse_BaseTypeAsString(type, vtkclass), 500));
-
-  if (func)
-    {
-    fprintf(fp, "%s<Function>\n", indent(indentation++));
-    vtkWrapXML_FunctionCommon(fp, func, 1, indentation);
-    fprintf(fp, "%s</Function>\n", indent(--indentation));
-    }
 
   if (vtkParse_TypeIsConst(type))
     {
@@ -455,6 +443,16 @@ void vtkWrapXML_Type(
     fprintf(fp, "%s<Flag>reference</Flag>\n", indent(indentation));
     }
 
+  fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
+          vtkWrapXML_Quote(vtkParse_BaseTypeAsString(type, vtkclass), 500));
+
+  if (func)
+    {
+    fprintf(fp, "%s<Function>\n", indent(indentation++));
+    vtkWrapXML_FunctionCommon(fp, func, 1, indentation);
+    fprintf(fp, "%s</Function>\n", indent(--indentation));
+    }
+
   type = (type & VTK_PARSE_POINTER_MASK);
 
   if ((type & VTK_PARSE_INDIRECT) == VTK_PARSE_BAD_INDIRECT)
@@ -463,25 +461,29 @@ void vtkWrapXML_Type(
     return;
     }
 
-  while (type)
+  if (type == VTK_PARSE_POINTER && ndims > 0)
     {
-    reverse = ((reverse << 2) | (type & VTK_PARSE_POINTER_LOWMASK));
+    fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation), sizes[0]);
+    return;
+    }
+
+  if ((type & VTK_PARSE_POINTER_LOWMASK) == VTK_PARSE_ARRAY)
+    {
+    for (j = 0; j < ndims; j++)
+      {
+      fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation), sizes[j]);
+      }
     type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
     }
 
-  while (reverse)
+  while (type)
     {
-    bits = (reverse & VTK_PARSE_POINTER_LOWMASK);
-    reverse = ((reverse >> 2) & VTK_PARSE_POINTER_MASK);
+    bits = (type & VTK_PARSE_POINTER_LOWMASK);
+    type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
 
-    if (reverse == 0 && sizes[0])
+    if (bits == VTK_PARSE_ARRAY)
       {
-      fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation), sizes[0]);
-      eat = 1;
-      }
-    else if (bits == VTK_PARSE_ARRAY)
-      {
-      fprintf(fp, "%s<Pntr>array pointer</Pntr>\n", indent(indentation));
+      fprintf(fp, "%s<Size></Size>\n", indent(indentation));
       }
     else if (bits == VTK_PARSE_CONST_POINTER)
       {
@@ -492,15 +494,6 @@ void vtkWrapXML_Type(
       fprintf(fp, "%s<Pntr>pointer</Pntr>\n", indent(indentation));
       }
     }
-
-  if (sizes[0])
-    {
-    for (j = eat; j < MAX_ARRAY_DIMS && sizes[j]; j++)
-      {
-      fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation), sizes[j]);
-      }
-    }
-
 }
 
 /**
@@ -520,7 +513,7 @@ void vtkWrapXML_TypeSimple(
     sizes[0] = temp;
     }
 
-  vtkWrapXML_Type(fp, type, classname, sizes, NULL, indentation);
+  vtkWrapXML_Type(fp, type, classname, 1, sizes, NULL, indentation);
 }
 
 /**
@@ -679,8 +672,8 @@ void vtkWrapXML_FunctionCommon(
     fprintf(fp, "%s<Arg>\n", indent(indentation++));
 
     vtkWrapXML_Type(fp, func->ArgTypes[i], func->ArgClasses[i],
-                    func->ArgDimensions[i], func->ArgFunctions[i],
-                    indentation);
+                    func->ArgNDims[i], func->ArgDimensions[i],
+                    func->ArgFunctions[i], indentation);
 
     if (func->ArgNames[i])
       {
