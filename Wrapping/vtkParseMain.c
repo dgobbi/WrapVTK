@@ -41,8 +41,10 @@ static int check_options(int argc, char *argv[])
 
   options.InputFileName = NULL;
   options.OutputFileName = NULL;
-  options.IsConcrete = 1;
-  options.IsVTKObject = 1;
+  options.IsAbstract = 0;
+  options.IsConcrete = 0;
+  options.IsVTKObject = 0;
+  options.IsSpecialObject = 0;
   options.HierarchyFileName = 0;
   options.HintFileName = 0;
   options.NumberOfIncludeDirectories = 0;
@@ -55,7 +57,7 @@ static int check_options(int argc, char *argv[])
       }
     else if (strcmp(argv[i], "--abstract") == 0)
       {
-      options.IsConcrete = 0;
+      options.IsAbstract = 1;
       }
     else if (strcmp(argv[i], "--vtkobject") == 0)
       {
@@ -63,7 +65,7 @@ static int check_options(int argc, char *argv[])
       }
     else if (strcmp(argv[i], "--special") == 0)
       {
-      options.IsVTKObject = 0;
+      options.IsSpecialObject = 1;
       }
     else if (strcmp(argv[i], "--hints") == 0)
       {
@@ -171,9 +173,9 @@ int main(int argc, char *argv[])
     {
     fprintf(stderr,
             "Usage: %s [options] input_file output_file\n"
-            "  --concrete      concrete class (default)\n"
-            "  --abstract      abstract class\n"
-            "  --vtkobject     vtkObjectBase-derived class (default)\n"
+            "  --concrete      force concrete class\n"
+            "  --abstract      force abstract class\n"
+            "  --vtkobject     vtkObjectBase-derived class\n"
             "  --special       non-vtkObjectBase class\n"
             "  --hints <file>  hints file\n"
             "  --hierarchy <file>  hierarchy file\n"
@@ -199,6 +201,7 @@ int main(int argc, char *argv[])
     if (argc >= 4)
       {
       options.IsConcrete = atoi(argv[argi++]);
+      options.IsAbstract = !options.IsConcrete;
       }
     }
 
@@ -245,6 +248,15 @@ int main(int argc, char *argv[])
     vtkParse_ReadHints(data, hfile, stderr);
     }
 
+  if (options.IsConcrete && data->MainClass)
+    {
+    data->MainClass->IsAbstract = 0;
+    }
+  else if (options.IsAbstract && data->MainClass)
+    {
+    data->MainClass->IsAbstract = 1;
+    }
+
   vtkParseOutput(ofile, data);
 
   fclose(ofile);
@@ -253,4 +265,3 @@ int main(int argc, char *argv[])
 
   return 0;
 }
-

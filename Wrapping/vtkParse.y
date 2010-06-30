@@ -1399,7 +1399,7 @@ arg:
 
       cp = currentFunction->ArgDimensions[i][0];
       if (cp)
-        { 
+        {
         while (*cp != '\0' && *cp >= '0' && *cp <= '9') { cp++; }
         if (*cp == '\0')
           {
@@ -2507,6 +2507,7 @@ void InitFile(FileInfo *file_info)
   file_info->Caveats = NULL;
   file_info->SeeAlso = NULL;
 
+  file_info->MainClass = NULL;
   file_info->Contents = NULL;
 }
 
@@ -3236,8 +3237,7 @@ FileInfo *vtkParse_ParseFile(
     {
     if (strcmp(currentNamespace->Classes[i]->Name, main_class) == 0)
       {
-      /* override "IsAbstract" with the "IsConcrete" set by CMake */
-      currentNamespace->Classes[i]->IsAbstract = !is_concrete;
+      data.MainClass = currentNamespace->Classes[i];
       break;
       }
     }

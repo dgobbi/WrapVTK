@@ -30,7 +30,7 @@
 /**
  * ItemType constants
  */
-typedef enum _parse_item_t 
+typedef enum _parse_item_t
 {
   VTK_NAMESPACE_INFO = 2,
   VTK_TYPEDEF_INFO   = 3,
@@ -242,6 +242,7 @@ typedef struct _FileInfo
   char *Caveats;
   char *SeeAlso;
 
+  ClassInfo *MainClass;
   NamespaceInfo *Contents;
 } FileInfo;
 
@@ -265,7 +266,7 @@ int vtkParse_ReadHints(FileInfo *data, FILE *hfile, FILE *errfile);
  */
 void vtkParse_Free(FileInfo *data);
 
-/** 
+/**
  * This macro is used to add elements to the above structs,
  * it handles memory management and grows the arrays when needed.
  */
