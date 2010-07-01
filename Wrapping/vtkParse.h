@@ -24,23 +24,23 @@
 #include "vtkParseType.h"
 #include <stdio.h>
 
+/* legacy */
 #define MAX_ARGS 20
-#define MAX_ARRAY_DIMS 6
 
 /**
  * ItemType constants
  */
 typedef enum _parse_item_t
 {
-  VTK_NAMESPACE_INFO = 2,
-  VTK_TYPEDEF_INFO   = 3,
-  VTK_CLASS_INFO     = 4,
-  VTK_STRUCT_INFO    = 5,
-  VTK_UNION_INFO     = 6,
-  VTK_FUNCTION_INFO  = 7,
+  VTK_NAMESPACE_INFO = 1,
+  VTK_CLASS_INFO     = 2,
+  VTK_STRUCT_INFO    = 3,
+  VTK_UNION_INFO     = 4,
+  VTK_ENUM_INFO      = 5,
+  VTK_FUNCTION_INFO  = 6,
+  VTK_VARIABLE_INFO  = 7,
   VTK_CONSTANT_INFO  = 8,
-  VTK_VARIABLE_INFO  = 9,
-  VTK_ENUM_INFO      = 10
+  VTK_TYPEDEF_INFO   = 9
 } parse_item_t;
 
 /**
@@ -53,17 +53,26 @@ typedef enum _parse_access_t
   VTK_ACCESS_PRIVATE = 2
 } parse_access_t;
 
+struct _TemplateArgs;
+struct _FunctionInfo;
+
 /**
- * TemplateInfo holds template definitions
+ * TemplateArgs holds template definitions
  */
+
+typedef struct _TemplateArg
+{
+  int   Type;         /* is zero for "typename", "class", "template" */
+  char *Class;        /* class name for type */
+  char *Name;         /* name of template arg */
+  char *Value;        /* default value */
+  struct _TemplateArgs *Template; /* for templated template args */
+} TemplateArg;
+
 typedef struct _TemplateArgs
 {
   int NumberOfArguments;
-  struct _TemplateArgs *ArgTemplates[MAX_ARGS];
-  int   ArgTypes[MAX_ARGS];
-  char *ArgClasses[MAX_ARGS];
-  char *ArgNames[MAX_ARGS];
-  char *ArgValues[MAX_ARGS];
+  TemplateArg **Arguments;
 } TemplateArgs;
 
 /**
@@ -78,6 +87,31 @@ typedef struct _ItemInfo
 } ItemInfo;
 
 /**
+ * ValueInfo is for typedefs, constants, variables,
+ * function arguments, and return values
+ *
+ * Note that Dimensions is an array of char pointers, in
+ * order to support dimensions that are sized according to
+ * template arg values or accoring to named constants.
+ */
+typedef struct _ValueInfo
+{
+  parse_item_t ItemType;
+  parse_access_t Access;
+  char *Name;
+  char *Comment;
+  char *Value;               /* for vars or default arg values */ 
+  int   Type;                /* as defined in vtkParseType.h   */
+  char *Class;               /* classname for type */
+  int   Count;               /* total number of values, if known */
+  int   NumberOfDimensions;  /* dimensionality for arrays */
+  char **Dimensions;         /* dimensions for arrays */
+  struct _FunctionInfo *Function;    /* for function pointer values */
+  int   IsStatic;            /* for class variables only */
+  int   IsEnum;              /* for constants only */
+} ValueInfo;
+
+/**
  * FunctionInfo is for functions and methods
  */
 typedef struct _FunctionInfo
@@ -86,67 +120,33 @@ typedef struct _FunctionInfo
   parse_access_t Access;
   char *Name;
   char *Comment;
-  char *Signature;
-  TemplateArgs *Template;
+  char *Signature;           /* function signature as text */
+  TemplateArgs *Template;    /* template args, or NULL */
   int   NumberOfArguments;
-  int   ArgTypes[MAX_ARGS];
-  int   ArgCounts[MAX_ARGS];
-  int   ArgNDims[MAX_ARGS];
-  char *ArgDimensions[MAX_ARGS][MAX_ARRAY_DIMS];
-  char *ArgClasses[MAX_ARGS];
-  char *ArgNames[MAX_ARGS];
-  char *ArgValues[MAX_ARGS];
-  struct _FunctionInfo *ArgFunctions[MAX_ARGS]; /* for function pointers */
-  int   ReturnType;
-  char *ReturnClass;
-  int   HaveHint;
-  int   HintSize;
-  int   IsStatic;
-  int   IsVirtual;
-  int   IsPureVirtual;
-  int   IsPublic; /* legacy */
-  int   IsProtected; /* legacy */
+  ValueInfo **Arguments;
+  ValueInfo *ReturnValue;    /* NULL for constructors and destructors */
   int   IsOperator;
   int   IsVariadic;
-  int   IsConst;
-  int   IsLegacy;
-  int   ArrayFailure;
+  int   IsLegacy;            /* marked as a legacy method or function */
+  int   IsStatic;            /* methods only */
+  int   IsVirtual;           /* methods only */
+  int   IsPureVirtual;       /* methods only */
+  int   IsConst;             /* methods only */
+  int   ArgTypes[MAX_ARGS];  /* legacy */
+  char *ArgClasses[MAX_ARGS];/* legacy */
+  int   ArgCounts[MAX_ARGS]; /* legacy */
+  int   ReturnType;          /* legacy */
+  char *ReturnClass;         /* legacy */
+  int   HaveHint;            /* legacy */
+  int   HintSize;            /* legacy */
+  int   ArrayFailure;        /* legacy */
+  int   IsPublic;            /* legacy */
+  int   IsProtected;         /* legacy */
 } FunctionInfo;
 
 /**
- * ConstantInfo is for enum constants, macro constants, and var constants
- */
-typedef struct _ConstantInfo
-{
-  parse_item_t ItemType;
-  parse_access_t Access;
-  char *Name;
-  char *Comment;
-  char *Value;
-  int   Type;
-  char *TypeClass;
-  int   IsEnum;
-} ConstantInfo;
-
-/**
- * VariableInfo is for variables (not implemented yet)
- */
-typedef struct _VariableInfo
-{
-  parse_item_t ItemType;
-  parse_access_t Access;
-  char *Name;
-  char *Comment;
-  char *Value;
-  int   Type;
-  char *TypeClass;
-  int   Dimensions[MAX_ARRAY_DIMS];
-  FunctionInfo *Function; /* for function pointers */
-  int   IsStatic;
-} VariableInfo;
-
-/**
  * EnumInfo is for enums
+ * Constants are at the same level as the Enum, not inside it.
  */
 typedef struct _EnumInfo
 {
@@ -166,23 +166,8 @@ typedef struct _UnionInfo
   char *Name;
   char *Comment;
   int NumberOfMembers;
-  VariableInfo **Members;
+  ValueInfo **Members;
 } UnionInfo;
-
-/**
- * TypedefInfo is for typedefs (not implemented yet)
- */
-typedef struct _TypedefInfo
-{
-  parse_item_t ItemType;
-  parse_access_t Access;
-  char *Name;
-  char *Comment;
-  int   Type;
-  char *TypeClass;
-  int   TypeArrayCounts[MAX_ARRAY_DIMS];
-  FunctionInfo *Function; /* for function pointers */
-} TypedefInfo;
 
 /**
  * ClassInfo is for classes and structs
@@ -201,7 +186,7 @@ typedef struct _ClassInfo
   int   NumberOfFunctions;
   FunctionInfo **Functions;
   int   NumberOfConstants;
-  ConstantInfo **Constants;
+  ValueInfo **Constants;
   int   NumberOfEnums;
   EnumInfo **Enums;
   int   IsAbstract;
@@ -224,7 +209,7 @@ typedef struct _NamespaceInfo
   int   NumberOfFunctions;
   FunctionInfo **Functions;
   int   NumberOfConstants;
-  ConstantInfo **Constants;
+  ValueInfo **Constants;
   int   NumberOfEnums;
   EnumInfo **Enums;
   int   NumberOfNamespaces;
@@ -265,21 +250,6 @@ int vtkParse_ReadHints(FileInfo *data, FILE *hfile, FILE *errfile);
  * Free the FileInfo struct returned by vtkParse_ParseFile()
  */
 void vtkParse_Free(FileInfo *data);
-
-/**
- * This macro is used to add elements to the above structs,
- * it handles memory management and grows the arrays when needed.
- */
-#define vtkParse_AddItemMacro(theStruct, theElement, theValue) \
-  vtkParse_AddPointerToArray(&(theStruct)->theElement, \
-    &(theStruct)->NumberOf##theElement, theValue); \
-  vtkParse_AddPointerToArray(&(theStruct)->Items, \
-    &(theStruct)->NumberOfItems, theValue)
-
-/**
- * This function is the back-end to vtkParse_AddItemMacro()
- */
-void vtkParse_AddPointerToArray(void *valueArray, int *count, void *value);
 
 #ifdef __cplusplus
 } /* extern "C" */

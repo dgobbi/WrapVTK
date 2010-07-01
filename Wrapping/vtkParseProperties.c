@@ -792,10 +792,7 @@ static int methodMatchesProperty(
   propertyType = property->Type;
 
   /* remove "const" and "static" */
-  if (vtkParse_TypeHasQualifier(methType))
-    {
-    methType = (methType & VTK_PARSE_UNQUALIFIED_TYPE);
-    }
+  methType = (methType & VTK_PARSE_UNQUALIFIED_TYPE);
 
   /* check for RemoveAll method matching an Add method*/
   if (isRemoveAllMethod(meth->Name) &&

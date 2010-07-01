@@ -23,6 +23,7 @@ the code that parses the header file.
 
 #include "vtkParse.h"
 #include "vtkParseMain.h"
+#include "vtkParseInternal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

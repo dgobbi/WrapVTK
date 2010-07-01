@@ -426,12 +426,12 @@ void vtkWrapXML_FunctionCommon(
 /**
  * Print out a type in XML format
  */
-void vtkWrapXML_Type(
-  FILE *fp, int type, const char *vtkclass, int ndims, char *sizes[],
-  FunctionInfo *func, int indentation)
+void vtkWrapXML_Type(FILE *fp, ValueInfo *val, int indentation)
 {
+  int type = val->Type;
   int j = 0;
   int bits;
+  int ndims;
 
   if (vtkParse_TypeIsConst(type))
     {
@@ -444,12 +444,12 @@ void vtkWrapXML_Type(
     }
 
   fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
-          vtkWrapXML_Quote(vtkParse_BaseTypeAsString(type, vtkclass), 500));
+          vtkWrapXML_Quote(vtkParse_BaseTypeAsString(type, val->Class), 500));
 
-  if (func)
+  if (val->Function)
     {
     fprintf(fp, "%s<Function>\n", indent(indentation++));
-    vtkWrapXML_FunctionCommon(fp, func, 1, indentation);
+    vtkWrapXML_FunctionCommon(fp, val->Function, 1, indentation);
     fprintf(fp, "%s</Function>\n", indent(--indentation));
     }
 
@@ -461,9 +461,11 @@ void vtkWrapXML_Type(
     return;
     }
 
+  ndims = val->NumberOfDimensions;
   if (type == VTK_PARSE_POINTER && ndims > 0)
     {
-    fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation), sizes[0]);
+    fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation),
+            val->Dimensions[0]);
     return;
     }
 
@@ -471,7 +473,8 @@ void vtkWrapXML_Type(
     {
     for (j = 0; j < ndims; j++)
       {
-      fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation), sizes[j]);
+      fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation),
+              val->Dimensions[j]);
       }
     type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
     }
@@ -503,8 +506,19 @@ void vtkWrapXML_TypeSimple(
   FILE *fp, int type, const char *classname, int size, int indentation)
 {
   char temp[256];
+  char temp2[512];
   char *sizes[2];
-  int ndims = 0;
+  ValueInfo val;
+
+  memset(&val, 0, sizeof(ValueInfo));
+  val.ItemType = VTK_VARIABLE_INFO;
+  val.Type = type;
+
+  if (classname)
+    {
+    strcpy(temp2, classname);
+    val.Class = temp2;
+    }
 
   sizes[0] = 0;
   sizes[1] = 0;
@@ -512,10 +526,11 @@ void vtkWrapXML_TypeSimple(
     {
     sprintf(temp, "%i", size);
     sizes[0] = temp;
-    ndims = 1;
+    val.Dimensions = sizes;
+    val.NumberOfDimensions = 1;
     }
 
-  vtkWrapXML_Type(fp, type, classname, ndims, sizes, NULL, indentation);
+  vtkWrapXML_Type(fp, &val, indentation);
 }
 
 /**
@@ -524,38 +539,41 @@ void vtkWrapXML_TypeSimple(
 void vtkWrapXML_Template(
   FILE *fp, TemplateArgs *args, int indentation)
 {
+  TemplateArg *arg;
   int i;
 
   for (i = 0; i < args->NumberOfArguments; i++)
     {
     fprintf(fp, "%s<Template>\n", indent(indentation++));
-    if (args->ArgTemplates[i])
+
+    arg = args->Arguments[i];
+
+    if (arg->Template)
       {
       fprintf(fp, "%s<Type>template</Type>\n", indent(indentation));
-      vtkWrapXML_Template(fp, args->ArgTemplates[i], indentation);
+      vtkWrapXML_Template(fp, arg->Template, indentation);
       }
-    else if (args->ArgTypes[i])
+    else if (arg->Type)
       {
       fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
-              vtkWrapXML_Quote(
-                vtkParse_BaseTypeAsString(args->ArgTypes[i],
-                                          args->ArgClasses[i]), 500));
+              vtkWrapXML_Quote(vtkParse_BaseTypeAsString(arg->Type,
+                                                         arg->Class), 500));
       }
     else
       {
       fprintf(fp, "%s<Type>typename</Type>\n", indent(indentation));
       }
 
-    if (args->ArgNames[i])
+    if (arg->Name)
       {
-      fprintf(fp, "%s<Name>%s</Name>\n",
-              indent(indentation), vtkWrapXML_Quote(args->ArgNames[i], 500));
+      fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
+              vtkWrapXML_Quote(arg->Name, 500));
       }
 
-    if (args->ArgValues[i])
+    if (arg->Value)
       {
-      fprintf(fp, "%s<Value>%s</Value>\n",
-              indent(indentation), vtkWrapXML_Quote(args->ArgValues[i], 500));
+      fprintf(fp, "%s<Value>%s</Value>\n", indent(indentation),
+              vtkWrapXML_Quote(arg->Value, 500));
       }
 
     fprintf(fp, "%s</Template>\n", indent(--indentation));
@@ -586,7 +604,7 @@ void vtkWrapXML_Enum(
  * Print a constant
  */
 void vtkWrapXML_Constant(
-  FILE *fp, ConstantInfo *con, int inClass, int indentation)
+  FILE *fp, ValueInfo *con, int inClass, int indentation)
 {
   fprintf(fp, "\n");
   fprintf(fp, "%s<Constant>\n", indent(indentation++));
@@ -602,7 +620,7 @@ void vtkWrapXML_Constant(
     }
   if (con->Type)
     {
-    vtkWrapXML_TypeSimple(fp, con->Type, con->TypeClass, 0, indentation);
+    vtkWrapXML_Type(fp, con, indentation);
     }
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(con->Name, 500));
@@ -620,11 +638,12 @@ void vtkWrapXML_Constant(
 void vtkWrapXML_FunctionCommon(
   FILE *fp, FunctionInfo *func, int printReturn, int indentation)
 {
+  ValueInfo *arg;
   size_t i, n;
   char temp[500];
   const char *cp;
 
-  if (vtkParse_TypeIsStatic(func->ReturnType))
+  if (func->IsStatic)
     {
     fprintf(fp, "%s<Flag>static</Flag>\n", indent(indentation));
     }
@@ -661,9 +680,7 @@ void vtkWrapXML_FunctionCommon(
     {
     fprintf(fp, "%s<Return>\n", indent(indentation++));
 
-    vtkWrapXML_TypeSimple(fp, func->ReturnType, func->ReturnClass,
-                          (func->HaveHint ? func->HintSize : 0),
-                          indentation);
+    vtkWrapXML_Type(fp, func->ReturnValue, indentation);
 
     fprintf(fp, "%s</Return>\n", indent(--indentation));
     }
@@ -673,20 +690,20 @@ void vtkWrapXML_FunctionCommon(
     {
     fprintf(fp, "%s<Arg>\n", indent(indentation++));
 
-    vtkWrapXML_Type(fp, func->ArgTypes[i], func->ArgClasses[i],
-                    func->ArgNDims[i], func->ArgDimensions[i],
-                    func->ArgFunctions[i], indentation);
+    arg = func->Arguments[i];
 
-    if (func->ArgNames[i])
+    vtkWrapXML_Type(fp, arg, indentation);
+
+    if (arg->Name)
       {
       fprintf(fp, "%s<Name>%s</Name>\n",
-              indent(indentation), vtkWrapXML_Quote(func->ArgNames[i], 500));
+              indent(indentation), vtkWrapXML_Quote(arg->Name, 500));
       }
 
-    if (func->ArgValues[i])
+    if (arg->Value)
       {
       fprintf(fp, "%s<Value>%s</Value>\n",
-              indent(indentation), vtkWrapXML_Quote(func->ArgValues[i], 500));
+              indent(indentation), vtkWrapXML_Quote(arg->Value, 500));
       }
 
     fprintf(fp, "%s</Arg>\n", indent(--indentation));
@@ -1136,7 +1153,7 @@ void vtkWrapXML_Class(
       {
       case VTK_CONSTANT_INFO:
         {
-        vtkWrapXML_Constant(fp, (ConstantInfo *)classInfo->Items[i], 1,
+        vtkWrapXML_Constant(fp, (ValueInfo *)classInfo->Items[i], 1,
                             indentation);
         break;
         }
@@ -1193,7 +1210,7 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
       {
       case VTK_CONSTANT_INFO:
         {
-        vtkWrapXML_Constant(fp, (ConstantInfo *)data->Items[i], 0,
+        vtkWrapXML_Constant(fp, (ValueInfo *)data->Items[i], 0,
                             indentation);
         break;
         }
