@@ -1121,7 +1121,7 @@ template_arg: type_simple maybe_template_id
                arg->Class = vtkstrdup(getTypeId());
                arg->Name = vtkstrdup(getVarName());
                arg->Value = vtkstrdup(getVarValue());
-               vtkParse_AddItemMacro2(currentTemplate, Arguments, arg); 
+               vtkParse_AddItemMacro2(currentTemplate, Arguments, arg);
                }
             | class_or_typename maybe_template_id
                {
@@ -1129,7 +1129,7 @@ template_arg: type_simple maybe_template_id
                vtkParse_InitTemplateArg(arg);
                arg->Name = vtkstrdup(getVarName());
                arg->Value = vtkstrdup(getVarValue());
-               vtkParse_AddItemMacro2(currentTemplate, Arguments, arg); 
+               vtkParse_AddItemMacro2(currentTemplate, Arguments, arg);
                }
             | { pushTemplate(); } template maybe_template_id
                {
@@ -1140,7 +1140,7 @@ template_arg: type_simple maybe_template_id
                arg->Template = newTemplate;
                arg->Name = vtkstrdup(getVarName());
                arg->Value = vtkstrdup(getVarValue());
-               vtkParse_AddItemMacro2(currentTemplate, Arguments, arg); 
+               vtkParse_AddItemMacro2(currentTemplate, Arguments, arg);
                };
 
 class_or_typename: CLASS {postSig("class ");}
@@ -1349,7 +1349,8 @@ ignore_more_args: ELLIPSIS { postSig("..."); }
 
 ignore_arg:
     type maybe_complex_var_id maybe_var_assign
-  | VAR_FUNCTION { postSig("void (*func)(void *) "); };
+  | VAR_FUNCTION
+    { postSig("void (*"); postSig($<str>1); postSig(")(void *) "); };
 
 
 args_list: | {clearTypeId();} more_args;
@@ -1738,7 +1739,7 @@ literal2:   ZERO {$<str>$ = $<str>1; postSig($<str>1);}
  * VTK Macros
  */
 
- 
+
 
 macro:
   SetMacro '(' any_id ',' {preSig("void Set"); postSig("(");} type ')'
@@ -2131,8 +2132,8 @@ macro:
        currentFunction->Comment = vtkstrdup(CommentText);
        }
      add_argument(currentFunction, VTK_PARSE_OBJECT_PTR, "vtkObject", 0);
-     set_return(currentFunction, VTK_PARSE_OBJECT_PTR, $<str>3, 0);
-     currentFunction->IsStatic = 1;
+     set_return(currentFunction, (VTK_PARSE_STATIC | VTK_PARSE_OBJECT_PTR),
+                $<str>3, 0);
      output_function();
      }
    }
@@ -2191,8 +2192,8 @@ macro:
        currentFunction->Comment = vtkstrdup(CommentText);
        }
      add_argument(currentFunction, VTK_PARSE_OBJECT_PTR, "vtkObject", 0);
-     set_return(currentFunction, VTK_PARSE_OBJECT_PTR, $<str>3, 0);
-     currentFunction->IsStatic = 1;
+     set_return(currentFunction, (VTK_PARSE_STATIC | VTK_PARSE_OBJECT_PTR),
+                $<str>3, 0);
      output_function();
      }
    }
@@ -2326,7 +2327,7 @@ void vtkParse_InitFunction(FunctionInfo *func)
   func->IsOperator = 0;
   func->IsVariadic = 0;
   func->IsConst = 0;
-  func->ReturnType = 0;
+  func->ReturnType = VTK_PARSE_VOID;
   func->ReturnClass = NULL;
   func->HaveHint = 0;
   func->HintSize = 0;
