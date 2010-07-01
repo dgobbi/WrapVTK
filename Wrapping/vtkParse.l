@@ -318,7 +318,7 @@ static int skip_ahead_until(const char *text);
                 while (yytext[i]==' ' || yytext[i]=='\t' ||
                        yytext[i]=='\r' || yytext[i]=='\n') { i++; }
                 j = i;
-                while (yytext[j]!='*') { j++; }
+                while (yytext[j]!='&') { j++; }
                 yylval.str = (char *)malloc(j-i+1);
                 if (j > i) { strncpy(yylval.str, &yytext[i], j-i); }
                 yylval.str[j-i] = '\0';
