@@ -504,6 +504,7 @@ void vtkWrapXML_TypeSimple(
 {
   char temp[256];
   char *sizes[2];
+  int ndims = 0;
 
   sizes[0] = 0;
   sizes[1] = 0;
@@ -511,9 +512,10 @@ void vtkWrapXML_TypeSimple(
     {
     sprintf(temp, "%i", size);
     sizes[0] = temp;
+    ndims = 1;
     }
 
-  vtkWrapXML_Type(fp, type, classname, 1, sizes, NULL, indentation);
+  vtkWrapXML_Type(fp, type, classname, ndims, sizes, NULL, indentation);
 }
 
 /**
