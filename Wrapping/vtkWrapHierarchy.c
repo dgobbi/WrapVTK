@@ -39,7 +39,7 @@ static int vtkWrapHierarchy_ParseHeaderFile(
   char *cp;
   FileInfo *data;
   ClassInfo *class_info;
-  int i, j, k;
+  size_t i, j, k;
 
   /* the "concrete" flag doesn't matter, just set to zero */
   data = vtkParse_ParseFile(filename, 0, fp, stderr);
@@ -106,7 +106,7 @@ static int vtkWrapHierarchy_ParseHeaderFile(
 static int vtkWrapHierarchy_ReadHierarchyFile(FILE *fp, char *lines[])
 {
   char line[2048];
-  int i, n;
+  size_t i, n;
 
   while (fgets(line, 2048, fp))
     {

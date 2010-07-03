@@ -111,23 +111,23 @@ OptionInfo *vtkParse_GetCommandLineOptions()
 /* Find a filename, given the "-I" options from the command line */
 char *vtkParse_FindPath(const char *filename)
 {
-  int i;
+  unsigned long i;
   struct stat fs;
   char filepath[512];
   const char *directory;
   char *output;
   const char *sep;
 
-  for (i = -1; i < options.NumberOfIncludeDirectories; i++)
+  for (i = 0; i <= options.NumberOfIncludeDirectories; i++)
     {
-    if (i < 0)
+    if (i == 0)
       {
       /* try first with no path */
       strcpy(filepath, filename);
       }
     else
       {
-      directory = options.IncludeDirectories[i];
+      directory = options.IncludeDirectories[i-1];
       sep = "/";
       if (directory[strlen(directory)-1] == sep[0])
         {

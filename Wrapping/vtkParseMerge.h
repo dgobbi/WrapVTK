@@ -22,17 +22,19 @@
 #ifndef VTK_PARSE_MERGE_H
 #define VTK_PARSE_MERGE_H
 
+#include "vtkParse.h"
+
 /**
  * This struct is meant to supplement ClassInfo, it gives information
  * about which class (or classes) each method was inherited from
  */
 typedef struct _MergeInfo
 {
-  int NumberOfClasses;     /* number of classes in geneology */
-  char **ClassNames;       /* class name */
-  int NumberOfFunctions;   /* must match corresponding FunctionInfo */
-  int *NumberOfOverrides;  /* number of classes that define this function */
-  int **OverrideClasses;   /* class for the override */
+  unsigned long   NumberOfClasses;    /* number of classes in geneology */
+  char          **ClassNames;         /* class name */
+  unsigned long   NumberOfFunctions;  /* must match FunctionInfo */
+  unsigned long  *NumberOfOverrides; /* n classes that define this function */
+  unsigned long **OverrideClasses;  /* class for the override */
 } MergeInfo;
 
 /* forward declarations from vtkParse.h */
@@ -57,7 +59,7 @@ void vtkParseMerge_FreeMergeInfo(MergeInfo *info);
 /**
  * Add newclass methods to the merge
  */
-int vtkParseMerge_Merge(
+unsigned long vtkParseMerge_Merge(
   MergeInfo *info,
   struct _ClassInfo *merge,
   const struct _ClassInfo *newclass);

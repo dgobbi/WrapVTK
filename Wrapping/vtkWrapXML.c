@@ -61,11 +61,11 @@ static const char *indent(int indentation)
  * so that the string can be quoted in an xml file (the specified
  * maxlen must be at least 32 chars)
  */
-static const char *vtkWrapXML_Quote(const char *comment, int maxlen)
+static const char *vtkWrapXML_Quote(const char *comment, size_t maxlen)
 {
   static char *result = 0;
-  static int oldmaxlen = 0;
-  int i, j, n;
+  static size_t oldmaxlen = 0;
+  size_t i, j, n;
 
   if (maxlen > oldmaxlen)
     {
@@ -142,7 +142,7 @@ static const char *vtkWrapXML_Quote(const char *comment, int maxlen)
 static void vtkWrapXML_MultiLineText(
   FILE *fp, const char *cp, int indentation)
 {
-  int i, j;
+  size_t i, j;
   char temp[512];
 
   for (i = 0; cp && cp[i] != '\0'; i++)
@@ -214,8 +214,8 @@ void vtkWrapXML_Access(
  */
 void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
 {
-  int i = 0;
-  int n;
+  unsigned long i = 0;
+  unsigned long n;
 
   fprintf(fp, "\n");
   if (data->ItemType == VTK_STRUCT_INFO)
@@ -269,7 +269,7 @@ void vtkWrapXML_ClassFooter(FILE *fp, ClassInfo *data, int indentation)
 void vtkWrapXML_FileHeader(FILE *fp, const FileInfo *data, int indentation)
 {
   const char *cp = data->FileName;
-  int i;
+  size_t i;
 
   fprintf(fp, "%s<File>\n", indent(indentation));
   if (cp)
@@ -403,9 +403,10 @@ void vtkWrapXML_FileDoc(FILE *fp, FileInfo *data, int indentation)
 /**
  * Write the inheritance section
  */
-void vtkWrapXML_ClassInheritance(FILE *fp, MergeInfo *merge, int indentation)
+void vtkWrapXML_ClassInheritance(
+  FILE *fp, MergeInfo *merge, int indentation)
 {
-  int i, n;
+  unsigned long i, n;
 
   /* show the geneology */
   n = merge->NumberOfClasses;
@@ -428,10 +429,10 @@ void vtkWrapXML_FunctionCommon(
  */
 void vtkWrapXML_Type(FILE *fp, ValueInfo *val, int indentation)
 {
-  int type = val->Type;
-  int j = 0;
-  int bits;
-  int ndims;
+  unsigned int type = val->Type;
+  unsigned long j = 0;
+  unsigned int bits;
+  unsigned long ndims;
 
   if (vtkParse_TypeIsConst(type))
     {
@@ -503,7 +504,8 @@ void vtkWrapXML_Type(FILE *fp, ValueInfo *val, int indentation)
  * Print out a simple type types
  */
 void vtkWrapXML_TypeSimple(
-  FILE *fp, int type, const char *classname, int size, int indentation)
+  FILE *fp, unsigned int type, const char *classname, unsigned long size,
+  int indentation)
 {
   char temp[256];
   char temp2[512];
@@ -524,7 +526,7 @@ void vtkWrapXML_TypeSimple(
   sizes[1] = 0;
   if (size > 0)
     {
-    sprintf(temp, "%i", size);
+    sprintf(temp, "%lu", size);
     sizes[0] = temp;
     val.Dimensions = sizes;
     val.NumberOfDimensions = 1;
@@ -540,7 +542,7 @@ void vtkWrapXML_Template(
   FILE *fp, TemplateArgs *args, int indentation)
 {
   TemplateArg *arg;
-  int i;
+  unsigned long i;
 
   for (i = 0; i < args->NumberOfArguments; i++)
     {
@@ -639,7 +641,7 @@ void vtkWrapXML_FunctionCommon(
   FILE *fp, FunctionInfo *func, int printReturn, int indentation)
 {
   ValueInfo *arg;
-  size_t i, n;
+  unsigned long i, n;
   char temp[500];
   const char *cp;
 
@@ -739,7 +741,7 @@ void vtkWrapXML_Function(
 void vtkWrapXML_ClassPropertyMethods(
   FILE *fp, unsigned int methodBitfield, int indentation)
 {
-  int i;
+  unsigned int i;
   unsigned int methodType;
 
   for (i = 0; i < 32; i++)
@@ -821,7 +823,7 @@ void vtkWrapXML_ClassProperty(
   FILE *fp, PropertyInfo *property, const char *classname, int indentation)
 {
   const char *access = 0;
-  int i;
+  unsigned long i;
 
   fprintf(fp, "\n");
   fprintf(fp, "%s<Property>\n", indent(indentation++));
@@ -926,7 +928,7 @@ void vtkWrapXML_MergeHelper(
   FileInfo *finfo = NULL;
   const char *header;
   char *filename;
-  int i, n;
+  unsigned long i, n;
 
   /* find out if "classname" is in the current namespace */
   n = data->NumberOfClasses;
@@ -1019,7 +1021,7 @@ MergeInfo *vtkWrapXML_MergeSuperClasses(
   MergeInfo *info = NULL;
   OptionInfo *oinfo = NULL;
   const char *classname;
-  int i, n;
+  unsigned long i, n;
 
   classname = classInfo->Name;
   oinfo = vtkParse_GetCommandLineOptions();
@@ -1067,7 +1069,7 @@ void vtkWrapXML_MethodHelper(
   const char *classname = 0;
   const char *propname = 0;
   PropertyInfo *property = NULL;
-  int i, j, n;
+  unsigned long i, j, n;
 
   n = classInfo->NumberOfFunctions;
 
@@ -1085,14 +1087,14 @@ void vtkWrapXML_MethodHelper(
       {
       classname = merge->ClassNames[merge->OverrideClasses[i][0]];
       }
-    if (properties && properties->MethodProperties[i] >= 0)
+    if (properties && properties->MethodHasProperty[i])
       {
       property = properties->Properties[properties->MethodProperties[i]];
       propname = property->Name;
       for (j = 0; j < i; j++)
         {
         /* only print property if this is the first occurrence */
-        if (properties->MethodProperties[j] >= 0 &&
+        if (properties->MethodHasProperty[j] &&
             property ==
             properties->Properties[properties->MethodProperties[j]])
           {
@@ -1120,7 +1122,7 @@ void vtkWrapXML_Class(
 {
   ClassProperties *properties;
   MergeInfo *merge = NULL;
-  int i;
+  unsigned long i;
 
   /* start new XML section for class */
   vtkWrapXML_ClassHeader(fp, classInfo, indentation++);
@@ -1201,7 +1203,7 @@ void vtkWrapXML_Namespace(FILE *fp, NamespaceInfo *data, int indentation);
  */
 void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
 {
-  int i;
+  unsigned long i;
 
   /* print all constants for the file or namespace */
   for (i = 0; i < data->NumberOfItems; i++)

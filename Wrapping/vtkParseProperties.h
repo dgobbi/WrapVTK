@@ -21,6 +21,8 @@
 #ifndef VTK_PARSE_PROPERTIES_H
 #define VTK_PARSE_PROPERTIES_H
 
+#include "vtkParse.h"
+
 /**
  * bitfield values to say what methods are available for a property
  *
@@ -85,17 +87,17 @@
  */
 typedef struct _PropertyInfo
 {
-  const char *Name;          /* property name */
-  int Type;                  /* property type as VTK_PARSE constant */
-  int Count;                 /* the count for array-type properties */
-  int IsStatic;              /* if the property is static */
-  const char *ClassName;     /* VTK object type of the property, or NULL */
-  const char **EnumConstantNames;  /* the names of int enum values */
-  unsigned int PublicMethods;      /* bitfield for public methods */
-  unsigned int ProtectedMethods;   /* bitfield for protected methods */
-  unsigned int PrivateMethods;     /* bitfield for private methods */
-  unsigned int LegacyMethods;      /* bitfield for legacy methods */
-  const char *Comment;       /* comment from header file */
+  const char   *Name;               /* property name */
+  unsigned int  Type;               /* property type as VTK_PARSE constant */
+  unsigned long Count;              /* the count for array-type properties */
+  const char   *ClassName;     /* VTK object type of the property, or NULL */
+  const char  **EnumConstantNames;  /* the names of int enum values */
+  unsigned int  PublicMethods;      /* bitfield for public methods */
+  unsigned int  ProtectedMethods;   /* bitfield for protected methods */
+  unsigned int  PrivateMethods;     /* bitfield for private methods */
+  unsigned int  LegacyMethods;      /* bitfield for legacy methods */
+  const char   *Comment;            /* comment from header file */
+  int           IsStatic;           /* if the property is static */
 } PropertyInfo;
 
 /**
@@ -103,11 +105,12 @@ typedef struct _PropertyInfo
  */
 typedef struct _ClassProperties
 {
-  int NumberOfProperties;      /* total number of properties found */
-  PropertyInfo **Properties;   /* info for each property */
-  int NumberOfMethods;         /* number of methods in FunctionInfo */
-  unsigned int *MethodTypes;   /* discovered type of each method */
-  int *MethodProperties;       /* discovered property for each method */
+  unsigned long  NumberOfProperties; /* total number of properties found */
+  PropertyInfo **Properties;         /* info for each property */
+  unsigned long  NumberOfMethods;    /* number of methods in FunctionInfo */
+  unsigned int  *MethodTypes;        /* discovered type of each method */
+  int           *MethodHasProperty;  /* method has a property */
+  unsigned long *MethodProperties;   /* discovered property for each method */
 } ClassProperties;
 
 /* forward declaration of _ClassInfo */

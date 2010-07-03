@@ -29,11 +29,11 @@
 typedef struct _MethodAttributes
 {
   const char *Name;       /* method name */
-  int HasProperty;        /* method accesses a property */
-  int Type;               /* data type of gettable/settable value */
-  int Count;              /* count for gettable/settable value */
+  unsigned int Type;      /* data type of gettable/settable value */
+  unsigned long Count;    /* count for gettable/settable value */
   const char *ClassName;  /* class name for if the type is a class */
   const char *Comment;    /* documentation for method */
+  int HasProperty;        /* method accesses a property */
   int IsPublic;           /* method is public */
   int IsProtected;        /* method is protected */
   int IsLegacy;           /* method is marked "legacy" */
@@ -48,7 +48,7 @@ typedef struct _MethodAttributes
 
 typedef struct _ClassPropertyMethods
 {
-  int NumberOfMethods;
+  unsigned long NumberOfMethods;
   MethodAttributes **Methods;
 } ClassPropertyMethods;
 
@@ -74,7 +74,7 @@ static int isSetNthMethod(const char *name)
 
 static int isSetNumberOfMethod(const char *name)
 {
-  int n;
+  size_t n;
 
   if (isSetMethod(name))
     {
@@ -107,7 +107,7 @@ static int isGetNthMethod(const char *name)
 
 static int isGetNumberOfMethod(const char *name)
 {
-  int n;
+  size_t n;
 
   if (isGetMethod(name))
     {
@@ -136,7 +136,7 @@ static int isRemoveMethod(const char *name)
 
 static int isRemoveAllMethod(const char *name)
 {
-  int n;
+  size_t n;
 
   if (isRemoveMethod(name))
     {
@@ -150,7 +150,7 @@ static int isRemoveAllMethod(const char *name)
 
 static int isBooleanMethod(const char *name)
 {
-  int n;
+  size_t n;
 
   if (name)
     {
@@ -187,7 +187,7 @@ static int isEnumeratedMethod(const char *name)
 
 static int isAsStringMethod(const char *name)
 {
-  int n;
+  size_t n;
 
   if (isGetMethod(name))
     {
@@ -208,7 +208,7 @@ static int isAsStringMethod(const char *name)
 
 static int isGetMinValueMethod(const char *name)
 {
-  int n;
+  size_t n;
 
   if (isGetMethod(name))
     {
@@ -224,7 +224,7 @@ static int isGetMinValueMethod(const char *name)
 
 static int isGetMaxValueMethod(const char *name)
 {
-  int n;
+  size_t n;
 
   if (isGetMethod(name))
     {
@@ -246,7 +246,7 @@ static int isGetMaxValueMethod(const char *name)
 
 static unsigned int methodCategory(MethodAttributes *meth, int shortForm)
 {
-  int n;
+  size_t n;
   const char *name;
   name = meth->Name;
 
@@ -469,13 +469,13 @@ static int isValidSuffix(
 
 static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
 {
-  size_t i, n;
-  int tmptype = 0;
+  unsigned long i, n;
+  unsigned int tmptype = 0;
   int allSame = 0;
   int indexed = 0;
 
   attrs->Name = func->Name;
-  attrs->HasProperty = 0; 
+  attrs->HasProperty = 0;
   attrs->Type = 0;
   attrs->Count = 0;
   attrs->ClassName = 0;
@@ -547,7 +547,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   /* if return type is not void and no args or 1 index */
   if (!(vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
         !vtkParse_TypeIsIndirect(func->ReturnType)) &&
-      func->NumberOfArguments == indexed)
+      func->NumberOfArguments == (unsigned long)indexed)
     {
     /* methods of the form "type GetValue()" or "type GetValue(i)" */
     if (isGetMethod(func->Name))
@@ -565,7 +565,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   /* if return type is void and 1 arg or 1 index and 1 arg */
   if (vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
       !vtkParse_TypeIsIndirect(func->ReturnType) &&
-      func->NumberOfArguments == (1 + indexed))
+      func->NumberOfArguments == (unsigned long)(1 + indexed))
     {
     /* "void SetValue(type)" or "void SetValue(int, type)" */
     if (isSetMethod(func->Name))
@@ -705,7 +705,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
 static int methodMatchesProperty(
   PropertyInfo *property, MethodAttributes *meth, int *longMatch)
 {
-  size_t n;
+  unsigned long n;
   int propertyType, methType;
   const char *propertyName;
   const char *name;
@@ -900,7 +900,7 @@ static int methodMatchesProperty(
 static void initializePropertyInfo(
   PropertyInfo *property, MethodAttributes *meth, unsigned int methodBit)
 {
-  int type;
+  unsigned int type;
   type = meth->Type;
 
   /* for ValueOn()/Off() or SetValueToEnum() methods, set type to int */
@@ -970,11 +970,12 @@ static void initializePropertyInfo(
  * flags to the PropertyInfo struct */
 
 static void findAllMatches(
-  PropertyInfo *property, int propertyId, ClassPropertyMethods *methods,
-  int matchedMethods[], unsigned int methodCategories[],
-  int methodProperties[])
+  PropertyInfo *property, unsigned long propertyId,
+  ClassPropertyMethods *methods, int matchedMethods[],
+  unsigned int methodCategories[],
+  int methodHasProperty[], unsigned long methodProperties[])
 {
-  int i, j, k, n;
+  unsigned long i, j, k, n;
   size_t m;
   MethodAttributes *meth;
   unsigned int methodBit;
@@ -1008,6 +1009,7 @@ static void findAllMatches(
          * suffixes like On, MaxValue, etc. while doing the categorization */
         methodBit = methodCategory(meth, !longMatch);
         methodCategories[i] = methodBit;
+        methodHasProperty[i] = 1;
         methodProperties[i] = propertyId;
 
         if (meth->IsPublic)
@@ -1046,7 +1048,7 @@ static void findAllMatches(
             property->EnumConstantNames[j++] = &meth->Name[5+m];
             if (j % 8 == 0)
               {
-              const char **savenames = property->EnumConstantNames; 
+              const char **savenames = property->EnumConstantNames;
               property->EnumConstantNames =
                 (const char **)malloc(sizeof(char *)*(j+8));
               for (k = 0; k < j; k++)
@@ -1066,9 +1068,10 @@ static void findAllMatches(
 /*-------------------------------------------------------------------
  * search for methods that are repeated with minor variations */
 static int searchForRepeatedMethods(
-  ClassProperties *properties, ClassPropertyMethods *methods, int j)
+  ClassProperties *properties, ClassPropertyMethods *methods,
+  unsigned long j)
 {
-  int i, n;
+  unsigned long i, n;
   MethodAttributes *attrs;
   MethodAttributes *meth;
   n = methods->NumberOfMethods;
@@ -1107,6 +1110,7 @@ static int searchForRepeatedMethods(
         if (properties)
           {
           properties->MethodTypes[j] = properties->MethodTypes[i];
+          properties->MethodHasProperty[j] = properties->MethodHasProperty[i];
           properties->MethodProperties[j] = properties->MethodProperties[i];
           }
         return 0;
@@ -1123,6 +1127,7 @@ static int searchForRepeatedMethods(
         if (properties)
           {
           properties->MethodTypes[i] = properties->MethodTypes[j];
+          properties->MethodHasProperty[i] = properties->MethodHasProperty[j];
           properties->MethodProperties[i] = properties->MethodProperties[j];
           }
         return 0;
@@ -1138,9 +1143,9 @@ static int searchForRepeatedMethods(
  * Add a property, using method at index i as a template */
 
 static void addProperty(
-  ClassProperties *properties, ClassPropertyMethods *methods, int i,
-  int matchedMethods[])
-{ 
+  ClassProperties *properties, ClassPropertyMethods *methods,
+  unsigned long i, int matchedMethods[])
+{
   MethodAttributes *meth = methods->Methods[i];
   PropertyInfo *property;
   unsigned int category;
@@ -1149,6 +1154,7 @@ static void addProperty(
   matchedMethods[i] = 1;
   category = methodCategory(meth, 0);
   properties->MethodTypes[i] = category;
+  properties->MethodHasProperty[i] = 1;
   properties->MethodProperties[i] = properties->NumberOfProperties;
   /* duplicate the info for all "repeat" methods */
   searchForRepeatedMethods(properties, methods, i);
@@ -1158,6 +1164,7 @@ static void addProperty(
   initializePropertyInfo(property, meth, category);
   findAllMatches(property, properties->NumberOfProperties, methods,
                  matchedMethods, properties->MethodTypes,
+                 properties->MethodHasProperty,
                  properties->MethodProperties);
 
   properties->Properties[properties->NumberOfProperties++] = property;
@@ -1170,7 +1177,7 @@ static void addProperty(
 static void categorizeProperties(
   ClassPropertyMethods *methods, ClassProperties *properties)
 {
-  int i, n;
+  unsigned long i, n;
   int *matchedMethods;
 
   properties->NumberOfProperties = 0;
@@ -1252,7 +1259,7 @@ static void categorizeProperties(
 static void categorizePropertyMethods(
   ClassInfo *data, ClassPropertyMethods *methods)
 {
-  int i, n;
+  unsigned long i, n;
   FunctionInfo *func;
   MethodAttributes *attrs;
 
@@ -1280,7 +1287,7 @@ static void categorizePropertyMethods(
 
 ClassProperties *vtkParseProperties_Create(ClassInfo *data)
 {
-  int i;
+  unsigned long i;
   ClassProperties *properties;
   ClassPropertyMethods *methods;
 
@@ -1299,13 +1306,16 @@ ClassProperties *vtkParseProperties_Create(ClassInfo *data)
     (PropertyInfo **)malloc(sizeof(PropertyInfo *)*methods->NumberOfMethods);
   properties->MethodTypes =
     (unsigned int *)malloc(sizeof(unsigned int)*methods->NumberOfMethods);
-  properties->MethodProperties =
+  properties->MethodHasProperty =
     (int *)malloc(sizeof(int)*methods->NumberOfMethods);
+  properties->MethodProperties =
+    (unsigned long *)malloc(sizeof(unsigned long)*methods->NumberOfMethods);
 
   for (i = 0; i < methods->NumberOfMethods; i++)
     {
     properties->MethodTypes[i] = 0;
-    properties->MethodProperties[i] = -1;
+    properties->MethodHasProperty[i] = 0;
+    properties->MethodProperties[i] = 0;
     }
 
   /* synthesize a list of properties from the list of methods */
@@ -1327,7 +1337,7 @@ ClassProperties *vtkParseProperties_Create(ClassInfo *data)
 
 void vtkParseProperties_Free(ClassProperties *properties)
 {
-  int i, n;
+  unsigned long i, n;
 
   n = properties->NumberOfProperties;
   for (i = 0; i < n; i++)
@@ -1337,6 +1347,7 @@ void vtkParseProperties_Free(ClassProperties *properties)
 
   free(properties->Properties);
   free(properties->MethodTypes);
+  free(properties->MethodHasProperty);
   free(properties->MethodProperties);
   free(properties);
 }

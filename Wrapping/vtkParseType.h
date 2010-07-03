@@ -42,7 +42,7 @@
  *    stored as an int in ArgCounts.
  *
  * 3) The ID for VTK_PARSE_OBJECT is stored in ArgClasses.
- * 
+ *
  */
 
 /**
@@ -101,7 +101,7 @@
  *
  * The Ref needs 1 bit total, and each pointer needs 2 bits:
  *
- *  0 = nothing 
+ *  0 = nothing
  *  1 = '*'       = VTK_PARSE_POINTER
  *  2 = '[]'      = VTK_PARSE_ARRAY
  *  3 = '* const' = VTK_PARSE_CONST_POINTER

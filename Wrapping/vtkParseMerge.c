@@ -21,11 +21,11 @@
 #include <ctype.h>
 
 /* add a class to the MergeInfo */
-int vtkParseMerge_PushClass(MergeInfo *info, const char *classname)
+unsigned long vtkParseMerge_PushClass(MergeInfo *info, const char *classname)
 {
-  int n = info->NumberOfClasses;
-  int m = 0;
-  int i;
+  unsigned long n = info->NumberOfClasses;
+  unsigned long m = 0;
+  unsigned long i;
   char **classnames;
 
   /* if class is already there, return its index */
@@ -70,13 +70,13 @@ int vtkParseMerge_PushClass(MergeInfo *info, const char *classname)
 }
 
 /* add a function to the MergeInfo */
-int vtkParseMerge_PushFunction(MergeInfo *info, int depth)
+unsigned long vtkParseMerge_PushFunction(MergeInfo *info, unsigned long depth)
 {
-  int n = info->NumberOfFunctions;
-  int m = 0;
-  int i;
-  int *overrides;
-  int **classes;
+  unsigned long n = info->NumberOfFunctions;
+  unsigned long m = 0;
+  unsigned long i;
+  unsigned long *overrides;
+  unsigned long **classes;
 
   /* if no elements yet, reserve four slots */
   if (n == 0)
@@ -91,8 +91,8 @@ int vtkParseMerge_PushFunction(MergeInfo *info, int depth)
 
   if (m)
     {
-    overrides = (int *)malloc(m*sizeof(int));
-    classes = (int **)malloc(m*sizeof(int *));
+    overrides = (unsigned long *)malloc(m*sizeof(unsigned long));
+    classes = (unsigned long **)malloc(m*sizeof(unsigned long *));
     if (n)
       {
       for (i = 0; i < n; i++)
@@ -109,19 +109,20 @@ int vtkParseMerge_PushFunction(MergeInfo *info, int depth)
 
   info->NumberOfFunctions = n+1;
   info->NumberOfOverrides[n] = 1;
-  info->OverrideClasses[n] = (int *)malloc(sizeof(int));
+  info->OverrideClasses[n] = (unsigned long *)malloc(sizeof(unsigned long));
   info->OverrideClasses[n][0] = depth;
 
   return n;
 }
 
 /* add an override to to the specified function */
-int vtkParseMerge_PushOverride(MergeInfo *info, int i, int depth)
+unsigned long vtkParseMerge_PushOverride(
+  MergeInfo *info, unsigned long i, unsigned long depth)
 {
-  int n = info->NumberOfOverrides[i];
-  int m = 0;
-  int j;
-  int *classes;
+  unsigned long n = info->NumberOfOverrides[i];
+  unsigned long m = 0;
+  unsigned long j;
+  unsigned long *classes;
 
   /* Make sure it hasn't already been pushed */
   for (j = 0; j < info->NumberOfOverrides[i]; j++)
@@ -136,7 +137,7 @@ int vtkParseMerge_PushOverride(MergeInfo *info, int i, int depth)
   if ((n & (n-1)) == 0)
     {
     m = (n << 1);
-    classes = (int *)malloc(m*sizeof(int));
+    classes = (unsigned long *)malloc(m*sizeof(unsigned long));
     for (j = 0; j < n; j++)
       {
       classes[j] = info->OverrideClasses[i][j];
@@ -154,7 +155,7 @@ int vtkParseMerge_PushOverride(MergeInfo *info, int i, int depth)
 /* return an initialized MergeInfo */
 MergeInfo *vtkParseMerge_CreateMergeInfo(ClassInfo *classInfo)
 {
-  int i, n;
+  unsigned long i, n;
   FunctionInfo *func;
   MergeInfo *info = (MergeInfo *)malloc(sizeof(MergeInfo));
   info->NumberOfClasses = 0;
@@ -174,7 +175,7 @@ MergeInfo *vtkParseMerge_CreateMergeInfo(ClassInfo *classInfo)
 /* free the MergeInfo */
 void vtkParseMerge_FreeMergeInfo(MergeInfo *info)
 {
-  int i, n;
+  unsigned long i, n;
 
   n = info->NumberOfClasses;
   for (i = 0; i < n; i++)
@@ -200,7 +201,7 @@ void vtkParseMerge_FreeMergeInfo(MergeInfo *info)
 /* make a duplicate of a function */
 static void copy_function(FunctionInfo *merge, const FunctionInfo *func)
 {
-  int i;
+  unsigned long i;
 
   memcpy(merge, func, sizeof(FunctionInfo));
 
@@ -250,14 +251,15 @@ static void merge_function(FunctionInfo *merge, const FunctionInfo *func)
     {
     merge->Comment = (char *)malloc(strlen(func->Comment)+1);
     strcpy(merge->Comment, func->Comment);
-    } 
+    }
 }
 
 /* add "super" methods to the merge */
-int vtkParseMerge_Merge(
+unsigned long vtkParseMerge_Merge(
   MergeInfo *info, ClassInfo *merge, const ClassInfo *super)
 {
-  int i, j, k, n, m, depth, match;
+  unsigned long i, j, k, n, m, depth;
+  int match;
   const FunctionInfo *func;
   FunctionInfo *f2;
 
@@ -317,4 +319,3 @@ int vtkParseMerge_Merge(
 
   return depth;
 }
-

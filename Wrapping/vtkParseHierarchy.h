@@ -15,7 +15,7 @@
 /**
  This file contains utility functions for loading and parsing
  a VTK hierarchy file.  The file contains entries like the
- following (one per line in the file): 
+ following (one per line in the file):
 
  classname [ : superclass ] ; header.h
 
@@ -35,7 +35,7 @@ typedef struct _HierarchyEntry
   char *ClassName;
   char *HeaderFile;
   char *SuperClasses[10];
-  int SuperClassIndex[10];
+  int   SuperClassIndex[10];
 } HierarchyEntry;
 
 /**
@@ -43,7 +43,7 @@ typedef struct _HierarchyEntry
  */
 typedef struct _HierarchyInfo
 {
-  int NumberOfClasses;
+  int             NumberOfClasses;
   HierarchyEntry *Classes;
 } HierarchyInfo;
 

@@ -23,7 +23,7 @@ static int skip_space(const char *text)
   int i = 0;
   while (isspace(text[i]) && text[i] != '\n') { i++; }
   return i;
-} 
+}
 
 static int skip_name(const char *text)
 {
@@ -219,10 +219,10 @@ static int superclass_helper(
           iterating = 1;
           entry = &info->Classes[i];
           break;
-          } 
+          }
 
         /* recurse for multiple inheritance */
-        if (superclass_helper(info, &info->Classes[i], superclass)) 
+        if (superclass_helper(info, &info->Classes[i], superclass))
           {
           return 1;
           }

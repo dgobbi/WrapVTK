@@ -56,26 +56,26 @@ extern "C" {
 #endif
 
 /* return the base type as a VTK type constant */
-int vtkParse_BaseTypeAsVTKType(int type);
+int vtkParse_BaseTypeAsVTKType(unsigned int type);
 
 /* return the storage class decorator as a string, with possible
  * return values being "", "const", "static", and "static const" */
-const char *vtkParse_StorageClassAsString(int type);
+const char *vtkParse_StorageClassAsString(unsigned int type);
 
 /* return the indirection decorators as a string, with possible
  * return values "", "&", "&&", "*", "**", and "*&" */
-const char *vtkParse_IndirectionAsString(int type);
+const char *vtkParse_IndirectionAsString(unsigned int type);
 
 /* return the base type as a string,
  * prefix with "unsigned" if the type is unsigned,
  * return second arg "vtkname" if type is a vtkObject,
  * return "function" if type is a function pointer,
  * return empty string for impossible types */
-const char *vtkParse_BaseTypeAsString(int type, const char *vtkname);
+const char *vtkParse_BaseTypeAsString(unsigned int type, const char *vtkname);
 
 /* return the base type constant name as a string, i.e.
  * VTK_PARSE_INT -> "INT" */
-const char *vtkParse_TypeConstAsString(int type);
+const char *vtkParse_TypeConstAsString(unsigned int type);
 
 #ifdef __cplusplus
 }
