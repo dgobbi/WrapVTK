@@ -17,7 +17,6 @@
 #include <string.h>
 #include <ctype.h>
 #include "vtkParse.h"
-#include "vtkParseUtils.h"
 #include "vtkParseProperties.h"
 #include "vtkConfigure.h"
 
@@ -505,13 +504,12 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
 
   /* check for indexed methods: the first argument will be an integer */
   if (func->NumberOfArguments > 0 &&
-      (vtkParse_BaseType(func->ArgTypes[0]) == VTK_PARSE_INT ||
-       vtkParse_BaseType(func->ArgTypes[0]) == VTK_PARSE_ID_TYPE) &&
-      !vtkParse_TypeIsIndirect(func->ArgTypes[0]))
+      ((func->ArgTypes[0] & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_INT ||
+       (func->ArgTypes[0] & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_SIZE_T ||
+       (func->ArgTypes[0] & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_ID_TYPE))
     {
     /* methods of the form "void SetValue(int i, type value)" */
-    if (vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
-        !vtkParse_TypeIsIndirect(func->ReturnType) &&
+    if ((func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID &&
         func->NumberOfArguments == 2)
       {
       indexed = 1;
@@ -534,8 +532,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
         }
       }
     /* methods of the form "type GetValue(int i)" */
-    if (!(vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
-          !vtkParse_TypeIsIndirect(func->ReturnType)) &&
+    if ((func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) != VTK_PARSE_VOID &&
         func->NumberOfArguments == 1)
       {
       indexed = 1;
@@ -545,8 +542,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     }
 
   /* if return type is not void and no args or 1 index */
-  if (!(vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
-        !vtkParse_TypeIsIndirect(func->ReturnType)) &&
+  if ((func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) != VTK_PARSE_VOID &&
       func->NumberOfArguments == (unsigned long)indexed)
     {
     /* methods of the form "type GetValue()" or "type GetValue(i)" */
@@ -563,8 +559,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     }
 
   /* if return type is void and 1 arg or 1 index and 1 arg */
-  if (vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
-      !vtkParse_TypeIsIndirect(func->ReturnType) &&
+  if ((func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID &&
       func->NumberOfArguments == (unsigned long)(1 + indexed))
     {
     /* "void SetValue(type)" or "void SetValue(int, type)" */
@@ -580,8 +575,9 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     /* "void GetValue(type *)" or "void GetValue(int, type *)" */
     else if (isGetMethod(func->Name) &&
              func->ArgCounts[indexed] > 0 &&
-             vtkParse_TypeIsIndirect(func->ArgTypes[indexed]) &&
-             !vtkParse_TypeIsConst(func->ArgTypes[indexed]))
+             (func->ArgTypes[indexed] & VTK_PARSE_INDIRECT) ==
+              VTK_PARSE_POINTER &&
+             (func->ArgTypes[indexed] & VTK_PARSE_CONST) == 0)
       {
       attrs->HasProperty = 1;
       attrs->Type = func->ArgTypes[indexed];
@@ -591,9 +587,9 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       return 1;
       }
     /* "void AddValue(vtkObject *)" or "void RemoveValue(vtkObject *)" */
-    else if (((isAddMethod(func->Name) || isRemoveMethod(func->Name)) &&
-             vtkParse_BaseType(func->ArgTypes[indexed]) == VTK_PARSE_OBJECT &&
-             vtkParse_TypeIndirection(func->ArgTypes[indexed]) == VTK_PARSE_POINTER))
+    else if ((isAddMethod(func->Name) || isRemoveMethod(func->Name)) &&
+             (func->ArgTypes[indexed] & VTK_PARSE_UNQUALIFIED_TYPE) ==
+              VTK_PARSE_OBJECT_PTR)
       {
       attrs->HasProperty = 1;
       attrs->Type = func->ArgTypes[indexed];
@@ -622,9 +618,9 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     if (allSame)
       {
       /* "void SetValue(type x, type y, type z)" */
-      if (isSetMethod(func->Name) && !vtkParse_TypeIsIndirect(tmptype) &&
-          vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
-          !vtkParse_TypeIsIndirect(func->ReturnType))
+      if (isSetMethod(func->Name) &&
+          (tmptype & VTK_PARSE_INDIRECT) == 0 &&
+          (func->ReturnType && VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID)
         {
         attrs->HasProperty = 1;
         attrs->Type = tmptype;
@@ -635,10 +631,10 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
         }
       /* "void GetValue(type& x, type& x, type& x)" */
       else if (isGetMethod(func->Name) &&
-               vtkParse_TypeIndirection(tmptype) == VTK_PARSE_REF &&
-               !vtkParse_TypeIsConst(tmptype) &&
-               vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
-              !vtkParse_TypeIsIndirect(func->ReturnType))
+               (tmptype & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_REF &&
+               (tmptype & VTK_PARSE_CONST) == 0 &&
+               (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
+               VTK_PARSE_VOID)
         {
         attrs->HasProperty = 1;
         attrs->Type = tmptype;
@@ -648,11 +644,16 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
         return 1;
         }
       /* "void AddValue(type x, type y, type z)" */
-      else if (isAddMethod(func->Name) && !vtkParse_TypeIsIndirect(tmptype) &&
-               (vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID ||
-                vtkParse_BaseType(func->ReturnType) == VTK_PARSE_INT ||
-                vtkParse_BaseType(func->ReturnType) == VTK_PARSE_ID_TYPE) &&
-               !vtkParse_TypeIsIndirect(func->ReturnType))
+      else if (isAddMethod(func->Name) &&
+               (tmptype & VTK_PARSE_INDIRECT) == 0 &&
+               ((func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
+                VTK_PARSE_VOID ||
+                (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
+                VTK_PARSE_INT ||
+                (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
+                VTK_PARSE_SIZE_T ||
+                (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
+                VTK_PARSE_ID_TYPE))
         {
         attrs->HasProperty = 1;
         attrs->Type = tmptype;
@@ -665,8 +666,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     }
 
   /* if return type is void, and there are no arguments */
-  if (vtkParse_BaseType(func->ReturnType) == VTK_PARSE_VOID &&
-      !vtkParse_TypeIsIndirect(func->ReturnType) &&
+  if ((func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID &&
       func->NumberOfArguments == 0)
     {
     attrs->Type = VTK_PARSE_VOID;
@@ -797,7 +797,7 @@ static int methodMatchesProperty(
   /* check for RemoveAll method matching an Add method*/
   if (isRemoveAllMethod(meth->Name) &&
       methType == VTK_PARSE_VOID &&
-      !vtkParse_TypeIsIndirect(methType) &&
+      (methType & VTK_PARSE_INDIRECT) == 0 &&
       ((methodBitfield & (VTK_METHOD_BASIC_ADD | VTK_METHOD_MULTI_ADD)) != 0))
     {
     return 1;
@@ -805,45 +805,38 @@ static int methodMatchesProperty(
 
   /* check for GetNumberOf and SetNumberOf for indexed properties */
   if (isGetNumberOfMethod(meth->Name) &&
-      (methType == VTK_PARSE_INT || methType == VTK_PARSE_ID_TYPE) &&
-      !vtkParse_TypeIsIndirect(methType) &&
+      (methType == VTK_PARSE_INT ||
+       methType == VTK_PARSE_SIZE_T ||
+       methType == VTK_PARSE_ID_TYPE) &&
+      (methType & VTK_PARSE_INDIRECT) == 0 &&
       ((methodBitfield & (VTK_METHOD_INDEX_GET | VTK_METHOD_NTH_GET)) != 0))
     {
     return 1;
     }
 
   if (isSetNumberOfMethod(meth->Name) &&
-      (methType == VTK_PARSE_INT || methType == VTK_PARSE_ID_TYPE) &&
-      !vtkParse_TypeIsIndirect(methType) &&
+      (methType == VTK_PARSE_INT ||
+       methType == VTK_PARSE_SIZE_T ||
+       methType == VTK_PARSE_ID_TYPE) &&
+      (methType & VTK_PARSE_INDIRECT) == 0 &&
       ((methodBitfield & (VTK_METHOD_INDEX_SET | VTK_METHOD_NTH_SET)) != 0))
     {
     return 1;
     }
 
   /* remove ampersands i.e. "ref" */
-  if (vtkParse_TypeIndirection(methType) == VTK_PARSE_REF)
-    {
-    methType = (methType & ~VTK_PARSE_INDIRECT);
-    }
-  else if (vtkParse_TypeIndirection(methType) == VTK_PARSE_POINTER_REF)
-    {
-    methType = ((methType & ~VTK_PARSE_INDIRECT) | VTK_PARSE_POINTER);
-    }
-  else if (vtkParse_TypeIndirection(methType) == VTK_PARSE_CONST_POINTER_REF)
-    {
-    methType = ((methType & ~VTK_PARSE_INDIRECT) | VTK_PARSE_CONST_POINTER);
-    }
+  methType = (methType & ~VTK_PARSE_REF);
 
   /* if method is multivalue, e.g. SetColor(r,g,b), then the
    * referenced property is a pointer */
   if (meth->IsMultiValue)
     {
-    if (vtkParse_TypeIndirection(methType) == VTK_PARSE_POINTER)
+    if ((methType & VTK_PARSE_POINTER_MASK) == VTK_PARSE_POINTER)
       {
       methType = (methType & ~VTK_PARSE_INDIRECT);
       methType = (methType | VTK_PARSE_POINTER_POINTER);
       }
-    else if (vtkParse_TypeIndirection(methType) == 0)
+    else if ((methType & VTK_PARSE_POINTER_MASK) == 0)
       {
       methType = (methType | VTK_PARSE_POINTER);
       }
@@ -857,10 +850,9 @@ static int methodMatchesProperty(
   /* check for GetValueAsString method, assume it has matching enum */
   if (meth->IsBoolean || meth->IsEnumerated ||
       (isAsStringMethod(meth->Name) &&
-       vtkParse_BaseType(methType) == VTK_PARSE_CHAR &&
-       vtkParse_TypeIndirection(methType) == VTK_PARSE_POINTER))
+       (methType & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_CHAR_PTR))
     {
-    if (!vtkParse_TypeIsIndirect(propertyType) &&
+    if ((propertyType & VTK_PARSE_INDIRECT) == 0 &&
         (propertyType == VTK_PARSE_INT ||
          propertyType == VTK_PARSE_UNSIGNED_INT ||
          propertyType == VTK_PARSE_UNSIGNED_CHAR ||
@@ -877,9 +869,9 @@ static int methodMatchesProperty(
     }
 
   /* if vtkObject, check that classes match */
-  if (vtkParse_BaseType(methType) == VTK_PARSE_OBJECT)
+  if ((methType & VTK_PARSE_BASE_TYPE) == VTK_PARSE_OBJECT)
     {
-    if (meth->IsMultiValue || !vtkParse_TypeIsPointer(methType) ||
+    if (meth->IsMultiValue || (methType & VTK_PARSE_POINTER_MASK) == 0 ||
         meth->Count != 0 ||
         meth->ClassName == 0 || property->ClassName == 0 ||
         strcmp(meth->ClassName, property->ClassName) != 0)
@@ -913,27 +905,26 @@ static void initializePropertyInfo(
 
   /* get property type, but don't include "ref" as part of type,
    * and use a pointer if the method is multi-valued */
-  property->Type = vtkParse_BaseType(type);
+  property->Type = (type & VTK_PARSE_BASE_TYPE);
   if ((!meth->IsMultiValue &&
-       (vtkParse_TypeIndirection(type) == VTK_PARSE_POINTER ||
-        vtkParse_TypeIndirection(type) == VTK_PARSE_POINTER_REF)) ||
+       (type & VTK_PARSE_POINTER_MASK) == VTK_PARSE_POINTER) ||
       (meth->IsMultiValue &&
-       (vtkParse_TypeIndirection(type) == 0 ||
-        vtkParse_TypeIndirection(type) == VTK_PARSE_REF)))
+       (type & VTK_PARSE_POINTER_MASK) == 0))
     {
     property->Type = (property->Type | VTK_PARSE_POINTER);
     }
   else if ((!meth->IsMultiValue &&
-       (vtkParse_TypeIndirection(type) == VTK_PARSE_CONST_POINTER ||
-        vtkParse_TypeIndirection(type) == VTK_PARSE_CONST_POINTER_REF)))
+       (type & VTK_PARSE_POINTER_MASK) == VTK_PARSE_POINTER))
     {
-    property->Type = (property->Type | VTK_PARSE_CONST_POINTER);
+    property->Type = (property->Type | VTK_PARSE_POINTER);
+    property->Type = (property->Type | (type & VTK_PARSE_CONST));
     }
-  else if (vtkParse_TypeIndirection(type) == VTK_PARSE_POINTER_POINTER ||
-           (vtkParse_TypeIndirection(type) == VTK_PARSE_POINTER &&
-            meth->IsMultiValue))
+  else if (((type & VTK_PARSE_POINTER_MASK) == VTK_PARSE_POINTER &&
+             meth->IsMultiValue) ||
+            (type & VTK_PARSE_POINTER_MASK) == VTK_PARSE_POINTER_POINTER)
     {
     property->Type = (property->Type | VTK_PARSE_POINTER_POINTER);
+    property->Type = (property->Type | (type & VTK_PARSE_CONST));
     }
 
   property->ClassName = meth->ClassName;
@@ -1084,8 +1075,8 @@ static int searchForRepeatedMethods(
 
     /* check whether the function name and basic structure are matched */
     if (meth->Name && strcmp(attrs->Name, meth->Name) == 0 &&
-        (vtkParse_TypeIndirection(attrs->Type) ==
-          vtkParse_TypeIndirection(meth->Type)) &&
+        ((attrs->Type & VTK_PARSE_POINTER_MASK) ==
+           (meth->Type & VTK_PARSE_POINTER_MASK)) &&
         attrs->IsPublic == meth->IsPublic &&
         attrs->IsProtected == meth->IsProtected &&
         attrs->IsHinted == meth->IsHinted &&
@@ -1099,9 +1090,10 @@ static int searchForRepeatedMethods(
        * prefer higher-counted arrays,
        * prefer non-legacy methods */
 
-      if ((vtkParse_BaseType(attrs->Type) == VTK_PARSE_FLOAT &&
-           vtkParse_BaseType(meth->Type) == VTK_PARSE_DOUBLE) ||
-          (vtkParse_BaseType(attrs->Type) == vtkParse_BaseType(meth->Type) &&
+      if (((attrs->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_FLOAT &&
+           (meth->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_DOUBLE) ||
+          ((attrs->Type & VTK_PARSE_BASE_TYPE) ==
+             (meth->Type & VTK_PARSE_BASE_TYPE) &&
            attrs->Count < meth->Count) ||
           (attrs->IsLegacy && !meth->IsLegacy))
         {
@@ -1116,9 +1108,10 @@ static int searchForRepeatedMethods(
         return 0;
         }
 
-      if ((vtkParse_BaseType(attrs->Type) == VTK_PARSE_DOUBLE &&
-           vtkParse_BaseType(meth->Type) == VTK_PARSE_FLOAT) ||
-          (vtkParse_BaseType(attrs->Type) == vtkParse_BaseType(meth->Type) &&
+      if (((attrs->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_DOUBLE &&
+           (meth->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_FLOAT) ||
+          ((attrs->Type & VTK_PARSE_BASE_TYPE) ==
+             (meth->Type & VTK_PARSE_BASE_TYPE) &&
            attrs->Count > meth->Count) ||
           (!attrs->IsLegacy && meth->IsLegacy))
         {

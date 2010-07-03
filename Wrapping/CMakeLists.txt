@@ -12,7 +12,6 @@ ENDIF(MSVC_VERSION EQUAL 1400 OR MSVC_VERSION GREATER 1400)
 SET(vtkWrapXML_SRCS
   vtkParse.tab.c
   vtkParseMain.c
-  vtkParseUtils.c
   vtkParseProperties.c
   vtkParseHierarchy.c
   vtkParseMerge.c

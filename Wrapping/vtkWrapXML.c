@@ -28,7 +28,6 @@
 #include <string.h>
 #include <ctype.h>
 #include "vtkParse.h"
-#include "vtkParseUtils.h"
 #include "vtkParseProperties.h"
 #include "vtkParseHierarchy.h"
 #include "vtkParseMerge.h"
@@ -434,7 +433,7 @@ void vtkWrapXML_Type(FILE *fp, ValueInfo *val, int indentation)
   unsigned int bits;
   unsigned long ndims;
 
-  if (vtkParse_TypeIsConst(type))
+  if ((type & VTK_PARSE_CONST) != 0)
     {
     fprintf(fp, "%s<Flag>const</Flag>\n", indent(indentation));
     }
@@ -445,7 +444,7 @@ void vtkWrapXML_Type(FILE *fp, ValueInfo *val, int indentation)
     }
 
   fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
-          vtkWrapXML_Quote(vtkParse_BaseTypeAsString(type, val->Class), 500));
+          vtkWrapXML_Quote(val->Class, 500));
 
   if (val->Function)
     {
@@ -558,8 +557,7 @@ void vtkWrapXML_Template(
     else if (arg->Type)
       {
       fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
-              vtkWrapXML_Quote(vtkParse_BaseTypeAsString(arg->Type,
-                                                         arg->Class), 500));
+              vtkWrapXML_Quote(arg->Class, 500));
       }
     else
       {
