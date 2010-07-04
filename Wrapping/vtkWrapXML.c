@@ -633,6 +633,32 @@ void vtkWrapXML_Constant(
 }
 
 /**
+ * Print a typedef
+ */
+void vtkWrapXML_Typedef(
+  FILE *fp, ValueInfo *type, int inClass, int indentation)
+{
+  fprintf(fp, "\n");
+  fprintf(fp, "%s<Typedef>\n", indent(indentation++));
+
+  if (inClass)
+    {
+    vtkWrapXML_Access(fp, type->Access, indentation);
+    }
+
+  if (type->Type)
+    {
+    vtkWrapXML_Type(fp, type, indentation);
+    }
+  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
+          vtkWrapXML_Quote(type->Name, 500));
+
+  vtkWrapXML_Comment(fp, type->Comment, indentation);
+
+  fprintf(fp, "%s</Typedef>\n", indent(--indentation));
+}
+
+/**
  * Print out items that are common to functions and methods
  */
 void vtkWrapXML_FunctionCommon(
@@ -1170,8 +1196,13 @@ void vtkWrapXML_Class(
                                 indentation);
         break;
         }
-      case VTK_NAMESPACE_INFO:
       case VTK_TYPEDEF_INFO:
+        {
+        vtkWrapXML_Typedef(fp, (ValueInfo *)classInfo->Items[i], 1,
+                           indentation);
+        break;
+        }
+      case VTK_NAMESPACE_INFO:
       case VTK_CLASS_INFO:
       case VTK_STRUCT_INFO:
       case VTK_UNION_INFO:
@@ -1214,6 +1245,12 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
                             indentation);
         break;
         }
+      case VTK_TYPEDEF_INFO:
+        {
+        vtkWrapXML_Typedef(fp, (ValueInfo *)data->Items[i], 0,
+                           indentation);
+        break;
+        }
       case VTK_ENUM_INFO:
         {
         vtkWrapXML_Enum(fp, (EnumInfo *)data->Items[i], 0,
@@ -1239,7 +1276,6 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
                              indentation);
         break;
         }
-      case VTK_TYPEDEF_INFO:
       case VTK_UNION_INFO:
       case VTK_VARIABLE_INFO:
         break;

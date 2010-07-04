@@ -192,6 +192,8 @@ typedef struct _ClassInfo
   ValueInfo    **Constants;
   unsigned long  NumberOfEnums;
   EnumInfo     **Enums;
+  unsigned long  NumberOfTypedefs;
+  ValueInfo    **Typedefs;
   int            IsAbstract;
   int            HasDelete;
 } ClassInfo;
@@ -215,6 +217,8 @@ typedef struct _NamespaceInfo
   ValueInfo    **Constants;
   unsigned long  NumberOfEnums;
   EnumInfo     **Enums;
+  unsigned long  NumberOfTypedefs;
+  ValueInfo    **Typedefs;
   unsigned long  NumberOfNamespaces;
   struct _NamespaceInfo **Namespaces;
 } NamespaceInfo;

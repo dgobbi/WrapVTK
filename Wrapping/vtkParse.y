@@ -282,6 +282,12 @@ void startSig()
   sigMark[0] = 0;
 }
 
+/* get the signature */
+const char *getSig()
+{
+  return currentFunction->Signature;
+}
+
 /* reallocate Signature if "arg" cannot be appended */
 void checkSigSize(const char *arg)
 {
@@ -657,8 +663,8 @@ void popFunction()
   if (currentFunction)
     {
     currentFunction->Signature = newFunction->Signature;
+    newFunction->Signature = NULL;
     }
-  newFunction->Signature = NULL;
   clearVarName();
   if (functionVarNameStack[functionDepth])
     {
@@ -918,7 +924,7 @@ file_item:
    | using
    | namespace
    | extern
-   | typedef
+   | type_def
    | class_def maybe_vars ';'
    | template class_def maybe_vars ';'
    | CLASS_REF
@@ -974,7 +980,7 @@ class_def_item: scope_type ':'
    | enum_def maybe_vars ';'
    | union_def maybe_vars ';'
    | using
-   | typedef
+   | type_def
    | internal_class
    | FRIEND internal_class
    | template_internal_class
@@ -1080,11 +1086,39 @@ internal_class_body: ';'
     | '{' maybe_other '}' maybe_other_no_semi ';'
     | ':' maybe_other_no_semi ';';
 
-typedef: TYPEDEF type complex_var_id ';'
- | TYPEDEF class_def maybe_indirect_id ';'
- | TYPEDEF enum_def maybe_indirect_id ';'
- | TYPEDEF union_def maybe_indirect_id ';'
- | TYPEDEF VAR_FUNCTION ';';
+/*
+ * Typedefs
+ */
+
+type_def: typedef_start type complex_var_id ';'
+    {
+      ValueInfo *item = (ValueInfo *)malloc(sizeof(ValueInfo));
+      vtkParse_InitValue(item);
+      item->ItemType = VTK_TYPEDEF_INFO;
+      item->Access = access_level;
+
+      handle_complex_type(item, $<integer>2, $<integer>3, getSig());
+
+      if (getVarName())
+        {
+        item->Name = vtkstrdup(getVarName());
+        }
+
+      if (currentClass)
+        {
+        vtkParse_AddItemMacro(currentClass, Typedefs, item);
+        }
+      else
+        {
+        vtkParse_AddItemMacro(currentNamespace, Typedefs, item);
+        }
+    }
+ | typedef_start class_def maybe_indirect_id ';' { }
+ | typedef_start enum_def maybe_indirect_id ';' { }
+ | typedef_start union_def maybe_indirect_id ';' { }
+ | typedef_start VAR_FUNCTION ';' { };
+
+typedef_start: TYPEDEF { };
 
 /*
  * Templates
@@ -2361,6 +2395,7 @@ void vtkParse_InitClass(ClassInfo *cls)
   cls->NumberOfFunctions = 0;
   cls->NumberOfEnums = 0;
   cls->NumberOfConstants = 0;
+  cls->NumberOfTypedefs = 0;
   cls->IsAbstract = 0;
   cls->HasDelete = 0;
 }
@@ -2378,6 +2413,7 @@ void vtkParse_InitNamespace(NamespaceInfo *name_info)
   name_info->NumberOfFunctions = 0;
   name_info->NumberOfConstants = 0;
   name_info->NumberOfEnums = 0;
+  name_info->NumberOfTypedefs = 0;
   name_info->NumberOfNamespaces = 0;
 }
 
@@ -2779,7 +2815,8 @@ void set_return(FunctionInfo *func, unsigned int type,
 
 /* deal with types that include function pointers or arrays */
 void handle_complex_type(
-  ValueInfo *val, unsigned int datatype, unsigned int extra, const char *funcSig)
+  ValueInfo *val, unsigned int datatype, unsigned int extra,
+  const char *funcSig)
 {
   FunctionInfo *func = 0;
   unsigned long i, n;
@@ -2796,7 +2833,7 @@ void handle_complex_type(
     func->ReturnValue->Class = vtkstrdup(getTypeId());
     func->ReturnType = func->ReturnValue->Type;
     func->ReturnClass = func->ReturnValue->Class;
-    func->Signature = vtkstrdup(funcSig);
+    if (funcSig) { func->Signature = vtkstrdup(funcSig); }
     val->Function = func;
 
     /* the val type is whatever was inside the parentheses */
