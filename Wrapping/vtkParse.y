@@ -913,17 +913,14 @@ strt: | strt
 
 file_item:
      var
-   | anonymous_enum
-   | named_enum
-   | anonymous_union
-   | named_union
-   | anonymous_struct
+   | enum_def maybe_vars ';'
+   | union_def maybe_vars ';'
    | using
    | namespace
    | extern
    | typedef
-   | class_def
-   | template class_def
+   | class_def maybe_vars ';'
+   | template class_def maybe_vars ';'
    | CLASS_REF
    | operator func_body { output_function(); }
    | template operator func_body { output_function(); }
@@ -964,7 +961,9 @@ class_def: CLASS any_id { start_class($<str>2, 0); }
   | STRUCT any_id { start_class($<str>2, 1); }
     optional_scope '{' class_def_body '}' { end_class(); }
   | STRUCT any_id '<' types '>' { reject_class($<str>2, 1); }
-    optional_scope '{' class_def_body '}' { end_class(); };
+    optional_scope '{' class_def_body '}' { end_class(); }
+  | STRUCT '{' maybe_other '}';
+
 
 class_def_body: | class_def_body
                   { startSig(); clearTypeId(); clearTemplate(); }
@@ -972,11 +971,8 @@ class_def_body: | class_def_body
 
 class_def_item: scope_type ':'
    | var
-   | anonymous_enum
-   | named_enum
-   | anonymous_union
-   | named_union
-   | anonymous_struct
+   | enum_def maybe_vars ';'
+   | union_def maybe_vars ';'
    | using
    | typedef
    | internal_class
@@ -1023,11 +1019,10 @@ scope_type: PUBLIC {access_level = VTK_ACCESS_PUBLIC;}
  * as long as all IDs are properly scoped.
  */
 
-named_enum: ENUM any_id {start_enum($<str>2);} '{' enum_list '}'
-   {end_enum();} maybe_other_no_semi ';';
-
-anonymous_enum: ENUM {start_enum(NULL);} '{' enum_list '}'
-   {end_enum();} maybe_other_no_semi ';';
+enum_def: ENUM any_id {start_enum($<str>2);} '{' enum_list '}'
+   {end_enum();}
+ | ENUM {start_enum(NULL);} '{' enum_list '}'
+   {end_enum();};
 
 enum_list: | enum_item | enum_item ',' enum_list;
 
@@ -1070,35 +1065,25 @@ math_binary_op:  '-' { $<str>$ = "-"; } | '+' { $<str>$ = "+"; }
  * currently ignored items
  */
 
-anonymous_struct: STRUCT '{' maybe_other '}' maybe_other_no_semi ';';
-
-named_union: UNION any_id '{' maybe_other '}' maybe_other_no_semi ';';
-
-anonymous_union: UNION '{' maybe_other '}' maybe_other_no_semi ';';
+union_def: UNION any_id '{' maybe_other '}'
+         | UNION '{' maybe_other '}';
 
 using: USING maybe_other_no_semi ';';
 
 template_internal_class: template internal_class;
 
 internal_class: CLASS any_id internal_class_body
-              | STRUCT any_id internal_class_body;
+              | STRUCT any_id internal_class_body
+              | STRUCT internal_class_body;
 
 internal_class_body: ';'
-    | '{' maybe_other '}' ';'
+    | '{' maybe_other '}' maybe_other_no_semi ';'
     | ':' maybe_other_no_semi ';';
 
-typedef: TYPEDEF type var_id maybe_var_array';'
- | TYPEDEF CLASS any_id '{' maybe_other '}' maybe_indirect_id ';'
- | TYPEDEF STRUCT any_id '{' maybe_other '}' maybe_indirect_id ';'
- | TYPEDEF type LA maybe_indirect_id ')' maybe_var_array ';'
- | TYPEDEF type LP maybe_indirect_id ')' maybe_var_array ';'
- | TYPEDEF type LA maybe_indirect_id ')' '(' ignore_args_list ')' ';'
- | TYPEDEF type LP maybe_indirect_id ')' '(' ignore_args_list ')' ';'
- | TYPEDEF anonymous_enum
- | TYPEDEF named_enum
- | TYPEDEF anonymous_union
- | TYPEDEF named_union
- | TYPEDEF anonymous_struct
+typedef: TYPEDEF type complex_var_id ';'
+ | TYPEDEF class_def maybe_indirect_id ';'
+ | TYPEDEF enum_def maybe_indirect_id ';'
+ | TYPEDEF union_def maybe_indirect_id ';'
  | TYPEDEF VAR_FUNCTION ';';
 
 /*
@@ -1343,17 +1328,6 @@ destructor_sig: any_id '(' { postSig("(");} args_list ')';
  * Arguments
  */
 
-ignore_args_list: | ignore_more_args;
-
-ignore_more_args: ELLIPSIS { postSig("..."); }
-  | ignore_arg | ignore_arg ',' { postSig(", "); } ignore_more_args;
-
-ignore_arg:
-    type maybe_complex_var_id maybe_var_assign
-  | VAR_FUNCTION
-    { postSig("void (*"); postSig($<str>1); postSig(")(void *) "); };
-
-
 args_list: | {clearTypeId();} more_args;
 
 more_args:
@@ -1442,6 +1416,9 @@ var_id_maybe_assign: complex_var_id maybe_var_assign
                        (type & VTK_PARSE_UNQUALIFIED_TYPE), getTypeId(), 0);
          }
      };
+
+maybe_vars:
+     | other_var maybe_other_vars;
 
 maybe_other_vars:
      | maybe_other_vars ',' {postSig(", ");} other_var;
