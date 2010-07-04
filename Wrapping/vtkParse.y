@@ -150,6 +150,7 @@ void add_constant(const char *name, const char *value,
 const char *add_const_scope(const char *name);
 void prepend_scope(char *cp, const char *arg);
 unsigned int add_indirection(unsigned int tval, unsigned int ptr);
+unsigned int add_indirection_to_array(unsigned int ptr);
 void handle_complex_type(ValueInfo *val, unsigned int datatype,
                          unsigned int extra, const char *funcSig);
 void handle_function_type(ValueInfo *arg, const char *name,
@@ -753,19 +754,49 @@ unsigned int add_indirection(unsigned int type1, unsigned int type2)
     }
 
   while (reverse)
-   {
-   ptr1 = ((ptr1 << 2) | (reverse & VTK_PARSE_POINTER_LOWMASK));
-   reverse = ((reverse >> 2) & VTK_PARSE_POINTER_MASK);
+    {
+    ptr1 = ((ptr1 << 2) | (reverse & VTK_PARSE_POINTER_LOWMASK));
+    reverse = ((reverse >> 2) & VTK_PARSE_POINTER_MASK);
 
-   /* make sure we don't exceed the VTK_PARSE_POINTER bitfield */
-   if ((ptr1 & VTK_PARSE_POINTER_MASK) != ptr1)
-     {
-     ptr1 = VTK_PARSE_BAD_INDIRECT;
-     break;
-     }
-   }
+    /* make sure we don't exceed the VTK_PARSE_POINTER bitfield */
+    if ((ptr1 & VTK_PARSE_POINTER_MASK) != ptr1)
+      {
+      ptr1 = VTK_PARSE_BAD_INDIRECT;
+      break;
+      }
+    }
 
   return (ptr1 | result);
+}
+
+/* There is only one array, so add any parenthetical indirection to it */
+unsigned int add_indirection_to_array(unsigned int type)
+{
+  unsigned int ptrs = (type & VTK_PARSE_POINTER_MASK);
+  unsigned int result = (type & ~VTK_PARSE_POINTER_MASK);
+  unsigned int reverse = 0;
+
+  if ((type & VTK_PARSE_INDIRECT) == VTK_PARSE_BAD_INDIRECT)
+    {
+    return (result | VTK_PARSE_BAD_INDIRECT);
+    }
+
+  while (ptrs)
+    {
+    reverse = ((reverse << 2) | (ptrs & VTK_PARSE_POINTER_LOWMASK));
+    ptrs = ((ptrs >> 2) & VTK_PARSE_POINTER_MASK);
+    }
+
+  /* I know the reversal makes no difference, but it is still
+   * nice to add the pointers in the correct order, just in
+   * case const pointers are thrown into the mix. */
+  while (reverse)
+    {
+    pushArrayFront("");
+    reverse = ((reverse >> 2) & VTK_PARSE_POINTER_MASK);
+    }
+
+  return result;
 }
 
 %}
@@ -1466,15 +1497,25 @@ other_var:
 maybe_complex_var_id: maybe_var_id maybe_var_array { $<integer>$ = 0; }
      | p_or_lp_or_la maybe_indirect_maybe_var_id ')' { postSig(")"); }
        maybe_array_or_args
-       { $<integer>$ = add_indirection($<integer>5,
-                       add_indirection($<integer>1, $<integer>2)); };
+       {
+         unsigned int parens = add_indirection($<integer>1, $<integer>2);
+         if ($<integer>5 == VTK_PARSE_FUNCTION) {
+           $<integer>$ = (parens | VTK_PARSE_FUNCTION); }
+         else if ($<integer>5 == VTK_PARSE_ARRAY) {
+           $<integer>$ = add_indirection_to_array(parens); }
+       };
 
 /* for vars, the var_id is mandatory */
 complex_var_id: var_id maybe_var_array { $<integer>$ = 0; }
      | lp_or_la maybe_indirect_var_id ')' { postSig(")"); }
        maybe_array_or_args
-       { $<integer>$ = add_indirection($<integer>5,
-                       add_indirection($<integer>1, $<integer>2)); };
+       {
+         unsigned int parens = add_indirection($<integer>1, $<integer>2);
+         if ($<integer>5 == VTK_PARSE_FUNCTION) {
+           $<integer>$ = (parens | VTK_PARSE_FUNCTION); }
+         else if ($<integer>5 == VTK_PARSE_ARRAY) {
+           $<integer>$ = add_indirection_to_array(parens); }
+       };
 
 p_or_lp_or_la: '(' { postSig("("); $<integer>$ = 0; }
         | LP { postSig("("); postSig($<str>1); postSig("*");
@@ -1490,7 +1531,7 @@ lp_or_la: LP { postSig("("); postSig($<str>1); postSig("*");
 maybe_array_or_args: { $<integer>$ = 0; }
    | '(' { pushFunction(); postSig("("); } args_list ')'
      { $<integer>$ = VTK_PARSE_FUNCTION; postSig(")"); popFunction(); }
-   | var_array { $<integer>$ = 0; };
+   | var_array { $<integer>$ = VTK_PARSE_ARRAY; };
 
 maybe_indirect_maybe_var_id:
        maybe_complex_var_id { $<integer>$ = $<integer>1; }
