@@ -120,33 +120,6 @@ static int isGetNumberOfMethod(const char *name)
   return 0;
 }
 
-static int isAddMethod(const char *name)
-{
-  return (name && name[0] == 'A' && name[1] == 'd' && name[2] == 'd' &&
-          isupper(name[3]));
-}
-
-static int isRemoveMethod(const char *name)
-{
-  return (name && name[0] == 'R' && name[1] == 'e' && name[2] == 'm' &&
-          name[3] == 'o' && name[4] == 'v' && name[5] == 'e' &&
-          isupper(name[6]));
-}
-
-static int isRemoveAllMethod(const char *name)
-{
-  size_t n;
-
-  if (isRemoveMethod(name))
-    {
-    n = strlen(name);
-    return (name[6] == 'A' && name[7] == 'l' && name[8] == 'l' &&
-            isupper(name[9]) && name[n-1] == 's');
-    }
-
-  return 0;
-}
-
 static int isBooleanMethod(const char *name)
 {
   size_t n;
@@ -200,6 +173,33 @@ static int isAsStringMethod(const char *name)
         return 1;
         }
       }
+    }
+
+  return 0;
+}
+
+static int isAddMethod(const char *name)
+{
+  return (name && name[0] == 'A' && name[1] == 'd' && name[2] == 'd' &&
+          isupper(name[3]) && !isBooleanMethod(name));
+}
+
+static int isRemoveMethod(const char *name)
+{
+  return (name && name[0] == 'R' && name[1] == 'e' && name[2] == 'm' &&
+          name[3] == 'o' && name[4] == 'v' && name[5] == 'e' &&
+          isupper(name[6]) && !isBooleanMethod(name));
+}
+
+static int isRemoveAllMethod(const char *name)
+{
+  size_t n;
+
+  if (isRemoveMethod(name))
+    {
+    n = strlen(name);
+    return (name[6] == 'A' && name[7] == 'l' && name[8] == 'l' &&
+            isupper(name[9]) && name[n-1] == 's');
     }
 
   return 0;
@@ -470,6 +470,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
 {
   unsigned long i, n;
   unsigned int tmptype = 0;
+  const char *tmpclass = 0;
   int allSame = 0;
   int indexed = 0;
 
@@ -518,6 +519,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
         {
         /* make sure this isn't a multi-value int method */
         tmptype = func->ArgTypes[0];
+        tmpclass = func->ArgClasses[0];
         allSame = 1;
 
         n = func->NumberOfArguments;
@@ -604,6 +606,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   if (func->NumberOfArguments > 1 && !indexed)
     {
     tmptype = func->ArgTypes[0];
+    tmpclass = func->ArgClasses[0];
     allSame = 1;
 
     n = func->NumberOfArguments;
@@ -620,10 +623,11 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       /* "void SetValue(type x, type y, type z)" */
       if (isSetMethod(func->Name) &&
           (tmptype & VTK_PARSE_INDIRECT) == 0 &&
-          (func->ReturnType && VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID)
+          (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID)
         {
         attrs->HasProperty = 1;
         attrs->Type = tmptype;
+        attrs->ClassName = tmpclass;
         attrs->Count = n;
         attrs->IsMultiValue = 1;
 
@@ -631,13 +635,14 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
         }
       /* "void GetValue(type& x, type& x, type& x)" */
       else if (isGetMethod(func->Name) &&
-               (tmptype & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_REF &&
+               (tmptype & VTK_PARSE_REF) != 0 &&
                (tmptype & VTK_PARSE_CONST) == 0 &&
                (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
-               VTK_PARSE_VOID)
+                 VTK_PARSE_VOID)
         {
         attrs->HasProperty = 1;
         attrs->Type = tmptype;
+        attrs->ClassName = tmpclass;
         attrs->Count = n;
         attrs->IsMultiValue = 1;
 
@@ -647,16 +652,17 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       else if (isAddMethod(func->Name) &&
                (tmptype & VTK_PARSE_INDIRECT) == 0 &&
                ((func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
-                VTK_PARSE_VOID ||
+                  VTK_PARSE_VOID ||
                 (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
-                VTK_PARSE_INT ||
+                  VTK_PARSE_INT ||
                 (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
-                VTK_PARSE_SIZE_T ||
+                  VTK_PARSE_SIZE_T ||
                 (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
-                VTK_PARSE_ID_TYPE))
+                  VTK_PARSE_ID_TYPE))
         {
         attrs->HasProperty = 1;
         attrs->Type = tmptype;
+        attrs->ClassName = tmpclass;
         attrs->Count = n;
         attrs->IsMultiValue = 1;
 
@@ -670,6 +676,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       func->NumberOfArguments == 0)
     {
     attrs->Type = VTK_PARSE_VOID;
+    attrs->ClassName = "void";
 
     /* "void ValueOn()" or "void ValueOff()" */
     if (isBooleanMethod(func->Name))
@@ -707,6 +714,8 @@ static int methodMatchesProperty(
 {
   unsigned long n;
   int propertyType, methType;
+  const char *propertyClass;
+  const char *methClass;
   const char *propertyName;
   const char *name;
   const char *methSuffix;
@@ -789,7 +798,9 @@ static int methodMatchesProperty(
 
   /* check for type match */
   methType = meth->Type;
+  methClass = meth->ClassName;
   propertyType = property->Type;
+  propertyClass = property->ClassName;
 
   /* remove "const" and "static" */
   methType = (methType & VTK_PARSE_UNQUALIFIED_TYPE);
@@ -859,6 +870,7 @@ static int methodMatchesProperty(
          (meth->IsBoolean && propertyType == VTK_PARSE_BOOL)))
       {
       methType = propertyType;
+      methClass = propertyClass;
       }
     }
 
@@ -893,12 +905,15 @@ static void initializePropertyInfo(
   PropertyInfo *property, MethodAttributes *meth, unsigned int methodBit)
 {
   unsigned int type;
+  const char *typeClass;
   type = meth->Type;
+  typeClass = meth->ClassName;
 
   /* for ValueOn()/Off() or SetValueToEnum() methods, set type to int */
   if (meth->IsBoolean || meth->IsEnumerated)
     {
     type = VTK_PARSE_INT;
+    typeClass = "int";
     }
 
   property->Name = nameWithoutPrefix(meth->Name);
@@ -906,6 +921,7 @@ static void initializePropertyInfo(
   /* get property type, but don't include "ref" as part of type,
    * and use a pointer if the method is multi-valued */
   property->Type = (type & VTK_PARSE_BASE_TYPE);
+  property->ClassName = typeClass;
   if ((!meth->IsMultiValue &&
        (type & VTK_PARSE_POINTER_MASK) == VTK_PARSE_POINTER) ||
       (meth->IsMultiValue &&

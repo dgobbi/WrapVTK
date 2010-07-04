@@ -7765,7 +7765,7 @@ void start_enum(const char *name)
   static char text[256];
   EnumInfo *item;
 
-  currentEnumName = NULL;
+  currentEnumName = "int";
   currentEnumValue = NULL;
   if (name)
     {
