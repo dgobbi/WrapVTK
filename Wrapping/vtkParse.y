@@ -2870,10 +2870,11 @@ void handle_complex_type(
     if ((datatype & VTK_PARSE_POINTER_LOWMASK) != VTK_PARSE_ARRAY)
       {
       /* turn the first set of brackets into a pointer */
-      if (getArrayNDims() == 1)
-        {
-        datatype = add_indirection(datatype, VTK_PARSE_POINTER);
-        }
+      datatype = add_indirection(datatype, VTK_PARSE_POINTER);
+      }
+    else
+      {
+      pushArrayFront("");
       }
     }
   else if (getArrayNDims() > 1)
