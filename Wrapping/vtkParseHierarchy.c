@@ -137,6 +137,15 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
         }
       }
 
+    if (line[i] == '=')
+      {
+      i++;
+      while (line[i] != ';' && line[i] != '\n' && line[i] != '\0')
+        {
+        i++;
+        }
+      }
+
     if (line[i] == ';')
       {
       i++;

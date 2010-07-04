@@ -19,6 +19,11 @@
  format:
 
  classname [ : superclass ] ; header.h
+
+ For each typedef, the output file will have a line like this:
+
+ name = &[2][3]* const type ; header.h
+
 */
 
 #include "vtkParse.h"
@@ -39,7 +44,11 @@ static int vtkWrapHierarchy_ParseHeaderFile(
   char *cp;
   FileInfo *data;
   ClassInfo *class_info;
+  ValueInfo *typedef_info;
   size_t i, j, k;
+  unsigned int type;
+  int ndims;
+  int dim;
 
   /* the "concrete" flag doesn't matter, just set to zero */
   data = vtkParse_ParseFile(filename, 0, fp, stderr);
@@ -59,40 +68,130 @@ static int vtkWrapHierarchy_ParseHeaderFile(
   cp = line;
 
   /* add a line for each class that is found */
-  for (i = 0; i < data->Contents->NumberOfClasses; i++)
+  for (i = 0; i < data->Contents->NumberOfItems; i++)
     {
-    class_info = data->Contents->Classes[i];
-
-    sprintf(cp, "%s ", class_info->Name);
-    cp += strlen(cp);
-    if (class_info->NumberOfSuperClasses)
+    if (data->Contents->Items[i]->ItemType == VTK_CLASS_INFO ||
+        data->Contents->Items[i]->ItemType == VTK_STRUCT_INFO)
       {
-      sprintf(cp, ": ");
-      cp += strlen(cp);
-      }
+      class_info = (ClassInfo *)data->Contents->Items[i];
 
-    for (j = 0; j < class_info->NumberOfSuperClasses; j++)
-      {
-      sprintf(cp, "%s ", class_info->SuperClasses[j]);
+      sprintf(cp, "%s ", class_info->Name);
       cp += strlen(cp);
-      if (j+1 < class_info->NumberOfSuperClasses)
+      if (class_info->NumberOfSuperClasses)
         {
-        sprintf(cp, ", ");
+        sprintf(cp, ": ");
         cp += strlen(cp);
         }
-      }
 
-    j = strlen(data->FileName) - 1;
-    while (j > 0 && data->FileName[j-1] != '/' && data->FileName[j-1] != '\\')
+      for (j = 0; j < class_info->NumberOfSuperClasses; j++)
+        {
+        sprintf(cp, "%s ", class_info->SuperClasses[j]);
+        cp += strlen(cp);
+        if (j+1 < class_info->NumberOfSuperClasses)
+          {
+          sprintf(cp, ", ");
+          cp += strlen(cp);
+          }
+        }
+
+      j = strlen(data->FileName) - 1;
+      while (j > 0 && data->FileName[j-1] != '/' && data->FileName[j-1] != '\\')
+        {
+        j--;
+        }
+
+      sprintf(cp, "; %s", &data->FileName[j]);
+      cp = line;
+      lines[k] = (char *)malloc(strlen(cp)+1);
+      strcpy(lines[k++], cp);
+      lines[k] = NULL;
+      }
+    else if (data->Contents->Items[i]->ItemType == VTK_TYPEDEF_INFO)
       {
-      j--;
-      }
+      typedef_info = (ValueInfo *)data->Contents->Items[i];
 
-    sprintf(cp, "; %s", &data->FileName[j]);
-    cp = line;
-    lines[k] = (char *)malloc(strlen(cp)+1);
-    strcpy(lines[k++], cp);
-    lines[k] = NULL;
+      sprintf(cp, "%s ", typedef_info->Name);
+      cp += strlen(cp);
+
+      sprintf(cp, "= ");
+      cp += strlen(cp);
+
+      type = typedef_info->Type;
+
+      if ((type & VTK_PARSE_REF) != 0)
+        {
+        sprintf(cp, "&");
+        cp += strlen(cp);
+        }
+
+      ndims = typedef_info->NumberOfDimensions;
+
+      for (dim = 0; dim < ndims; dim++)
+        {
+        sprintf(cp, "[%s]", typedef_info->Dimensions[dim]);
+        cp += strlen(cp);
+        }
+
+      type = (type & VTK_PARSE_POINTER_MASK);
+      if (ndims > 0 && (type & VTK_PARSE_POINTER_LOWMASK) == VTK_PARSE_ARRAY)
+        {
+        type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
+        }
+      else if (ndims == 1)
+        {
+        type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
+        }
+
+      /* pointers are printed after brackets, and are intentionally
+       * printed in reverse order as compared to C++ declarations */
+      while (type)
+        {
+        unsigned int bits = (type & VTK_PARSE_POINTER_LOWMASK);
+        type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
+
+        if (bits == VTK_PARSE_POINTER)
+          {
+          sprintf(cp, "*");
+          cp += strlen(cp);
+          }
+        else if (bits == VTK_PARSE_CONST_POINTER)
+          {
+          sprintf(cp, "const*");
+          cp += strlen(cp);
+          }
+        else
+          {
+          sprintf(cp, "[]");
+          cp += strlen(cp);
+          }
+        }
+
+      if (cp[-1] != ' ')
+        {
+        *cp++ = ' ';
+        }
+
+      if ((type & VTK_PARSE_CONST) != 0)
+        {
+        sprintf(cp, "const ");
+        cp += strlen(cp);
+        }
+
+      sprintf(cp, "%s ", typedef_info->Class);
+      cp += strlen(cp);
+
+      j = strlen(data->FileName) - 1;
+      while (j > 0 && data->FileName[j-1] != '/' && data->FileName[j-1] != '\\')
+        {
+        j--;
+        }
+
+      sprintf(cp, "; %s", &data->FileName[j]);
+      cp = line;
+      lines[k] = (char *)malloc(strlen(cp)+1);
+      strcpy(lines[k++], cp);
+      lines[k] = NULL;
+      }
     }
 
   vtkParse_Free(data);

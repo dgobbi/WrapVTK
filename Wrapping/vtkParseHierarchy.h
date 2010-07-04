@@ -19,8 +19,10 @@
 
  classname [ : superclass ] ; header.h
 
- In the future, the syntax could be expanded to also include
- typedef information.
+ For each typedef, the output file will have a line like this:
+
+ name = &[2][3]* const type ; header.h
+
 */
 
 #ifndef VTK_PARSE_HIERARCHY_H
