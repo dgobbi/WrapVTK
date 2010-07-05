@@ -116,6 +116,8 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
     entry->NumberOfSuperClasses = 0;
     entry->SuperClasses = NULL;
     entry->SuperClassIndex = NULL;
+    entry->NumberOfProperties = 0;
+    entry->Properties = NULL;
 
     i = skip_space(line);
     n = skip_name(&line[i]);
@@ -181,10 +183,33 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
       strncpy(entry->HeaderFile, &line[i], n);
       entry->HeaderFile[n] = '\0';
 
+      i += n;
       i += skip_space(&line[i]);
       while (line[i] == ';')
         {
+        i++;
         i += skip_space(&line[i]);
+        if (entry->NumberOfProperties == 0)
+          {
+          entry->Properties = (char **)malloc(sizeof(char **));
+          }
+        else
+          {
+          entry->Properties = (char **)realloc(
+            entry->Properties, (entry->NumberOfProperties+1)*sizeof(char **));
+          }
+        n = 0;
+        while (line[i+n] != '\0' && line[i+n] != '\n' && line[i+n] != ';')
+          { n++; }
+        if (n && skip_space(&line[i]) != n)
+          {
+          entry->Properties[entry->NumberOfProperties] =
+            (char *)malloc((n+1)*sizeof(char *));
+          strncpy(entry->Properties[entry->NumberOfProperties], &line[i], n);
+          entry->Properties[entry->NumberOfProperties][n] = '\0';
+          entry->NumberOfProperties++;
+          }
+        i += n;
         }
       }
     }
@@ -219,6 +244,14 @@ void vtkParseHierarchy_Free(HierarchyInfo *info)
       {
       free(entry->SuperClasses);
       free(entry->SuperClassIndex);
+      }
+    for (j = 0; j < entry->NumberOfProperties; j++)
+      {
+      free(entry->Properties[j]);
+      }
+    if (entry->NumberOfProperties)
+      {
+      free(entry->Properties);
       }
     }
 
@@ -367,6 +400,38 @@ const char *vtkParseHierarchy_ClassSuperClass(
       if (i < entry->NumberOfSuperClasses)
         {
         return entry->SuperClasses[i];
+        }
+      return NULL;
+      }
+    }
+
+  return NULL;
+}
+
+/* get the specified property, or return NULL */
+const char *vtkParseHierarchy_GetProperty(
+  const HierarchyInfo *info, const char *classname, const char *property)
+{
+  HierarchyEntry *entry;
+  int i, j;
+  size_t k;
+
+  for (j = 0; j < info->NumberOfClasses; j++)
+    {
+    entry = &info->Classes[j];
+    if (strcmp(classname, entry->ClassName) == 0)
+      {
+      for (i = 0; i < entry->NumberOfProperties; i++)
+        {
+        /* skip the property name, everything after is the property */
+        k = skip_name(entry->Properties[i]);
+        if (k == strlen(property) &&
+            strncmp(entry->Properties[i], property, k) == 0)
+          {
+          if (entry->Properties[i][k] == ' ' ||
+              entry->Properties[i][k] == '=') { k++; }
+          return &entry->Properties[i][k];
+          }
         }
       return NULL;
       }

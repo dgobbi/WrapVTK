@@ -38,12 +38,13 @@
  * Read a header file with vtkParse.tab.c
  */
 static int vtkWrapHierarchy_ParseHeaderFile(
-  FILE *fp, const char *filename, char *lines[])
+  FILE *fp, const char *filename, const char *flags, char *lines[])
 {
   char line[2048];
   char *cp;
   FileInfo *data;
   size_t i, j, k;
+  const char *tmpflags;
 
   /* the "concrete" flag doesn't matter, just set to zero */
   data = vtkParse_ParseFile(filename, 0, fp, stderr);
@@ -65,10 +66,18 @@ static int vtkWrapHierarchy_ParseHeaderFile(
   /* add a line for each class that is found */
   for (i = 0; i < data->Contents->NumberOfItems; i++)
     {
+    /* all but the main class in each file is excluded from wrapping */
+    tmpflags = "WRAP_EXCLUDE";
+
     if (data->Contents->Items[i]->ItemType == VTK_CLASS_INFO ||
         data->Contents->Items[i]->ItemType == VTK_STRUCT_INFO)
       {
       ClassInfo *class_info = (ClassInfo *)data->Contents->Items[i];
+ 
+      if (class_info == data->MainClass)
+        {
+        tmpflags = flags;
+        }
 
       sprintf(cp, "%s ", class_info->Name);
       cp += strlen(cp);
@@ -187,6 +196,13 @@ static int vtkWrapHierarchy_ParseHeaderFile(
       }
 
     sprintf(cp, "; %s", &data->FileName[j]);
+    cp += strlen(cp);
+
+    if (tmpflags && tmpflags[0] != '\0')
+      {
+      sprintf(cp, " ;%s", tmpflags);
+      }
+
     cp = line;
     lines[k] = (char *)malloc(strlen(cp)+1);
     strcpy(lines[k++], cp);
@@ -336,7 +352,7 @@ static int vtkWrapHierarchy_WriteHierarchyFile(FILE *fp, char *lines[])
  * Try to parse a header file, print error and exit if fail
  */
 static int vtkWrapHierarchy_TryParseHeaderFile(
-  const char *file_name, char *lines[])
+  const char *file_name, const char *flags, char *lines[])
 {
   FILE *input_file;
 
@@ -349,7 +365,7 @@ static int vtkWrapHierarchy_TryParseHeaderFile(
     exit(1);
     }
 
-  if (!vtkWrapHierarchy_ParseHeaderFile(input_file, file_name, lines))
+  if (!vtkWrapHierarchy_ParseHeaderFile(input_file, file_name, flags, lines))
     {
     fclose(input_file);
     exit(1);
@@ -437,6 +453,7 @@ int main(int argc, char *argv[])
   int i, argi;
   char **lines;
   char **files;
+  char *flags;
 
   /* parse command-line options */
   for (argi = 1; argi < argc && argv[argi][0] == '-'; argi++)
@@ -478,7 +495,12 @@ int main(int argc, char *argv[])
   /* merge the files listed in the data file */
   for (i = 0; files[i] != NULL; i++)
     {
-    vtkWrapHierarchy_TryParseHeaderFile(files[i], lines);
+    flags = files[i];
+    /* look for semicolon that marks start of flags */
+    while(*flags != ';' && *flags != '\0') { flags++; };
+    if (*flags == ';') { *flags++ = '\0'; } 
+
+    vtkWrapHierarchy_TryParseHeaderFile(files[i], flags, lines);
     }
 
   /* write the file, if it has changed */

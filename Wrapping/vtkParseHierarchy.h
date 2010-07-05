@@ -43,6 +43,8 @@ typedef struct _HierarchyEntry
   int    NumberOfSuperClasses;
   char **SuperClasses;
   int   *SuperClassIndex;
+  int    NumberOfProperties;
+  char **Properties;
 } HierarchyEntry;
 
 /**
@@ -93,6 +95,14 @@ const char *vtkParseHierarchy_ClassHeader(
  */
 const char *vtkParseHierarchy_ClassSuperClass(
   const HierarchyInfo *info, const char *classname, int i);
+
+/**
+ * Get properties for the class.  Returns NULL if the property
+ * is not set.  Only a few properties are supported so far:
+ * "WRAP_EXCLUDE", "WRAP_SPECIAL", and "ABSTRACT"
+ */
+const char *vtkParseHierarchy_GetProperty(
+  const HierarchyInfo *intp, const char *classname, const char *property);
 
 #ifdef __cplusplus
 } /* extern "C" */
