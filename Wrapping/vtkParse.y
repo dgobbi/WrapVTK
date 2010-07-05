@@ -116,6 +116,9 @@ int yylex(void);
 /* global variables */
 FileInfo data;
 
+unsigned long  NumberOfConcreteClasses = 0;
+const char   **ConcreteClasses;
+
 NamespaceInfo *currentNamespace = NULL;
 ClassInfo     *currentClass = NULL;
 FunctionInfo  *currentFunction = NULL;
@@ -127,7 +130,6 @@ char          *currentEnumValue = 0;
 int            parseDebug;
 char           temps[2048];
 parse_access_t access_level = VTK_ACCESS_PUBLIC;
-int            is_concrete;
 int            HaveComment;
 char           CommentText[50000];
 int            CommentState;
@@ -2131,8 +2133,11 @@ macro:
      set_return(currentFunction, VTK_PARSE_DOUBLE_PTR, "double", 3);
      output_function();
    }
-| TypeMacro '(' any_id ',' any_id ')'
+| TypeMacro '(' any_id ',' any_id maybe_comma ')'
    {
+   int is_concrete = 0;
+   unsigned long i;
+
    currentFunction->Signature = (char *)malloc(2048);
    sigAllocatedLength = 2048;
    sprintf(currentFunction->Signature, "const char *GetClassName();");
@@ -2172,65 +2177,14 @@ macro:
    set_return(currentFunction, VTK_PARSE_OBJECT_PTR, $<str>3, 0);
    output_function();
 
-   if ( is_concrete )
+   for (i = 0; i < NumberOfConcreteClasses; i++)
      {
-     currentFunction->Signature = (char *)malloc(2048);
-     sigAllocatedLength = 2048;
-     sprintf(currentFunction->Signature, "%s *SafeDownCast(vtkObject* o);",
-             $<str>3);
-     sprintf(temps,"SafeDownCast");
-     currentFunction->Name = vtkstrdup(temps);
-     if (HaveComment)
+     if (strcmp(currentClass->Name, ConcreteClasses[i]) == 0)
        {
-       currentFunction->Comment = vtkstrdup(CommentText);
+       is_concrete = 1;
+       break;
        }
-     add_argument(currentFunction, VTK_PARSE_OBJECT_PTR, "vtkObject", 0);
-     set_return(currentFunction, (VTK_PARSE_STATIC | VTK_PARSE_OBJECT_PTR),
-                $<str>3, 0);
-     output_function();
      }
-   }
-| TypeMacro '(' any_id ',' any_id ',' ')'
-   {
-   currentFunction->Signature = (char *)malloc(2048);
-   sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature, "const char *GetClassName();");
-   sprintf(temps,"GetClassName");
-   currentFunction->Name = vtkstrdup(temps);
-   if (HaveComment)
-     {
-     currentFunction->Comment = vtkstrdup(CommentText);
-     }
-   set_return(currentFunction, (VTK_PARSE_CONST | VTK_PARSE_CHAR_PTR),
-              "char", 0);
-   output_function();
-
-   currentFunction->Signature = (char *)malloc(2048);
-   sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature,
-           "int IsA(const char *name);");
-   sprintf(temps,"IsA");
-   currentFunction->Name = vtkstrdup(temps);
-   if (HaveComment)
-     {
-     currentFunction->Comment = vtkstrdup(CommentText);
-     }
-   add_argument(currentFunction, (VTK_PARSE_CONST | VTK_PARSE_CHAR_PTR),
-                "char", 0);
-   set_return(currentFunction, VTK_PARSE_INT, "int", 0);
-   output_function();
-
-   currentFunction->Signature = (char *)malloc(2048);
-   sigAllocatedLength = 2048;
-   sprintf(currentFunction->Signature, "%s *NewInstance();", $<str>3);
-   sprintf(temps,"NewInstance");
-   currentFunction->Name = vtkstrdup(temps);
-   if (HaveComment)
-     {
-     currentFunction->Comment = vtkstrdup(CommentText);
-     }
-   set_return(currentFunction, VTK_PARSE_OBJECT_PTR, $<str>3, 0);
-   output_function();
 
    if ( is_concrete )
      {
@@ -3225,7 +3179,7 @@ void vtkParse_AddPointerToArray(
 
 /* Parse a header file and return a FileInfo struct */
 FileInfo *vtkParse_ParseFile(
-  const char *filename, int concrete, FILE *ifile, FILE *errfile)
+  const char *filename, FILE *ifile, FILE *errfile)
 {
   unsigned long i, j;
   int lineno;
@@ -3236,7 +3190,6 @@ FileInfo *vtkParse_ParseFile(
   vtkParse_InitFile(&data);
 
   data.FileName = vtkstrdup(filename);
-  is_concrete = concrete;
 
   CommentState = 0;
 
@@ -3415,3 +3368,17 @@ void vtkParse_Free(FileInfo *file_info)
   file_info->Contents = NULL;
 }
 
+/* Set a property before parsing */
+void vtkParse_SetClassProperty(
+  const char *classname, const char *property)
+{
+   /* the only property recognized */
+   if (strcmp(property, "concrete") == 0 ||
+       strcmp(property, "CONCRETE") == 0 ||
+       strcmp(property, "Concrete") == 0)
+     {
+     vtkParse_AddPointerToArray(&ConcreteClasses,
+                                &NumberOfConcreteClasses,
+                                vtkstrdup(classname));
+     } 
+}

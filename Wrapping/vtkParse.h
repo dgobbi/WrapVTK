@@ -243,10 +243,18 @@ extern "C" {
 #endif
 
 /**
+ * Add a hint about a class that will be parsed.  The only
+ * acknowledged hint is "concrete", which if set to "true"
+ * is a promise that the class is instantiable.
+ */
+void vtkParse_SetClassProperty(
+  const char *classname, const char *property);
+
+/**
  * Parse a header file and return a FileInfo struct
  */
 FileInfo *vtkParse_ParseFile(
-  const char *filename, int concrete, FILE *ifile, FILE *errfile);
+  const char *filename, FILE *ifile, FILE *errfile);
 
 /**
  * Read a hints file and update the FileInfo

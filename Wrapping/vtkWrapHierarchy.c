@@ -89,7 +89,7 @@ static char **vtkWrapHierarchy_ParseHeaderFile(
     }
 
   /* the "concrete" flag doesn't matter, just set to zero */
-  data = vtkParse_ParseFile(filename, 0, fp, stderr);
+  data = vtkParse_ParseFile(filename, fp, stderr);
 
   if (!data)
     {

@@ -988,7 +988,7 @@ void vtkWrapXML_MergeHelper(
       exit(1);
       }
 
-    finfo = vtkParse_ParseFile(filename, 0, fp, stderr);
+    finfo = vtkParse_ParseFile(filename, fp, stderr);
     vtkParse_FreePath(filename);
     fclose(fp);
 
