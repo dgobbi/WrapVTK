@@ -23,6 +23,10 @@
 
  name = &[2][3]* const type ; header.h
 
+ For each enum, the output file will have:
+
+ enumname : int ; header.h
+
 */
 
 #ifndef VTK_PARSE_HIERARCHY_H
@@ -34,10 +38,11 @@
  */
 typedef struct _HierarchyEntry
 {
-  char *ClassName;
-  char *HeaderFile;
-  char *SuperClasses[10];
-  int   SuperClassIndex[10];
+  char  *ClassName;
+  char  *HeaderFile;
+  int    NumberOfSuperClasses;
+  char **SuperClasses;
+  int   *SuperClassIndex;
 } HierarchyEntry;
 
 /**

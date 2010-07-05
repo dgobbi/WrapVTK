@@ -62,8 +62,11 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
   HierarchyEntry *entry;
   int maxClasses = 512;
   FILE *fp;
-  char line[2048];
+  char *line;
+  size_t maxlen = 16;
   size_t i, j, n;
+
+  line = (char *)malloc(maxlen);
 
   fp = fopen(filename, "r");
 
@@ -76,9 +79,19 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
   info->NumberOfClasses = 0;
   info->Classes = (HierarchyEntry *)malloc(maxClasses*sizeof(HierarchyEntry));
 
-  while (fgets(line, 2048, fp))
+  while (fgets(line, maxlen, fp))
     {
     n = strlen(line);
+
+    /* if buffer not long enough, increase it */
+    while (n == maxlen-1 && line[n-1] != '\n' && !feof(fp))
+      {
+      maxlen *= 2;
+      line = (char *)realloc(line, maxlen);
+      if (!fgets(&line[n], maxlen-n, fp)) { break; }
+      n += strlen(&line[n]);
+      }
+
     while (n > 0 && isspace(line[n-1]))
       {
       n--;
@@ -92,18 +105,17 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
 
     if (info->NumberOfClasses == maxClasses)
       {
-      entry = info->Classes;
-      info->Classes =
-        (HierarchyEntry *)malloc(sizeof(HierarchyEntry)*maxClasses*2);
-      memcpy(info->Classes, entry, sizeof(HierarchyEntry)*maxClasses);
-      free(entry);
       maxClasses *= 2;
+      info->Classes = (HierarchyEntry *)realloc(
+        info->Classes, sizeof(HierarchyEntry)*maxClasses*2);
       }
 
     entry = &info->Classes[info->NumberOfClasses++];
     entry->ClassName = NULL;
-    entry->SuperClasses[0] = NULL;
     entry->HeaderFile = NULL;
+    entry->NumberOfSuperClasses = 0;
+    entry->SuperClasses = NULL;
+    entry->SuperClassIndex = NULL;
 
     i = skip_space(line);
     n = skip_name(&line[i]);
@@ -118,15 +130,28 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
     if (line[i] == ':')
       {
       i++;
-      for (j = 0; j < 9; j++)
+      for (j = 0; ; j++)
         {
+        if (j == 0)
+          {
+          entry->SuperClasses = (char **)malloc(sizeof(char *));
+          entry->SuperClassIndex = (int *)malloc(sizeof(int));
+          }
+        else
+          {
+          entry->SuperClasses = (char **)realloc(
+            entry->SuperClasses, (j+1)*sizeof(char *));
+          entry->SuperClassIndex = (int *)realloc(
+            entry->SuperClassIndex, (j+1)*sizeof(int));
+          }
+        entry->NumberOfSuperClasses++;
+
         i += skip_space(&line[i]);
         n = skip_name(&line[i]);
         entry->SuperClasses[j] = (char *)malloc(n+1);
         strncpy(entry->SuperClasses[j], &line[i], n);
         entry->SuperClasses[j][n] = '\0';
         entry->SuperClassIndex[j] = -1;
-        entry->SuperClasses[j+1] = NULL;
         i += n;
 
         i += skip_space(&line[i]);
@@ -155,6 +180,12 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
       entry->HeaderFile = (char *)malloc(n+1);
       strncpy(entry->HeaderFile, &line[i], n);
       entry->HeaderFile[n] = '\0';
+
+      i += skip_space(&line[i]);
+      while (line[i] == ';')
+        {
+        i += skip_space(&line[i]);
+        }
       }
     }
 
@@ -163,6 +194,8 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
     vtkParseHierarchy_Free(info);
     info = NULL;
     }
+
+  free(line);
 
   return info;
 }
@@ -178,9 +211,14 @@ void vtkParseHierarchy_Free(HierarchyInfo *info)
     entry = &info->Classes[i];
     free(entry->ClassName);
     free(entry->HeaderFile);
-    for (j = 0; entry->SuperClasses[j] != NULL; j++)
+    for (j = 0; j < entry->NumberOfSuperClasses; j++)
       {
       free(entry->SuperClasses[j]);
+      }
+    if (entry->NumberOfSuperClasses)
+      {
+      free(entry->SuperClasses);
+      free(entry->SuperClassIndex);
       }
     }
 
@@ -204,12 +242,12 @@ static int superclass_helper(
       return 1;
       }
 
-    if (entry->SuperClasses[0] == NULL)
+    if (entry->NumberOfSuperClasses == 0)
       {
       return 0;
       }
 
-    for (j = 0; entry->SuperClasses[j] != NULL; j++)
+    for (j = 0; j < entry->NumberOfSuperClasses; j++)
       {
       if (strcmp(entry->SuperClasses[j], superclass) == 0)
         {
@@ -237,7 +275,7 @@ static int superclass_helper(
         }
       if (i >= 0)
         {
-        if (entry->SuperClasses[j+1] == NULL)
+        if (j+1 >= entry->NumberOfSuperClasses)
           {
           iterating = 1;
           entry = &info->Classes[i];
@@ -319,21 +357,18 @@ const char *vtkParseHierarchy_ClassSuperClass(
   const HierarchyInfo *info, const char *classname, int i)
 {
   HierarchyEntry *entry;
-  int j, k;
+  int j;
 
   for (j = 0; j < info->NumberOfClasses; j++)
     {
     entry = &info->Classes[j];
     if (strcmp(classname, entry->ClassName) == 0)
       {
-      for (k = 0; k <= i; k++)
+      if (i < entry->NumberOfSuperClasses)
         {
-        if (entry->SuperClasses[k] == NULL)
-          {
-          return NULL;
-          }
         return entry->SuperClasses[i];
         }
+      return NULL;
       }
     }
 
