@@ -89,10 +89,10 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
 {
   HierarchyInfo *info;
   HierarchyEntry *entry;
-  int maxClasses = 512;
+  int maxClasses = 500;
   FILE *fp;
   char *line;
-  size_t maxlen = 16;
+  size_t maxlen = 15;
   size_t i, j, n;
 
   line = (char *)malloc(maxlen);
