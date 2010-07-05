@@ -55,6 +55,35 @@ static size_t skip_name(const char *text)
   return i;
 }
 
+/* helper: comparison of entries */
+static int compare_hierarchy_entries(const void *vp1, const void *vp2)
+{
+  const HierarchyEntry *entry1 = (const HierarchyEntry *)vp1;
+  const HierarchyEntry *entry2 = (const HierarchyEntry *)vp2;
+
+  return strcmp(entry1->ClassName, entry2->ClassName);
+}
+
+/* helper: sort the entries to facilitate searching */
+static void sort_hierarchy_entries(HierarchyInfo *info)
+{
+  qsort(info->Classes, info->NumberOfClasses, sizeof(HierarchyEntry),
+        &compare_hierarchy_entries);
+}
+
+/* helper: find an entry with a binary search */
+static HierarchyEntry *find_hierarchy_entry(
+  const HierarchyInfo *info, const char *classname)
+{
+  HierarchyEntry key;
+  key.ClassName = (char *)classname;
+
+  return (HierarchyEntry *)bsearch(&key, info->Classes,
+    info->NumberOfClasses, sizeof(HierarchyEntry),
+    &compare_hierarchy_entries);
+}
+
+
 /* read a hierarchy file into a HeirarchyInfo struct, or return NULL */
 HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
 {
@@ -222,6 +251,8 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
 
   free(line);
 
+  sort_hierarchy_entries(info);
+
   return info;
 }
 
@@ -290,16 +321,15 @@ static int superclass_helper(
       i = entry->SuperClassIndex[j];
       if (i == -1)
         {
-        for (i = 0; i < info->NumberOfClasses; i++)
+        HierarchyEntry *tmp =
+          find_hierarchy_entry(info, entry->SuperClasses[j]);
+        if (tmp)
           {
-          if (strcmp(entry->SuperClasses[j], info->Classes[i].ClassName) == 0)
-            {
-            /* cache the position of the superclass */
-            ((HierarchyEntry *)entry)->SuperClassIndex[j] = i;
-            break;
-            }
+          i = (int)(tmp - info->Classes);
+          /* cache the position of the superclass */
+          ((HierarchyEntry *)entry)->SuperClassIndex[j] = i;
           }
-        if (i >= info->NumberOfClasses)
+        else
           {
           /* outside of hierarchy, can't search */
           i = -2;
@@ -333,15 +363,12 @@ int vtkParseHierarchy_IsTypeOf(
   const HierarchyInfo *info, const char *subclass, const char *superclass)
 {
   HierarchyEntry *entry;
-  int i;
 
-  for (i = 0; i < info->NumberOfClasses; i++)
+  entry = find_hierarchy_entry(info, subclass);
+
+  if (entry)
     {
-    entry = &info->Classes[i];
-    if (strcmp(subclass, entry->ClassName) == 0)
-      {
-      return superclass_helper(info, entry, superclass);
-      }
+    return superclass_helper(info, entry, superclass);
     }
 
   return 0;
@@ -352,15 +379,12 @@ int vtkParseHierarchy_IsExtern(
   const HierarchyInfo *info, const char *classname)
 {
   HierarchyEntry *entry;
-  int i;
 
-  for (i = 0; i < info->NumberOfClasses; i++)
+  entry = find_hierarchy_entry(info, classname);
+
+  if (entry)
     {
-    entry = &info->Classes[i];
-    if (strcmp(classname, entry->ClassName) == 0)
-      {
-      return 0;
-      }
+    return 0;
     }
 
   return 1;
@@ -371,15 +395,12 @@ const char *vtkParseHierarchy_ClassHeader(
   const HierarchyInfo *info, const char *classname)
 {
   HierarchyEntry *entry;
-  int i;
 
-  for (i = 0; i < info->NumberOfClasses; i++)
+  entry = find_hierarchy_entry(info, classname);
+
+  if (entry)
     {
-    entry = &info->Classes[i];
-    if (strcmp(classname, entry->ClassName) == 0)
-      {
-      return entry->HeaderFile;
-      }
+    return entry->HeaderFile;
     }
 
   return NULL;
@@ -390,18 +411,14 @@ const char *vtkParseHierarchy_ClassSuperClass(
   const HierarchyInfo *info, const char *classname, int i)
 {
   HierarchyEntry *entry;
-  int j;
 
-  for (j = 0; j < info->NumberOfClasses; j++)
+  entry = find_hierarchy_entry(info, classname);
+
+  if (entry)
     {
-    entry = &info->Classes[j];
-    if (strcmp(classname, entry->ClassName) == 0)
+    if (i < entry->NumberOfSuperClasses)
       {
-      if (i < entry->NumberOfSuperClasses)
-        {
-        return entry->SuperClasses[i];
-        }
-      return NULL;
+      return entry->SuperClasses[i];
       }
     }
 
@@ -413,27 +430,24 @@ const char *vtkParseHierarchy_GetProperty(
   const HierarchyInfo *info, const char *classname, const char *property)
 {
   HierarchyEntry *entry;
-  int i, j;
+  int i;
   size_t k;
 
-  for (j = 0; j < info->NumberOfClasses; j++)
+  entry = find_hierarchy_entry(info, classname);
+
+  if (entry)
     {
-    entry = &info->Classes[j];
-    if (strcmp(classname, entry->ClassName) == 0)
+    for (i = 0; i < entry->NumberOfProperties; i++)
       {
-      for (i = 0; i < entry->NumberOfProperties; i++)
+      /* skip the property name, everything after is the property */
+      k = skip_name(entry->Properties[i]);
+      if (k == strlen(property) &&
+          strncmp(entry->Properties[i], property, k) == 0)
         {
-        /* skip the property name, everything after is the property */
-        k = skip_name(entry->Properties[i]);
-        if (k == strlen(property) &&
-            strncmp(entry->Properties[i], property, k) == 0)
-          {
-          if (entry->Properties[i][k] == ' ' ||
-              entry->Properties[i][k] == '=') { k++; }
-          return &entry->Properties[i][k];
-          }
+        if (entry->Properties[i][k] == ' ' ||
+            entry->Properties[i][k] == '=') { k++; }
+        return &entry->Properties[i][k];
         }
-      return NULL;
       }
     }
 
