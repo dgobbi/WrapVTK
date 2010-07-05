@@ -444,13 +444,17 @@ static int vtkWrapHierarchy_TryWriteHierarchyFile(
   return 0;
 }
 
-#define MAX_INCLUDE_DIRS 255
+static int string_compare(const void *vp1, const void *vp2)
+{
+  return strcmp(*(const char **)vp1, *(const char **)vp2);
+}
 
 int main(int argc, char *argv[])
 {
   int usage_error = 0;
   char *output_filename = 0;
   int i, argi;
+  size_t j, n;
   char **lines;
   char **files;
   char *flags;
@@ -503,8 +507,17 @@ int main(int argc, char *argv[])
     vtkWrapHierarchy_TryParseHeaderFile(files[i], flags, lines);
     }
 
+  /* sort the lines to ease lookups in the file */
+  for (n = 0; lines[n]; n++) { ; };
+  qsort(lines, n, sizeof(char *), &string_compare);
+
   /* write the file, if it has changed */
   vtkWrapHierarchy_TryWriteHierarchyFile(output_filename, lines);
+
+  for (j = 0; j < n; j++)
+    {
+    free(lines[j]);
+    }
 
   free(files);
   free(lines);
