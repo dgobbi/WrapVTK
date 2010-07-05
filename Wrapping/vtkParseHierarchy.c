@@ -207,7 +207,8 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
       i++;
       i += skip_space(&line[i]);
       n = 0;
-      while(line[i+n] != '\0' && !isspace(line[i+n])) { n++; };
+      while(line[i+n] != '\0' && line[i+n] != ';' &&
+            !isspace(line[i+n])) { n++; };
       entry->HeaderFile = (char *)malloc(n+1);
       strncpy(entry->HeaderFile, &line[i], n);
       entry->HeaderFile[n] = '\0';
