@@ -43,12 +43,7 @@ static int vtkWrapHierarchy_ParseHeaderFile(
   char line[2048];
   char *cp;
   FileInfo *data;
-  ClassInfo *class_info;
-  ValueInfo *typedef_info;
   size_t i, j, k;
-  unsigned int type;
-  int ndims;
-  int dim;
 
   /* the "concrete" flag doesn't matter, just set to zero */
   data = vtkParse_ParseFile(filename, 0, fp, stderr);
@@ -73,7 +68,7 @@ static int vtkWrapHierarchy_ParseHeaderFile(
     if (data->Contents->Items[i]->ItemType == VTK_CLASS_INFO ||
         data->Contents->Items[i]->ItemType == VTK_STRUCT_INFO)
       {
-      class_info = (ClassInfo *)data->Contents->Items[i];
+      ClassInfo *class_info = (ClassInfo *)data->Contents->Items[i];
 
       sprintf(cp, "%s ", class_info->Name);
       cp += strlen(cp);
@@ -94,21 +89,20 @@ static int vtkWrapHierarchy_ParseHeaderFile(
           }
         }
 
-      j = strlen(data->FileName) - 1;
-      while (j > 0 && data->FileName[j-1] != '/' && data->FileName[j-1] != '\\')
-        {
-        j--;
-        }
+      }
+    else if (data->Contents->Items[i]->ItemType == VTK_ENUM_INFO)
+      {
+      EnumInfo *enum_info = (EnumInfo *)data->Contents->Items[i];
 
-      sprintf(cp, "; %s", &data->FileName[j]);
-      cp = line;
-      lines[k] = (char *)malloc(strlen(cp)+1);
-      strcpy(lines[k++], cp);
-      lines[k] = NULL;
+      sprintf(cp, "%s : int ", enum_info->Name);
+      cp += strlen(cp);
       }
     else if (data->Contents->Items[i]->ItemType == VTK_TYPEDEF_INFO)
       {
-      typedef_info = (ValueInfo *)data->Contents->Items[i];
+      ValueInfo *typedef_info = (ValueInfo *)data->Contents->Items[i];
+      unsigned int type;
+      int ndims;
+      int dim;
 
       sprintf(cp, "%s ", typedef_info->Name);
       cp += strlen(cp);
@@ -179,19 +173,24 @@ static int vtkWrapHierarchy_ParseHeaderFile(
 
       sprintf(cp, "%s ", typedef_info->Class);
       cp += strlen(cp);
-
-      j = strlen(data->FileName) - 1;
-      while (j > 0 && data->FileName[j-1] != '/' && data->FileName[j-1] != '\\')
-        {
-        j--;
-        }
-
-      sprintf(cp, "; %s", &data->FileName[j]);
-      cp = line;
-      lines[k] = (char *)malloc(strlen(cp)+1);
-      strcpy(lines[k++], cp);
-      lines[k] = NULL;
       }
+    else
+      {
+      /* unhandled file element */
+      continue;
+      }
+
+    j = strlen(data->FileName) - 1;
+    while (j > 0 && data->FileName[j-1] != '/' && data->FileName[j-1] != '\\')
+      {
+      j--;
+      }
+
+    sprintf(cp, "; %s", &data->FileName[j]);
+    cp = line;
+    lines[k] = (char *)malloc(strlen(cp)+1);
+    strcpy(lines[k++], cp);
+    lines[k] = NULL;
     }
 
   vtkParse_Free(data);
