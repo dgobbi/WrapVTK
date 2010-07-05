@@ -72,12 +72,12 @@ static int skip_ahead_until(const char *text);
          }
      };
 
-^[\t ]*"//BWX".*$ {
-       skip_ahead_until("//EWX");
+^[\t ]*"//BTX".*$ {
+#ifndef VTK_IGNORE_BTX
+         skip_ahead_until("//ETX");
+#endif
      };
 
-
-^[\t ]*"//BTX".*$ ;
 ^[\t ]*"//ETX".*$ ;
 
 
