@@ -31,6 +31,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#ifdef _WIN32
+# include <windows.h>
+#else
+# include <unistd.h>
+#endif
 
 #define MAX_NUM_CLASSES 10000
 
@@ -43,7 +48,8 @@ static int vtkWrapHierarchy_ParseHeaderFile(
   char line[2048];
   char *cp;
   FileInfo *data;
-  size_t i, j, k;
+  unsigned long i, j;
+  size_t k, n;
   const char *tmpflags;
 
   /* the "concrete" flag doesn't matter, just set to zero */
@@ -55,10 +61,10 @@ static int vtkWrapHierarchy_ParseHeaderFile(
     }
 
   /* find the last line in "lines" */
-  k = 0;
-  while (lines[k] != NULL)
+  n = 0;
+  while (lines[n] != NULL)
     {
-    k++;
+    n++;
     }
 
   cp = line;
@@ -189,13 +195,13 @@ static int vtkWrapHierarchy_ParseHeaderFile(
       continue;
       }
 
-    j = strlen(data->FileName) - 1;
-    while (j > 0 && data->FileName[j-1] != '/' && data->FileName[j-1] != '\\')
+    k = strlen(data->FileName) - 1;
+    while (k > 0 && data->FileName[k-1] != '/' && data->FileName[k-1] != '\\')
       {
-      j--;
+      k--;
       }
 
-    sprintf(cp, "; %s", &data->FileName[j]);
+    sprintf(cp, "; %s", &data->FileName[k]);
     cp += strlen(cp);
 
     if (tmpflags && tmpflags[0] != '\0')
@@ -204,9 +210,9 @@ static int vtkWrapHierarchy_ParseHeaderFile(
       }
 
     cp = line;
-    lines[k] = (char *)malloc(strlen(cp)+1);
-    strcpy(lines[k++], cp);
-    lines[k] = NULL;
+    lines[n] = (char *)malloc(strlen(cp)+1);
+    strcpy(lines[n++], cp);
+    lines[n] = NULL;
     }
 
   vtkParse_Free(data);
@@ -274,7 +280,7 @@ static int vtkWrapHierarchy_CompareHierachyFile(FILE *fp, char *lines[])
 {
   char line[2048];
   unsigned char *matched;
-  int i, n;
+  size_t i, n;
 
   for (i = 0; lines[i] != NULL; i++) { ; };
   matched = (unsigned char *)malloc(i);
@@ -335,7 +341,7 @@ static int vtkWrapHierarchy_CompareHierachyFile(FILE *fp, char *lines[])
  */
 static int vtkWrapHierarchy_WriteHierarchyFile(FILE *fp, char *lines[])
 {
-  int i;
+  size_t i;
 
   for (i = 0; lines[i] != NULL; i++)
     {
@@ -424,11 +430,37 @@ static int vtkWrapHierarchy_TryWriteHierarchyFile(
 
   if (!matched)
     {
+    int tries = 1;
     output_file = fopen(file_name, "w");
+    while (!output_file && tries < 5)
+      {
+      /* There are two CMAKE_CUSTOM_COMMANDS for vtkWrapHierarchy,
+       * make sure they do not collide. */
+      tries++;
+#ifdef _WIN32
+      Sleep(1000);
+#else
+      sleep(1);
+#endif 
+      output_file = fopen(file_name, "r+");
+      if (output_file &&
+          vtkWrapHierarchy_CompareHierachyFile(output_file, lines))
+        {
+        /* if the contents match, no need to write it */
+        fclose(output_file);
+        return 0;
+        }
+      if (output_file)
+        {
+        /* close and open in order to truncate the file */
+        fclose(output_file);
+        output_file = fopen(file_name, "w");
+        }
+      }
     if (!output_file)
       {
-      fprintf(stderr, "vtkWrapHierarchy: error opening file %s\n",
-              file_name);
+      fprintf(stderr, "vtkWrapHierarchy: tried %i times to write %s\n",
+              tries, file_name);
       exit(1);
       }
     if (!vtkWrapHierarchy_WriteHierarchyFile(output_file, lines))
