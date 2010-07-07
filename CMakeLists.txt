@@ -75,9 +75,6 @@ FOREACH(VTK_KIT ${VTK_KITS})
   VTK_WRAP_XML(vtk${KIT_NAME}XML TMP_XML_FILES "${TMP_OUTPUT_DIR}"
     "${KIT_CLASSES}")
 
-  ADD_CUSTOM_TARGET(vtk${KIT_NAME}Hierarchy
-    DEPENDS ${TMP_OUTPUT_DIR}/vtk${KIT_NAME}Hierarchy.txt)
-
   ADD_CUSTOM_TARGET(vtk${KIT_NAME}XML
     DEPENDS ${TMP_XML_FILES})
 
@@ -87,8 +84,8 @@ FOREACH(VTK_KIT ${VTK_KITS})
 ENDFOREACH(VTK_KIT ${VTK_KITS})
 
 # Add a custom target for all vtkWrapHierarchy outputs
-ADD_CUSTOM_TARGET(vtkAllKitsHierarchy ALL)
-ADD_DEPENDENCIES(vtkAllKitsHierarchy ${VTKHIERARCHY_TARGETS})
+#ADD_CUSTOM_TARGET(vtkAllKitsHierarchy ALL)
+#ADD_DEPENDENCIES(vtkAllKitsHierarchy ${VTKHIERARCHY_TARGETS})
 
 # Add a custom target for all vtkWrapXML outputs
 ADD_CUSTOM_TARGET(vtkAllKitsXML ALL)
