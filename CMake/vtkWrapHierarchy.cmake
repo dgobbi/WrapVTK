@@ -158,11 +158,11 @@ MACRO(VTK_WRAP_HIERARCHY TARGET OUTPUT_DIR SOURCES)
       ${TARGET}
       DEPENDS ${VTK_WRAP_HIERARCHY_EXE} ${OUTPUT_DIR}/${TARGET}.data
       COMMAND ${VTK_WRAP_HIERARCHY_EXE}
-      "-o" "${quote}${OUTPUT_DIR}/vtk${KIT}Hierarchy.txt${quote}"
+      "-o" "${quote}${OUTPUT_DIR}/vtk${KIT_NAME}Hierarchy.txt${quote}"
       "${quote}${OUTPUT_DIR}/${TARGET}.data${quote}"
       ${OTHER_HIERARCHY_FILES}
 
-      COMMENT "Hierarchy Wrapping - checking vtk${KIT}Hierarchy.txt"
+      COMMENT "Hierarchy Wrapping - checking vtk${KIT_NAME}Hierarchy.txt"
       ${verbatim}
       )
     # Set target-level dependencies to build in the correct order
