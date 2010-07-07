@@ -174,7 +174,7 @@ int yylex(void);
 FileInfo data;
 
 unsigned long  NumberOfConcreteClasses = 0;
-const char   **ConcreteClasses;
+char         **ConcreteClasses;
 
 NamespaceInfo *currentNamespace = NULL;
 ClassInfo     *currentClass = NULL;
