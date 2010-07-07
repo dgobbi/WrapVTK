@@ -3,14 +3,21 @@
   Program:   Visualization Toolkit
   Module:    vtkWrapHierarchy.c
 
-  Copyright (c) 2010 David Gobbi
+  Copyright (c) Ken Martin, Will Schroeder, Bill Lorensen
   All rights reserved.
+  See Copyright.txt or http://www.kitware.com/Copyright.htm for details.
 
      This software is distributed WITHOUT ANY WARRANTY; without even
      the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-     PURPOSE.  Please see Copyright.txt for more details.
+     PURPOSE.  See the above copyright notice for more information.
 
 =========================================================================*/
+/*-------------------------------------------------------------------------
+  Copyright (c) 2010 David Gobbi.
+
+  Contributed to the VisualizationToolkit by the author in June 2010
+  under the terms of the Visualization Toolkit 2008 copyright.
+-------------------------------------------------------------------------*/
 
 /**
  The vtkWrapHierarchy program builds a text file that describes the
@@ -22,7 +29,7 @@
 
  For each typedef, the output file will have a line like this:
 
- name = &[2][3]* const type ; header.h
+ name = [2][3]* const type ; header.h
 
 */
 
@@ -70,8 +77,8 @@ static char **vtkWrapHierarchy_ParseHeaderFile(
   FILE *fp, const char *filename, const char *flags, char **lines)
 {
   FileInfo *data;
-  unsigned long i, j;
-  size_t k, n;
+  int i, j;
+  size_t k, l, n;
   const char *tmpflags;
   char *line;
   size_t m, maxlen;
@@ -117,7 +124,7 @@ static char **vtkWrapHierarchy_ParseHeaderFile(
         data->Contents->Items[i]->ItemType == VTK_STRUCT_INFO)
       {
       ClassInfo *class_info = (ClassInfo *)data->Contents->Items[i];
- 
+
       if (class_info == data->MainClass)
         {
         tmpflags = flags;
@@ -240,15 +247,26 @@ static char **vtkWrapHierarchy_ParseHeaderFile(
       line = append_to_line(line, tmpflags, &m, &maxlen);
       }
 
-    /* allocate more memory if n+1 is a power of two */
-    if (((n+1) & n) == 0)
+    /* check to make sure this line isn't a duplicate */
+    for (l = 0; l < n; l++)
       {
-      lines = (char **)realloc(lines, (n+1)*2*sizeof(char *)); 
+      if (strcmp(line, lines[l]) == 0)
+        {
+        break;
+        }
       }
+    if (l == n)
+      {
+      /* allocate more memory if n+1 is a power of two */
+      if (((n+1) & n) == 0)
+        {
+        lines = (char **)realloc(lines, (n+1)*2*sizeof(char *));
+        }
 
-    lines[n] = (char *)malloc(strlen(line)+1);
-    strcpy(lines[n++], line);
-    lines[n] = NULL;
+      lines[n] = (char *)malloc(strlen(line)+1);
+      strcpy(lines[n++], line);
+      lines[n] = NULL;
+      }
     }
 
   free(line);
@@ -312,7 +330,7 @@ static char **vtkWrapHierarchy_ReadHierarchyFile(FILE *fp, char **lines)
       /* allocate more memory if n+1 is a power of two */
       if (((i+1) & i) == 0)
         {
-        lines = (char **)realloc(lines, (i+1)*2*sizeof(char *)); 
+        lines = (char **)realloc(lines, (i+1)*2*sizeof(char *));
         }
 
       lines[i] = (char *)malloc(n+1);
@@ -335,7 +353,7 @@ static char **vtkWrapHierarchy_ReadHierarchyFile(FILE *fp, char **lines)
 /**
  * Compare a file to "lines", return 0 if they are different
  */
-static int vtkWrapHierarchy_CompareHierachyFile(FILE *fp, char *lines[])
+static int vtkWrapHierarchy_CompareHierarchyFile(FILE *fp, char *lines[])
 {
   unsigned char *matched;
   char *line;
@@ -496,7 +514,7 @@ static int vtkWrapHierarchy_TryWriteHierarchyFile(
   int matched = 0;
 
   output_file = fopen(file_name, "r");
-  if (output_file && vtkWrapHierarchy_CompareHierachyFile(output_file, lines))
+  if (output_file && vtkWrapHierarchy_CompareHierarchyFile(output_file, lines))
     {
     matched = 1;
     }
@@ -518,10 +536,10 @@ static int vtkWrapHierarchy_TryWriteHierarchyFile(
       Sleep(1000);
 #else
       sleep(1);
-#endif 
+#endif
       output_file = fopen(file_name, "r+");
       if (output_file &&
-          vtkWrapHierarchy_CompareHierachyFile(output_file, lines))
+          vtkWrapHierarchy_CompareHierarchyFile(output_file, lines))
         {
         /* if the contents match, no need to write it */
         fclose(output_file);
@@ -606,7 +624,7 @@ int main(int argc, char *argv[])
     flags = files[i];
     /* look for semicolon that marks start of flags */
     while(*flags != ';' && *flags != '\0') { flags++; };
-    if (*flags == ';') { *flags++ = '\0'; } 
+    if (*flags == ';') { *flags++ = '\0'; }
 
     lines = vtkWrapHierarchy_TryParseHeaderFile(files[i], flags, lines);
     }
