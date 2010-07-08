@@ -152,23 +152,18 @@ MACRO(VTK_WRAP_HIERARCHY TARGET OUTPUT_DIR SOURCES)
     # On Visual Studio builds, the target-timestamp trick does not work,
     # so re-parse the header files every time and create the hierarchy
     # file if the VTK hierarchy has changed.
-    ADD_CUSTOM_COMMAND(
-      OUTPUT ${OUTPUT_DIR}/${TARGET}.target ${OUTPUT_DIR}/${TARGET}.txt
-      DEPENDS ${VTK_WRAP_HIERARCHY_EXE} ${INPUT_FILES}
-      ${OUTPUT_DIR}/${TARGET}.data
+    ADD_CUSTOM_TARGET(
+      ${TARGET} ALL
+      DEPENDS ${VTK_WRAP_HIERARCHY_EXE} ${OUTPUT_DIR}/${TARGET}.data
 
       COMMAND ${VTK_WRAP_HIERARCHY_EXE}
       "-o" "${quote}${OUTPUT_DIR}/${TARGET}.txt${quote}"
       "${quote}${OUTPUT_DIR}/${TARGET}.data${quote}"
       ${QUOTED_HIERARCHY_FILES}
-
-      COMMAND ${CMAKE_COMMAND}
-      "-E" "touch" "${quote}${OUTPUT_DIR}/${TARGET}.target${quote}"
       COMMENT "Hierarchy Wrapping - generating ${TARGET}.txt"
+
       ${verbatim}
-      )
-    ADD_CUSTOM_TARGET(${TARGET}
-      DEPENDS ${OUTPUT_DIR}/${TARGET}.target
+      SOURCES ${INPUT_FILES}
       )
     # Set target-level dependencies to build in the correct order
     ADD_DEPENDENCIES(${TARGET} vtkWrapHierarchy ${OTHER_HIERARCHY_TARGETS})
