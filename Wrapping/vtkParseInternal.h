@@ -49,10 +49,10 @@ extern "C" {
 /**
  * This function is the back-end to vtkParse_AddItemMacro()
  */
-void vtkParse_AddPointerToArray(
-  void *valueArray, unsigned long *count, void *value);
+void vtkParse_AddPointerToArray(void *valueArray, unsigned long *count,
+                                const void *value);
 
-/***
+/**
  * Initializer methods
  */
 /*@{*/
@@ -66,9 +66,13 @@ void vtkParse_InitTemplateArgs(TemplateArgs *arg);
 void vtkParse_InitTemplateArg(TemplateArg *arg);
 /*@}*/
 
+/**
+ * Ignore BTX/ETX markers
+ */
+void vtkParse_SetIgnoreBTX(int option);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
 
 #endif
-

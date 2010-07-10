@@ -26,7 +26,8 @@ unsigned long vtkParseMerge_PushClass(MergeInfo *info, const char *classname)
   unsigned long n = info->NumberOfClasses;
   unsigned long m = 0;
   unsigned long i;
-  char **classnames;
+  const char **classnames;
+  char *cp;
 
   /* if class is already there, return its index */
   for (i = 0; i < n; i++)
@@ -50,21 +51,22 @@ unsigned long vtkParseMerge_PushClass(MergeInfo *info, const char *classname)
 
   if (m)
     {
-    classnames = (char **)malloc(m*sizeof(char *));
+    classnames = (const char **)malloc(m*sizeof(const char *));
     if (n)
       {
       for (i = 0; i < n; i++)
         {
         classnames[i] = info->ClassNames[i];
         }
-      free(info->ClassNames);
+      free((char **)info->ClassNames);
       }
     info->ClassNames = classnames;
     }
 
   info->NumberOfClasses = n+1;
-  info->ClassNames[n] = (char *)malloc(strlen(classname)+1);
-  strcpy(info->ClassNames[n], classname);
+  cp = (char *)malloc(strlen(classname)+1);
+  strcpy(cp, classname);
+  info->ClassNames[n] = cp;
 
   return n;
 }
@@ -180,9 +182,9 @@ void vtkParseMerge_FreeMergeInfo(MergeInfo *info)
   n = info->NumberOfClasses;
   for (i = 0; i < n; i++)
     {
-    free(info->ClassNames[i]);
+    free((char *)info->ClassNames[i]);
     }
-  free(info->ClassNames);
+  free((char **)info->ClassNames);
 
   n = info->NumberOfFunctions;
   for (i = 0; i < n; i++)
@@ -202,46 +204,54 @@ void vtkParseMerge_FreeMergeInfo(MergeInfo *info)
 static void copy_function(FunctionInfo *merge, const FunctionInfo *func)
 {
   unsigned long i;
+  char *cp;
 
   memcpy(merge, func, sizeof(FunctionInfo));
 
   if (func->Name)
     {
-    merge->Name = (char *)malloc(strlen(func->Name)+1);
-    strcpy(merge->Name, func->Name);
+    cp = (char *)malloc(strlen(func->Name)+1);
+    strcpy(cp, func->Name);
+    merge->Name = cp;
     }
 
   for (i = 0; i < func->NumberOfArguments; i++)
     {
     if (func->ArgClasses[i])
       {
-      merge->ArgClasses[i] = (char *)malloc(strlen(func->ArgClasses[i])+1);
-      strcpy(merge->ArgClasses[i], func->ArgClasses[i]);
+      cp = (char *)malloc(strlen(func->ArgClasses[i])+1);
+      strcpy(cp, func->ArgClasses[i]);
+      merge->ArgClasses[i] = cp;
       }
     }
 
   if (func->ReturnClass)
     {
-    merge->ReturnClass = (char *)malloc(strlen(func->ReturnClass)+1);
-    strcpy(merge->ReturnClass, func->ReturnClass);
+    cp = (char *)malloc(strlen(func->ReturnClass)+1);
+    strcpy(cp, func->ReturnClass);
+    merge->ReturnClass = cp;
     }
 
   if (func->Comment)
     {
-    merge->Comment = (char *)malloc(strlen(func->Comment)+1);
-    strcpy(merge->Comment, func->Comment);
+    cp = (char *)malloc(strlen(func->Comment)+1);
+    strcpy(cp, func->Comment);
+    merge->Comment = cp;
     }
 
   if (func->Signature)
     {
-    merge->Signature = (char *)malloc(strlen(func->Signature)+1);
-    strcpy(merge->Signature, func->Signature);
+    cp = (char *)malloc(strlen(func->Signature)+1);
+    strcpy(cp, func->Signature);
+    merge->Signature = cp;
     }
 }
 
 /* merge a function */
 static void merge_function(FunctionInfo *merge, const FunctionInfo *func)
 {
+  char *cp;
+
   if (func->IsVirtual)
     {
     merge->IsVirtual = 1;
@@ -249,8 +259,9 @@ static void merge_function(FunctionInfo *merge, const FunctionInfo *func)
 
   if (func->Comment && !merge->Comment)
     {
-    merge->Comment = (char *)malloc(strlen(func->Comment)+1);
-    strcpy(merge->Comment, func->Comment);
+    cp = (char *)malloc(strlen(func->Comment)+1);
+    strcpy(cp, func->Comment);
+    merge->Comment = cp;
     }
 }
 

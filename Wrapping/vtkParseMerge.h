@@ -31,7 +31,7 @@
 typedef struct _MergeInfo
 {
   unsigned long   NumberOfClasses;    /* number of classes in geneology */
-  char          **ClassNames;         /* class name */
+  const char    **ClassNames;         /* class name */
   unsigned long   NumberOfFunctions;  /* must match FunctionInfo */
   unsigned long  *NumberOfOverrides; /* n classes that define this function */
   unsigned long **OverrideClasses;  /* class for the override */

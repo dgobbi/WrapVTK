@@ -34,6 +34,7 @@
 */
 
 #include "vtkParse.h"
+#include "vtkParseInternal.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -94,6 +95,12 @@ static char **vtkWrapHierarchy_ParseHeaderFile(
     lines = (char **)malloc(sizeof(char *));
     lines[0] = NULL;
     }
+
+#ifdef VTK_IGNORE_BTX
+  vtkParse_SetIgnoreBTX(1);
+#else
+  vtkParse_SetIgnoreBTX(0);
+#endif
 
   /* the "concrete" flag doesn't matter, just set to zero */
   data = vtkParse_ParseFile(filename, fp, stderr);
@@ -159,8 +166,8 @@ static char **vtkWrapHierarchy_ParseHeaderFile(
       {
       ValueInfo *typedef_info = (ValueInfo *)data->Contents->Items[i];
       unsigned int type;
-      int ndims;
-      int dim;
+      unsigned long ndims;
+      unsigned long dim;
 
       line = append_to_line(line, typedef_info->Name, &m, &maxlen);
       line = append_to_line(line, " = ", &m, &maxlen);
@@ -293,7 +300,7 @@ static char **vtkWrapHierarchy_ReadHierarchyFile(FILE *fp, char **lines)
     lines[0] = NULL;
     }
 
-  while (fgets(line, maxlen, fp))
+  while (fgets(line, (int)maxlen, fp))
     {
     n = strlen(line);
 
@@ -302,7 +309,7 @@ static char **vtkWrapHierarchy_ReadHierarchyFile(FILE *fp, char **lines)
       {
       maxlen *= 2;
       line = (char *)realloc(line, maxlen);
-      if (!fgets(&line[n], maxlen-n, fp)) { break; }
+      if (!fgets(&line[n], (int)(maxlen-n), fp)) { break; }
       n += strlen(&line[n]);
       }
 
@@ -366,7 +373,7 @@ static int vtkWrapHierarchy_CompareHierarchyFile(FILE *fp, char *lines[])
   matched = (unsigned char *)malloc(i);
   memset(matched, 0, i);
 
-  while (fgets(line, maxlen, fp))
+  while (fgets(line, (int)maxlen, fp))
     {
     n = strlen(line);
 
@@ -375,7 +382,7 @@ static int vtkWrapHierarchy_CompareHierarchyFile(FILE *fp, char *lines[])
       {
       maxlen *= 2;
       line = (char *)realloc(line, maxlen);
-      if (!fgets(&line[n], maxlen-n, fp)) { break; }
+      if (!fgets(&line[n], (int)(maxlen-n), fp)) { break; }
       n += strlen(&line[n]);
       }
 
