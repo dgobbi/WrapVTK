@@ -508,7 +508,7 @@ void vtkWrapXML_TypeSimple(
 {
   char temp[256];
   char temp2[512];
-  char *sizes[2];
+  const char *sizes[2];
   ValueInfo val;
 
   memset(&val, 0, sizeof(ValueInfo));

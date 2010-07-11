@@ -993,7 +993,7 @@ FunctionInfo *getFunction()
 /* prepend a scope:: to a name */
 void prepend_scope(char *cp, const char *arg)
 {
-  size_t i, m, n;
+  size_t i, j, m, n;
   unsigned long depth;
 
   m = strlen(cp);
@@ -1028,9 +1028,16 @@ void prepend_scope(char *cp, const char *arg)
       }
     }
 
-  memmove(&cp[i+n+2], &cp[i], m+1);
-  strncpy(&cp[i], arg, n);
-  strncpy(&cp[i+n], "::", 2);
+  for (j = m; j > i; j--)
+    {
+    cp[j+n+1] = cp[j-1];
+    }
+  for (j = 0; j < n; j++)
+    {
+    cp[j+i] = arg[j];
+    }
+  cp[n+i] = ':'; cp[n+i+1] = ':';
+  cp[m+n+2] = '\0'; 
 }
 
 /* expand a type by including pointers from another */
@@ -1458,10 +1465,12 @@ typedef_start: TYPEDEF { };
 template: TEMPLATE '<' '>' { postSig("template<> "); clearTypeId(); }
         | TEMPLATE '<' { postSig("template<");
           clearTypeId(); startTemplate(); }
-          template_args '>' { postSig("> "); clearTypeId(); };
+          template_args '>' { chopSig();
+            if (getSig()[strlen(getSig())-1] == '>') { postSig(" "); }
+            postSig("> "); clearTypeId(); };
 
 template_args: template_arg
-             | template_arg ',' { postSig(", "); clearTypeId(); }
+             | template_arg ',' { chopSig(); postSig(", "); clearTypeId(); }
                template_args;
 
 template_arg: type_simple maybe_template_id
@@ -1638,6 +1647,7 @@ func_sig: any_id '('
     } args_list ')' { $<str>$ = $<str>1; }
   | any_id '<' {markSig(); postSig("<");} types '>' '('
     {
+      if (getSig()[strlen(getSig())-1] == '>') { postSig(" "); }
       postSig(">(");
       set_return(currentFunction, getStorageType(), getTypeId(), 0);
       $<str>$ = vtkstrcat($<str>1, copySig());
@@ -1888,9 +1898,11 @@ type_red1: type_red2
 
 templated_id:
    VTK_ID '<' { markSig(); postSig($<str>1); postSig("<");} types '>'
-     {chopSig(); postSig(">"); $<str>$ = vtkstrdup(copySig()); clearTypeId();}
+     {chopSig(); if (getSig()[strlen(getSig())-1] == '>') { postSig(" "); }
+      postSig(">"); $<str>$ = vtkstrdup(copySig()); clearTypeId();}
  | ID '<' { markSig(); postSig($<str>1); postSig("<");} types '>'
-     {chopSig(); postSig(">"); $<str>$ = vtkstrdup(copySig()); clearTypeId();};
+     {chopSig(); if (getSig()[strlen(getSig())-1] == '>') { postSig(" "); }
+      postSig(">"); $<str>$ = vtkstrdup(copySig()); clearTypeId();};
 
 types: type | type ',' {postSig(", ");} types;
 
@@ -2043,11 +2055,25 @@ literal:  literal2 {$<str>$ = $<str>1;}
           | string_literal {$<str>$ = $<str>1; postSig($<str>1);}
           | '(' {postSig("(");} literal ')' {postSig(")"); $<str>$ = $<str>3;}
           | ID '<' {postSig($<str>1); postSig("<");}
-            type_red '>' '(' {postSig("<(");} literal2 ')'
+            type_red '>' '('
+             {
+             chopSig();
+             if (getSig()[strlen(getSig())-1] == '>') { postSig(" "); }
+             postSig(">(");
+             }
+            literal2 ')'
              {
              postSig(")");
-             $<str>$ = vtkstrcat6(
-               $<str>1, "<", getTypeId(), ">(", $<str>8, ")");
+             if (getTypeId()[strlen(getTypeId())-1] == '>')
+               {
+               $<str>$ = vtkstrcat6(
+                 $<str>1, "<", getTypeId(), " >(", $<str>8, ")");
+               }
+             else
+               {
+               $<str>$ = vtkstrcat6(
+                 $<str>1, "<", getTypeId(), ">(", $<str>8, ")");
+               }
              };
 
 string_literal: STRING_LITERAL {$<str>$ = $<str>1;}
@@ -2681,7 +2707,7 @@ void start_class(const char *classname, int is_struct)
     }
 
   /* comment, if any */
-  currentClass->Comment = getComment();
+  currentClass->Comment = vtkstrdup(getComment());
 
   access_level = VTK_ACCESS_PRIVATE;
   if (is_struct)
