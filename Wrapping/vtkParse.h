@@ -183,7 +183,7 @@ typedef struct _ClassInfo
   const char    *Comment;
   TemplateArgs  *Template;
   unsigned long  NumberOfSuperClasses;
-  char         **SuperClasses;
+  const char   **SuperClasses;
   unsigned long  NumberOfItems;
   ItemInfo     **Items;
   unsigned long  NumberOfFunctions;

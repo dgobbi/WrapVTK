@@ -174,15 +174,15 @@ int yylex(void);
 FileInfo data;
 
 unsigned long  NumberOfConcreteClasses = 0;
-char         **ConcreteClasses;
+const char   **ConcreteClasses;
 
 NamespaceInfo *currentNamespace = NULL;
 ClassInfo     *currentClass = NULL;
 FunctionInfo  *currentFunction = NULL;
 TemplateArgs  *currentTemplate = NULL;
 
-char          *currentEnumName = 0;
-char          *currentEnumValue = 0;
+const char    *currentEnumName = 0;
+const char    *currentEnumValue = 0;
 
 int            parseDebug;
 parse_access_t access_level = VTK_ACCESS_PUBLIC;
@@ -861,8 +861,8 @@ void clearArray(void)
 /* add another dimension */
 void pushArraySize(const char *size)
 {
-  vtkParse_AddPointerToArray(&arrayDimensions, &numberOfDimensions,
-                             vtkstrdup(size));
+  vtkParse_AddStringToArray(&arrayDimensions, &numberOfDimensions,
+                            vtkstrdup(size));
 }
 
 /* add another dimension to the front */
@@ -870,7 +870,7 @@ void pushArrayFront(const char *size)
 {
   unsigned long i;
 
-  vtkParse_AddPointerToArray(&arrayDimensions, &numberOfDimensions, 0);
+  vtkParse_AddStringToArray(&arrayDimensions, &numberOfDimensions, 0);
 
   for (i = numberOfDimensions-1; i > 0; i--)
     {
@@ -4601,9 +4601,9 @@ yyreduce:
 /* Line 1455 of yacc.c  */
 #line 1353 "vtkParse.y"
     {
-      vtkParse_AddPointerToArray(&currentClass->SuperClasses,
-                                 &currentClass->NumberOfSuperClasses,
-                                 vtkstrdup((yyvsp[(2) - (2)].str)));
+      vtkParse_AddStringToArray(&currentClass->SuperClasses,
+                                &currentClass->NumberOfSuperClasses,
+                                vtkstrdup((yyvsp[(2) - (2)].str)));
     }
     break;
 
@@ -7701,7 +7701,7 @@ void FreeNamespace(NamespaceInfo *namespace_info)
     m = class_info->NumberOfSuperClasses;
     if (m > 0)
       {
-      free(class_info->SuperClasses);
+      free((char **)class_info->SuperClasses);
       }
 
     m = class_info->NumberOfFunctions;
@@ -7862,8 +7862,8 @@ void start_enum(const char *name)
   currentEnumValue = NULL;
   if (name)
     {
+    strcpy(text, name);
     currentEnumName = text;
-    strcpy(currentEnumName, name);
     item = (EnumInfo *)malloc(sizeof(EnumInfo));
     vtkParse_InitEnum(item);
     item->Name = vtkstrdup(name);
@@ -7889,42 +7889,42 @@ void end_enum()
 /* add a constant to the enum */
 void add_enum(const char *name, const char *value)
 {
-  static char text[256];
+  static char text[2048];
   unsigned long i;
   long j;
 
   if (value)
     {
+    strcpy(text, value);
     currentEnumValue = text;
-    strcpy(currentEnumValue, value);
     }
   else if (currentEnumValue)
     {
-    i = strlen(currentEnumValue);
-    while (i > 0 && currentEnumValue[i-1] >= '0' &&
-           currentEnumValue[i-1] <= '9') { i--; }
+    i = strlen(text);
+    while (i > 0 && text[i-1] >= '0' &&
+           text[i-1] <= '9') { i--; }
 
-    if (i == 0 || currentEnumValue[i-1] == ' ' ||
-        (i > 1 && currentEnumValue[i-2] == ' ' &&
-         (currentEnumValue[i-1] == '-' || currentEnumValue[i-1] == '+')))
+    if (i == 0 || text[i-1] == ' ' ||
+        (i > 1 && text[i-2] == ' ' &&
+         (text[i-1] == '-' || text[i-1] == '+')))
       {
-      if (i > 0 && currentEnumValue[i-1] != ' ')
+      if (i > 0 && text[i-1] != ' ')
         {
         i--;
         }
-      j = (int)strtol(&currentEnumValue[i], NULL, 10);
-      sprintf(&currentEnumValue[i], "%li", j+1);
+      j = (int)strtol(&text[i], NULL, 10);
+      sprintf(&text[i], "%li", j+1);
       }
     else
       {
-      i = strlen(currentEnumValue);
-      strcpy(&currentEnumValue[i], " + 1");
+      i = strlen(text);
+      strcpy(&text[i], " + 1");
       }
     }
   else
     {
+    strcpy(text, "0");
     currentEnumValue = text;
-    strcpy(currentEnumValue, "0");
     }
 
   add_constant(name, currentEnumValue, VTK_PARSE_INT, currentEnumName, 2);
@@ -8035,7 +8035,8 @@ void add_argument(FunctionInfo *func, unsigned int type,
     {
     arg->Count = count;
     sprintf(text, "%lu", count);
-    vtkParse_AddItemMacro2(arg, Dimensions, vtkstrdup(text));
+    vtkParse_AddStringToArray(&arg->Dimensions, &arg->NumberOfDimensions,
+                              vtkstrdup(text));
     }
 
   func->ArgTypes[i] = arg->Type;
@@ -8063,7 +8064,8 @@ void set_return(FunctionInfo *func, unsigned int type,
     {
     val->Count = count;
     sprintf(text, "%lu", count);
-    vtkParse_AddItemMacro2(val, Dimensions, vtkstrdup(text));
+    vtkParse_AddStringToArray(&val->Dimensions, &val->NumberOfDimensions,
+                              vtkstrdup(text));
     func->HaveHint = 1;
     }
 
@@ -8445,6 +8447,13 @@ void vtkParse_AddPointerToArray(
   *(void ***)valueArray = values;
 }
 
+/* Utility method to add a const char pointer to an array */
+void vtkParse_AddStringToArray(
+  const char ***valueArray, unsigned long *count, const char *value)
+{
+  vtkParse_AddPointerToArray((char ***)valueArray, count, (char *)value);
+}
+
 /* Set a flag to ignore BTX/ETX markers in the files */
 void vtkParse_SetIgnoreBTX(int option)
 {
@@ -8623,8 +8632,10 @@ int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
                   func_info->HintSize = h_value;
                   func_info->ReturnValue->Count = h_value;
                   sprintf(text, "%lu", h_value);
-                  vtkParse_AddItemMacro2(func_info->ReturnValue,
-                                         Dimensions, vtkstrdup(text));
+                  vtkParse_AddStringToArray(
+                    &func_info->ReturnValue->Dimensions,
+                    &func_info->ReturnValue->NumberOfDimensions,
+                    vtkstrdup(text));
                   }
                 break;
                 }
@@ -8659,8 +8670,8 @@ void vtkParse_SetClassProperty(
        strcmp(property, "CONCRETE") == 0 ||
        strcmp(property, "Concrete") == 0)
      {
-     vtkParse_AddPointerToArray(&ConcreteClasses,
-                                &NumberOfConcreteClasses,
-                                vtkstrdup(classname));
+     vtkParse_AddStringToArray(&ConcreteClasses,
+                               &NumberOfConcreteClasses,
+                               vtkstrdup(classname));
      }
 }
