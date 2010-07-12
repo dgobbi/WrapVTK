@@ -3346,7 +3346,23 @@ void vtkParse_AddPointerToArray(
 void vtkParse_AddStringToArray(
   const char ***valueArray, unsigned long *count, const char *value)
 {
-  vtkParse_AddPointerToArray((char ***)valueArray, count, (char *)value);
+  const char **values = *valueArray;
+  unsigned long n = *count;
+
+  /* if empty, alloc for the first time */
+  if (n == 0)
+    {
+    values = (const char **)malloc(1*sizeof(char*));
+    }
+  /* if count is power of two, reallocate with double size */
+  else if ((n & (n-1)) == 0)
+    {
+    values = (const char **)realloc(values, (n << 1)*sizeof(char*));
+    }
+
+  values[n++] = value;
+  *count = n;
+  *valueArray = values;
 }
 
 /* Set a flag to ignore BTX/ETX markers in the files */
