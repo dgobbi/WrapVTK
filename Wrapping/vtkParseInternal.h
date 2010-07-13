@@ -33,10 +33,11 @@ extern "C" {
  * it handles memory management and grows the arrays when needed.
  */
 #define vtkParse_AddItemMacro(theStruct, theElement, theValue) \
+  vtkParse_AddItemToArray(&(theStruct)->Items, \
+    &(theStruct)->NumberOfItems, theValue->ItemType,\
+    (theStruct)->NumberOf##theElement); \
   vtkParse_AddPointerToArray(&(theStruct)->theElement, \
-    &(theStruct)->NumberOf##theElement, theValue); \
-  vtkParse_AddPointerToArray(&(theStruct)->Items, \
-    &(theStruct)->NumberOfItems, theValue)
+    &(theStruct)->NumberOf##theElement, theValue)
 
 /**
  * Add to an array that doesn't have a separate Items array
@@ -51,6 +52,13 @@ extern "C" {
  */
 void vtkParse_AddPointerToArray(void *valueArray, unsigned long *count,
                                 const void *value);
+
+/**
+ * This function is also part of vtkParse_AddItemMacro()
+ */
+void vtkParse_AddItemToArray(
+  ItemInfo **valueArray, unsigned long *count,
+  parse_item_t type, unsigned long index);
 
 /**
  * String-specific version to avoid const warnings.

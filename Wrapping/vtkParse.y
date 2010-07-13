@@ -2540,9 +2540,12 @@ void vtkParse_InitClass(ClassInfo *cls)
   cls->Template = NULL;
   cls->NumberOfSuperClasses = 0;
   cls->NumberOfItems = 0;
+  cls->NumberOfClasses = 0;
   cls->NumberOfFunctions = 0;
-  cls->NumberOfEnums = 0;
   cls->NumberOfConstants = 0;
+  cls->NumberOfVariables = 0;
+  cls->NumberOfEnums = 0;
+  cls->NumberOfUnions = 0;
   cls->NumberOfTypedefs = 0;
   cls->IsAbstract = 0;
   cls->HasDelete = 0;
@@ -2560,7 +2563,9 @@ void vtkParse_InitNamespace(NamespaceInfo *name_info)
   name_info->NumberOfClasses = 0;
   name_info->NumberOfFunctions = 0;
   name_info->NumberOfConstants = 0;
+  name_info->NumberOfVariables = 0;
   name_info->NumberOfEnums = 0;
+  name_info->NumberOfUnions = 0;
   name_info->NumberOfTypedefs = 0;
   name_info->NumberOfNamespaces = 0;
 }
@@ -2578,111 +2583,147 @@ void vtkParse_InitFile(FileInfo *file_info)
   file_info->Contents = NULL;
 }
 
+void FreeTemplate(TemplateArgs *template_info)
+{
+  unsigned long j, m;
+
+  m = template_info->NumberOfArguments;
+  for (j = 0; j < m; j++)
+    {
+    if (template_info->Arguments[j]->Template)
+      {
+      FreeTemplate(template_info->Arguments[j]->Template);
+      }
+    free(template_info->Arguments[j]);
+    }
+
+  free(template_info);
+}
+
+void FreeFunction(FunctionInfo *function_info);
+
+void FreeValue(ValueInfo *value_info)
+{
+  if (value_info->NumberOfDimensions)
+    {
+    free(value_info->Dimensions);
+    }
+  if (value_info->Function)
+    {
+    FreeFunction(value_info->Function);
+    }
+
+  free(value_info);
+}
+
+void FreeUnion(UnionInfo *union_info)
+{
+  unsigned long j, m;
+
+  m = union_info->NumberOfMembers;
+  for (j = 0; j < m; j++) { FreeValue(union_info->Members[j]); }
+  if (m > 0) { free(union_info->Members); }
+
+  free(union_info);
+}
+
+void FreeEnum(EnumInfo *enum_info)
+{
+  free(enum_info);
+}
+
+void FreeFunction(FunctionInfo *function_info)
+{
+  unsigned long j, m;
+
+  if (function_info->Template) { FreeTemplate(function_info->Template); }
+
+  m = function_info->NumberOfArguments;
+  for (j = 0; j < m; j++) { FreeValue(function_info->Arguments[j]); }
+  if (m > 0) { free(function_info->Arguments); }
+
+  if (function_info->ReturnValue) { FreeValue(function_info->ReturnValue); }
+
+  free(function_info);
+}
+
+void FreeClass(ClassInfo *class_info)
+{
+  unsigned long j, m;
+
+  if (class_info->Template) { FreeTemplate(class_info->Template); }
+
+  m = class_info->NumberOfSuperClasses;
+  if (m > 0) { free((char **)class_info->SuperClasses); }
+
+  m = class_info->NumberOfClasses;
+  for (j = 0; j < m; j++) { FreeClass(class_info->Classes[j]); }
+  if (m > 0) { free(class_info->Classes); }
+
+  m = class_info->NumberOfFunctions;
+  for (j = 0; j < m; j++) { FreeFunction(class_info->Functions[j]); }
+  if (m > 0) { free(class_info->Functions); }
+
+  m = class_info->NumberOfConstants;
+  for (j = 0; j < m; j++) { FreeValue(class_info->Constants[j]); }
+  if (m > 0) { free(class_info->Constants); }
+
+  m = class_info->NumberOfVariables;
+  for (j = 0; j < m; j++) { FreeValue(class_info->Variables[j]); }
+  if (m > 0) { free(class_info->Variables); }
+
+  m = class_info->NumberOfEnums;
+  for (j = 0; j < m; j++) { FreeEnum(class_info->Enums[j]); }
+  if (m > 0) { free(class_info->Enums); }
+
+  m = class_info->NumberOfUnions;
+  for (j = 0; j < m; j++) { FreeUnion(class_info->Unions[j]); }
+  if (m > 0) { free(class_info->Unions); }
+
+  m = class_info->NumberOfTypedefs;
+  for (j = 0; j < m; j++) { FreeValue(class_info->Typedefs[j]); }
+  if (m > 0) { free(class_info->Typedefs); }
+
+  if (class_info->NumberOfItems > 0) { free(class_info->Items); }
+
+  free(class_info);
+}
+
 void FreeNamespace(NamespaceInfo *namespace_info)
 {
-  /* big memory leak here, strings aren't freed */
-  ClassInfo *class_info;
-  FunctionInfo *func_info;
-  ValueInfo *const_info;
-  EnumInfo *enum_info;
+  unsigned long j, m;
 
-  unsigned long i, j, n, m;
-
-  n = namespace_info->NumberOfClasses;
-  for (i = 0; i < n; i++)
-    {
-    class_info = namespace_info->Classes[i];
-
-    m = class_info->NumberOfSuperClasses;
-    if (m > 0)
-      {
-      free((char **)class_info->SuperClasses);
-      }
-
-    m = class_info->NumberOfFunctions;
-    for (j = 0; j < m; j++)
-      {
-      func_info = class_info->Functions[j];
-      free(func_info);
-      }
-    if (m > 0)
-      {
-      free(class_info->Functions);
-      }
-
-    m = class_info->NumberOfConstants;
-    for (j = 0; j < m; j++)
-      {
-      const_info = class_info->Constants[j];
-      free(const_info);
-      }
-    if (m > 0)
-      {
-      free(class_info->Constants);
-      }
-
-    m = class_info->NumberOfEnums;
-    for (j = 0; j < m; j++)
-      {
-      enum_info = class_info->Enums[j];
-      free(enum_info);
-      }
-    if (m > 0)
-      {
-      free(class_info->Enums);
-      }
-
-    if (class_info->NumberOfItems > 0)
-      {
-      free(class_info->Items);
-      }
-
-    free(class_info);
-    }
+  m = namespace_info->NumberOfClasses;
+  for (j = 0; j < m; j++) { FreeClass(namespace_info->Classes[j]); }
+  if (m > 0) { free(namespace_info->Classes); }
 
   m = namespace_info->NumberOfFunctions;
-  for (j = 0; j < m; j++)
-    {
-    func_info = namespace_info->Functions[j];
-    free(func_info);
-    }
-  if (m > 0)
-    {
-    free(namespace_info->Functions);
-    }
+  for (j = 0; j < m; j++) { FreeFunction(namespace_info->Functions[j]); }
+  if (m > 0) { free(namespace_info->Functions); }
 
   m = namespace_info->NumberOfConstants;
-  for (j = 0; j < m; j++)
-    {
-    const_info = namespace_info->Constants[j];
-    free(const_info);
-    }
-  if (m > 0)
-    {
-    free(namespace_info->Constants);
-    }
+  for (j = 0; j < m; j++) { FreeValue(namespace_info->Constants[j]); }
+  if (m > 0) { free(namespace_info->Constants); }
+
+  m = namespace_info->NumberOfVariables;
+  for (j = 0; j < m; j++) { FreeValue(namespace_info->Variables[j]); }
+  if (m > 0) { free(namespace_info->Variables); }
 
   m = namespace_info->NumberOfEnums;
-  for (j = 0; j < m; j++)
-    {
-    enum_info = namespace_info->Enums[j];
-    free(enum_info);
-    }
-  if (m > 0)
-    {
-    free(namespace_info->Enums);
-    }
+  for (j = 0; j < m; j++) { FreeEnum(namespace_info->Enums[j]); }
+  if (m > 0) { free(namespace_info->Enums); }
+
+  m = namespace_info->NumberOfUnions;
+  for (j = 0; j < m; j++) { FreeUnion(namespace_info->Unions[j]); }
+  if (m > 0) { free(namespace_info->Unions); }
+
+  m = namespace_info->NumberOfTypedefs;
+  for (j = 0; j < m; j++) { FreeValue(namespace_info->Typedefs[j]); }
+  if (m > 0) { free(namespace_info->Typedefs); }
 
   m = namespace_info->NumberOfNamespaces;
-  for (i = 0; i < m; i++)
-    {
-    FreeNamespace(namespace_info->Namespaces[i]);
-    }
-
-  if (namespace_info->NumberOfItems > 0)
-    {
-    free(namespace_info->Items);
-    }
+  for (j = 0; j < m; j++) { FreeNamespace(namespace_info->Namespaces[j]); }
+  if (m > 0) { free(namespace_info->Namespaces); }
 
   free(namespace_info);
 }
@@ -3342,6 +3383,31 @@ void vtkParse_AddPointerToArray(
   *(void ***)valueArray = values;
 }
 
+/* Utility method to add an item to an array */
+void vtkParse_AddItemToArray(
+  ItemInfo **valueArray, unsigned long *count,
+  parse_item_t type, unsigned long index)
+{
+  ItemInfo *values = *valueArray;
+  unsigned long n = *count;
+
+  /* if empty, alloc for the first time */
+  if (n == 0)
+    {
+    values = (ItemInfo *)malloc(sizeof(ItemInfo));
+    }
+  /* if count is power of two, reallocate with double size */
+  else if ((n & (n-1)) == 0)
+    {
+    values = (ItemInfo *)realloc(values, (n << 1)*sizeof(ItemInfo));
+    }
+
+  values[n].Type = type;
+  values[n].Index = index;
+  *count = n+1;
+  *valueArray = values;
+}
+
 /* Utility method to add a const char pointer to an array */
 void vtkParse_AddStringToArray(
   const char ***valueArray, unsigned long *count, const char *value)
@@ -3568,7 +3634,7 @@ int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
 /* Free the FileInfo struct returned by vtkParse_ParseFile() */
 void vtkParse_Free(FileInfo *file_info)
 {
-  FreeNamespace(file_info->Contents);
+/*  FreeNamespace(file_info->Contents); */
   file_info->Contents = NULL;
 }
 

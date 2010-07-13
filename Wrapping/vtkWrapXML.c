@@ -1027,11 +1027,6 @@ void vtkWrapXML_MergeHelper(
                              hintfile, info, merge);
       }
     }
-
-  if (finfo)
-    {
-    vtkParse_Free(finfo);
-    }
 }
 
 /**
@@ -1146,7 +1141,7 @@ void vtkWrapXML_Class(
 {
   ClassProperties *properties;
   MergeInfo *merge = NULL;
-  unsigned long i;
+  unsigned long i, j;
 
   /* start new XML section for class */
   vtkWrapXML_ClassHeader(fp, classInfo, indentation++);
@@ -1175,31 +1170,28 @@ void vtkWrapXML_Class(
   /* print all members of the class */
   for (i = 0; i < classInfo->NumberOfItems; i++)
     {
-    switch (classInfo->Items[i]->ItemType)
+    j = classInfo->Items[i].Index;
+    switch (classInfo->Items[i].Type)
       {
       case VTK_CONSTANT_INFO:
         {
-        vtkWrapXML_Constant(fp, (ValueInfo *)classInfo->Items[i], 1,
-                            indentation);
+        vtkWrapXML_Constant(fp, classInfo->Constants[j], 1, indentation);
         break;
         }
       case VTK_ENUM_INFO:
         {
-        vtkWrapXML_Enum(fp, (EnumInfo *)classInfo->Items[i], 1,
-                        indentation);
+        vtkWrapXML_Enum(fp, classInfo->Enums[j], 1, indentation);
         break;
         }
       case VTK_FUNCTION_INFO:
         {
         vtkWrapXML_MethodHelper(fp, merge, properties, classInfo,
-                                (FunctionInfo *)classInfo->Items[i],
-                                indentation);
+                                classInfo->Functions[j], indentation);
         break;
         }
       case VTK_TYPEDEF_INFO:
         {
-        vtkWrapXML_Typedef(fp, (ValueInfo *)classInfo->Items[i], 1,
-                           indentation);
+        vtkWrapXML_Typedef(fp, classInfo->Typedefs[j], 1, indentation);
         break;
         }
       case VTK_NAMESPACE_INFO:
@@ -1232,48 +1224,43 @@ void vtkWrapXML_Namespace(FILE *fp, NamespaceInfo *data, int indentation);
  */
 void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
 {
-  unsigned long i;
+  unsigned long i, j;
 
   /* print all constants for the file or namespace */
   for (i = 0; i < data->NumberOfItems; i++)
     {
-    switch (data->Items[i]->ItemType)
+    j = data->Items[i].Index;
+    switch (data->Items[i].Type)
       {
       case VTK_CONSTANT_INFO:
         {
-        vtkWrapXML_Constant(fp, (ValueInfo *)data->Items[i], 0,
-                            indentation);
+        vtkWrapXML_Constant(fp, data->Constants[j], 0, indentation);
         break;
         }
       case VTK_TYPEDEF_INFO:
         {
-        vtkWrapXML_Typedef(fp, (ValueInfo *)data->Items[i], 0,
-                           indentation);
+        vtkWrapXML_Typedef(fp, data->Typedefs[j], 0, indentation);
         break;
         }
       case VTK_ENUM_INFO:
         {
-        vtkWrapXML_Enum(fp, (EnumInfo *)data->Items[i], 0,
-                        indentation);
+        vtkWrapXML_Enum(fp, data->Enums[j], 0, indentation);
         break;
         }
       case VTK_CLASS_INFO:
       case VTK_STRUCT_INFO:
         {
-        vtkWrapXML_Class(fp, data, (ClassInfo *)data->Items[i],
-                         indentation);
+        vtkWrapXML_Class(fp, data, data->Classes[j], indentation);
         break;
         }
       case VTK_FUNCTION_INFO:
         {
-        vtkWrapXML_Function(fp, (FunctionInfo *)data->Items[i],
-                            indentation);
+        vtkWrapXML_Function(fp, data->Functions[j], indentation);
         break;
         }
       case VTK_NAMESPACE_INFO:
         {
-        vtkWrapXML_Namespace(fp, (NamespaceInfo *)data->Items[i],
-                             indentation);
+        vtkWrapXML_Namespace(fp, data->Namespaces[j], indentation);
         break;
         }
       case VTK_UNION_INFO:

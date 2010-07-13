@@ -200,53 +200,6 @@ void vtkParseMerge_FreeMergeInfo(MergeInfo *info)
   free(info);
 }
 
-/* make a duplicate of a function */
-static void copy_function(FunctionInfo *merge, const FunctionInfo *func)
-{
-  unsigned long i;
-  char *cp;
-
-  memcpy(merge, func, sizeof(FunctionInfo));
-
-  if (func->Name)
-    {
-    cp = (char *)malloc(strlen(func->Name)+1);
-    strcpy(cp, func->Name);
-    merge->Name = cp;
-    }
-
-  for (i = 0; i < func->NumberOfArguments; i++)
-    {
-    if (func->ArgClasses[i])
-      {
-      cp = (char *)malloc(strlen(func->ArgClasses[i])+1);
-      strcpy(cp, func->ArgClasses[i]);
-      merge->ArgClasses[i] = cp;
-      }
-    }
-
-  if (func->ReturnClass)
-    {
-    cp = (char *)malloc(strlen(func->ReturnClass)+1);
-    strcpy(cp, func->ReturnClass);
-    merge->ReturnClass = cp;
-    }
-
-  if (func->Comment)
-    {
-    cp = (char *)malloc(strlen(func->Comment)+1);
-    strcpy(cp, func->Comment);
-    merge->Comment = cp;
-    }
-
-  if (func->Signature)
-    {
-    cp = (char *)malloc(strlen(func->Signature)+1);
-    strcpy(cp, func->Signature);
-    merge->Signature = cp;
-    }
-}
-
 /* merge a function */
 static void merge_function(FunctionInfo *merge, const FunctionInfo *func)
 {
@@ -259,9 +212,7 @@ static void merge_function(FunctionInfo *merge, const FunctionInfo *func)
 
   if (func->Comment && !merge->Comment)
     {
-    cp = (char *)malloc(strlen(func->Comment)+1);
-    strcpy(cp, func->Comment);
-    merge->Comment = cp;
+    merge->Comment = func->Comment;
     }
 }
 
@@ -320,9 +271,7 @@ unsigned long vtkParseMerge_Merge(
       }
     if (!match)
       {
-      FunctionInfo *newFunc = (FunctionInfo *)malloc(sizeof(FunctionInfo));
-      vtkParse_AddItemMacro(merge, Functions, newFunc);
-      copy_function(newFunc, func);
+      vtkParse_AddItemMacro(merge, Functions, func);
       vtkParseMerge_PushFunction(info, depth);
       m++;
       }

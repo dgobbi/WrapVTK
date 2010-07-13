@@ -58,7 +58,7 @@ struct _TemplateArgs;
 struct _FunctionInfo;
 
 /**
- * TemplateArgs holds one template arg
+ * TemplateArg holds one template arg
  */
 typedef struct _TemplateArg
 {
@@ -77,17 +77,6 @@ typedef struct _TemplateArgs
   unsigned long NumberOfArguments;
   TemplateArg **Arguments;
 } TemplateArgs;
-
-/**
- * ItemInfo is a "base class" for items in the header file
- */
-typedef struct _ItemInfo
-{
-  parse_item_t   ItemType;
-  parse_access_t Access;
-  const char    *Name;
-  const char    *Comment;
-} ItemInfo;
 
 /**
  * ValueInfo is for typedefs, constants, variables,
@@ -173,6 +162,15 @@ typedef struct _UnionInfo
 } UnionInfo;
 
 /**
+ * ItemInfo just contains an index
+ */
+typedef struct _ItemInfo
+{
+  parse_item_t   Type;
+  int            Index;
+} ItemInfo;
+
+/**
  * ClassInfo is for classes and structs
  */
 typedef struct _ClassInfo
@@ -185,13 +183,19 @@ typedef struct _ClassInfo
   unsigned long  NumberOfSuperClasses;
   const char   **SuperClasses;
   unsigned long  NumberOfItems;
-  ItemInfo     **Items;
+  ItemInfo      *Items;
+  unsigned long  NumberOfClasses;
+  struct _ClassInfo **Classes;
   unsigned long  NumberOfFunctions;
   FunctionInfo **Functions;
   unsigned long  NumberOfConstants;
   ValueInfo    **Constants;
+  unsigned long  NumberOfVariables;
+  ValueInfo    **Variables;
   unsigned long  NumberOfEnums;
   EnumInfo     **Enums;
+  unsigned long  NumberOfUnions;
+  UnionInfo    **Unions;
   unsigned long  NumberOfTypedefs;
   ValueInfo    **Typedefs;
   int            IsAbstract;
@@ -208,15 +212,19 @@ typedef struct _NamespaceInfo
   const char    *Name;  /* NULL for global namespace */
   const char    *Comment;
   unsigned long  NumberOfItems;
-  ItemInfo     **Items;
+  ItemInfo      *Items;
   unsigned long  NumberOfClasses;
   ClassInfo    **Classes;
   unsigned long  NumberOfFunctions;
   FunctionInfo **Functions;
   unsigned long  NumberOfConstants;
   ValueInfo    **Constants;
+  unsigned long  NumberOfVariables;
+  ValueInfo    **Variables;
   unsigned long  NumberOfEnums;
   EnumInfo     **Enums;
+  unsigned long  NumberOfUnions;
+  UnionInfo    **Unions;
   unsigned long  NumberOfTypedefs;
   ValueInfo    **Typedefs;
   unsigned long  NumberOfNamespaces;
