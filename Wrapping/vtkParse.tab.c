@@ -7711,7 +7711,7 @@ void FreeValue(ValueInfo *value_info)
 {
   if (value_info->NumberOfDimensions)
     {
-    free(value_info->Dimensions);
+    free((char **)value_info->Dimensions);
     }
   if (value_info->Function)
     {
@@ -8528,7 +8528,7 @@ void vtkParse_AddStringToArray(
   /* if count is power of two, reallocate with double size */
   else if ((n & (n-1)) == 0)
     {
-    values = (const char **)realloc(values, (n << 1)*sizeof(char*));
+    values = (const char **)realloc((char **)values, (n << 1)*sizeof(char*));
     }
 
   values[n++] = value;
