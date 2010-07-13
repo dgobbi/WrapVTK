@@ -203,8 +203,6 @@ void vtkParseMerge_FreeMergeInfo(MergeInfo *info)
 /* merge a function */
 static void merge_function(FunctionInfo *merge, const FunctionInfo *func)
 {
-  char *cp;
-
   if (func->IsVirtual)
     {
     merge->IsVirtual = 1;
