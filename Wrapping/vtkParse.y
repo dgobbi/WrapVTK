@@ -189,7 +189,8 @@ static char *vtkstralloc(size_t n)
       chunk_size = n + 1;
       }
     cp = (char *)malloc(chunk_size);
-    vtkParse_AddPointerToArray(&stringArray, &numberOfChunks, cp);
+    vtkParse_AddStringToArray((const char ***)&stringArray, &numberOfChunks,
+                              cp);
     stringChunkPos = 0;
     nextChunkPos = (((n + 8) | 7) - 7);
     }
@@ -496,7 +497,7 @@ void pushNamespace(const char *name)
     currentNamespace = (NamespaceInfo *)malloc(sizeof(NamespaceInfo));
     vtkParse_InitNamespace(currentNamespace);
     currentNamespace->Name = vtkstrdup(name);
-    vtkParse_AddItemMacro(oldNamespace, Namespaces, currentNamespace);
+    vtkParse_AddNamespaceToNamespace(oldNamespace, currentNamespace);
     }
 
   namespaceStack[namespaceDepth++] = oldNamespace;
@@ -1444,11 +1445,11 @@ type_def: typedef_start type complex_var_id ';'
 
       if (currentClass)
         {
-        vtkParse_AddItemMacro(currentClass, Typedefs, item);
+        vtkParse_AddTypedefToClass(currentClass, item);
         }
       else
         {
-        vtkParse_AddItemMacro(currentNamespace, Typedefs, item);
+        vtkParse_AddTypedefToNamespace(currentNamespace, item);
         }
     }
  | typedef_start class_def maybe_indirect_id ';' { }
@@ -1481,7 +1482,7 @@ template_arg: type_simple maybe_template_id
                arg->Class = vtkstrdup(getTypeId());
                arg->Name = vtkstrdup(getVarName());
                arg->Value = vtkstrdup(getVarValue());
-               vtkParse_AddItemMacro2(currentTemplate, Arguments, arg);
+               vtkParse_AddArgumentToTemplate(currentTemplate, arg);
                }
             | class_or_typename maybe_template_id
                {
@@ -1489,7 +1490,7 @@ template_arg: type_simple maybe_template_id
                vtkParse_InitTemplateArg(arg);
                arg->Name = vtkstrdup(getVarName());
                arg->Value = vtkstrdup(getVarValue());
-               vtkParse_AddItemMacro2(currentTemplate, Arguments, arg);
+               vtkParse_AddArgumentToTemplate(currentTemplate, arg);
                }
             | { pushTemplate(); } template maybe_template_id
                {
@@ -1500,7 +1501,7 @@ template_arg: type_simple maybe_template_id
                arg->Template = newTemplate;
                arg->Name = vtkstrdup(getVarName());
                arg->Value = vtkstrdup(getVarValue());
-               vtkParse_AddItemMacro2(currentTemplate, Arguments, arg);
+               vtkParse_AddArgumentToTemplate(currentTemplate, arg);
                };
 
 class_or_typename: CLASS {postSig("class ");}
@@ -1712,7 +1713,7 @@ arg:
         arg->Name = vtkstrdup(getVarName());
         }
 
-      vtkParse_AddItemMacro2(currentFunction, Arguments, arg);
+      vtkParse_AddArgumentToFunction(currentFunction, arg);
     }
     maybe_var_assign
     {
@@ -1743,7 +1744,7 @@ arg:
         currentFunction->ArgCounts[i] = arg->Count;
         }
 
-      vtkParse_AddItemMacro2(currentFunction, Arguments, arg);
+      vtkParse_AddArgumentToFunction(currentFunction, arg);
     };
 
 maybe_indirect_id: any_id | type_indirection any_id;
@@ -2738,7 +2739,7 @@ void start_class(const char *classname, int is_struct)
     {
     currentClass->ItemType = VTK_STRUCT_INFO;
     }
-  vtkParse_AddItemMacro(currentNamespace, Classes, currentClass);
+  vtkParse_AddClassToNamespace(currentNamespace, currentClass);
 
   /* template information */
   if (currentTemplate)
@@ -2806,11 +2807,11 @@ void start_enum(const char *name)
     item->Access = access_level;
     if (currentClass)
       {
-      vtkParse_AddItemMacro(currentClass, Enums, item);
+      vtkParse_AddEnumToClass(currentClass, item);
       }
     else
       {
-      vtkParse_AddItemMacro(currentNamespace, Enums, item);
+      vtkParse_AddEnumToNamespace(currentNamespace, item);
       }
     }
 }
@@ -2888,17 +2889,17 @@ void add_constant(const char *name, const char *value,
   if (flag == 1)
     {
     con->Access = VTK_ACCESS_PUBLIC;
-    vtkParse_AddItemMacro(data.Contents, Constants, con);
+    vtkParse_AddConstantToNamespace(data.Contents, con);
     }
   else if (currentClass)
     {
     con->Access = access_level;
-    vtkParse_AddItemMacro(currentClass, Constants, con);
+    vtkParse_AddConstantToClass(currentClass, con);
     }
   else
     {
     con->Access = VTK_ACCESS_PUBLIC;
-    vtkParse_AddItemMacro(currentNamespace, Constants, con);
+    vtkParse_AddConstantToNamespace(currentNamespace, con);
     }
 }
 
@@ -2979,7 +2980,7 @@ void add_argument(FunctionInfo *func, unsigned int type,
   func->ArgClasses[i] = arg->Class;
   func->ArgCounts[i] = count;
 
-  vtkParse_AddItemMacro2(func, Arguments, arg);
+  vtkParse_AddArgumentToFunction(func, arg);
 }
 
 /* set the return type for the current function */
@@ -3262,7 +3263,7 @@ void output_function()
       currentClass->HasDelete = 1;
       }
 
-    vtkParse_AddItemMacro(currentClass, Functions, currentFunction);
+    vtkParse_AddFunctionToClass(currentClass, currentFunction);
 
     currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
     }
@@ -3303,7 +3304,7 @@ void output_function()
 
     if (!match)
       {
-      vtkParse_AddItemMacro(currentNamespace, Functions, currentFunction);
+      vtkParse_AddFunctionToNamespace(currentNamespace, currentFunction);
 
       currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
       }
@@ -3360,6 +3361,27 @@ void outputGetVectorMacro(const char *var, unsigned int argType,
   output_function();
 }
 
+/* This method is used for extending dynamic arrays in a progression of
+ * powers of two.  If "n" reaches a power of two, then the array size is
+ * doubled so that "n" can be safely incremented. */
+static void *array_size_check(
+  void *arraymem, size_t size, unsigned long n)
+{
+  /* if empty, alloc for the first time */
+  if (n == 0)
+    {
+    return malloc(size);
+    }
+  /* if count is power of two, reallocate with double size */
+  else if ((n & (n-1)) == 0)
+    {
+    return realloc(arraymem, (n << 1)*size);
+    }
+
+  /* no reallocation, just return the original array */
+  return arraymem;
+}
+
 /* Utility method to add a pointer to an array */
 void vtkParse_AddPointerToArray(
   void *valueArray, unsigned long *count, const void *value)
@@ -3367,40 +3389,30 @@ void vtkParse_AddPointerToArray(
   void **values = *(void ***)valueArray;
   unsigned long n = *count;
 
-  /* if empty, alloc for the first time */
-  if (n == 0)
-    {
-    values = (void **)malloc(1*sizeof(void*));
-    }
-  /* if count is power of two, reallocate with double size */
-  else if ((n & (n-1)) == 0)
-    {
-    values = (void **)realloc(values, (n << 1)*sizeof(void*));
-    }
+  values = (void **)array_size_check(values, sizeof(void *), n);
 
   values[n++] = (void *)value;
   *count = n;
   *(void ***)valueArray = values;
 }
 
+/*
+ * There is a lot of repetition here, but all the code is written
+ * out explicitly to avoid the use of macros or typecasts.  The
+ * use of macros for generic programming makes code harder to debug,
+ * and the use of C typecasts for anything but void* and char* breaks
+ * the C99 standard.
+ */
+
 /* Utility method to add an item to an array */
 void vtkParse_AddItemToArray(
   ItemInfo **valueArray, unsigned long *count,
   parse_item_t type, unsigned long index)
 {
+  size_t n = *count;
   ItemInfo *values = *valueArray;
-  unsigned long n = *count;
 
-  /* if empty, alloc for the first time */
-  if (n == 0)
-    {
-    values = (ItemInfo *)malloc(sizeof(ItemInfo));
-    }
-  /* if count is power of two, reallocate with double size */
-  else if ((n & (n-1)) == 0)
-    {
-    values = (ItemInfo *)realloc(values, (n << 1)*sizeof(ItemInfo));
-    }
+  values = (ItemInfo *)array_size_check(values, sizeof(ItemInfo), n);
 
   values[n].Type = type;
   values[n].Index = index;
@@ -3408,27 +3420,184 @@ void vtkParse_AddItemToArray(
   *valueArray = values;
 }
 
+/* Add a ClassInfo to a ClassInfo */
+void vtkParse_AddClassToClass(ClassInfo *info, ClassInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfClasses);
+  info->Classes = (ClassInfo **)array_size_check(
+    info->Classes, sizeof(ClassInfo *), info->NumberOfClasses);
+  info->Classes[info->NumberOfClasses++] = item;
+}
+
+/* Add a FunctionInfo to a ClassInfo */
+void vtkParse_AddFunctionToClass(ClassInfo *info, FunctionInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfFunctions);
+  info->Functions = (FunctionInfo **)array_size_check(
+    info->Functions, sizeof(FunctionInfo *), info->NumberOfFunctions);
+  info->Functions[info->NumberOfFunctions++] = item;
+}
+
+/* Add a EnumInfo to a ClassInfo */
+void vtkParse_AddEnumToClass(ClassInfo *info, EnumInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfEnums);
+  info->Enums = (EnumInfo **)array_size_check(
+    info->Enums, sizeof(EnumInfo *), info->NumberOfEnums);
+  info->Enums[info->NumberOfEnums++] = item;
+}
+
+/* Add a UnionInfo to a ClassInfo */
+void vtkParse_AddUnionToClass(ClassInfo *info, UnionInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfUnions);
+  info->Unions = (UnionInfo **)array_size_check(
+    info->Unions, sizeof(UnionInfo *), info->NumberOfUnions);
+  info->Unions[info->NumberOfUnions++] = item;
+}
+
+/* Add a Constant ValueInfo to a ClassInfo */
+void vtkParse_AddConstantToClass(ClassInfo *info, ValueInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfConstants);
+  info->Constants = (ValueInfo **)array_size_check(
+    info->Constants, sizeof(ValueInfo *), info->NumberOfConstants);
+  info->Constants[info->NumberOfConstants++] = item;
+}
+
+/* Add a Variable ValueInfo to a ClassInfo */
+void vtkParse_AddVariableToClass(ClassInfo *info, ValueInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfVariables);
+  info->Variables = (ValueInfo **)array_size_check(
+    info->Variables, sizeof(ValueInfo *), info->NumberOfVariables);
+  info->Variables[info->NumberOfVariables++] = item;
+}
+
+/* Add a Typedef ValueInfo to a ClassInfo */
+void vtkParse_AddTypedefToClass(ClassInfo *info, ValueInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfTypedefs);
+  info->Typedefs = (ValueInfo **)array_size_check(
+    info->Typedefs, sizeof(ValueInfo *), info->NumberOfTypedefs);
+  info->Typedefs[info->NumberOfTypedefs++] = item;
+}
+
+
+/* Add a NamespaceInfo to a NamespaceInfo */
+void vtkParse_AddNamespaceToNamespace(NamespaceInfo *info, NamespaceInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfNamespaces);
+  info->Namespaces = (NamespaceInfo **)array_size_check(
+    info->Namespaces, sizeof(NamespaceInfo *), info->NumberOfNamespaces);
+  info->Namespaces[info->NumberOfNamespaces++] = item;
+}
+
+/* Add a ClassInfo to a NamespaceInfo */
+void vtkParse_AddClassToNamespace(NamespaceInfo *info, ClassInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfClasses);
+  info->Classes = (ClassInfo **)array_size_check(
+    info->Classes, sizeof(ClassInfo *), info->NumberOfClasses);
+  info->Classes[info->NumberOfClasses++] = item;
+}
+
+/* Add a FunctionInfo to a NamespaceInfo */
+void vtkParse_AddFunctionToNamespace(NamespaceInfo *info, FunctionInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfFunctions);
+  info->Functions = (FunctionInfo **)array_size_check(
+    info->Functions, sizeof(FunctionInfo *), info->NumberOfFunctions);
+  info->Functions[info->NumberOfFunctions++] = item;
+}
+
+/* Add a EnumInfo to a NamespaceInfo */
+void vtkParse_AddEnumToNamespace(NamespaceInfo *info, EnumInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfEnums);
+  info->Enums = (EnumInfo **)array_size_check(
+    info->Enums, sizeof(EnumInfo *), info->NumberOfEnums);
+  info->Enums[info->NumberOfEnums++] = item;
+}
+
+/* Add a UnionInfo to a NamespaceInfo */
+void vtkParse_AddUnionToNamespace(NamespaceInfo *info, UnionInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfUnions);
+  info->Unions = (UnionInfo **)array_size_check(
+    info->Unions, sizeof(UnionInfo *), info->NumberOfUnions);
+  info->Unions[info->NumberOfUnions++] = item;
+}
+
+/* Add a Constant ValueInfo to a NamespaceInfo */
+void vtkParse_AddConstantToNamespace(NamespaceInfo *info, ValueInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfConstants);
+  info->Constants = (ValueInfo **)array_size_check(
+    info->Constants, sizeof(ValueInfo *), info->NumberOfConstants);
+  info->Constants[info->NumberOfConstants++] = item;
+}
+
+/* Add a Variable ValueInfo to a NamespaceInfo */
+void vtkParse_AddVariableToNamespace(NamespaceInfo *info, ValueInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfVariables);
+  info->Variables = (ValueInfo **)array_size_check(
+    info->Variables, sizeof(ValueInfo *), info->NumberOfVariables);
+  info->Variables[info->NumberOfVariables++] = item;
+}
+
+/* Add a Typedef ValueInfo to a NamespaceInfo */
+void vtkParse_AddTypedefToNamespace(NamespaceInfo *info, ValueInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfTypedefs);
+  info->Typedefs = (ValueInfo **)array_size_check(
+    info->Typedefs, sizeof(ValueInfo *), info->NumberOfTypedefs);
+  info->Typedefs[info->NumberOfTypedefs++] = item;
+}
+
+
+/* Add a Argument ValueInfo to a FunctionInfo */
+void vtkParse_AddArgumentToFunction(FunctionInfo *info, ValueInfo *item)
+{
+  info->Arguments = (ValueInfo **)array_size_check(
+    info->Arguments, sizeof(ValueInfo *), info->NumberOfArguments);
+  info->Arguments[info->NumberOfArguments++] = item;
+}
+
+
+/* Add a TemplateArg to a TemplateArgs */
+void vtkParse_AddArgumentToTemplate(TemplateArgs *info, TemplateArg *item)
+{
+  info->Arguments = (TemplateArg **)array_size_check(
+    info->Arguments, sizeof(TemplateArg *), info->NumberOfArguments);
+  info->Arguments[info->NumberOfArguments++] = item;
+}
+
+
 /* Utility method to add a const char pointer to an array */
 void vtkParse_AddStringToArray(
   const char ***valueArray, unsigned long *count, const char *value)
 {
-  const char **values = *valueArray;
-  unsigned long n = *count;
+  *valueArray = (const char **)array_size_check(
+    (char **)*valueArray, sizeof(const char *), *count);
 
-  /* if empty, alloc for the first time */
-  if (n == 0)
-    {
-    values = (const char **)malloc(1*sizeof(char*));
-    }
-  /* if count is power of two, reallocate with double size */
-  else if ((n & (n-1)) == 0)
-    {
-    values = (const char **)realloc((char **)values, (n << 1)*sizeof(char*));
-    }
-
-  values[n++] = value;
-  *count = n;
-  *valueArray = values;
+  (*valueArray)[(*count)++] = value;
 }
 
 /* Set a flag to ignore BTX/ETX markers in the files */

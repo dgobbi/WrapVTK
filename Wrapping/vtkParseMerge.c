@@ -220,7 +220,7 @@ unsigned long vtkParseMerge_Merge(
 {
   unsigned long i, j, k, n, m, depth;
   int match;
-  const FunctionInfo *func;
+  FunctionInfo *func;
   FunctionInfo *f2;
 
   depth = vtkParseMerge_PushClass(info, super->Name);
@@ -269,7 +269,7 @@ unsigned long vtkParseMerge_Merge(
       }
     if (!match)
       {
-      vtkParse_AddItemMacro(merge, Functions, func);
+      vtkParse_AddFunctionToClass(merge, func);
       vtkParseMerge_PushFunction(info, depth);
       m++;
       }

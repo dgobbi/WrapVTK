@@ -49,7 +49,7 @@ typedef struct _OptionInfo
   int           IsConcrete;
   int           IsAbstract;
   unsigned long NumberOfIncludeDirectories;
-  char        **IncludeDirectories;
+  const char  **IncludeDirectories;
 } OptionInfo;
 
 #ifdef __cplusplus

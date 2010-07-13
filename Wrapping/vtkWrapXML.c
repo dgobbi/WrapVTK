@@ -288,6 +288,9 @@ void vtkWrapXML_FileHeader(FILE *fp, const FileInfo *data, int indentation)
  */
 void vtkWrapXML_FileFooter(FILE *fp, const FileInfo *data, int indentation)
 {
+  /* avoid warning */
+  data = NULL;
+
   fprintf(fp, "\n");
   fprintf(fp, "%s</File>\n", indent(indentation));
 }
