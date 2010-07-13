@@ -57,12 +57,14 @@ MergeInfo *vtkParseMerge_CreateMergeInfo(struct _ClassInfo *classInfo);
 void vtkParseMerge_FreeMergeInfo(MergeInfo *info);
 
 /**
- * Add newclass methods to the merge
+ * Add newclass methods to the merge.  They are removed from newclass
+ * if they are added to merge, so that both structs can be freed without
+ * freeing the elements twice.
  */
 unsigned long vtkParseMerge_Merge(
   MergeInfo *info,
   struct _ClassInfo *merge,
-  const struct _ClassInfo *newclass);
+  struct _ClassInfo *newclass);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -7689,7 +7689,7 @@ void vtkParse_InitFile(FileInfo *file_info)
   file_info->Contents = NULL;
 }
 
-void FreeTemplate(TemplateArgs *template_info)
+void vtkParse_FreeTemplate(TemplateArgs *template_info)
 {
   unsigned long j, m;
 
@@ -7698,7 +7698,7 @@ void FreeTemplate(TemplateArgs *template_info)
     {
     if (template_info->Arguments[j]->Template)
       {
-      FreeTemplate(template_info->Arguments[j]->Template);
+      vtkParse_FreeTemplate(template_info->Arguments[j]->Template);
       }
     free(template_info->Arguments[j]);
     }
@@ -7706,9 +7706,9 @@ void FreeTemplate(TemplateArgs *template_info)
   free(template_info);
 }
 
-void FreeFunction(FunctionInfo *function_info);
+void vtkParse_FreeFunction(FunctionInfo *function_info);
 
-void FreeValue(ValueInfo *value_info)
+void vtkParse_FreeValue(ValueInfo *value_info)
 {
   if (value_info->NumberOfDimensions)
     {
@@ -7716,78 +7716,84 @@ void FreeValue(ValueInfo *value_info)
     }
   if (value_info->Function)
     {
-    FreeFunction(value_info->Function);
+    vtkParse_FreeFunction(value_info->Function);
     }
 
   free(value_info);
 }
 
-void FreeUnion(UnionInfo *union_info)
+void vtkParse_FreeUnion(UnionInfo *union_info)
 {
   unsigned long j, m;
 
   m = union_info->NumberOfMembers;
-  for (j = 0; j < m; j++) { FreeValue(union_info->Members[j]); }
+  for (j = 0; j < m; j++) { vtkParse_FreeValue(union_info->Members[j]); }
   if (m > 0) { free(union_info->Members); }
 
   free(union_info);
 }
 
-void FreeEnum(EnumInfo *enum_info)
+void vtkParse_FreeEnum(EnumInfo *enum_info)
 {
   free(enum_info);
 }
 
-void FreeFunction(FunctionInfo *function_info)
+void vtkParse_FreeFunction(FunctionInfo *function_info)
 {
   unsigned long j, m;
 
-  if (function_info->Template) { FreeTemplate(function_info->Template); }
+  if (function_info->Template)
+    {
+    vtkParse_FreeTemplate(function_info->Template);
+    }
 
   m = function_info->NumberOfArguments;
-  for (j = 0; j < m; j++) { FreeValue(function_info->Arguments[j]); }
+  for (j = 0; j < m; j++) { vtkParse_FreeValue(function_info->Arguments[j]); }
   if (m > 0) { free(function_info->Arguments); }
 
-  if (function_info->ReturnValue) { FreeValue(function_info->ReturnValue); }
+  if (function_info->ReturnValue)
+    {
+    vtkParse_FreeValue(function_info->ReturnValue);
+    }
 
   free(function_info);
 }
 
-void FreeClass(ClassInfo *class_info)
+void vtkParse_FreeClass(ClassInfo *class_info)
 {
   unsigned long j, m;
 
-  if (class_info->Template) { FreeTemplate(class_info->Template); }
+  if (class_info->Template) { vtkParse_FreeTemplate(class_info->Template); }
 
   m = class_info->NumberOfSuperClasses;
   if (m > 0) { free((char **)class_info->SuperClasses); }
 
   m = class_info->NumberOfClasses;
-  for (j = 0; j < m; j++) { FreeClass(class_info->Classes[j]); }
+  for (j = 0; j < m; j++) { vtkParse_FreeClass(class_info->Classes[j]); }
   if (m > 0) { free(class_info->Classes); }
 
   m = class_info->NumberOfFunctions;
-  for (j = 0; j < m; j++) { FreeFunction(class_info->Functions[j]); }
+  for (j = 0; j < m; j++) { vtkParse_FreeFunction(class_info->Functions[j]); }
   if (m > 0) { free(class_info->Functions); }
 
   m = class_info->NumberOfConstants;
-  for (j = 0; j < m; j++) { FreeValue(class_info->Constants[j]); }
+  for (j = 0; j < m; j++) { vtkParse_FreeValue(class_info->Constants[j]); }
   if (m > 0) { free(class_info->Constants); }
 
   m = class_info->NumberOfVariables;
-  for (j = 0; j < m; j++) { FreeValue(class_info->Variables[j]); }
+  for (j = 0; j < m; j++) { vtkParse_FreeValue(class_info->Variables[j]); }
   if (m > 0) { free(class_info->Variables); }
 
   m = class_info->NumberOfEnums;
-  for (j = 0; j < m; j++) { FreeEnum(class_info->Enums[j]); }
+  for (j = 0; j < m; j++) { vtkParse_FreeEnum(class_info->Enums[j]); }
   if (m > 0) { free(class_info->Enums); }
 
   m = class_info->NumberOfUnions;
-  for (j = 0; j < m; j++) { FreeUnion(class_info->Unions[j]); }
+  for (j = 0; j < m; j++) { vtkParse_FreeUnion(class_info->Unions[j]); }
   if (m > 0) { free(class_info->Unions); }
 
   m = class_info->NumberOfTypedefs;
-  for (j = 0; j < m; j++) { FreeValue(class_info->Typedefs[j]); }
+  for (j = 0; j < m; j++) { vtkParse_FreeValue(class_info->Typedefs[j]); }
   if (m > 0) { free(class_info->Typedefs); }
 
   if (class_info->NumberOfItems > 0) { free(class_info->Items); }
@@ -7795,40 +7801,40 @@ void FreeClass(ClassInfo *class_info)
   free(class_info);
 }
 
-void FreeNamespace(NamespaceInfo *namespace_info)
+void vtkParse_FreeNamespace(NamespaceInfo *namespace_info)
 {
   unsigned long j, m;
 
   m = namespace_info->NumberOfClasses;
-  for (j = 0; j < m; j++) { FreeClass(namespace_info->Classes[j]); }
+  for (j = 0; j < m; j++) { vtkParse_FreeClass(namespace_info->Classes[j]); }
   if (m > 0) { free(namespace_info->Classes); }
 
   m = namespace_info->NumberOfFunctions;
-  for (j = 0; j < m; j++) { FreeFunction(namespace_info->Functions[j]); }
+  for (j=0; j<m; j++) { vtkParse_FreeFunction(namespace_info->Functions[j]); }
   if (m > 0) { free(namespace_info->Functions); }
 
   m = namespace_info->NumberOfConstants;
-  for (j = 0; j < m; j++) { FreeValue(namespace_info->Constants[j]); }
+  for (j=0; j<m; j++) { vtkParse_FreeValue(namespace_info->Constants[j]); }
   if (m > 0) { free(namespace_info->Constants); }
 
   m = namespace_info->NumberOfVariables;
-  for (j = 0; j < m; j++) { FreeValue(namespace_info->Variables[j]); }
+  for (j=0; j<m; j++) { vtkParse_FreeValue(namespace_info->Variables[j]); }
   if (m > 0) { free(namespace_info->Variables); }
 
   m = namespace_info->NumberOfEnums;
-  for (j = 0; j < m; j++) { FreeEnum(namespace_info->Enums[j]); }
+  for (j = 0; j < m; j++) { vtkParse_FreeEnum(namespace_info->Enums[j]); }
   if (m > 0) { free(namespace_info->Enums); }
 
   m = namespace_info->NumberOfUnions;
-  for (j = 0; j < m; j++) { FreeUnion(namespace_info->Unions[j]); }
+  for (j = 0; j < m; j++) { vtkParse_FreeUnion(namespace_info->Unions[j]); }
   if (m > 0) { free(namespace_info->Unions); }
 
   m = namespace_info->NumberOfTypedefs;
-  for (j = 0; j < m; j++) { FreeValue(namespace_info->Typedefs[j]); }
+  for (j = 0; j < m; j++) { vtkParse_FreeValue(namespace_info->Typedefs[j]); }
   if (m > 0) { free(namespace_info->Typedefs); }
 
   m = namespace_info->NumberOfNamespaces;
-  for (j = 0; j < m; j++) { FreeNamespace(namespace_info->Namespaces[j]); }
+  for (j=0; j<m; j++) {vtkParse_FreeNamespace(namespace_info->Namespaces[j]);}
   if (m > 0) { free(namespace_info->Namespaces); }
 
   free(namespace_info);
@@ -8512,7 +8518,7 @@ void vtkParse_AddPointerToArray(
 /* Utility method to add an item to an array */
 void vtkParse_AddItemToArray(
   ItemInfo **valueArray, unsigned long *count,
-  parse_item_t type, unsigned long index)
+  parse_item_t type, unsigned long idx)
 {
   size_t n = *count;
   ItemInfo *values = *valueArray;
@@ -8520,7 +8526,7 @@ void vtkParse_AddItemToArray(
   values = (ItemInfo *)array_size_check(values, sizeof(ItemInfo), n);
 
   values[n].Type = type;
-  values[n].Index = index;
+  values[n].Index = idx;
   *count = n+1;
   *valueArray = values;
 }
@@ -8908,7 +8914,7 @@ int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
 /* Free the FileInfo struct returned by vtkParse_ParseFile() */
 void vtkParse_Free(FileInfo *file_info)
 {
-/*  FreeNamespace(file_info->Contents); */
+  vtkParse_FreeNamespace(file_info->Contents);
   file_info->Contents = NULL;
 }
 

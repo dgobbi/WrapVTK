@@ -158,7 +158,6 @@ unsigned long vtkParseMerge_PushOverride(
 MergeInfo *vtkParseMerge_CreateMergeInfo(ClassInfo *classInfo)
 {
   unsigned long i, n;
-  FunctionInfo *func;
   MergeInfo *info = (MergeInfo *)malloc(sizeof(MergeInfo));
   info->NumberOfClasses = 0;
   info->NumberOfFunctions = 0;
@@ -167,7 +166,6 @@ MergeInfo *vtkParseMerge_CreateMergeInfo(ClassInfo *classInfo)
   n = classInfo->NumberOfFunctions;
   for (i = 0; i < n; i++)
     {
-    func = classInfo->Functions[i];
     vtkParseMerge_PushFunction(info, 0);
     }
 
@@ -216,7 +214,7 @@ static void merge_function(FunctionInfo *merge, const FunctionInfo *func)
 
 /* add "super" methods to the merge */
 unsigned long vtkParseMerge_Merge(
-  MergeInfo *info, ClassInfo *merge, const ClassInfo *super)
+  MergeInfo *info, ClassInfo *merge, ClassInfo *super)
 {
   unsigned long i, j, k, n, m, depth;
   int match;
@@ -269,11 +267,23 @@ unsigned long vtkParseMerge_Merge(
       }
     if (!match)
       {
-      vtkParse_AddFunctionToClass(merge, func);
+      vtkParse_AddFunctionToClass(merge, super->Functions[i]);
+      super->Functions[i] = NULL;
       vtkParseMerge_PushFunction(info, depth);
       m++;
       }
     }
+
+  /* remove all used methods from the superclass */
+  j = 0;
+  for (i = 0; i < n; i++)
+    {
+    if (i != j && super->Functions[i] != NULL)
+      {
+      super->Functions[j++] = super->Functions[i];
+      }
+    }
+  super->NumberOfFunctions = j;
 
   return depth;
 }

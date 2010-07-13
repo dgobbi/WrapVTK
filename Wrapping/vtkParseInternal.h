@@ -54,7 +54,7 @@ void vtkParse_AddStringToArray(
  */
 void vtkParse_AddItemToArray(
   ItemInfo **valueArray, unsigned long *count,
-  parse_item_t type, unsigned long index);
+  parse_item_t type, unsigned long idx);
 
 
 /**
