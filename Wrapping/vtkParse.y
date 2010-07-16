@@ -141,6 +141,7 @@ void set_return(FunctionInfo *func, unsigned int type,
                 const char *typeclass, unsigned long count);
 void add_argument(FunctionInfo *func, unsigned int type,
                   const char *classname, unsigned long count);
+void add_using(const char *name, int is_namespace);
 void start_enum(const char *enumname);
 void add_enum(const char *name, const char *value);
 void end_enum();
@@ -509,6 +510,33 @@ void popNamespace()
   currentNamespace = namespaceStack[--namespaceDepth];
 }
 
+
+/*----------------------------------------------------------------
+ * Classes
+ *
+ * operates on: currentClass, access_level
+ */
+
+/* "private" variables */
+ClassInfo *classStack[10];
+parse_access_t classAccessStack[10];
+unsigned long classDepth = 0;
+
+/* start an internal class definition */
+void pushClass()
+{
+  classAccessStack[classDepth] = access_level;
+  classStack[classDepth++] = currentClass;
+}
+
+/* leave the internal class */
+void popClass()
+{
+  currentClass = classStack[--classDepth];
+  access_level = classAccessStack[classDepth];
+}
+
+
 /*----------------------------------------------------------------
  * Templates
  *
@@ -794,12 +822,13 @@ unsigned int getStorageType()
 
 /* "private" variables */
 unsigned long numberOfDimensions = 0;
-const char **arrayDimensions;
+const char **arrayDimensions = NULL;
 
 /* clear the array counter */
 void clearArray(void)
 {
   numberOfDimensions = 0;
+  arrayDimensions = NULL;
 }
 
 /* add another dimension */
@@ -833,7 +862,11 @@ unsigned long getArrayNDims()
 /* get the whole array */
 const char **getArray()
 {
-  return arrayDimensions;
+  if (numberOfDimensions > 0)
+    {
+    return arrayDimensions;
+    }
+  return NULL;
 }
 
 /*----------------------------------------------------------------
@@ -1326,9 +1359,10 @@ class_def_item:
    | union_def maybe_vars ';'
    | using
    | type_def
-   | internal_class
+   | class_def maybe_vars ';'
+   | template class_def maybe_vars ';'
    | FRIEND internal_class
-   | template_internal_class
+   | FRIEND template_internal_class
    | CLASS_REF
    | operator func_body { output_function(); }
    | FRIEND operator func_body { ClassInfo *tmpc = currentClass;
@@ -1406,14 +1440,13 @@ math_binary_op:  '-' { $<str>$ = "-"; } | '+' { $<str>$ = "+"; }
                | '%' { $<str>$ = "%"; } | '&' { $<str>$ = "&"; }
                | '|' { $<str>$ = "|"; } | '^' { $<str>$ = "^"; };
 
+
 /*
  * currently ignored items
  */
 
 union_def: UNION any_id '{' maybe_other '}'
          | UNION '{' maybe_other '}';
-
-using: USING maybe_other_no_semi ';';
 
 template_internal_class: template internal_class;
 
@@ -1458,6 +1491,16 @@ type_def: typedef_start type complex_var_id ';'
  | typedef_start VAR_FUNCTION ';' { };
 
 typedef_start: TYPEDEF { };
+
+
+/*
+ * The "using" keyword
+ */
+
+using: USING NAMESPACE maybe_scoped_id ';' { add_using($<str>3, 1); }
+     | USING TYPENAME maybe_scoped_id ';'  { add_using($<str>3, 0); }
+     | USING maybe_scoped_id ';' { add_using($<str>2, 0); };
+
 
 /*
  * Templates
@@ -1765,11 +1808,51 @@ var:   storage_type var_id_maybe_assign maybe_other_vars ';'
 var_id_maybe_assign: complex_var_id maybe_var_assign
      {
        unsigned int type = getStorageType();
-       if (getVarValue() && ((type & VTK_PARSE_CONST) != 0) &&
-           ((type & VTK_PARSE_INDIRECT) == 0) && getArrayNDims() == 0)
+       ValueInfo *var = (ValueInfo *)malloc(sizeof(ValueInfo));
+       vtkParse_InitValue(var);
+       var->ItemType = VTK_VARIABLE_INFO;
+       var->Access = access_level;
+
+       handle_complex_type(var, type, $<integer>1, getSig());
+
+       var->Name = vtkstrdup(getVarName());
+
+       if (getVarValue())
          {
-         add_constant(getVarName(), getVarValue(),
-                       (type & VTK_PARSE_UNQUALIFIED_TYPE), getTypeId(), 0);
+         var->Value = vtkstrdup(getVarValue());
+         }
+
+       if ((var->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_FUNCTION)
+         {
+         var->Type = var->Type;
+         }
+
+       /* Is this a constant? */
+       if (((type & VTK_PARSE_CONST) != 0) && var->Value != NULL &&
+           (((type & VTK_PARSE_INDIRECT) == 0) ||
+            ((type & VTK_PARSE_INDIRECT) == VTK_PARSE_ARRAY)))
+         {
+         var->ItemType = VTK_CONSTANT_INFO;
+         if (currentClass)
+           {
+           vtkParse_AddConstantToClass(currentClass, var);
+           }
+         else
+           {
+           vtkParse_AddConstantToNamespace(currentNamespace, var);
+           }
+         }
+       /* This is a true variable i.e. not constant */
+       else
+         {
+         if (currentClass)
+           {
+           vtkParse_AddVariableToClass(currentClass, var);
+           }
+         else
+           {
+           vtkParse_AddVariableToNamespace(currentNamespace, var);
+           }
          }
      };
 
@@ -2489,6 +2572,9 @@ void vtkParse_InitFunction(FunctionInfo *func)
   func->IsVariadic = 0;
   func->IsConst = 0;
   func->ReturnType = VTK_PARSE_VOID;
+
+  /* everything below here is legacy information, *
+   * maintained only for backwards compatibility  */
   func->ReturnClass = NULL;
   func->HaveHint = 0;
   func->HintSize = 0;
@@ -2532,6 +2618,16 @@ void vtkParse_InitEnum(EnumInfo *item)
 }
 
 /* initialize the structure */
+void vtkParse_InitUsing(UsingInfo *item)
+{
+  item->ItemType = VTK_USING_INFO;
+  item->Access = VTK_ACCESS_PUBLIC;
+  item->Name = NULL;
+  item->Comment = NULL;
+  item->Scope = NULL;
+}
+
+/* initialize the structure */
 void vtkParse_InitClass(ClassInfo *cls)
 {
   cls->ItemType = VTK_CLASS_INFO;
@@ -2548,6 +2644,7 @@ void vtkParse_InitClass(ClassInfo *cls)
   cls->NumberOfEnums = 0;
   cls->NumberOfUnions = 0;
   cls->NumberOfTypedefs = 0;
+  cls->NumberOfUsings = 0;
   cls->IsAbstract = 0;
   cls->HasDelete = 0;
 }
@@ -2568,6 +2665,7 @@ void vtkParse_InitNamespace(NamespaceInfo *name_info)
   name_info->NumberOfEnums = 0;
   name_info->NumberOfUnions = 0;
   name_info->NumberOfTypedefs = 0;
+  name_info->NumberOfUsings = 0;
   name_info->NumberOfNamespaces = 0;
 }
 
@@ -2633,6 +2731,11 @@ void vtkParse_FreeEnum(EnumInfo *enum_info)
   free(enum_info);
 }
 
+void vtkParse_FreeUsing(UsingInfo *using_info)
+{
+  free(using_info);
+}
+
 void vtkParse_FreeFunction(FunctionInfo *function_info)
 {
   unsigned long j, m;
@@ -2691,6 +2794,10 @@ void vtkParse_FreeClass(ClassInfo *class_info)
   for (j = 0; j < m; j++) { vtkParse_FreeValue(class_info->Typedefs[j]); }
   if (m > 0) { free(class_info->Typedefs); }
 
+  m = class_info->NumberOfUsings;
+  for (j = 0; j < m; j++) { vtkParse_FreeUsing(class_info->Usings[j]); }
+  if (m > 0) { free(class_info->Usings); }
+
   if (class_info->NumberOfItems > 0) { free(class_info->Items); }
 
   free(class_info);
@@ -2728,6 +2835,10 @@ void vtkParse_FreeNamespace(NamespaceInfo *namespace_info)
   for (j = 0; j < m; j++) { vtkParse_FreeValue(namespace_info->Typedefs[j]); }
   if (m > 0) { free(namespace_info->Typedefs); }
 
+  m = namespace_info->NumberOfUsings;
+  for (j = 0; j < m; j++) { vtkParse_FreeUsing(namespace_info->Usings[j]); }
+  if (m > 0) { free(namespace_info->Usings); }
+
   m = namespace_info->NumberOfNamespaces;
   for (j=0; j<m; j++) {vtkParse_FreeNamespace(namespace_info->Namespaces[j]);}
   if (m > 0) { free(namespace_info->Namespaces); }
@@ -2738,6 +2849,8 @@ void vtkParse_FreeNamespace(NamespaceInfo *namespace_info)
 /* check whether this is the class we are looking for */
 void start_class(const char *classname, int is_struct)
 {
+  ClassInfo *outerClass = currentClass;
+  pushClass();
   currentClass = (ClassInfo *)malloc(sizeof(ClassInfo));
   vtkParse_InitClass(currentClass);
   currentClass->Name = vtkstrdup(classname);
@@ -2745,7 +2858,14 @@ void start_class(const char *classname, int is_struct)
     {
     currentClass->ItemType = VTK_STRUCT_INFO;
     }
-  vtkParse_AddClassToNamespace(currentNamespace, currentClass);
+  if (outerClass)
+    {
+    vtkParse_AddClassToClass(outerClass, currentClass);
+    }
+  else
+    {
+    vtkParse_AddClassToNamespace(currentNamespace, currentClass);
+    }
 
   /* template information */
   if (currentTemplate)
@@ -2773,6 +2893,7 @@ void reject_class(const char *classname, int is_struct)
 {
   static ClassInfo static_class;
 
+  pushClass();
   currentClass = &static_class;
   currentClass->Name = vtkstrdup(classname);
   vtkParse_InitClass(currentClass);
@@ -2791,8 +2912,39 @@ void reject_class(const char *classname, int is_struct)
 /* reached the end of a class definition */
 void end_class()
 {
-  currentClass = NULL;
-  access_level = VTK_ACCESS_PUBLIC;
+  popClass();
+}
+
+/* add a using declaration or directive */
+void add_using(const char *name, int is_namespace)
+{
+  size_t i;
+  UsingInfo *item;
+
+  item = (UsingInfo *)malloc(sizeof(UsingInfo));
+  vtkParse_InitUsing(item);
+  if (is_namespace)
+    {
+    item->Name = NULL;
+    item->Scope = vtkstrdup(name);
+    }
+  else
+    {
+    i = strlen(name);
+    while (i > 0 && name[i-1] != ':') { i--; }
+    item->Name = vtkstrdup(&name[i]);
+    while (i > 0 && name[i-1] == ':') { i--; }
+    item->Scope = vtkstrndup(name, i);
+    }
+
+  if (currentClass)
+    {
+    vtkParse_AddUsingToClass(currentClass, item);
+    }
+  else
+    {
+    vtkParse_AddUsingToNamespace(currentNamespace, item);
+    }
 }
 
 /* start a new enum */
@@ -3102,6 +3254,7 @@ void handle_complex_type(
   /* copy contents of all brackets to the ArgDimensions */
   val->NumberOfDimensions = getArrayNDims();
   val->Dimensions = getArray();
+  clearArray();
 
   /* count is the product of the dimensions */
   val->Count = 0;
@@ -3496,6 +3649,16 @@ void vtkParse_AddTypedefToClass(ClassInfo *info, ValueInfo *item)
   info->Typedefs[info->NumberOfTypedefs++] = item;
 }
 
+/* Add a UsingInfo to a ClassInfo */
+void vtkParse_AddUsingToClass(ClassInfo *info, UsingInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfUsings);
+  info->Usings = (UsingInfo **)array_size_check(
+    info->Usings, sizeof(UsingInfo *), info->NumberOfUsings);
+  info->Usings[info->NumberOfUsings++] = item;
+}
+
 
 /* Add a NamespaceInfo to a NamespaceInfo */
 void vtkParse_AddNamespaceToNamespace(NamespaceInfo *info, NamespaceInfo *item)
@@ -3575,6 +3738,16 @@ void vtkParse_AddTypedefToNamespace(NamespaceInfo *info, ValueInfo *item)
   info->Typedefs = (ValueInfo **)array_size_check(
     info->Typedefs, sizeof(ValueInfo *), info->NumberOfTypedefs);
   info->Typedefs[info->NumberOfTypedefs++] = item;
+}
+
+/* Add a UsingInfo to a NamespaceInfo */
+void vtkParse_AddUsingToNamespace(NamespaceInfo *info, UsingInfo *item)
+{
+  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
+    item->ItemType, info->NumberOfUsings);
+  info->Usings = (UsingInfo **)array_size_check(
+    info->Usings, sizeof(UsingInfo *), info->NumberOfUsings);
+  info->Usings[info->NumberOfUsings++] = item;
 }
 
 

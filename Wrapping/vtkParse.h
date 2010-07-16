@@ -40,7 +40,8 @@ typedef enum _parse_item_t
   VTK_FUNCTION_INFO  = 6,
   VTK_VARIABLE_INFO  = 7,
   VTK_CONSTANT_INFO  = 8,
-  VTK_TYPEDEF_INFO   = 9
+  VTK_TYPEDEF_INFO   = 9,
+  VTK_USING_INFO     = 10
 } parse_item_t;
 
 /**
@@ -162,6 +163,18 @@ typedef struct _UnionInfo
 } UnionInfo;
 
 /**
+ * UsingInfo is for using directives (not implemented yet)
+ */
+typedef struct _UsingInfo
+{
+  parse_item_t   ItemType;
+  parse_access_t Access;
+  const char    *Name;     /* null for using whole namespace */
+  const char    *Comment;
+  const char    *Scope;    /* the namespace or class */
+} UsingInfo;
+
+/**
  * ItemInfo just contains an index
  */
 typedef struct _ItemInfo
@@ -198,6 +211,8 @@ typedef struct _ClassInfo
   UnionInfo    **Unions;
   unsigned long  NumberOfTypedefs;
   ValueInfo    **Typedefs;
+  unsigned long  NumberOfUsings;
+  UsingInfo    **Usings;
   int            IsAbstract;
   int            HasDelete;
 } ClassInfo;
@@ -227,6 +242,8 @@ typedef struct _NamespaceInfo
   UnionInfo    **Unions;
   unsigned long  NumberOfTypedefs;
   ValueInfo    **Typedefs;
+  unsigned long  NumberOfUsings;
+  UsingInfo    **Usings;
   unsigned long  NumberOfNamespaces;
   struct _NamespaceInfo **Namespaces;
 } NamespaceInfo;

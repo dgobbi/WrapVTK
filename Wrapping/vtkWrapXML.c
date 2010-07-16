@@ -209,60 +209,6 @@ void vtkWrapXML_Access(
 }
 
 /**
- * Write out a class or struct header
- */
-void vtkWrapXML_ClassHeader(FILE *fp, ClassInfo *data, int indentation)
-{
-  unsigned long i = 0;
-  unsigned long n;
-
-  fprintf(fp, "\n");
-  if (data->ItemType == VTK_STRUCT_INFO)
-    {
-    fprintf(fp, "%s<Struct>\n", indent(indentation++));
-    }
-  else
-    {
-    fprintf(fp, "%s<Class>\n", indent(indentation++));
-    }
-  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          vtkWrapXML_Quote(data->Name, 500));
-
-  vtkWrapXML_Comment(fp, data->Comment, indentation);
-
-  /* actually, vtk classes never have more than one superclass */
-  n = data->NumberOfSuperClasses;
-  for (i = 0; i < n; i++)
-    {
-    fprintf(fp, "%s<SuperClass>\n", indent(indentation++));
-    fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-            vtkWrapXML_Quote(data->SuperClasses[i], 500));
-    fprintf(fp, "%s<Access>public</Access>\n", indent(indentation));
-    fprintf(fp, "%s</SuperClass>\n", indent(--indentation));
-    }
-
-  if (data->IsAbstract)
-    {
-    fprintf(fp, "%s<Flag>abstract</Flag>\n", indent(indentation));
-    }
-}
-
-/**
- * Write out the class or struct footer
- */
-void vtkWrapXML_ClassFooter(FILE *fp, ClassInfo *data, int indentation)
-{
-  if (data->ItemType == VTK_STRUCT_INFO)
-    {
-    fprintf(fp, "%s</Struct>\n", indent(indentation++));
-    }
-  else
-    {
-    fprintf(fp, "%s</Class>\n", indent(indentation++));
-    }
-}
-
-/**
  * Write the file header
  */
 void vtkWrapXML_FileHeader(FILE *fp, const FileInfo *data, int indentation)
@@ -627,13 +573,59 @@ void vtkWrapXML_Constant(
     }
   fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
           vtkWrapXML_Quote(con->Name, 500));
-  fprintf(fp, "%s<Value>%s</Value>\n", indent(indentation),
-          vtkWrapXML_Quote(con->Value, 500));
+
+  if (con->Value)
+    {
+    fprintf(fp, "%s<Value>%s</Value>\n", indent(indentation),
+            vtkWrapXML_Quote(con->Value, 500));
+    }
 
   vtkWrapXML_Comment(fp, con->Comment, indentation);
 
   fprintf(fp, "%s</Constant>\n", indent(--indentation));
 }
+
+
+/**
+ * Print a variable
+ */
+void vtkWrapXML_Variable(
+  FILE *fp, ValueInfo *var, int inClass, int indentation)
+{
+  fprintf(fp, "\n");
+  if (inClass)
+    {
+    fprintf(fp, "%s<Member>\n", indent(indentation++));
+    vtkWrapXML_Access(fp, var->Access, indentation);
+    }
+  else
+    {
+    fprintf(fp, "%s<Variable>\n", indent(indentation++));
+    }
+
+  vtkWrapXML_Type(fp, var, indentation);
+
+  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
+          vtkWrapXML_Quote(var->Name, 500));
+
+  if (var->Value)
+    {
+    fprintf(fp, "%s<Value>%s</Value>\n", indent(indentation),
+            vtkWrapXML_Quote(var->Value, 500));
+    }
+
+  vtkWrapXML_Comment(fp, var->Comment, indentation);
+
+  if (inClass)
+    {
+    fprintf(fp, "%s</Member>\n", indent(--indentation));
+    }
+  else
+    {
+    fprintf(fp, "%s</Variable>\n", indent(--indentation));
+    }
+}
+
 
 /**
  * Print a typedef
@@ -659,6 +651,33 @@ void vtkWrapXML_Typedef(
   vtkWrapXML_Comment(fp, type->Comment, indentation);
 
   fprintf(fp, "%s</Typedef>\n", indent(--indentation));
+}
+
+/**
+ * Print a using declaration
+ */
+void vtkWrapXML_Using(
+  FILE *fp, UsingInfo *data, int indentation)
+{
+  fprintf(fp, "\n");
+  fprintf(fp, "%s<Using>\n", indent(indentation++));
+
+  vtkWrapXML_Comment(fp, data->Comment, indentation);
+
+  if (data->Name)
+    {
+    fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
+            vtkWrapXML_Quote(data->Name, 500));
+    }
+  else
+    {
+    fprintf(fp, "%s<Name>namespace</Name>\n", indent(indentation));
+    }
+
+  fprintf(fp, "%s<Scope>%s</Scope>\n", indent(indentation),
+          vtkWrapXML_Quote(data->Scope, 500));
+
+  fprintf(fp, "%s</Using>\n", indent(--indentation));
 }
 
 /**
@@ -957,6 +976,14 @@ void vtkWrapXML_MergeHelper(
   char *filename;
   unsigned long i, n;
 
+  /* Note: this method does not deal with scoping yet.
+   * "classname" might be a scoped name, in which case the
+   * part before the colon indicates the class or namespace
+   * (or combination thereof) where the class resides.
+   * Each containing namespace or class for the "merge"
+   * must be searched, taking the "using" directives that
+   * have been applied into account. */
+
   /* find out if "classname" is in the current namespace */
   n = data->NumberOfClasses;
   for (i = 0; i < n; i++)
@@ -1140,14 +1167,49 @@ void vtkWrapXML_MethodHelper(
  * Print a class as xml
  */
 void vtkWrapXML_Class(
-  FILE *fp, NamespaceInfo *data, ClassInfo *classInfo, int indentation)
+  FILE *fp, NamespaceInfo *data, ClassInfo *classInfo, int inClass,
+  int indentation)
 {
   ClassProperties *properties;
   MergeInfo *merge = NULL;
-  unsigned long i, j;
+  unsigned long i, j, n;
 
   /* start new XML section for class */
-  vtkWrapXML_ClassHeader(fp, classInfo, indentation++);
+  fprintf(fp, "\n");
+  if (classInfo->ItemType == VTK_STRUCT_INFO)
+    {
+    fprintf(fp, "%s<Struct>\n", indent(indentation++));
+    }
+  else
+    {
+    fprintf(fp, "%s<Class>\n", indent(indentation++));
+    }
+
+  if (inClass)
+    {
+    vtkWrapXML_Access(fp, classInfo->Access, indentation);
+    }
+
+  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
+          vtkWrapXML_Quote(classInfo->Name, 500));
+
+  vtkWrapXML_Comment(fp, classInfo->Comment, indentation);
+
+  /* actually, vtk classes never have more than one superclass */
+  n = classInfo->NumberOfSuperClasses;
+  for (i = 0; i < n; i++)
+    {
+    fprintf(fp, "%s<SuperClass>\n", indent(indentation++));
+    fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
+            vtkWrapXML_Quote(classInfo->SuperClasses[i], 500));
+    fprintf(fp, "%s<Access>public</Access>\n", indent(indentation));
+    fprintf(fp, "%s</SuperClass>\n", indent(--indentation));
+    }
+
+  if (classInfo->IsAbstract)
+    {
+    fprintf(fp, "%s<Flag>abstract</Flag>\n", indent(indentation));
+    }
 
   if (classInfo->Template)
     {
@@ -1176,6 +1238,11 @@ void vtkWrapXML_Class(
     j = classInfo->Items[i].Index;
     switch (classInfo->Items[i].Type)
       {
+      case VTK_VARIABLE_INFO:
+        {
+        vtkWrapXML_Variable(fp, classInfo->Variables[j], 1, indentation);
+        break;
+        }
       case VTK_CONSTANT_INFO:
         {
         vtkWrapXML_Constant(fp, classInfo->Constants[j], 1, indentation);
@@ -1197,11 +1264,19 @@ void vtkWrapXML_Class(
         vtkWrapXML_Typedef(fp, classInfo->Typedefs[j], 1, indentation);
         break;
         }
-      case VTK_NAMESPACE_INFO:
+      case VTK_USING_INFO:
+        {
+        vtkWrapXML_Using(fp, classInfo->Usings[j], indentation);
+        break;
+        }
       case VTK_CLASS_INFO:
       case VTK_STRUCT_INFO:
+        {
+        vtkWrapXML_Class(fp, data, classInfo->Classes[j], 1, indentation);
+        break;
+        }
+      case VTK_NAMESPACE_INFO:
       case VTK_UNION_INFO:
-      case VTK_VARIABLE_INFO:
         break;
       }
     }
@@ -1216,7 +1291,14 @@ void vtkWrapXML_Class(
     }
 
   /* print the class footer */
-  vtkWrapXML_ClassFooter(fp, classInfo, --indentation);
+  if (classInfo->ItemType == VTK_STRUCT_INFO)
+    {
+    fprintf(fp, "%s</Struct>\n", indent(indentation++));
+    }
+  else
+    {
+    fprintf(fp, "%s</Class>\n", indent(indentation++));
+    }
 }
 
 /* needed for vtkWrapXML_Body */
@@ -1235,6 +1317,11 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
     j = data->Items[i].Index;
     switch (data->Items[i].Type)
       {
+      case VTK_VARIABLE_INFO:
+        {
+        vtkWrapXML_Variable(fp, data->Variables[j], 0, indentation);
+        break;
+        }
       case VTK_CONSTANT_INFO:
         {
         vtkWrapXML_Constant(fp, data->Constants[j], 0, indentation);
@@ -1245,6 +1332,11 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
         vtkWrapXML_Typedef(fp, data->Typedefs[j], 0, indentation);
         break;
         }
+      case VTK_USING_INFO:
+        {
+        vtkWrapXML_Using(fp, data->Usings[j], indentation);
+        break;
+        }
       case VTK_ENUM_INFO:
         {
         vtkWrapXML_Enum(fp, data->Enums[j], 0, indentation);
@@ -1253,7 +1345,7 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
       case VTK_CLASS_INFO:
       case VTK_STRUCT_INFO:
         {
-        vtkWrapXML_Class(fp, data, data->Classes[j], indentation);
+        vtkWrapXML_Class(fp, data, data->Classes[j], 0, indentation);
         break;
         }
       case VTK_FUNCTION_INFO:
@@ -1267,7 +1359,6 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
         break;
         }
       case VTK_UNION_INFO:
-      case VTK_VARIABLE_INFO:
         break;
       }
     }
