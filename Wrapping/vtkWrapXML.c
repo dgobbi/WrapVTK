@@ -411,14 +411,8 @@ void vtkWrapXML_Type(FILE *fp, ValueInfo *val, int indentation)
     }
 
   ndims = val->NumberOfDimensions;
-  if (type == VTK_PARSE_POINTER && ndims > 0)
-    {
-    fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation),
-            val->Dimensions[0]);
-    return;
-    }
 
-  if ((type & VTK_PARSE_POINTER_LOWMASK) == VTK_PARSE_ARRAY)
+  if (ndims > 0)
     {
     for (j = 0; j < ndims; j++)
       {
