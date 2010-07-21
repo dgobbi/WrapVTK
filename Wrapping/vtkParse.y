@@ -1366,11 +1366,11 @@ class_def_item:
    | CLASS_REF
    | operator func_body { output_function(); }
    | FRIEND operator func_body { ClassInfo *tmpc = currentClass;
-     currentClass = NULL; output_function(); currentClass = tmpc; }
+     currentClass = NULL; reject_function(); currentClass = tmpc; }
    | template operator func_body { output_function(); }
    | method func_body { output_function(); }
    | FRIEND method func_body { ClassInfo *tmpc = currentClass;
-     currentClass = NULL; output_function(); currentClass = tmpc; }
+     currentClass = NULL; reject_function(); currentClass = tmpc; }
    | template method func_body { output_function(); }
    | legacy_method func_body { legacySig(); output_function(); }
    | VTK_BYTE_SWAP_DECL '(' maybe_other ')' ';'
@@ -3318,14 +3318,21 @@ void reject_function()
 /* a simple routine that updates a few variables */
 void output_function()
 {
+  size_t n;
   unsigned long i, j;
   int match;
 
   /* reject template specializations */
-  if (currentFunction->Name[strlen(currentFunction->Name)-1] == '>')
+  n = strlen(currentFunction->Name);
+  if (currentFunction->Name[n-1] == '>')
     {
-    reject_function();
-    return;
+    /* make sure there is a matching angle bracket */
+    while (n > 0 && currentFunction->Name[n-1] != '<') { n--; }
+    if (n > 0)
+      {
+      reject_function();
+      return;
+      }
     }
 
   /* static */
