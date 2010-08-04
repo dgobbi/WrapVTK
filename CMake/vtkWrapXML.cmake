@@ -78,7 +78,7 @@ MACRO(VTK_WRAP_XML TARGET XML_LIST_NAME OUTPUT_DIR SOURCES)
         ${TMP_CONCRETE}
         ${TMP_SPECIAL}
         ${TMP_HINTS}
-        "--hierarchy" "${quote}${TMP_HIERARCHY}${quote}"
+        "--types" "${quote}${TMP_HIERARCHY}${quote}"
         ${TMP_INCLUDE}
         "${quote}${TMP_INPUT}${quote}"
         "${quote}${TMP_OUTPUT}${quote}"
