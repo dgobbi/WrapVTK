@@ -967,6 +967,34 @@ const char *getTypeId()
 }
 
 /*----------------------------------------------------------------
+ * Specifically for function pointers, the scope (i.e. class) that
+ * the function is a method of.
+ */
+
+const char *pointerScopeStack[10];
+unsigned long pointerScopeDepth = 0;
+
+/* save the scope for scoped method pointers */
+void scopeSig(const char *scope)
+{
+  if (scope && scope[0] != '\0')
+    {
+    postSig(scope);
+    }
+  else
+    {
+    scope = NULL;
+    }
+  pointerScopeStack[pointerScopeDepth++] = vtkstrdup(scope);
+}
+
+/* get the scope back */
+const char *getScope()
+{
+  return pointerScopeStack[--pointerScopeDepth];
+}
+
+/*----------------------------------------------------------------
  * Function stack
  *
  * operates on: currentFunction
@@ -1884,8 +1912,11 @@ maybe_complex_var_id: maybe_var_id maybe_var_array { $<integer>$ = 0; }
      | p_or_lp_or_la maybe_indirect_maybe_var_id ')' { postSig(")"); }
        maybe_array_or_args
        {
+         const char *scope = getScope();
          unsigned int parens = add_indirection($<integer>1, $<integer>2);
          if ($<integer>5 == VTK_PARSE_FUNCTION) {
+           if (scope) { scope = vtkstrndup(scope, strlen(scope) - 2); }
+           getFunction()->Class = scope;
            $<integer>$ = (parens | VTK_PARSE_FUNCTION); }
          else if ($<integer>5 == VTK_PARSE_ARRAY) {
            $<integer>$ = add_indirection_to_array(parens); }
@@ -1896,22 +1927,25 @@ complex_var_id: var_id maybe_var_array { $<integer>$ = 0; }
      | lp_or_la maybe_indirect_var_id ')' { postSig(")"); }
        maybe_array_or_args
        {
+         const char *scope = getScope();
          unsigned int parens = add_indirection($<integer>1, $<integer>2);
          if ($<integer>5 == VTK_PARSE_FUNCTION) {
+           if (scope) { scope = vtkstrndup(scope, strlen(scope) - 2); }
+           getFunction()->Class = scope;
            $<integer>$ = (parens | VTK_PARSE_FUNCTION); }
          else if ($<integer>5 == VTK_PARSE_ARRAY) {
            $<integer>$ = add_indirection_to_array(parens); }
        };
 
-p_or_lp_or_la: '(' { postSig("("); $<integer>$ = 0; }
-        | LP { postSig("("); postSig($<str>1); postSig("*");
+p_or_lp_or_la: '(' { postSig("("); scopeSig(""); $<integer>$ = 0; }
+        | LP { postSig("("); scopeSig($<str>1); postSig("*");
                $<integer>$ = VTK_PARSE_POINTER; }
-        | LA { postSig("("); postSig($<str>1); postSig("&");
+        | LA { postSig("("); scopeSig($<str>1); postSig("&");
                $<integer>$ = VTK_PARSE_REF; };
 
-lp_or_la: LP { postSig("("); postSig($<str>1); postSig("*");
+lp_or_la: LP { postSig("("); scopeSig($<str>1); postSig("*");
                $<integer>$ = VTK_PARSE_POINTER; }
-        | LA { postSig("("); postSig($<str>1); postSig("&");
+        | LA { postSig("("); scopeSig($<str>1); postSig("&");
                $<integer>$ = VTK_PARSE_REF; };
 
 maybe_array_or_args: { $<integer>$ = 0; }
@@ -2580,6 +2614,7 @@ void vtkParse_InitFunction(FunctionInfo *func)
   func->Access = VTK_ACCESS_PUBLIC;
   func->Name = NULL;
   func->Comment = NULL;
+  func->Class = NULL;
   func->Signature = NULL;
   func->Template = NULL;
   func->NumberOfArguments = 0;
@@ -3329,7 +3364,7 @@ void handle_complex_type(
 
     /* the val type is whatever was inside the parentheses */
     clearTypeId();
-    setTypeId("function");
+    setTypeId(func->Class ? "method" : "function");
     datatype = (extra & VTK_PARSE_UNQUALIFIED_TYPE);
     }
   else if ((extra & VTK_PARSE_INDIRECT) == VTK_PARSE_BAD_INDIRECT)
@@ -3563,6 +3598,7 @@ void output_function()
       currentClass->HasDelete = 1;
       }
 
+    currentFunction->Class = vtkstrdup(currentClass->Name);
     vtkParse_AddFunctionToClass(currentClass, currentFunction);
 
     currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));

@@ -397,9 +397,20 @@ void vtkWrapXML_Type(FILE *fp, ValueInfo *val, int indentation)
 
   if (val->Function)
     {
-    fprintf(fp, "%s<Function>\n", indent(indentation++));
-    vtkWrapXML_FunctionCommon(fp, val->Function, 1, indentation);
-    fprintf(fp, "%s</Function>\n", indent(--indentation));
+    if (val->Function->Class)
+      {
+      fprintf(fp, "%s<Method>\n", indent(indentation++));
+      fprintf(fp, "%s<ClassName>%s</ClassName>\n", indent(indentation),
+              val->Function->Class);
+      vtkWrapXML_FunctionCommon(fp, val->Function, 1, indentation);
+      fprintf(fp, "%s</Method>\n", indent(--indentation));
+      }
+    else
+      {
+      fprintf(fp, "%s<Function>\n", indent(indentation++));
+      vtkWrapXML_FunctionCommon(fp, val->Function, 1, indentation);
+      fprintf(fp, "%s</Function>\n", indent(--indentation));
+      }
     }
 
   type = (type & VTK_PARSE_POINTER_MASK);

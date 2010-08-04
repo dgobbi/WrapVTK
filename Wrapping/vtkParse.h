@@ -113,6 +113,7 @@ typedef struct _FunctionInfo
   parse_access_t Access;
   const char    *Name;
   const char    *Comment;
+  const char    *Class;       /* class name for methods */
   const char    *Signature;   /* function signature as text */
   TemplateArgs  *Template;    /* template args, or NULL */
   unsigned long  NumberOfArguments;
@@ -168,7 +169,7 @@ typedef struct _UsingInfo
 typedef struct _ItemInfo
 {
   parse_item_t   Type;
-  int            Index;
+  unsigned long  Index;
 } ItemInfo;
 
 /**
