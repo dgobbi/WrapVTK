@@ -189,6 +189,10 @@ static int skip_ahead_until(const char *text);
      return(CLASS_REF);
      };
 
+("friend"[\t\n\r ]+)?("template"[\t\n\r ]*"<"[^>]*">"[\t\n\r ]*)?"union"[\t\n\r ]+[a-zA-Z_][a-zA-Z0-9_]*("::"[a-zA-Z_][a-zA-Z0-9_]*)*[\t\n\r ]*";" {
+     return(CLASS_REF);
+     };
+
 "void"[\t\n\r ]*"("[\t\n\r ]*"*"[a-zA-Z0-9_]*[\t\n\r ]*")"[\t\n\r ]*"("[\t\n\r ]*"void"[\t\n\r ]*"*"[\n\t ]*")" {
      size_t i = 0; size_t j = 0;
      while (yytext[j] != '*') { i++; j++; }

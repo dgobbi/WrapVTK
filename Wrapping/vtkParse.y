@@ -132,8 +132,8 @@ parse_access_t access_level = VTK_ACCESS_PUBLIC;
 int            IgnoreBTX = 0;
 
 /* helper functions */
-void start_class(const char *classname, int is_struct);
-void reject_class(const char *classname, int is_struct);
+void start_class(const char *classname, int is_struct_or_union);
+void reject_class(const char *classname, int is_struct_or_union);
 void end_class();
 void output_function(void);
 void reject_function(void);
@@ -1299,7 +1299,6 @@ strt: | strt
 file_item:
      var
    | enum_def maybe_vars ';'
-   | union_def maybe_vars ';'
    | using
    | namespace
    | extern
@@ -1347,8 +1346,12 @@ class_def: CLASS any_id { start_class($<str>2, 0); }
     optional_scope '{' class_def_body '}' { end_class(); }
   | STRUCT any_id '<' types '>' { reject_class($<str>2, 1); }
     optional_scope '{' class_def_body '}' { end_class(); }
-  | STRUCT '{' maybe_other '}';
-
+  | STRUCT '{' maybe_other '}'
+  | UNION any_id { start_class($<str>2, 2); }
+    optional_scope '{' class_def_body '}' { end_class(); }
+  | UNION any_id '<' types '>' { reject_class($<str>2, 2); }
+    optional_scope '{' class_def_body '}' { end_class(); }
+  | UNION '{' maybe_other '}';
 
 class_def_body:
     | class_def_body
@@ -1359,7 +1362,6 @@ class_def_body:
 class_def_item:
      var
    | enum_def maybe_vars ';'
-   | union_def maybe_vars ';'
    | using
    | type_def
    | class_def maybe_vars ';'
@@ -1448,14 +1450,13 @@ math_binary_op:  '-' { $<str>$ = "-"; } | '+' { $<str>$ = "+"; }
  * currently ignored items
  */
 
-union_def: UNION any_id '{' maybe_other '}'
-         | UNION '{' maybe_other '}';
-
 template_internal_class: template internal_class;
 
 internal_class: CLASS any_id internal_class_body
               | STRUCT any_id internal_class_body
-              | STRUCT internal_class_body;
+              | STRUCT internal_class_body
+              | UNION any_id internal_class_body
+              | UNION internal_class_body;
 
 internal_class_body: ';'
     | '{' maybe_other '}' maybe_other_no_semi ';'
@@ -1490,7 +1491,6 @@ type_def: typedef_start type complex_var_id ';'
     }
  | typedef_start class_def maybe_indirect_id ';' { }
  | typedef_start enum_def maybe_indirect_id ';' { }
- | typedef_start union_def maybe_indirect_id ';' { }
  | typedef_start VAR_FUNCTION ';' { };
 
 typedef_start: TYPEDEF { };
@@ -2071,12 +2071,8 @@ type_red2:
    type_simple { $<integer>$ = $<integer>1;}
  | CLASS type_id { $<integer>$ = $<integer>2; }
  | STRUCT type_id { $<integer>$ = $<integer>2; }
- | UNION ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | UNION VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | UNION QT_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | ENUM ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | ENUM VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | ENUM QT_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; };
+ | UNION type_id { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | ENUM type_id { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; };
 
 type_simple:
    type_primitive { $<integer>$ = $<integer>1;}
@@ -2666,7 +2662,6 @@ void vtkParse_InitClass(ClassInfo *cls)
   cls->NumberOfConstants = 0;
   cls->NumberOfVariables = 0;
   cls->NumberOfEnums = 0;
-  cls->NumberOfUnions = 0;
   cls->NumberOfTypedefs = 0;
   cls->NumberOfUsings = 0;
   cls->IsAbstract = 0;
@@ -2687,7 +2682,6 @@ void vtkParse_InitNamespace(NamespaceInfo *name_info)
   name_info->NumberOfConstants = 0;
   name_info->NumberOfVariables = 0;
   name_info->NumberOfEnums = 0;
-  name_info->NumberOfUnions = 0;
   name_info->NumberOfTypedefs = 0;
   name_info->NumberOfUsings = 0;
   name_info->NumberOfNamespaces = 0;
@@ -2737,17 +2731,6 @@ void vtkParse_FreeValue(ValueInfo *value_info)
     }
 
   free(value_info);
-}
-
-void vtkParse_FreeUnion(UnionInfo *union_info)
-{
-  unsigned long j, m;
-
-  m = union_info->NumberOfMembers;
-  for (j = 0; j < m; j++) { vtkParse_FreeValue(union_info->Members[j]); }
-  if (m > 0) { free(union_info->Members); }
-
-  free(union_info);
 }
 
 void vtkParse_FreeEnum(EnumInfo *enum_info)
@@ -2810,10 +2793,6 @@ void vtkParse_FreeClass(ClassInfo *class_info)
   for (j = 0; j < m; j++) { vtkParse_FreeEnum(class_info->Enums[j]); }
   if (m > 0) { free(class_info->Enums); }
 
-  m = class_info->NumberOfUnions;
-  for (j = 0; j < m; j++) { vtkParse_FreeUnion(class_info->Unions[j]); }
-  if (m > 0) { free(class_info->Unions); }
-
   m = class_info->NumberOfTypedefs;
   for (j = 0; j < m; j++) { vtkParse_FreeValue(class_info->Typedefs[j]); }
   if (m > 0) { free(class_info->Typedefs); }
@@ -2851,10 +2830,6 @@ void vtkParse_FreeNamespace(NamespaceInfo *namespace_info)
   for (j = 0; j < m; j++) { vtkParse_FreeEnum(namespace_info->Enums[j]); }
   if (m > 0) { free(namespace_info->Enums); }
 
-  m = namespace_info->NumberOfUnions;
-  for (j = 0; j < m; j++) { vtkParse_FreeUnion(namespace_info->Unions[j]); }
-  if (m > 0) { free(namespace_info->Unions); }
-
   m = namespace_info->NumberOfTypedefs;
   for (j = 0; j < m; j++) { vtkParse_FreeValue(namespace_info->Typedefs[j]); }
   if (m > 0) { free(namespace_info->Typedefs); }
@@ -2871,17 +2846,22 @@ void vtkParse_FreeNamespace(NamespaceInfo *namespace_info)
 }
 
 /* check whether this is the class we are looking for */
-void start_class(const char *classname, int is_struct)
+void start_class(const char *classname, int is_struct_or_union)
 {
   ClassInfo *outerClass = currentClass;
   pushClass();
   currentClass = (ClassInfo *)malloc(sizeof(ClassInfo));
   vtkParse_InitClass(currentClass);
   currentClass->Name = vtkstrdup(classname);
-  if (is_struct)
+  if (is_struct_or_union == 1)
     {
     currentClass->ItemType = VTK_STRUCT_INFO;
     }
+  if (is_struct_or_union == 2)
+    {
+    currentClass->ItemType = VTK_UNION_INFO;
+    }
+
   if (outerClass)
     {
     vtkParse_AddClassToClass(outerClass, currentClass);
@@ -2902,7 +2882,7 @@ void start_class(const char *classname, int is_struct)
   currentClass->Comment = vtkstrdup(getComment());
 
   access_level = VTK_ACCESS_PRIVATE;
-  if (is_struct)
+  if (is_struct_or_union)
     {
     access_level = VTK_ACCESS_PUBLIC;
     }
@@ -2913,7 +2893,7 @@ void start_class(const char *classname, int is_struct)
 }
 
 /* reject the class */
-void reject_class(const char *classname, int is_struct)
+void reject_class(const char *classname, int is_struct_or_union)
 {
   static ClassInfo static_class;
 
@@ -2923,7 +2903,7 @@ void reject_class(const char *classname, int is_struct)
   vtkParse_InitClass(currentClass);
 
   access_level = VTK_ACCESS_PRIVATE;
-  if (is_struct)
+  if (is_struct_or_union)
     {
     access_level = VTK_ACCESS_PUBLIC;
     }
@@ -3770,16 +3750,6 @@ void vtkParse_AddEnumToClass(ClassInfo *info, EnumInfo *item)
   info->Enums[info->NumberOfEnums++] = item;
 }
 
-/* Add a UnionInfo to a ClassInfo */
-void vtkParse_AddUnionToClass(ClassInfo *info, UnionInfo *item)
-{
-  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
-    item->ItemType, info->NumberOfUnions);
-  info->Unions = (UnionInfo **)array_size_check(
-    info->Unions, sizeof(UnionInfo *), info->NumberOfUnions);
-  info->Unions[info->NumberOfUnions++] = item;
-}
-
 /* Add a Constant ValueInfo to a ClassInfo */
 void vtkParse_AddConstantToClass(ClassInfo *info, ValueInfo *item)
 {
@@ -3859,16 +3829,6 @@ void vtkParse_AddEnumToNamespace(NamespaceInfo *info, EnumInfo *item)
   info->Enums = (EnumInfo **)array_size_check(
     info->Enums, sizeof(EnumInfo *), info->NumberOfEnums);
   info->Enums[info->NumberOfEnums++] = item;
-}
-
-/* Add a UnionInfo to a NamespaceInfo */
-void vtkParse_AddUnionToNamespace(NamespaceInfo *info, UnionInfo *item)
-{
-  vtkParse_AddItemToArray(&info->Items, &info->NumberOfItems,
-    item->ItemType, info->NumberOfUnions);
-  info->Unions = (UnionInfo **)array_size_check(
-    info->Unions, sizeof(UnionInfo *), info->NumberOfUnions);
-  info->Unions[info->NumberOfUnions++] = item;
 }
 
 /* Add a Constant ValueInfo to a NamespaceInfo */

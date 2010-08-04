@@ -65,7 +65,6 @@ void vtkParse_AddItemToArray(
 void vtkParse_AddClassToClass(ClassInfo *info, ClassInfo *item);
 void vtkParse_AddFunctionToClass(ClassInfo *info, FunctionInfo *item);
 void vtkParse_AddEnumToClass(ClassInfo *info, EnumInfo *item);
-void vtkParse_AddUnionToClass(ClassInfo *info, UnionInfo *item);
 void vtkParse_AddConstantToClass(ClassInfo *info, ValueInfo *item);
 void vtkParse_AddVariableToClass(ClassInfo *info, ValueInfo *item);
 void vtkParse_AddTypedefToClass(ClassInfo *info, ValueInfo *item);
@@ -74,7 +73,6 @@ void vtkParse_AddNamespaceToNamespace(NamespaceInfo *info,NamespaceInfo *item);
 void vtkParse_AddClassToNamespace(NamespaceInfo *info, ClassInfo *item);
 void vtkParse_AddFunctionToNamespace(NamespaceInfo *info, FunctionInfo *item);
 void vtkParse_AddEnumToNamespace(NamespaceInfo *info, EnumInfo *item);
-void vtkParse_AddUnionToNamespace(NamespaceInfo *info, UnionInfo *item);
 void vtkParse_AddConstantToNamespace(NamespaceInfo *info, ValueInfo *item);
 void vtkParse_AddVariableToNamespace(NamespaceInfo *info, ValueInfo *item);
 void vtkParse_AddTypedefToNamespace(NamespaceInfo *info, ValueInfo *item);

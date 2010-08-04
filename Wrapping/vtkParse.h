@@ -151,19 +151,6 @@ typedef struct _EnumInfo
 } EnumInfo;
 
 /**
- * UnionInfo is for unions (not implemented yet)
- */
-typedef struct _UnionInfo
-{
-  parse_item_t   ItemType;
-  parse_access_t Access;
-  const char    *Name;
-  const char    *Comment;
-  unsigned long  NumberOfMembers;
-  ValueInfo    **Members;
-} UnionInfo;
-
-/**
  * UsingInfo is for using directives (not implemented yet)
  */
 typedef struct _UsingInfo
@@ -185,7 +172,7 @@ typedef struct _ItemInfo
 } ItemInfo;
 
 /**
- * ClassInfo is for classes and structs
+ * ClassInfo is for classes, structs, and unions
  */
 typedef struct _ClassInfo
 {
@@ -208,8 +195,6 @@ typedef struct _ClassInfo
   ValueInfo    **Variables;
   unsigned long  NumberOfEnums;
   EnumInfo     **Enums;
-  unsigned long  NumberOfUnions;
-  UnionInfo    **Unions;
   unsigned long  NumberOfTypedefs;
   ValueInfo    **Typedefs;
   unsigned long  NumberOfUsings;
@@ -239,8 +224,6 @@ typedef struct _NamespaceInfo
   ValueInfo    **Variables;
   unsigned long  NumberOfEnums;
   EnumInfo     **Enums;
-  unsigned long  NumberOfUnions;
-  UnionInfo    **Unions;
   unsigned long  NumberOfTypedefs;
   ValueInfo    **Typedefs;
   unsigned long  NumberOfUsings;

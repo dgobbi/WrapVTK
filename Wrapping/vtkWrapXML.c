@@ -1179,6 +1179,10 @@ void vtkWrapXML_Class(
     {
     fprintf(fp, "%s<Struct>\n", indent(indentation++));
     }
+  else if (classInfo->ItemType == VTK_UNION_INFO)
+    {
+    fprintf(fp, "%s<Union>\n", indent(indentation++));
+    }
   else
     {
     fprintf(fp, "%s<Class>\n", indent(indentation++));
@@ -1270,12 +1274,12 @@ void vtkWrapXML_Class(
         }
       case VTK_CLASS_INFO:
       case VTK_STRUCT_INFO:
+      case VTK_UNION_INFO:
         {
         vtkWrapXML_Class(fp, data, classInfo->Classes[j], 1, indentation);
         break;
         }
       case VTK_NAMESPACE_INFO:
-      case VTK_UNION_INFO:
         break;
       }
     }
@@ -1293,6 +1297,10 @@ void vtkWrapXML_Class(
   if (classInfo->ItemType == VTK_STRUCT_INFO)
     {
     fprintf(fp, "%s</Struct>\n", indent(indentation++));
+    }
+  else if (classInfo->ItemType == VTK_UNION_INFO)
+    {
+    fprintf(fp, "%s</Union>\n", indent(indentation++));
     }
   else
     {
@@ -1343,6 +1351,7 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
         }
       case VTK_CLASS_INFO:
       case VTK_STRUCT_INFO:
+      case VTK_UNION_INFO:
         {
         vtkWrapXML_Class(fp, data, data->Classes[j], 0, indentation);
         break;
@@ -1357,8 +1366,6 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
         vtkWrapXML_Namespace(fp, data->Namespaces[j], indentation);
         break;
         }
-      case VTK_UNION_INFO:
-        break;
       }
     }
 }
