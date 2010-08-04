@@ -144,7 +144,10 @@ static int skip_ahead_until(const char *text);
             yytext[j] == '_') { j++; }
      name = vtkstrndup(&yytext[i], j-i);
      while (yytext[j] == ' ' || yytext[j] == '\t') { j++; }
-     i = yyleng;
+     for (i = j; i < (size_t)yyleng; i++)
+       {
+       if (yytext[i] == '/' && (yytext[i+1] == '*' || yytext[i+1] == '/')) { break; }
+       }
      while (i > 0 && (yytext[i-1] == '\n' || yytext[i-1] == '\r' ||
                       yytext[i-1] == '\t' || yytext[i-1] == ' ')) { i--; }
      if (i > j)
@@ -292,6 +295,12 @@ static int skip_ahead_until(const char *text);
 "size_t"        return(SIZE_T);
 "ssize_t"       return(SSIZE_T);
 
+"Q_OBJECT"                     ;
+"public"[\t\n\r ]*"slots"/:    return(PUBLIC);
+"private"[\t\n\r ]*"slots"/:   return(PRIVATE);
+"protected"[\t\n\r ]*"slots"/: return(PROTECTED);
+"signals"/:                    return(PROTECTED);
+
 "class"         return(CLASS);
 "struct"        return(STRUCT);
 "public"        return(PUBLIC);
@@ -314,6 +323,23 @@ static int skip_ahead_until(const char *text);
 "using"         return(USING);
 "new"           return(NEW);
 "delete"        return(DELETE);
+"explicit"      return(EXPLICIT);
+
+"auto"          ;
+"register"      ;
+"volatile"      ;
+
+"and"           return(OP_LOGIC_AND);
+"and_eq"        return(OP_AND_EQ);
+"or"            return(OP_LOGIC_OR);
+"or_eq"         return(OP_OR_EQ);
+"not"           return('!');
+"not_eq"        return(OP_LOGIC_NEQ);
+"xor"           return('^');
+"xor_eq"        return(OP_XOR_EQ);
+"bitand"        return('&');
+"bitor"         return('|');
+"compl"         return('~');
 
 "vtkFloatingPointType" return(DOUBLE);
 "vtkIdType"            return(IdType);
@@ -409,6 +435,9 @@ static int skip_ahead_until(const char *text);
 
 "vtk"[0-9a-zA-Z_]* { yylval.str = vtkstrndup(yytext, yyleng);
                      return(VTK_ID); }
+
+"Q"[A-Z][0-9a-zA-Z_]* { yylval.str = vtkstrndup(yytext, yyleng);
+                     return(QT_ID); }
 
 [a-zA-Z_][0-9a-zA-Z_]*  { yylval.str = vtkstrndup(yytext, yyleng);
                           return(ID); }

@@ -190,6 +190,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
           {
           break;
           }
+        i++;
         }
       }
 

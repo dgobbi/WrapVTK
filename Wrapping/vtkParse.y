@@ -1215,6 +1215,7 @@ unsigned int add_indirection_to_array(unsigned int type)
 %token VTK_LEGACY
 %token NEW
 %token DELETE
+%token EXPLICIT
 %token OP_LSHIFT_EQ
 %token OP_RSHIFT_EQ
 %token OP_LSHIFT
@@ -1243,6 +1244,7 @@ unsigned int add_indirection_to_array(unsigned int type)
 %token DOUBLE_COLON
 %token <str> LP
 %token <str> LA
+%token <str> QT_ID
 
 /* type tokens */
 %token <str> StdString
@@ -1316,6 +1318,7 @@ file_item:
    | class_id ';'
    | ID '(' maybe_other ')'
    | VTK_ID '(' maybe_other ')'
+   | QT_ID '(' maybe_other ')'
    | ';';
 
 /*
@@ -1414,7 +1417,8 @@ enum_item: any_id {add_enum($<str>1, NULL);}
          | any_id '=' integer_expression {add_enum($<str>1, $<str>3);};
 
 integer_value: integer_literal {postSig($<str>1);}
-             | any_id | scoped_id | templated_id;
+             | any_id {$<str>$ = vtkstrdup(add_const_scope($<str>1));}
+             | scoped_id | templated_id;
 
 integer_literal: ZERO | INT_LITERAL | OCT_LITERAL | HEX_LITERAL | CHAR_LITERAL;
 
@@ -1439,7 +1443,6 @@ math_binary_op:  '-' { $<str>$ = "-"; } | '+' { $<str>$ = "+"; }
                | '*' { $<str>$ = "*"; } | '/' { $<str>$ = "/"; }
                | '%' { $<str>$ = "%"; } | '&' { $<str>$ = "&"; }
                | '|' { $<str>$ = "|"; } | '^' { $<str>$ = "^"; };
-
 
 /*
  * currently ignored items
@@ -1589,6 +1592,13 @@ method: '~' destructor {openSig(); preSig("~"); closeSig();}
          }
       | constructor
       | INLINE constructor
+      | explicit_mod constructor
+         {
+         openSig();
+         preSig("explicit ");
+         closeSig();
+         currentFunction->IsExplicit = 1;
+         }
       | storage_type func
       | VIRTUAL storage_type func
          {
@@ -1597,6 +1607,8 @@ method: '~' destructor {openSig(); preSig("~"); closeSig();}
          closeSig();
          currentFunction->IsVirtual = 1;
          };
+
+explicit_mod: EXPLICIT | INLINE EXPLICIT | EXPLICIT INLINE;
 
 scoped_operator: class_id DOUBLE_COLON typecast_op_func
       | storage_type scope op_func;
@@ -1937,6 +1949,7 @@ array_size: {pushArraySize("");}
  */
 
 any_id: VTK_ID {postSig($<str>1);}
+     | QT_ID {postSig($<str>1);}
      | ID {postSig($<str>1);}
      | ISTREAM {postSig($<str>1);}
      | OSTREAM {postSig($<str>1);}
@@ -1986,12 +1999,16 @@ templated_id:
       postSig(">"); $<str>$ = vtkstrdup(copySig()); clearTypeId();}
  | ID '<' { markSig(); postSig($<str>1); postSig("<");} types '>'
      {chopSig(); if (getSig()[strlen(getSig())-1] == '>') { postSig(" "); }
+      postSig(">"); $<str>$ = vtkstrdup(copySig()); clearTypeId();}
+ | QT_ID '<' { markSig(); postSig($<str>1); postSig("<");} types '>'
+     {chopSig(); if (getSig()[strlen(getSig())-1] == '>') { postSig(" "); }
       postSig(">"); $<str>$ = vtkstrdup(copySig()); clearTypeId();};
 
 types: type | type ',' {postSig(", ");} types;
 
 maybe_scoped_id: VTK_ID {postSig($<str>1);}
                | ID {postSig($<str>1);}
+               | QT_ID {postSig($<str>1);}
                | ISTREAM {postSig($<str>1);}
                | OSTREAM {postSig($<str>1);}
                | StdString {postSig($<str>1);}
@@ -2010,7 +2027,8 @@ scoped_id: class_id DOUBLE_COLON maybe_scoped_id
              preScopeSig("");
            };
 
-class_id: ID | VTK_ID | ISTREAM | OSTREAM | StdString | UnicodeString;
+class_id: ID | QT_ID | VTK_ID | ISTREAM | OSTREAM
+        | StdString | UnicodeString;
 
 
 /* &          is VTK_PARSE_REF
@@ -2055,8 +2073,10 @@ type_red2:
  | STRUCT type_id { $<integer>$ = $<integer>2; }
  | UNION ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
  | UNION VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | UNION QT_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
  | ENUM ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
- | ENUM VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; };
+ | ENUM VTK_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; }
+ | ENUM QT_ID { typeSig($<str>2); $<integer>$ = VTK_PARSE_UNKNOWN; };
 
 type_simple:
    type_primitive { $<integer>$ = $<integer>1;}
@@ -2069,6 +2089,7 @@ type_id:
  | ISTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_ISTREAM; }
  | ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
  | VTK_ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_OBJECT; }
+ | QT_ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_OBJECT; };
 
 type_primitive:
   VOID   { typeSig("void"); $<integer>$ = VTK_PARSE_VOID;} |
@@ -2173,6 +2194,8 @@ literal2:   ZERO {$<str>$ = $<str>1; postSig($<str>1);}
           | ID {$<str>$ = vtkstrdup(add_const_scope($<str>1));
                 postSig($<str>1);}
           | VTK_ID {$<str>$ = vtkstrdup(add_const_scope($<str>1));
+                postSig($<str>1);}
+          | QT_ID {$<str>$ = vtkstrdup(add_const_scope($<str>1));
                 postSig($<str>1);};
 
 /*
@@ -2527,7 +2550,7 @@ other_stuff_no_semi : OTHER | braces | parens | brackets | TYPEDEF
    | STRING_LITERAL | CLASS_REF | CONST | CONST_PTR | CONST_EQUAL | STRUCT
    | OPERATOR | STATIC | INLINE | VIRTUAL | ENUM | UNION | TYPENAME
    | ZERO | VAR_FUNCTION | ELLIPSIS | PUBLIC | PROTECTED | PRIVATE
-   | NAMESPACE | USING | EXTERN | ID | VTK_ID ;
+   | NAMESPACE | USING | EXTERN | ID | VTK_ID | QT_ID ;
 
 braces: '{' maybe_other '}';
 brackets: '[' maybe_other ']';
@@ -2571,6 +2594,7 @@ void vtkParse_InitFunction(FunctionInfo *func)
   func->IsOperator = 0;
   func->IsVariadic = 0;
   func->IsConst = 0;
+  func->IsExplicit = 0;
   func->ReturnType = VTK_PARSE_VOID;
 
   /* everything below here is legacy information, *
@@ -3025,6 +3049,130 @@ void add_enum(const char *name, const char *value)
   add_constant(name, currentEnumValue, VTK_PARSE_INT, currentEnumName, 2);
 }
 
+/* for a macro constant, guess the constant type, doesn't do any math */
+unsigned int guess_constant_type(const char *valstring)
+{
+  unsigned int valtype = 0;
+  size_t k;
+  unsigned long i;
+
+  if (valstring == NULL || valstring[0] == '\0')
+    {
+    valtype = 0;
+    }
+  else if (strcmp(valstring, "true") == 0 || strcmp(valstring, "false") == 0)
+    {
+    valtype = VTK_PARSE_BOOL;
+    }
+  else if (valstring[0] == '_' ||
+           (valstring[0] >= 'a' && valstring[0] <= 'z') ||
+           (valstring[0] >= 'A' && valstring[0] <= 'Z'))
+    {
+    NamespaceInfo *scope = currentNamespace;
+    if (namespaceDepth > 0)
+      {
+      scope = namespaceStack[0];
+      }
+
+    for (i = 0; i < scope->NumberOfConstants; i++)
+      {
+      if (strcmp(scope->Constants[i]->Name, valstring) == 0)
+        {
+        valtype = scope->Constants[i]->Type;
+        }
+      }
+    }
+  else if (valstring[0] == '\"')
+    {
+    valtype = VTK_PARSE_CHAR_PTR;
+    }
+  else if (valstring[0] == '\'')
+    {
+    valtype = VTK_PARSE_CHAR;
+    }
+  else if (valstring[0] == '-' || valstring[0] == '+' ||
+           (valstring[0] >= '0' && valstring[0] <= '9'))
+    {
+    k = 0;
+    if (valstring[0] == '-' || valstring[0] == '+')
+      {
+      k++;
+      while (valstring[k] == ' ' || valstring[k] == '\t') { k++; }
+      }
+    if (valstring[k] >= '0' && valstring[k] <= '9')
+      {
+     /* guess "int" first */
+      valtype = VTK_PARSE_INT;
+
+      if (valstring[k+1] == 'x' || valstring[k+1] == 'X')
+        {
+        k += 2;
+        while ((valstring[k] >= '0' && valstring[k] <= '9') ||
+               (valstring[k] >= 'a' && valstring[k] <= 'f') ||
+               (valstring[k] >= 'A' && valstring[k] <= 'F'))
+          {
+          k++;
+          }
+        }
+      else
+        {
+        while ((valstring[k] >= '0' && valstring[k] <= '9') ||
+               valstring[k] == '.' ||
+               valstring[k] == 'e' || valstring[k] == 'E' ||
+               valstring[k] == '-' || valstring[k] == '+')
+          {
+          if (valstring[k] == '.' ||
+              valstring[k] == 'e' || valstring[k] == 'E')
+            {
+            valtype = VTK_PARSE_DOUBLE;
+            }
+          k++;
+          }
+        }
+
+      /* look for type suffixes */
+      if (valtype == VTK_PARSE_DOUBLE)
+        {
+        if (valstring[k] == 'f')
+          {
+          valtype = VTK_PARSE_FLOAT;
+          }
+        }
+      else
+        {
+        while (valstring[k] != '\0')
+          {
+          if (valstring[k] == 'u' || valstring[k] == 'U')
+            {
+            valtype = (valtype | VTK_PARSE_UNSIGNED);
+            }
+          else if (valstring[k] == 'l' || valstring[k] == 'L')
+            {
+            if (valstring[k+1] == 'l' || valstring[k+1] == 'L')
+              {
+              k++;
+              valtype = ((valtype & ~VTK_PARSE_UNSIGNED) | VTK_PARSE_LONG_LONG);
+              }
+            else
+              {
+              valtype = ((valtype & ~VTK_PARSE_UNSIGNED) | VTK_PARSE_LONG);
+              }
+            }
+          else if (valstring[k] == 'i' && valstring[k+1] == '6' &&
+                   valstring[k+2] == '4')
+            {
+            k += 2;
+            valtype = ((valtype & ~VTK_PARSE_UNSIGNED) | VTK_PARSE___INT64);
+            }
+          k++;
+          }
+        }
+      }
+    }
+
+  return valtype;
+}
+
 /* add a constant to the current class or namespace */
 void add_constant(const char *name, const char *value,
                   unsigned int type, const char *typeclass, int flag)
@@ -3039,6 +3187,7 @@ void add_constant(const char *name, const char *value,
     {
     con->Class = vtkstrdup(typeclass);
     }
+
   if (flag == 2)
     {
     con->IsEnum = 1;
@@ -3047,11 +3196,16 @@ void add_constant(const char *name, const char *value,
   if (flag == 1)
     {
     con->Access = VTK_ACCESS_PUBLIC;
+    if (con->Type == 0)
+      {
+      con->Type = guess_constant_type(con->Value);
+      }
     vtkParse_AddConstantToNamespace(data.Contents, con);
     }
   else if (currentClass)
     {
     con->Access = access_level;
+
     vtkParse_AddConstantToClass(currentClass, con);
     }
   else

@@ -845,6 +845,11 @@ void vtkWrapXML_ClassMethod(
     fprintf(fp, "%s<Flag>pure</Flag>\n", indent(indentation));
     }
 
+  if (func->IsExplicit)
+    {
+    fprintf(fp, "%s<Flag>explicit</Flag>\n", indent(indentation));
+    }
+
   if (data == NULL || !(strcmp(data->Name, func->Name) == 0 ||
       (func->Name[0] == '~' && strcmp(data->Name, &func->Name[1]) == 0)))
     {
