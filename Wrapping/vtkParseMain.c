@@ -39,6 +39,7 @@ extern void vtkParseOutput(FILE *, FileInfo *);
 static int check_options(int argc, char *argv[])
 {
   int i;
+  size_t j;
 
   options.InputFileName = NULL;
   options.OutputFileName = NULL;
@@ -48,7 +49,6 @@ static int check_options(int argc, char *argv[])
   options.IsSpecialObject = 0;
   options.HierarchyFileName = 0;
   options.HintFileName = 0;
-  options.NumberOfIncludeDirectories = 0;
 
   for (i = 1; i < argc && argv[i][0] == '-'; i++)
     {
@@ -93,9 +93,28 @@ static int check_options(int argc, char *argv[])
         {
         return -1;
         }
-      vtkParse_AddStringToArray(&options.IncludeDirectories,
-                                &options.NumberOfIncludeDirectories,
-                                argv[i]);
+      vtkParse_IncludeDirectory(argv[i]);
+      }
+    else if (strcmp(argv[i], "-D") == 0)
+      {
+      i++;
+      j = 0;
+      if (i >= argc || argv[i][0] == '-')
+        {
+        return -1;
+        }
+      while (argv[i][j] != '\0' && argv[i][j] != '=') { j++; }
+      if (argv[i][j] == '=') { j++; }
+      vtkParse_DefineMacro(argv[i], &argv[i][j]);
+      }
+    else if (strcmp(argv[i], "-U") == 0)
+      {
+      i++;
+      if (i >= argc || argv[i][0] == '-')
+        {
+        return -1;
+        }
+      vtkParse_UndefineMacro(argv[i]);
       }
     }
 
@@ -106,54 +125,6 @@ static int check_options(int argc, char *argv[])
 OptionInfo *vtkParse_GetCommandLineOptions()
 {
   return &options;
-}
-
-/* Find a filename, given the "-I" options from the command line */
-char *vtkParse_FindPath(const char *filename)
-{
-  unsigned long i;
-  struct stat fs;
-  char filepath[512];
-  const char *directory;
-  char *output;
-  const char *sep;
-
-  for (i = 0; i <= options.NumberOfIncludeDirectories; i++)
-    {
-    if (i == 0)
-      {
-      /* try first with no path */
-      strcpy(filepath, filename);
-      }
-    else
-      {
-      directory = options.IncludeDirectories[i-1];
-      sep = "/";
-      if (directory[strlen(directory)-1] == sep[0])
-        {
-        sep = "";
-        }
-      sprintf(filepath, "%s%s%s", directory, sep, filename);
-      }
-
-    if (stat(filepath, &fs) == 0)
-      {
-      output = (char *)malloc(strlen(filepath)+1);
-      strcpy(output, filepath);
-      return output;
-      }
-    }
-
-  return NULL;
-}
-
-/* Free a path returned by FindPath */
-void vtkParse_FreePath(char *filepath)
-{
-  if (filepath)
-    {
-    free(filepath);
-    }
 }
 
 int main(int argc, char *argv[])

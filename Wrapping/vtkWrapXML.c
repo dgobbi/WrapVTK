@@ -983,7 +983,7 @@ void vtkWrapXML_MergeHelper(
   ClassInfo *cinfo = NULL;
   FileInfo *finfo = NULL;
   const char *header;
-  char *filename;
+  const char *filename;
   unsigned long i, n;
 
   /* Note: this method does not deal with scoping yet.
@@ -1012,7 +1012,7 @@ void vtkWrapXML_MergeHelper(
       {
       return;
       }
-    filename = vtkParse_FindPath(header);
+    filename = vtkParse_FindIncludeFile(header);
     if (!filename)
       {
       if (hintfile) { fclose(hintfile); }
@@ -1029,7 +1029,6 @@ void vtkWrapXML_MergeHelper(
       }
 
     finfo = vtkParse_ParseFile(filename, fp, stderr);
-    vtkParse_FreePath(filename);
     fclose(fp);
 
     if (!finfo)

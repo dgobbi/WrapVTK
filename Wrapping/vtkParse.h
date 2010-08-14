@@ -261,6 +261,26 @@ void vtkParse_SetClassProperty(
   const char *classname, const char *property);
 
 /**
+ * Define a preprocessor macro. Function macros are not supported.
+ */
+void vtkParse_DefineMacro(const char *name, const char *definition);
+
+/**
+ * Undefine a preprocessor macro.
+ */
+void vtkParse_UndefineMacro(const char *name);
+
+/**
+ * Add an include directory, for use with the "-I" option.
+ */
+void vtkParse_IncludeDirectory(const char *dirname);
+
+/**
+ * Return the full path to a header file.
+ */
+const char *vtkParse_FindIncludeFile(const char *filename);
+
+/**
  * Parse a header file and return a FileInfo struct
  */
 FileInfo *vtkParse_ParseFile(

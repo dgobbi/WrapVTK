@@ -65,6 +65,7 @@ Modify vtkParse.tab.c:
 
 #include "vtkParse.h"
 #include "vtkParseInternal.h"
+#include "vtkParsePreprocess.h"
 #include "vtkType.h"
 
 static unsigned int vtkParseTypeMap[] =
@@ -112,6 +113,9 @@ static unsigned int vtkParseTypeMap[] =
 
 /* the tokenizer */
 int yylex(void);
+
+/* the "preprocessor" */
+PreprocessInfo preprocessor = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 /* global variables */
 FileInfo data;
@@ -3964,8 +3968,18 @@ FileInfo *vtkParse_ParseFile(
   int ret;
   FileInfo *file_info;
   char *main_class;
+  const char **include_dirs;
 
   vtkParse_InitFile(&data);
+
+  i = preprocessor.NumberOfIncludeDirectories;
+  include_dirs = preprocessor.IncludeDirectories;
+  preprocessor.NumberOfIncludeDirectories = 0;
+  preprocessor.IncludeDirectories = NULL;
+  vtkParsePreprocess_InitPreprocess(&preprocessor);
+  vtkParsePreprocess_AddStandardMacros(&preprocessor, VTK_PARSE_NATIVE);
+  preprocessor.NumberOfIncludeDirectories = i;
+  preprocessor.IncludeDirectories = include_dirs;
 
   data.FileName = vtkstrdup(filename);
 
@@ -4162,4 +4176,29 @@ void vtkParse_SetClassProperty(
                                &NumberOfConcreteClasses,
                                vtkstrdup(classname));
      }
+}
+
+/** Define a preprocessor macro. Function macros are not supported.  */
+void vtkParse_DefineMacro(const char *name, const char *definition)
+{
+  vtkParsePreprocess_AddMacro(&preprocessor, name, definition);
+}
+
+/** Undefine a preprocessor macro.  */
+void vtkParse_UndefineMacro(const char *name)
+{
+  vtkParsePreprocess_RemoveMacro(&preprocessor, name);
+}
+
+/** Add an include directory, for use with the "-I" option.  */
+void vtkParse_IncludeDirectory(const char *dirname)
+{
+  vtkParsePreprocess_IncludeDirectory(&preprocessor, dirname);
+}
+
+/** Return the full path to a header file.  */
+const char *vtkParse_FindIncludeFile(const char *filename)
+{
+  int val;
+  return vtkParsePreprocess_FindIncludeFile(&preprocessor, filename, 0, &val);
 }

@@ -48,8 +48,6 @@ typedef struct _OptionInfo
   int           IsSpecialObject;
   int           IsConcrete;
   int           IsAbstract;
-  unsigned long NumberOfIncludeDirectories;
-  const char  **IncludeDirectories;
 } OptionInfo;
 
 #ifdef __cplusplus
@@ -60,16 +58,6 @@ extern "C" {
  * Return the options provided on the command line
  */
 OptionInfo *vtkParse_GetCommandLineOptions();
-
-/**
- * Return the full path to a header file given the paths in "options"
- */
-char *vtkParse_FindPath(const char *filename);
-
-/**
- * Free a path returned by FindPath
- */
-void vtkParse_FreePath(char *filepath);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -51,26 +51,19 @@ Modify lex.yy.c:
  * then skip to the end of the line.
  * Return 0 if no match found.
  */
+static int skip_comment();
 static int skip_ahead_multi(const char *strings[]);
 static int skip_ahead_until(const char *text);
+static int skip_to_next_directive();
+static int skip_conditional_block();
+static void print_preprocessor_error(int result, const char *cp, size_t n);
 
 %}
 
 
 %%
 
-"/*" { int c1 = 0, c2 = input();
-       for (;;)
-         {
-         if (c2 == 0)
-           {
-           fprintf(yyout,"Cannot find closing comment.\n");
-           break;
-           }
-         if (c1 == '*' && c2 == '/') break;
-         c1 = c2; c2 = input();
-         }
-     };
+"/*" { skip_comment(); };
 
 ^[\t ]*"//BTX".* {
        if (!IgnoreBTX) {
@@ -80,18 +73,9 @@ static int skip_ahead_until(const char *text);
 
 ^[\t ]*"//ETX".* ;
 
-
 ^[\t ]*"#ifdef"[\t ]*"VTK_WORKAROUND_WINDOWS_MANGLE".* {
        const char *strings[] = {"#endif", "#elif", "#else", NULL};
        skip_ahead_multi(strings);
-     };
-
-
-^[\t ]*"#ifdef "("WIN32"|"_WIN32").* {
-#ifndef _WIN32
-       const char *strings[] = {"#endif", "#elif", "#else", NULL};
-       skip_ahead_multi(strings);
-#endif
      };
 
 ^[\t ]*"#ifdef VTK_USE_64BIT_IDS".* {
@@ -99,10 +83,6 @@ static int skip_ahead_until(const char *text);
        const char *strings[] = {"#endif", "#elif", "#else", NULL};
        skip_ahead_multi(strings);
 #endif
-     };
-
-^[\t ]*"#"("else"|"elif").* {
-       skip_ahead_until("#endif");
      };
 
 ^[\t ]*("@interface"|"@implementation") {
@@ -160,7 +140,18 @@ static int skip_ahead_until(const char *text);
        }
      };
 
-^[\t ]*"#"(\\\n|\\\r\n|[^\n])*     ;
+^[\t ]*"#"(\\\n|\\\r\n|[^\n])*  {
+     int result = 0;
+     result = vtkParsePreprocess_HandleDirective(&preprocessor, yytext);
+     if (result == VTK_PARSE_SKIP)
+       {
+       skip_conditional_block();
+       }
+     else if (result != VTK_PARSE_OK)
+       {
+       print_preprocessor_error(result, yytext, yyleng);
+       }
+     };
 
 \"([^\"]|\\\")*\"      {
                 yylval.str = vtkstrndup(yytext, yyleng);
@@ -508,6 +499,161 @@ static int skip_ahead_until(const char *text);
 %%
 
 /*
+ * Skip a C-style comment, return 0 if unterminated.
+ */
+int skip_comment()
+{
+   int c1 = 0, c2 = input();
+   for (;;)
+     {
+     if (c2 == 0)
+       {
+       fprintf(yyout,"Cannot find closing comment.\n");
+       return 0;
+       }
+     if (c1 == '*' && c2 == '/') break;
+     c1 = c2; c2 = input();
+     }
+   return 1;
+}
+
+/*
+ * Skip ahead until the next preprocessor directive.
+ * This will eat the '#' that starts the directive.
+ * Return 0 if none found.
+ */
+int skip_to_next_directive()
+{
+  int state = 0;
+  int c;
+
+  do
+    {
+    c = input();
+    if (c == 0)
+      {
+      break;
+      }
+
+    /* newline changes state */
+    if (c == '\n')
+      {
+      state = 0;
+      c = input();
+      }
+    /* skip comments */
+    if (c == '/')
+      {
+      if ( (c = input()) == '*')
+        {
+        if (skip_comment() == 0)
+          {
+          return 0;
+          }
+        c = input();
+        }
+      }
+    /* skip escaped newlines */
+    if (c == '\\')
+      {
+      if ( (c = input()) == '\r')
+        {
+        c = input();
+        }
+      if (c == '\n')
+        {
+        c = input();
+        }
+      }
+    /* skip allowed whitespace */
+    while (c == ' ' || c == '\t')
+      {
+      c = input();
+      }
+    /* look for the directive */
+    if (state == 0 && c == '#')
+      {
+      break;
+      }
+    }
+  while (c != 0);
+
+  return c;
+}
+
+/*
+ * Skip to the next #else or #elif or #endif
+ */
+int skip_conditional_block()
+{
+  static char *linebuf = NULL;
+  static size_t linemaxlen = 80;
+  size_t i;
+  int c;
+  int result;
+
+  if (linebuf == 0)
+    {
+    linebuf = (char *)malloc(linemaxlen);
+    }
+
+  for (;;)
+    {
+    if (skip_to_next_directive() == 0)
+      {
+      return 0;
+      }
+    c = input();
+    while (c == ' ' || c == '\t')
+      {
+      c = input();
+      }
+    if (c == 0)
+      {
+      return 0;
+      }
+
+    /* eat the whole line */
+    i = 0;
+    linebuf[i++] = '#';
+    while (c != 0 && c != '\n')
+      {
+      if (i >= linemaxlen-5)
+        {
+        linemaxlen += i+5;
+        linebuf = (char *)realloc(linebuf, linemaxlen);
+        }
+      linebuf[i++] = c;
+      /* be sure to skip escaped newlines */
+      if (c == '\\')
+        {
+        c = input();
+        linebuf[i++] = c;
+        if (c == '\r')
+          {
+          c = input();
+          linebuf[i++] = c;
+          }
+        }
+      c = input();
+      }
+    linebuf[i++] = c;
+
+    result = vtkParsePreprocess_HandleDirective(&preprocessor, linebuf);
+    if (result != VTK_PARSE_SKIP && result != VTK_PARSE_OK)
+      {
+      print_preprocessor_error(result, linebuf, i);
+      }
+    else if (result != VTK_PARSE_SKIP)
+      {
+      break;
+      }
+    }
+
+  return 1;
+}
+
+/*
  * Skip ahead until one of the strings is found,
  * then skip to the end of the line.
  */
@@ -560,7 +706,7 @@ int skip_ahead_multi(const char *strings[])
 }
 
 /*
- * Skip ahead until the string is found,
+ * Skip ahead until the string is found.
  */
 int skip_ahead_until(const char *text)
 {
@@ -569,4 +715,48 @@ int skip_ahead_until(const char *text)
   strings[1] = NULL;
 
   return skip_ahead_multi(strings);
+}
+
+/*
+ * print an error with filename and line number.
+ */
+void print_preprocessor_error(int result, const char *cp, size_t n)
+{
+  size_t j = 0;
+  const char *fn = "";
+  const char *text = "";
+
+  switch (result)
+    {
+    case VTK_PARSE_OK:
+    case VTK_PARSE_SKIP:
+      return;
+    case VTK_PARSE_MACRO_UNDEFINED:
+      text = "undefined macro";
+      break;
+    case VTK_PARSE_MACRO_REDEFINED:
+      text = "redefined macro";
+      break;
+    case VTK_PARSE_FILE_NOT_FOUND:
+      text = "file not found";
+      break;
+    case VTK_PARSE_FILE_OPEN_ERROR:
+      text = "can't open file";
+      break;
+    case VTK_PARSE_FILE_READ_ERROR:
+      text = "input/output error";
+      break;
+    case VTK_PARSE_SYNTAX_ERROR:
+      text = "syntax error";
+      break;
+    }
+
+  if (data.FileName)
+    {
+    j = strlen(data.FileName);
+    while (j > 0 && data.FileName[j-1] != '/') { j--; }
+    fn = &data.FileName[j];
+    }
+  fprintf(yyout, "%s:%i: %s:\n", fn, yylineno, text);
+  fprintf(yyout, "%*.*s\n", (int)n, (int)n, cp);
 }
