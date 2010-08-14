@@ -2254,18 +2254,15 @@ int vtkParsePreprocess_AddMacro(
   PreprocessInfo *info, const char *name, const char *definition)
 {
   unsigned long i;
-  MacroInfo macro;
-  vtkParsePreprocess_InitMacro(&macro);
-  macro.Name = name;
-  macro.Definition = definition;
-  macro.IsExternal = 1;
+  MacroInfo *macro;
 
   if (preproc_find_macro(info, name, &i))
     {
     return VTK_PARSE_MACRO_REDEFINED;
     }
 
-  preproc_add_macro(info, &macro);
+  macro = preproc_add_macro_definition(info, name, definition);
+  macro->IsExternal = 1;
 
   return VTK_PARSE_OK;
 }
