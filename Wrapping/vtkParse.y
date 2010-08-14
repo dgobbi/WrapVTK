@@ -3980,6 +3980,10 @@ FileInfo *vtkParse_ParseFile(
   vtkParsePreprocess_AddStandardMacros(&preprocessor, VTK_PARSE_NATIVE);
   preprocessor.NumberOfIncludeDirectories = i;
   preprocessor.IncludeDirectories = include_dirs;
+  /* should explicitly check for vtkConfigure.h, or even explicitly load it */
+#ifdef VTK_USE_64BIT_IDS
+  vtkParsePreprocess_AddMacro(&preprocessor, "VTK_USE_64BIT_IDS", "1");
+#endif
 
   data.FileName = vtkstrdup(filename);
 

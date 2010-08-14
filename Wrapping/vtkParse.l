@@ -73,18 +73,6 @@ static void print_preprocessor_error(int result, const char *cp, size_t n);
 
 ^[\t ]*"//ETX".* ;
 
-^[\t ]*"#ifdef"[\t ]*"VTK_WORKAROUND_WINDOWS_MANGLE".* {
-       const char *strings[] = {"#endif", "#elif", "#else", NULL};
-       skip_ahead_multi(strings);
-     };
-
-^[\t ]*"#ifdef VTK_USE_64BIT_IDS".* {
-#ifndef VTK_USE_64BIT_IDS
-       const char *strings[] = {"#endif", "#elif", "#else", NULL};
-       skip_ahead_multi(strings);
-#endif
-     };
-
 ^[\t ]*("@interface"|"@implementation") {
        skip_ahead_until("@end");
      };
@@ -112,10 +100,13 @@ static void print_preprocessor_error(int result, const char *cp, size_t n);
 
 "//".* ;
 
-^[\t ]*"#"[\t ]*"define"[\t ]+"VTK_"[a-zA-Z0-9_]+.* {
+^[\t ]*"#"[\t ]*"define"[\t ]+"VTK_"[a-zA-Z0-9_]+[^(](\\\n|\\\r\n|[^\n])*  {
      const char *name;
      size_t i = 0;
      size_t j = 0;
+
+     vtkParsePreprocess_HandleDirective(&preprocessor, yytext);
+
      while (yytext[i] != 'V') { i++; }
      j = i;
      while ((yytext[j] >= 'a' && yytext[j] <= 'z') ||
@@ -126,7 +117,10 @@ static void print_preprocessor_error(int result, const char *cp, size_t n);
      while (yytext[j] == ' ' || yytext[j] == '\t') { j++; }
      for (i = j; i < (size_t)yyleng; i++)
        {
-       if (yytext[i] == '/' && (yytext[i+1] == '*' || yytext[i+1] == '/')) { break; }
+       if (yytext[i] == '/' && (yytext[i+1] == '*' || yytext[i+1] == '/'))
+         {
+         break;
+         }
        }
      while (i > 0 && (yytext[i-1] == '\n' || yytext[i-1] == '\r' ||
                       yytext[i-1] == '\t' || yytext[i-1] == ' ')) { i--; }
@@ -142,6 +136,8 @@ static void print_preprocessor_error(int result, const char *cp, size_t n);
 
 ^[\t ]*"#"(\\\n|\\\r\n|[^\n])*  {
      int result = 0;
+     vtkParsePreprocess_RemoveMacro(&preprocessor,
+                                    "VTK_WORKAROUND_WINDOWS_MANGLE");
      result = vtkParsePreprocess_HandleDirective(&preprocessor, yytext);
      if (result == VTK_PARSE_SKIP)
        {
