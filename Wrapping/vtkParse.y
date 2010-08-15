@@ -1286,6 +1286,7 @@ unsigned int add_indirection_to_array(unsigned int type)
 %token <str> StdString
 %token <str> UnicodeString
 %token IdType
+%token FloatType
 %token TypeInt8
 %token TypeUInt8
 %token TypeInt16
@@ -1998,7 +1999,25 @@ any_id: VTK_ID {postSig($<str>1);}
      | ISTREAM {postSig($<str>1);}
      | OSTREAM {postSig($<str>1);}
      | StdString {postSig($<str>1);}
-     | UnicodeString {postSig($<str>1);};
+     | UnicodeString {postSig($<str>1);}
+     | sized_type_id {postSig($<str>1);}
+     | special_type_id {postSig($<str>1);};
+
+sized_type_id:
+       TypeInt8 {$<str>$ = "vtkTypeInt8";}
+     | TypeUInt8 {$<str>$ = "vtkTypeUInt8";}
+     | TypeInt16 {$<str>$ = "vtkTypeInt16";}
+     | TypeUInt16 {$<str>$ = "vtkTypeUInt16";}
+     | TypeInt32 {$<str>$ = "vtkTypeInt32";}
+     | TypeUInt32 {$<str>$ = "vtkTypeUInt32";}
+     | TypeInt64 {$<str>$ = "vtkTypeInt64";}
+     | TypeUInt64 {$<str>$ = "vtkTypeUInt64";}
+     | TypeFloat32 {$<str>$ = "vtkTypeFloat32";}
+     | TypeFloat64 {$<str>$ = "vtkTypeFloat64";};
+
+special_type_id:
+       IdType {$<str>$ = "vtkIdType";}
+     | FloatType {$<str>$ = "vtkFloatingPointType";};
 
 /*
  * Types
@@ -2147,6 +2166,7 @@ type_primitive:
   TypeFloat32 { typeSig("vtkTypeFloat32"); $<integer>$ = VTK_PARSE_FLOAT32; } |
   TypeFloat64 { typeSig("vtkTypeFloat64"); $<integer>$ = VTK_PARSE_FLOAT64; } |
   IdType { typeSig("vtkIdType"); $<integer>$ = VTK_PARSE_ID_TYPE;} |
+  FloatType { typeSig("double"); $<integer>$ = VTK_PARSE_DOUBLE;} |
   FLOAT  { typeSig("float"); $<integer>$ = VTK_PARSE_FLOAT;} |
   DOUBLE { typeSig("double"); $<integer>$ = VTK_PARSE_DOUBLE;} |
   LONG_DOUBLE { typeSig("long double"); $<integer>$ = VTK_PARSE_UNKNOWN;} |

@@ -337,7 +337,7 @@ static void print_preprocessor_error(int result, const char *cp, size_t n);
 "bitor"         return('|');
 "compl"         return('~');
 
-"vtkFloatingPointType" return(DOUBLE);
+"vtkFloatingPointType" return(FloatType);
 "vtkIdType"            return(IdType);
 "vtkSetMacro"          return(SetMacro);
 "vtkGetMacro"          return(GetMacro);
@@ -433,7 +433,10 @@ static void print_preprocessor_error(int result, const char *cp, size_t n);
                      return(VTK_ID); }
 
 "Q"[A-Z][0-9a-zA-Z_]* { yylval.str = vtkstrndup(yytext, yyleng);
-                     return(QT_ID); }
+                        return(QT_ID); }
+
+"Qt::"[0-9a-zA-Z_]* { yylval.str = vtkstrndup(yytext, yyleng);
+                      return(QT_ID); }
 
 [a-zA-Z_][0-9a-zA-Z_]*  { yylval.str = vtkstrndup(yytext, yyleng);
                           return(ID); }
