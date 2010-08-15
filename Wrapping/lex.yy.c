@@ -5141,6 +5141,15 @@ void print_preprocessor_error(int result, const char *cp, size_t n)
     case VTK_PARSE_OK:
     case VTK_PARSE_SKIP:
       return;
+    case VTK_PARSE_PREPROC_DOUBLE:
+      text = "double in preprocessor conditional";
+      break;
+    case VTK_PARSE_PREPROC_FLOAT:
+      text = "float in preprocessor conditional";
+      break;
+    case VTK_PARSE_PREPROC_STRING:
+      text = "string in preprocessor conditional";
+      break;
     case VTK_PARSE_MACRO_UNDEFINED:
       text = "undefined macro";
       break;

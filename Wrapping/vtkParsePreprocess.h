@@ -106,13 +106,16 @@ enum _preproc_platform_t {
  */
 enum _preproc_return_t {
   VTK_PARSE_OK = 0,
-  VTK_PARSE_SKIP = 1,
-  VTK_PARSE_MACRO_UNDEFINED = 2,
-  VTK_PARSE_MACRO_REDEFINED = 3,
-  VTK_PARSE_FILE_NOT_FOUND = 4,
-  VTK_PARSE_FILE_OPEN_ERROR = 8,
-  VTK_PARSE_FILE_READ_ERROR = 9,
-  VTK_PARSE_SYNTAX_ERROR = 10
+  VTK_PARSE_SKIP = 1,            /* skip next block */
+  VTK_PARSE_PREPROC_DOUBLE = 2,  /* encountered a double */
+  VTK_PARSE_PREPROC_FLOAT = 3,   /* encountered a float */
+  VTK_PARSE_PREPROC_STRING = 4,  /* encountered a string */
+  VTK_PARSE_MACRO_UNDEFINED = 5, /* macro lookup failed */
+  VTK_PARSE_MACRO_REDEFINED = 6, /* attempt to redefine a macro */
+  VTK_PARSE_FILE_NOT_FOUND = 7,  /* include file not found */
+  VTK_PARSE_FILE_OPEN_ERROR = 8, /* include file not readable */
+  VTK_PARSE_FILE_READ_ERROR = 9, /* error during read */
+  VTK_PARSE_SYNTAX_ERROR = 10    /* any and all syntax errors */
 };
 
 /**
@@ -164,9 +167,9 @@ int vtkParsePreprocess_AddMacro(
  * the symbol was not present.
  */
 int vtkParsePreprocess_RemoveMacro(
- PreprocessInfo *info, const char *name);
+  PreprocessInfo *info, const char *name);
 
- /**
+/**
  * Return a preprocessor symbol struct, or NULL if not found.
  */
 MacroInfo *vtkParsePreprocess_GetMacro(

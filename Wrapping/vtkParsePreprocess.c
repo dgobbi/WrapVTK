@@ -607,10 +607,12 @@ static int preproc_evaluate_integer(
       }
     }
 
-  while (*ep == 'u' || *ep == 'l' || *ep == 'L')
+  for (;;)
     {
-    if (*ep == 'u') { *is_unsigned = 1; }
-    ep++;
+    if (ep[0] == 'i' && ep[1] == '6' && ep[2] == '4') { ep += 3; }
+    else if (*ep == 'u') { *is_unsigned = 1; ep++; }
+    else if (*ep == 'l' || *ep == 'L') { ep++; }
+    else { break; }
     }
 
   if (*is_unsigned)
@@ -620,6 +622,11 @@ static int preproc_evaluate_integer(
   else
     {
     *val = string_to_preproc_int(cp, base);
+    }
+
+  if (*ep == '.' || *ep == 'e' || *ep == 'E')
+    {
+    return VTK_PARSE_PREPROC_DOUBLE;
     }
 
   return VTK_PARSE_OK;
@@ -740,6 +747,11 @@ static int preproc_evaluate_single(
   else if (tokens->tok == TOK_NUMBER)
     {
     result = preproc_evaluate_integer(tokens->text, val, is_unsigned);
+    if (tokens->text[tokens->len-1] == 'f' ||
+        tokens->text[tokens->len-1] == 'F')
+      {
+      result = VTK_PARSE_PREPROC_FLOAT;
+      }
     preproc_next(tokens);
     return result;
     }
@@ -748,6 +760,13 @@ static int preproc_evaluate_single(
     result = preproc_evaluate_char(tokens->text, val, is_unsigned);
     preproc_next(tokens);
     return result;
+    }
+  else if (tokens->tok == TOK_STRING)
+    {
+    *val = 0;
+    *is_unsigned = 0;
+    preproc_next(tokens);
+    return VTK_PARSE_PREPROC_STRING;
     }
 
 #if PREPROC_DEBUG
