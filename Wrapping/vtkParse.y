@@ -292,7 +292,7 @@ static const char *vtkstrcat(const char *str1, const char *str2)
 }
 
 static const char *vtkstrcat3(const char *str1, const char *str2,
-                             const char *str3)
+                              const char *str3)
 {
   const char *cp[3];
 
@@ -1480,7 +1480,9 @@ math_unary_op:   '-' { $<str>$ = "-"; } | '+' { $<str>$ = "+"; }
 math_binary_op:  '-' { $<str>$ = "-"; } | '+' { $<str>$ = "+"; }
                | '*' { $<str>$ = "*"; } | '/' { $<str>$ = "/"; }
                | '%' { $<str>$ = "%"; } | '&' { $<str>$ = "&"; }
-               | '|' { $<str>$ = "|"; } | '^' { $<str>$ = "^"; };
+               | '|' { $<str>$ = "|"; } | '^' { $<str>$ = "^"; }
+               | OP_LSHIFT { $<str>$ = ">>"; }
+               | OP_RSHIFT { $<str>$ = "<<"; };
 
 /*
  * currently ignored items
@@ -3083,15 +3085,146 @@ unsigned int guess_constant_type(const char *valstring)
 
   if (valstring == NULL || valstring[0] == '\0')
     {
-    valtype = 0;
+    return 0;
     }
-  else if (strcmp(valstring, "true") == 0 || strcmp(valstring, "false") == 0)
+
+  if (strcmp(valstring, "true") == 0 || strcmp(valstring, "false") == 0)
     {
-    valtype = VTK_PARSE_BOOL;
+    return VTK_PARSE_BOOL;
     }
-  else if (valstring[0] == '_' ||
-           (valstring[0] >= 'a' && valstring[0] <= 'z') ||
-           (valstring[0] >= 'A' && valstring[0] <= 'Z'))
+
+  if (strncmp(valstring, "VTK_TYPE_CAST(", 14) == 0 ||
+      strncmp(valstring, "static_cast<", 12) == 0 ||
+      strncmp(valstring, "const_cast<", 11) == 0 ||
+      strncmp(valstring, "(", 1) == 0)
+    {
+    const char *cp;
+    size_t n;
+    int is_unsigned = 0;
+
+    cp = &valstring[1];
+    if (valstring[0] == 'c')
+      {
+      cp = &valstring[11];
+      }
+    else if (valstring[0] == 's')
+      {
+      cp = &valstring[12];
+      }
+    else if (valstring[0] == 'V')
+      {
+      cp = &valstring[14];
+      }
+
+    if (strncmp(cp, "unsigned ", 9) == 0)
+      {
+      is_unsigned = 1;
+      cp += 9;
+      }
+
+    n = strlen(cp);
+    for (k = 0; k < n && cp[k] != ',' &&
+         cp[k] != '>' && cp[k] != ')'; k++) { ; };
+
+    if (strncmp(cp, "long long", k) == 0)
+      { valtype = VTK_PARSE_LONG_LONG; }
+    else if (strncmp(cp, "__int64", k) == 0)
+      { valtype = VTK_PARSE___INT64; }
+    else if (strncmp(cp, "long", k) == 0)
+      { valtype = VTK_PARSE_LONG; }
+    else if (strncmp(cp, "short", k) == 0)
+      { valtype = VTK_PARSE_SHORT; }
+    else if (strncmp(cp, "signed char", k) == 0)
+      { valtype = VTK_PARSE_SIGNED_CHAR; }
+    else if (strncmp(cp, "char", k) == 0)
+      { valtype = VTK_PARSE_CHAR; }
+    else if (strncmp(cp, "int", k) == 0 ||
+             strncmp(cp, "signed", k) == 0)
+      { valtype = VTK_PARSE_INT; }
+    else if (strncmp(cp, "float", k) == 0)
+      { valtype = VTK_PARSE_FLOAT; }
+    else if (strncmp(cp, "double", k) == 0)
+      { valtype = VTK_PARSE_DOUBLE; }
+    else if (strncmp(cp, "char *", k) == 0)
+      { valtype = VTK_PARSE_CHAR_PTR; }
+
+    if (is_unsigned)
+      {
+      if (valtype == 0) { valtype = VTK_PARSE_INT; }
+      valtype = (valtype | VTK_PARSE_UNSIGNED);
+      }
+
+    if (valtype != 0)
+      {
+      return valtype;
+      }
+    }
+
+  if (valstring[0] == '\'')
+    {
+    return VTK_PARSE_CHAR;
+    }
+  else
+    {
+    preproc_int_t val;
+    int is_unsigned;
+    int result = vtkParsePreprocess_EvaluateExpression(
+      &preprocessor, valstring, &val, &is_unsigned);
+
+    if (result == VTK_PARSE_PREPROC_DOUBLE)
+      {
+      return VTK_DOUBLE;
+      }
+    else if (result == VTK_PARSE_PREPROC_FLOAT)
+      {
+      return VTK_FLOAT;
+      }
+    else if (result == VTK_PARSE_PREPROC_STRING)
+      {
+      return VTK_PARSE_CHAR_PTR;
+      }
+    else if (result == VTK_PARSE_OK)
+      {
+      if (is_unsigned)
+        {
+        if ((preproc_uint_t)val <= VTK_UNSIGNED_INT_MAX)
+          {
+          return VTK_PARSE_UNSIGNED_INT;
+          }
+        else
+          {
+#if defined(VTK_TYPE_USE_LONG_LONG)
+          return VTK_PARSE_UNSIGNED_LONG_LONG;
+#elif defined(VTK_TYPE_USE___INT64)
+          return VTK_PARSE_UNSIGNED___INT64;
+#else
+          return VTK_PARSE_UNSIGNED_LONG;
+#endif
+          }
+        }
+      else
+        {
+        if (val >= VTK_INT_MIN && val <= VTK_INT_MAX)
+          {
+          return VTK_PARSE_INT;
+          }
+        else
+          {
+#if defined(VTK_TYPE_USE_LONG_LONG)
+          return VTK_PARSE_LONG_LONG;
+#elif defined(VTK_TYPE_USE___INT64)
+          return VTK_PARSE___INT64;
+#else
+          return VTK_PARSE_LONG;
+#endif
+          }
+        }
+      }
+    }
+
+  if (valstring[0] == '_' ||
+      (valstring[0] >= 'a' && valstring[0] <= 'z') ||
+      (valstring[0] >= 'A' && valstring[0] <= 'Z'))
     {
     NamespaceInfo *scope = currentNamespace;
     if (namespaceDepth > 0)
@@ -3103,99 +3236,12 @@ unsigned int guess_constant_type(const char *valstring)
       {
       if (strcmp(scope->Constants[i]->Name, valstring) == 0)
         {
-        valtype = scope->Constants[i]->Type;
+        return scope->Constants[i]->Type;
         }
       }
     }
-  else if (valstring[0] == '\"')
-    {
-    valtype = VTK_PARSE_CHAR_PTR;
-    }
-  else if (valstring[0] == '\'')
-    {
-    valtype = VTK_PARSE_CHAR;
-    }
-  else if (valstring[0] == '-' || valstring[0] == '+' ||
-           (valstring[0] >= '0' && valstring[0] <= '9'))
-    {
-    k = 0;
-    if (valstring[0] == '-' || valstring[0] == '+')
-      {
-      k++;
-      while (valstring[k] == ' ' || valstring[k] == '\t') { k++; }
-      }
-    if (valstring[k] >= '0' && valstring[k] <= '9')
-      {
-     /* guess "int" first */
-      valtype = VTK_PARSE_INT;
-
-      if (valstring[k+1] == 'x' || valstring[k+1] == 'X')
-        {
-        k += 2;
-        while ((valstring[k] >= '0' && valstring[k] <= '9') ||
-               (valstring[k] >= 'a' && valstring[k] <= 'f') ||
-               (valstring[k] >= 'A' && valstring[k] <= 'F'))
-          {
-          k++;
-          }
-        }
-      else
-        {
-        while ((valstring[k] >= '0' && valstring[k] <= '9') ||
-               valstring[k] == '.' ||
-               valstring[k] == 'e' || valstring[k] == 'E' ||
-               valstring[k] == '-' || valstring[k] == '+')
-          {
-          if (valstring[k] == '.' ||
-              valstring[k] == 'e' || valstring[k] == 'E')
-            {
-            valtype = VTK_PARSE_DOUBLE;
-            }
-          k++;
-          }
-        }
-
-      /* look for type suffixes */
-      if (valtype == VTK_PARSE_DOUBLE)
-        {
-        if (valstring[k] == 'f')
-          {
-          valtype = VTK_PARSE_FLOAT;
-          }
-        }
-      else
-        {
-        while (valstring[k] != '\0')
-          {
-          if (valstring[k] == 'u' || valstring[k] == 'U')
-            {
-            valtype = (valtype | VTK_PARSE_UNSIGNED);
-            }
-          else if (valstring[k] == 'l' || valstring[k] == 'L')
-            {
-            if (valstring[k+1] == 'l' || valstring[k+1] == 'L')
-              {
-              k++;
-              valtype = ((valtype & ~VTK_PARSE_UNSIGNED) | VTK_PARSE_LONG_LONG);
-              }
-            else
-              {
-              valtype = ((valtype & ~VTK_PARSE_UNSIGNED) | VTK_PARSE_LONG);
-              }
-            }
-          else if (valstring[k] == 'i' && valstring[k+1] == '6' &&
-                   valstring[k+2] == '4')
-            {
-            k += 2;
-            valtype = ((valtype & ~VTK_PARSE_UNSIGNED) | VTK_PARSE___INT64);
-            }
-          k++;
-          }
-        }
-      }
-    }
-
-  return valtype;
+   
+  return 0;
 }
 
 /* add a constant to the current class or namespace */
@@ -3230,7 +3276,6 @@ void add_constant(const char *name, const char *value,
   else if (currentClass)
     {
     con->Access = access_level;
-
     vtkParse_AddConstantToClass(currentClass, con);
     }
   else
