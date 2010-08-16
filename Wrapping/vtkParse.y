@@ -2148,7 +2148,7 @@ type_id:
  | ISTREAM { typeSig($<str>1); $<integer>$ = VTK_PARSE_ISTREAM; }
  | ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
  | VTK_ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_OBJECT; }
- | QT_ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_OBJECT; };
+ | QT_ID { typeSig($<str>1); $<integer>$ = VTK_PARSE_QOBJECT; };
 
 type_primitive:
   VOID   { typeSig("void"); $<integer>$ = VTK_PARSE_VOID;} |

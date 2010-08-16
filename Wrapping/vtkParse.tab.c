@@ -6660,7 +6660,7 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 2151 "vtkParse.y"
-    { typeSig((yyvsp[(1) - (1)].str)); (yyval.integer) = VTK_PARSE_OBJECT; }
+    { typeSig((yyvsp[(1) - (1)].str)); (yyval.integer) = VTK_PARSE_QOBJECT; }
     break;
 
   case 363:
