@@ -572,7 +572,7 @@ void vtkWrapXML_Constant(
     {
     fprintf(fp, "%s<Flag>enum<Flag>\n", indent(indentation));
     }
-  if (con->Type)
+  if (con->Type && con->Class && con->Class[0] != '\0')
     {
     vtkWrapXML_Type(fp, con, indentation);
     }
