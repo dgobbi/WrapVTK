@@ -5,6 +5,8 @@
 # VTK_COMMON_CLASSES (list of all classes)
 # VTK_COMMON_CLASSES_ABSTRACT (list of abstract classes)
 # VTK_COMMON_CLASSES_WRAP_EXCLUDE (list of classes not to wrap)
+# VTK_COMMON_CLASSES_WRAP_SPECIAL (list of classes for special wrapping)
+# VTK_COMMON_WRAP_HEADERS (list of headers to wrap)
 
 # Find all the kits that are part of the VTK build
 FILE(GLOB KIT_CMAKE_FILES RELATIVE "${VTK_KITS_DIR}"
