@@ -982,6 +982,7 @@ void vtkWrapXML_MergeHelper(
   FILE *fp = NULL;
   ClassInfo *cinfo = NULL;
   FileInfo *finfo = NULL;
+  HierarchyEntry *entry = NULL;
   const char *header;
   const char *filename;
   unsigned long i, n;
@@ -1007,11 +1008,12 @@ void vtkWrapXML_MergeHelper(
 
   if (n > 0 && !cinfo)
     {
-    header = vtkParseHierarchy_ClassHeader(hinfo, classname);
-    if (!header)
+    entry = vtkParseHierarchy_FindEntry(hinfo, classname);
+    if (!entry)
       {
       return;
       }
+    header = entry->HeaderFile;
     filename = vtkParse_FindIncludeFile(header);
     if (!filename)
       {
