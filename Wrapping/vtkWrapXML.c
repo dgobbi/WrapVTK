@@ -1418,4 +1418,3 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
   /* print the closing tag */
   vtkWrapXML_FileFooter(fp, data, indentation);
 }
-

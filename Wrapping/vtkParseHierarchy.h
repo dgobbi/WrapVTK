@@ -33,7 +33,7 @@
 #define VTK_PARSE_HIERARCHY_H
 
 /* Need the ValueInfo struct for typedefs */
-#include "vtkParse.h"
+#include "vtkParseInternal.h"
 
 /**
  * One entry from the hierarchy file.
@@ -43,11 +43,14 @@ typedef struct _HierarchyEntry
 {
   const char  *Name;            /* the class or type name */
   const char  *HeaderFile;      /* header file the class is defined in */
+  int          NumberOfProperties;   /* number of properties */
+  const char **Properties;
   int          NumberOfSuperClasses; /* number of superclasses */
   const char **SuperClasses;
   int         *SuperClassIndex; /* for internal use only */
-  int          NumberOfProperties;   /* number of properties */
-  const char **Properties;
+  ValueInfo   *Typedef;         /* for typedefs */
+  int         IsEnum;           /* this entry is for an enum type */
+  int         IsTypedef;        /* this entry is for a typedef */
 } HierarchyEntry;
 
 /**
@@ -94,6 +97,12 @@ const char *vtkParseHierarchy_GetProperty(
 int vtkParseHierarchy_IsTypeOf(const HierarchyInfo *info,
   const HierarchyEntry *entry, const char *superclass);
 
+/**
+ * Expand an unrecognized type in a ValueInfo struct by
+ * using the typedefs in the HierarchyInfo struct.
+ */
+int vtkParseHierarchy_ExpandTypedefs(
+  const HierarchyInfo *info, ValueInfo *data, const char *scope);
 
 #ifdef __cplusplus
 } /* extern "C" */
