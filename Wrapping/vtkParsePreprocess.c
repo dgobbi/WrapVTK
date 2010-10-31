@@ -2120,7 +2120,7 @@ int vtkParsePreprocess_EvaluateExpression(
 #define PREPROC_MACRO_TO_STRING2(x) #x
 #define PREPROC_MACRO_TO_STRING(x) PREPROC_MACRO_TO_STRING2(x)
 #define PREPROC_ADD_MACRO(info, x) \
-preproc_add_macro_definition(info, #x, PREPROC_MACRO_TO_STRING2(x)) 
+preproc_add_macro_definition(info, #x, PREPROC_MACRO_TO_STRING2(x))
 
 /**
  * Add all standard preprocessory macros.  Specify the platform.
@@ -2130,6 +2130,9 @@ void vtkParsePreprocess_AddStandardMacros(
 {
   int save_external = info->IsExternal;
   info->IsExternal = 1;
+
+  /* a special macro to indicate that this is the wrapper */
+  preproc_add_macro_definition(info, "__WRAP__", "1");
 
   /* language macros - assume that we are wrapping C++ code */
   preproc_add_macro_definition(info, "__cplusplus", "1");

@@ -5148,7 +5148,7 @@ void print_preprocessor_error(int result, const char *cp, size_t n)
       text = "file not found";
       break;
     case VTK_PARSE_FILE_OPEN_ERROR:
-      text = "can't open file";
+      text = "can\'t open file";
       break;
     case VTK_PARSE_FILE_READ_ERROR:
       text = "input/output error";
