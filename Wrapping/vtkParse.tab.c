@@ -7688,7 +7688,7 @@ yyreduce:
 #line 2529 "vtkParse.y"
     {
    int is_concrete = 0;
-   int i;
+   unsigned long i;
 
    currentFunction->Macro = "vtkTypeMacro";
    currentFunction->Name = vtkstrdup("GetClassName");

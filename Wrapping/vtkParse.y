@@ -2528,7 +2528,7 @@ macro:
 | TypeMacro '(' any_id ',' any_id maybe_comma ')'
    {
    int is_concrete = 0;
-   int i;
+   unsigned long i;
 
    currentFunction->Macro = "vtkTypeMacro";
    currentFunction->Name = vtkstrdup("GetClassName");
