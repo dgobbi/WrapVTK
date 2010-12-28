@@ -22,12 +22,12 @@ SET(vtkWrapXML_EXE vtkWrapXML)
 ADD_EXECUTABLE(${vtkWrapXML_EXE} ${vtkWrapXML_SRCS})
 
 
-SET(vtkWrapHierarchy_SRCS
+SET(vtkWrapVTKHierarchy_SRCS
   vtkParse.tab.c
   vtkParsePreprocess.c
   vtkWrapHierarchy.c
 )
 
-SET(vtkWrapHierarchy_EXE vtkWrapHierarchy)
-ADD_EXECUTABLE(${vtkWrapHierarchy_EXE} ${vtkWrapHierarchy_SRCS})
+SET(vtkWrapVTKHierarchy_EXE vtkWrapVTKHierarchy)
+ADD_EXECUTABLE(${vtkWrapVTKHierarchy_EXE} ${vtkWrapVTKHierarchy_SRCS})
 

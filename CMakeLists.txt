@@ -34,7 +34,7 @@ ADD_SUBDIRECTORY(Wrapping)
 
 # Get the full path to vtkWrapXML
 SET(VTK_WRAP_XML_EXE ${WrapVTK_EXECUTABLE_DIR}/vtkWrapXML)
-SET(VTK_WRAP_HIERARCHY_EXE ${WrapVTK_EXECUTABLE_DIR}/vtkWrapHierarchy)
+SET(VTK_WRAP_HIERARCHY_EXE ${WrapVTK_EXECUTABLE_DIR}/vtkWrapVTKHierarchy)
 
 # Set the hints file
 IF(VTK_WRAP_HINTS)
