@@ -253,30 +253,30 @@ static unsigned int methodCategory(MethodAttributes *meth, int shortForm)
     {
     if (meth->IsEnumerated)
       {
-      return VTK_METHOD_ENUM_SET;
+      return VTK_METHOD_SET_TO;
       }
     else if (meth->IsIndexed)
       {
       if (isSetNthMethod(name))
         {
-        return VTK_METHOD_NTH_SET;
+        return VTK_METHOD_SET_NTH;
         }
       else
         {
-        return VTK_METHOD_INDEX_SET;
+        return VTK_METHOD_SET_IDX;
         }
       }
     else if (meth->IsMultiValue)
       {
-      return VTK_METHOD_MULTI_SET;
+      return VTK_METHOD_SET_MULTI;
       }
     else if (shortForm && isSetNumberOfMethod(name))
       {
-      return VTK_METHOD_SET_NUM;
+      return VTK_METHOD_SET_NUMBER_OF;
       }
     else
       {
-      return VTK_METHOD_BASIC_SET;
+      return VTK_METHOD_SET;
       }
     }
   else if (meth->IsBoolean)
@@ -295,83 +295,83 @@ static unsigned int methodCategory(MethodAttributes *meth, int shortForm)
     {
     if (shortForm && isGetMinValueMethod(name))
       {
-      return VTK_METHOD_MIN_GET;
+      return VTK_METHOD_GET_MIN_VALUE;
       }
     else if (shortForm && isGetMaxValueMethod(name))
       {
-      return VTK_METHOD_MAX_GET;
+      return VTK_METHOD_GET_MAX_VALUE;
       }
     else if (shortForm && isAsStringMethod(name))
       {
-      return VTK_METHOD_STRING_GET;
+      return VTK_METHOD_GET_AS_STRING;
       }
     else if (meth->IsIndexed && meth->Count > 0 && !meth->IsHinted)
       {
       if (isGetNthMethod(name))
         {
-        return VTK_METHOD_NTH_RHS_GET;
+        return VTK_METHOD_GET_NTH_RHS;
         }
       else
         {
-        return VTK_METHOD_INDEX_RHS_GET;
+        return VTK_METHOD_GET_IDX_RHS;
         }
       }
     else if (meth->IsIndexed)
       {
       if (isGetNthMethod(name))
         {
-        return VTK_METHOD_NTH_GET;
+        return VTK_METHOD_GET_NTH;
         }
       else
         {
-        return VTK_METHOD_INDEX_GET;
+        return VTK_METHOD_GET_IDX;
         }
       }
     else if (meth->IsMultiValue)
       {
-      return VTK_METHOD_MULTI_GET;
+      return VTK_METHOD_GET_MULTI;
       }
     else if (meth->Count > 0 && !meth->IsHinted)
       {
-      return VTK_METHOD_RHS_GET;
+      return VTK_METHOD_GET_RHS;
       }
     else if (shortForm && isGetNumberOfMethod(name))
       {
-      return VTK_METHOD_GET_NUM;
+      return VTK_METHOD_GET_NUMBER_OF;
       }
     else
       {
-      return VTK_METHOD_BASIC_GET;
+      return VTK_METHOD_GET;
       }
     }
   else if (isRemoveMethod(name))
     {
     if (isRemoveAllMethod(name))
       {
-      return VTK_METHOD_REMOVEALL;
+      return VTK_METHOD_REM_ALL;
       }
     else if (meth->IsIndexed)
       {
-      return VTK_METHOD_INDEX_REM;
+      return VTK_METHOD_REM_IDX;
       }
     else
       {
-      return VTK_METHOD_BASIC_REM;
+      return VTK_METHOD_REM;
       }
     }
   else if (isAddMethod(name))
     {
     if (meth->IsIndexed)
       {
-      return VTK_METHOD_INDEX_ADD;
+      return VTK_METHOD_ADD_IDX;
       }
     else if (meth->IsMultiValue)
       {
-      return VTK_METHOD_MULTI_ADD;
+      return VTK_METHOD_ADD_MULTI;
       }
     else
       {
-      return VTK_METHOD_BASIC_ADD;
+      return VTK_METHOD_ADD;
       }
     }
 
@@ -809,7 +809,7 @@ static int methodMatchesProperty(
   if (isRemoveAllMethod(meth->Name) &&
       methType == VTK_PARSE_VOID &&
       (methType & VTK_PARSE_INDIRECT) == 0 &&
-      ((methodBitfield & (VTK_METHOD_BASIC_ADD | VTK_METHOD_MULTI_ADD)) != 0))
+      ((methodBitfield & (VTK_METHOD_ADD | VTK_METHOD_ADD_MULTI)) != 0))
     {
     return 1;
     }
@@ -820,7 +820,7 @@ static int methodMatchesProperty(
        methType == VTK_PARSE_SIZE_T ||
        methType == VTK_PARSE_ID_TYPE) &&
       (methType & VTK_PARSE_INDIRECT) == 0 &&
-      ((methodBitfield & (VTK_METHOD_INDEX_GET | VTK_METHOD_NTH_GET)) != 0))
+      ((methodBitfield & (VTK_METHOD_GET_IDX | VTK_METHOD_GET_NTH)) != 0))
     {
     return 1;
     }
@@ -830,7 +830,7 @@ static int methodMatchesProperty(
        methType == VTK_PARSE_SIZE_T ||
        methType == VTK_PARSE_ID_TYPE) &&
       (methType & VTK_PARSE_INDIRECT) == 0 &&
-      ((methodBitfield & (VTK_METHOD_INDEX_SET | VTK_METHOD_NTH_SET)) != 0))
+      ((methodBitfield & (VTK_METHOD_SET_IDX | VTK_METHOD_SET_NTH)) != 0))
     {
     return 1;
     }
@@ -1368,56 +1368,60 @@ const char *vtkParseProperties_MethodTypeAsString(unsigned int methodType)
 {
   switch (methodType)
     {
-    case VTK_METHOD_BASIC_GET:
-      return "BASIC_GET";
-    case VTK_METHOD_BASIC_SET:
-      return "BASIC_SET";
-    case VTK_METHOD_MULTI_GET:
-      return "MULTI_GET";
-    case VTK_METHOD_MULTI_SET:
-      return "MULTI_SET";
-    case VTK_METHOD_INDEX_GET:
-      return "INDEX_GET";
-    case VTK_METHOD_INDEX_SET:
-      return "INDEX_SET";
-    case VTK_METHOD_NTH_GET:
-      return "NTH_GET";
-    case VTK_METHOD_NTH_SET:
-      return "NTH_SET";
-    case VTK_METHOD_RHS_GET:
-      return "RHS_GET";
-    case VTK_METHOD_INDEX_RHS_GET:
-      return "INDEX_RHS_GET";
-    case VTK_METHOD_NTH_RHS_GET:
-      return "NTH_RHS_GET";
-    case VTK_METHOD_STRING_GET:
-      return "STRING_GET";
-    case VTK_METHOD_ENUM_SET:
-      return "ENUM_SET";
+    case VTK_METHOD_SET_CLAMP:
+      return "SET_CLAMP";
+    case VTK_METHOD_SET_BOOL:
+      return "SET_BOOL";
+    case VTK_METHOD_GET:
+      return "GET";
+    case VTK_METHOD_SET:
+      return "SET";
+    case VTK_METHOD_GET_MULTI:
+      return "GET_MULTI";
+    case VTK_METHOD_SET_MULTI:
+      return "SET_MULTI";
+    case VTK_METHOD_GET_IDX:
+      return "GET_IDX";
+    case VTK_METHOD_SET_IDX:
+      return "SET_IDX";
+    case VTK_METHOD_GET_NTH:
+      return "GET_NTH";
+    case VTK_METHOD_SET_NTH:
+      return "SET_NTH";
+    case VTK_METHOD_GET_RHS:
+      return "GET_RHS";
+    case VTK_METHOD_GET_IDX_RHS:
+      return "GET_IDX_RHS";
+    case VTK_METHOD_GET_NTH_RHS:
+      return "GET_NTH_RHS";
+    case VTK_METHOD_GET_AS_STRING:
+      return "GET_AS_STRING";
+    case VTK_METHOD_SET_TO:
+      return "SET_TO";
     case VTK_METHOD_BOOL_ON:
       return "BOOL_ON";
     case VTK_METHOD_BOOL_OFF:
       return "BOOL_OFF";
-    case VTK_METHOD_MIN_GET:
-      return "MIN_GET";
-    case VTK_METHOD_MAX_GET:
-      return "MAX_GET";
-    case VTK_METHOD_GET_NUM:
-      return "GET_NUM";
-    case VTK_METHOD_SET_NUM:
-      return "SET_NUM";
-    case VTK_METHOD_BASIC_ADD:
-      return "BASIC_ADD";
-    case VTK_METHOD_MULTI_ADD:
-      return "MULTI_ADD";
-    case VTK_METHOD_INDEX_ADD:
-      return "INDEX_ADD";
-    case VTK_METHOD_BASIC_REM:
-      return "BASIC_REM";
-    case VTK_METHOD_INDEX_REM:
-      return "INDEX_REM";
-    case VTK_METHOD_REMOVEALL:
-      return "REMOVEALL";
+    case VTK_METHOD_GET_MIN_VALUE:
+      return "GET_MIN_VALUE";
+    case VTK_METHOD_GET_MAX_VALUE:
+      return "GET_MAX_VALUE";
+    case VTK_METHOD_GET_NUMBER_OF:
+      return "GET_NUMBER_OF";
+    case VTK_METHOD_SET_NUMBER_OF:
+      return "SET_NUMBER_OF";
+    case VTK_METHOD_ADD:
+      return "ADD";
+    case VTK_METHOD_ADD_MULTI:
+      return "ADD_MULTI";
+    case VTK_METHOD_ADD_IDX:
+      return "ADD_IDX";
+    case VTK_METHOD_REM:
+      return "REM";
+    case VTK_METHOD_REM_IDX:
+      return "REM_IDX";
+    case VTK_METHOD_REM_ALL:
+      return "REM_ALL";
     }
 
   return "";

@@ -26,60 +26,66 @@
 /**
  * bitfield values to say what methods are available for a property
  *
- * BASIC_GET is "type GetValue()" or "type *GetValue()"
- * BASIC_SET is "void SetValue(type)" or "type SetValue(type [])"
- * MULTI_GET is "void GetValue(type&, type&, type&)"
- * MULTI_SET is "void SetValue(type, type, type)"
- * INDEX_GET is "type GetValue(int)" or "type *GetValue(int)"
- * INDEX_SET is "void SetValue(int, type)" or "void SetValue(int, type [])"
- * NTH_GET   is "type GetNthValue(int)" or "type *GetNthValue(int)"
- * NTH_SET   is "void SetNthValue(int,type)" or "void SetNthValue(int,type[])"
- * RHS_GET is "void GetValue(type *)"
- * INDEX_RHS_GET is "void GetValue(int, type [])"
- * NTH_RHS_GET is "void GetNthValue(int, type [])"
- * STRING_GET is "const char *GetValueAsString()"
- * ENUM_SET  is "void SetValueToEnumVal()"
+ * GET is "type GetValue()" or "type *GetValue()"
+ * SET is "void SetValue(type)" or "type SetValue(type [])"
+ * GET_MULTI is "void GetValue(type&, type&, type&)"
+ * SET_MULTI is "void SetValue(type, type, type)"
+ * GET_IDX is "type GetValue(int)" or "type *GetValue(int)"
+ * SET_IDX is "void SetValue(int, type)" or "void SetValue(int, type [])"
+ * GET_NTH   is "type GetNthValue(int)" or "type *GetNthValue(int)"
+ * SET_NTH   is "void SetNthValue(int,type)" or "void SetNthValue(int,type[])"
+ * GET_RHS   is "void GetValue(type *)"
+ * GET_IDX_RHS is "void GetValue(int, type [])"
+ * GET_NTH_RHS   is "void GetNthValue(int, type [])"
+ * GET_AS_STRING is "const char *GetValueAsString()"
+ * SET_TO    is "void SetValueToEnumVal()"
  * BOOL_ON   is "void ValueOn()"
  * BOOL_OFF  is "void ValueOff()"
- * MIN_GET   is "type GetVarMinValue()"
- * MAX_GET   is "type GetVarMaxValue()"
- * GET_NUM   is "int GetNumberOfValues()"
- * SET_NUM   is "void SetNumberOfValues(int)"
- * BASIC_ADD is "void AddValue(type)"
- * MULTI_ADD is "void AddValue(type, type, type)"
- * INDEX_ADD is "void AddValue(int, type)"
- * BASIC_REM is "void RemoveValue(type)"
- * INDEX_REM is "void RemoveValue(int, type)"
- * REMOVEALL is "void RemoveAllValues()"
+ * GET_MIN_VALUE is "type GetVarMinValue()"
+ * GET_MAX_VALUE is "type GetVarMaxValue()"
+ * GET_NUMBER_OFBER_OF is "int GetNumberOfValues()"
+ * SET_NUMBER_OFBER_OF is "void SetNumberOfValues(int)"
+ * ADD       is "void AddValue(type)"
+ * ADD_MULTI is "void AddValue(type, type, type)"
+ * ADD_IDX is "void AddValue(int, type)"
+ * REM       is "void RemoveValue(type)"
+ * REM_IDX is "void RemoveValue(int, type)"
+ * REM_ALL   is "void RemoveAllValues()"
  *
  * Items marked with two asterisks are not yet implemented.
  *
  */
-#define VTK_METHOD_BASIC_GET  0x00000001
-#define VTK_METHOD_BASIC_SET  0x00000002
-#define VTK_METHOD_MULTI_GET  0x00000004
-#define VTK_METHOD_MULTI_SET  0x00000008
-#define VTK_METHOD_INDEX_GET  0x00000010
-#define VTK_METHOD_INDEX_SET  0x00000020
-#define VTK_METHOD_NTH_GET    0x00000040
-#define VTK_METHOD_NTH_SET    0x00000080
-#define VTK_METHOD_RHS_GET    0x00000100
-#define VTK_METHOD_INDEX_RHS_GET 0x00000200
-#define VTK_METHOD_NTH_RHS_GET 0x000000400
-#define VTK_METHOD_STRING_GET 0x00001000
-#define VTK_METHOD_ENUM_SET   0x00002000
-#define VTK_METHOD_BOOL_ON    0x00004000
-#define VTK_METHOD_BOOL_OFF   0x00008000
-#define VTK_METHOD_MIN_GET    0x00010000
-#define VTK_METHOD_MAX_GET    0x00020000
-#define VTK_METHOD_GET_NUM    0x00040000
-#define VTK_METHOD_SET_NUM    0x00080000
-#define VTK_METHOD_BASIC_ADD  0x00100000
-#define VTK_METHOD_MULTI_ADD  0x00200000
-#define VTK_METHOD_INDEX_ADD  0x00400000
-#define VTK_METHOD_BASIC_REM  0x01000000
-#define VTK_METHOD_INDEX_REM  0x04000000
-#define VTK_METHOD_REMOVEALL  0x08000000
+#define VTK_METHOD_GET           0x00000001
+#define VTK_METHOD_SET           0x00000002
+#define VTK_METHOD_GET_MULTI     0x00000004
+#define VTK_METHOD_SET_MULTI     0x00000008
+#define VTK_METHOD_GET_IDX       0x00000010
+#define VTK_METHOD_SET_IDX       0x00000020
+#define VTK_METHOD_GET_NTH       0x00000040
+#define VTK_METHOD_SET_NTH       0x00000080
+#define VTK_METHOD_GET_RHS       0x00000100
+#define VTK_METHOD_GET_IDX_RHS   0x00000200
+#define VTK_METHOD_GET_NTH_RHS   0x00000400
+#define VTK_METHOD_GET_AS_STRING 0x00001000
+#define VTK_METHOD_SET_TO        0x00002000
+#define VTK_METHOD_BOOL_ON       0x00004000
+#define VTK_METHOD_BOOL_OFF      0x00008000
+#define VTK_METHOD_GET_MIN_VALUE 0x00010000
+#define VTK_METHOD_GET_MAX_VALUE 0x00020000
+#define VTK_METHOD_GET_NUMBER_OF 0x00040000
+#define VTK_METHOD_SET_NUMBER_OF 0x00080000
+#define VTK_METHOD_ADD           0x00100000
+#define VTK_METHOD_ADD_MULTI     0x00200000
+#define VTK_METHOD_ADD_IDX       0x00400000
+#define VTK_METHOD_REM           0x01000000
+#define VTK_METHOD_REM_IDX       0x04000000
+#define VTK_METHOD_REM_ALL       0x08000000
+
+#define VTK_METHOD_SET_CLAMP \
+  (VTK_METHOD_GET_MIN_VALUE|VTK_METHOD_GET_MAX_VALUE)
+
+#define VTK_METHOD_SET_BOOL \
+  (VTK_METHOD_BOOL_ON|VTK_METHOD_BOOL_OFF)
 
 /**
  * A struct that contains all the property information that
@@ -132,7 +138,7 @@ void vtkParseProperties_Free(ClassProperties *properties);
 
 /**
  * Convert a method bitfield to a string,
- * e.g. VTK_METHOD_BASIC_GET -> "METHOD_BASIC_GET"
+ * e.g. VTK_METHOD_GET -> "METHOD_GET"
  */
 const char *vtkParseProperties_MethodTypeAsString(unsigned int methodType);
 

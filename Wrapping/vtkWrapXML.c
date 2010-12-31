@@ -34,6 +34,15 @@
 #include "vtkParseMain.h"
 #include "vtkConfigure.h"
 
+/* ----- XML state information ----- */
+
+typedef struct _wrapxml_state
+{
+  FILE *file; /* the file being written to */
+  int indentation; /* current indentation level */
+  int unclosed; /* true if current tag is not closed */
+} wrapxml_state_t;
+
 /* ----- XML utility functions ----- */
 
 /* The indentation string, default is two spaces */
@@ -138,8 +147,7 @@ static const char *vtkWrapXML_Quote(const char *comment, size_t maxlen)
 /**
  * Print multi-line text at the specified indentation level.
  */
-static void vtkWrapXML_MultiLineText(
-  FILE *fp, const char *cp, int indentation)
+static void vtkWrapXML_MultiLineText(wrapxml_state_t *w, const char *cp)
 {
   size_t i, j;
   char temp[512];
@@ -161,34 +169,188 @@ static void vtkWrapXML_MultiLineText(
 
     if (j > 0)
       {
-      fprintf(fp, "%s%s\n", indent(indentation), vtkWrapXML_Quote(temp,500));
+      fprintf(w->file, "%s%s\n", indent(w->indentation),
+              vtkWrapXML_Quote(temp, 500));
       }
     else
       {
-      fprintf(fp, "\n");
+      fprintf(w->file, "\n");
       }
+    }
+}
+
+/**
+ * Mark the beginning of the element body
+ */
+void vtkWrapXML_ElementBody(wrapxml_state_t *w)
+{
+  if (w->unclosed)
+    {
+    fprintf(w->file, ">\n");
+    }
+  w->unclosed = 0;
+}
+
+/**
+ * Print an element start tag
+ */
+void vtkWrapXML_ElementStart(wrapxml_state_t *w, const char *name)
+{
+  vtkWrapXML_ElementBody(w);
+  fprintf(w->file, "%s<%s", indent(w->indentation), name);
+  w->unclosed = 1;
+  w->indentation++;
+}
+
+/**
+ * Print an element end tag
+ */
+void vtkWrapXML_ElementEnd(wrapxml_state_t *w, const char *name)
+{
+  w->indentation--;
+  if (w->unclosed)
+    {
+    fprintf(w->file, " />\n");
+    }
+  else
+    {
+    fprintf(w->file, "%s</%s>\n", indent(w->indentation), name);
+    }
+  w->unclosed = 0;
+}
+
+/**
+ * Print an attribute
+ */
+void vtkWrapXML_Attribute(
+  wrapxml_state_t *w, const char *name, const char *value)
+{
+#ifdef WRAPXML_ELEMENTS_ONLY
+  vtkWrapXML_ElementBody(w);
+  fprintf(w->file, "%s<%c%s>%s</%c%s>", indent(w->indentation),
+          toupper(name[0]), &name[1], vtkWrapXML_Quote(value, 500),
+          toupper(name[0]), &name[1]);
+#else
+  fprintf(w->file, " %s=\"%s\"", name, vtkWrapXML_Quote(value, 500));
+#endif
+}
+
+/**
+ * Print an attribute with a prefixed value
+ */
+void vtkWrapXML_AttributeWithPrefix(
+  wrapxml_state_t *w, const char *name, const char *prefix, const char *value)
+{
+#ifdef WRAPXML_ELEMENTS_ONLY
+  vtkWrapXML_ElementBody(w);
+  fprintf(w->file, "%s<%c%s>%s%s</%c%s>", indent(w->indentation),
+          toupper(name[0]), &name[1], prefix, vtkWrapXML_Quote(value, 500),
+          toupper(name[0]), &name[1]);
+#else
+  fprintf(w->file, " %s=\"%s%s\"", name, prefix, vtkWrapXML_Quote(value, 500));
+#endif
+}
+
+/**
+ * Print a size attribute
+ */
+void vtkWrapXML_Size(wrapxml_state_t *w, ValueInfo *val)
+{
+  unsigned long ndims = val->NumberOfDimensions;
+  unsigned long j;
+
+  if (ndims > 0)
+    {
+#ifndef WRAPXML_ELEMENTS_ONLY
+    fprintf(w->file, " size=\"%s", ((ndims > 1) ? "{" : ""));
+#endif
+    for (j = 0; j < ndims; j++)
+      {
+#ifdef WRAPXML_ELEMENTS_ONLY
+      vtkWrapXML_ElementBody(w);
+      fprintf(w->file, "%s<Size>%s</Size>\n", indent(w->indentation),
+              val->Dimensions[j]);
+#else
+      fprintf(w->file, "%s%s",
+        ((j > 0) ? "," : ""),
+        ((val->Dimensions[j][0] == '\0') ? ":" : val->Dimensions[j]));
+#endif
+      }
+#ifndef WRAPXML_ELEMENTS_ONLY
+    fprintf(w->file, "%s\"", ((ndims > 1) ? "}" : ""));
+#endif
+    }
+}
+
+void vtkWrapXML_Pointer(wrapxml_state_t *w, ValueInfo *val)
+{
+  unsigned long ndims = val->NumberOfDimensions;
+  unsigned int type = val->Type;
+  unsigned int bits;
+  char text[128];
+  int i = 0;
+
+  if ((type & VTK_PARSE_INDIRECT) == VTK_PARSE_BAD_INDIRECT)
+    {
+    vtkWrapXML_Attribute(w, "pointer", "unknown");
+    return;
+    }
+
+  type = (type & VTK_PARSE_POINTER_MASK);
+
+  if (ndims > 0)
+    {
+    type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
+    }
+
+  while (type)
+    {
+    bits = (type & VTK_PARSE_POINTER_LOWMASK);
+    type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
+
+    if (bits == VTK_PARSE_ARRAY)
+      {
+      strncpy(&text[i], "*array", 6);
+      i += 6;
+      }
+    else if (bits == VTK_PARSE_CONST_POINTER)
+      {
+      strncpy(&text[i], "*const", 6);
+      i += 6;
+      }
+    else
+      {
+      text[i++] = '*';
+      }
+    }
+
+  if (i > 0)
+    {
+    text[i++] = '\0';
+    vtkWrapXML_Attribute(w, "pointer", text);
     }
 }
 
 /**
  * Print the comment as multi-line text
  */
-void vtkWrapXML_Comment(
-  FILE *fp, const char *comment, int indentation)
+void vtkWrapXML_Comment(wrapxml_state_t *w, const char *comment)
 {
+  const char *elementName = "Comment";
+
   if (comment)
     {
-    fprintf(fp, "%s<Comment>\n", indent(indentation++));
-    vtkWrapXML_MultiLineText(fp, comment, indentation);
-    fprintf(fp, "%s</Comment>\n", indent(--indentation));
+    vtkWrapXML_ElementStart(w, elementName);
+    vtkWrapXML_ElementBody(w);
+    vtkWrapXML_MultiLineText(w, comment);
+    vtkWrapXML_ElementEnd(w, elementName);
     }
 }
 
 /**
  * Print the access level
  */
-void vtkWrapXML_Access(
-  FILE *fp, parse_access_t access, int indentation)
+void vtkWrapXML_Access(wrapxml_state_t *w, parse_access_t access)
 {
   const char *cp = "public";
 
@@ -205,18 +367,50 @@ void vtkWrapXML_Access(
       break;
     }
 
-  fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation), cp);
+  vtkWrapXML_Attribute(w, "access", cp);
+}
+
+/**
+ * Print a boolean attribute
+ */
+void vtkWrapXML_Flag(wrapxml_state_t *w, const char *name, int value)
+{
+  if (value)
+    {
+#ifdef WRAPXML_ELEMENTS_ONLY
+    vtkWrapXML_Attribute(w, "Flag", name);
+#else
+    fprintf(w->file, " %s=1", name);
+#endif
+    }
+}
+
+/**
+ * Print the name attribute
+ */
+void vtkWrapXML_Name(wrapxml_state_t *w, const char *name)
+{
+  vtkWrapXML_Attribute(w, "name", name);
+}
+
+/**
+ * Print the value attribute
+ */
+void vtkWrapXML_Value(wrapxml_state_t *w, const char *value)
+{
+  vtkWrapXML_Attribute(w, "value", value);
 }
 
 /**
  * Write the file header
  */
-void vtkWrapXML_FileHeader(FILE *fp, const FileInfo *data, int indentation)
+void vtkWrapXML_FileHeader(wrapxml_state_t *w, const FileInfo *data)
 {
+  const char *elementName = "File";
   const char *cp = data->FileName;
   size_t i;
 
-  fprintf(fp, "%s<File>\n", indent(indentation));
+  vtkWrapXML_ElementStart(w, elementName);
   if (cp)
     {
     i = strlen(cp);
@@ -224,21 +418,23 @@ void vtkWrapXML_FileHeader(FILE *fp, const FileInfo *data, int indentation)
       {
       i--;
       }
-    fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-            vtkWrapXML_Quote(&cp[i], 500));
+    vtkWrapXML_Name(w, &cp[i]);
     }
+  vtkWrapXML_ElementBody(w);
+  w->indentation--;
 }
 
 /**
  * Write the file footer
  */
-void vtkWrapXML_FileFooter(FILE *fp, const FileInfo *data, int indentation)
+void vtkWrapXML_FileFooter(wrapxml_state_t *w, const FileInfo *data)
 {
+  const char *elementName = "File";
   /* avoid warning */
   data = NULL;
 
-  fprintf(fp, "\n");
-  fprintf(fp, "%s</File>\n", indent(indentation));
+  w->indentation++;
+  vtkWrapXML_ElementEnd(w, elementName);
 }
 
 /**
@@ -263,7 +459,7 @@ int vtkWrapXML_EmptyString(const char *cp)
 /**
  * Write out the VTK-style documentation for the file
  */
-void vtkWrapXML_FileDoc(FILE *fp, FileInfo *data, int indentation)
+void vtkWrapXML_FileDoc(wrapxml_state_t *w, FileInfo *data)
 {
   size_t n;
   char temp[500];
@@ -277,7 +473,8 @@ void vtkWrapXML_FileDoc(FILE *fp, FileInfo *data, int indentation)
     return;
     }
 
-  fprintf(fp, "%s<Comment>\n", indent(indentation++));
+  vtkWrapXML_ElementStart(w, "Comment");
+  vtkWrapXML_ElementBody(w);
 
   if (data->NameComment)
     {
@@ -286,25 +483,25 @@ void vtkWrapXML_FileDoc(FILE *fp, FileInfo *data, int indentation)
       {
       cp++;
       }
-    fprintf(fp, "%s .NAME %s\n", indent(indentation),
+    fprintf(w->file, "%s .NAME %s\n", indent(w->indentation),
             vtkWrapXML_Quote(cp,500));
     }
 
   if (data->Description)
     {
-    fprintf(fp, "\n%s .SECTION Description\n", indent(indentation));
-    vtkWrapXML_MultiLineText(fp, data->Description, indentation);
+    fprintf(w->file, "\n%s .SECTION Description\n", indent(w->indentation));
+    vtkWrapXML_MultiLineText(w, data->Description);
     }
 
   if (data->Caveats && data->Caveats[0] != '\0')
     {
-    fprintf(fp, "\n%s .SECTION Caveats\n", indent(indentation));
-    vtkWrapXML_MultiLineText(fp, data->Caveats, indentation);
+    fprintf(w->file, "\n%s .SECTION Caveats\n", indent(w->indentation));
+    vtkWrapXML_MultiLineText(w, data->Caveats);
     }
 
   if (data->SeeAlso && data->SeeAlso[0] != '\0')
     {
-    fprintf(fp, "\n%s .SECTION See also\n", indent(indentation));
+    fprintf(w->file, "\n%s .SECTION See also\n", indent(w->indentation));
 
     cp = data->SeeAlso;
     while(isspace(*cp))
@@ -321,13 +518,13 @@ void vtkWrapXML_FileDoc(FILE *fp, FileInfo *data, int indentation)
       /* There might be another section in the See also */
       if (strncmp(cp, ".SECTION", 8) == 0)
         {
-        fprintf(fp, "\n");
+        fprintf(w->file, "\n");
 
         while(cp > data->SeeAlso && isspace(*(cp - 1)) && *(cp - 1) != '\n')
           {
           cp--;
           }
-        vtkWrapXML_MultiLineText(fp, cp, indentation);
+        vtkWrapXML_MultiLineText(w, cp);
         break;
         }
 
@@ -335,7 +532,7 @@ void vtkWrapXML_FileDoc(FILE *fp, FileInfo *data, int indentation)
         {
         strncpy(temp, cp, n);
         temp[n] = '\0';
-        fprintf(fp,"%s %s\n", indent(indentation),
+        fprintf(w->file,"%s %s\n", indent(w->indentation),
                 vtkWrapXML_Quote(temp,500));
         }
       cp += n;
@@ -345,120 +542,111 @@ void vtkWrapXML_FileDoc(FILE *fp, FileInfo *data, int indentation)
         }
       }
     }
-  fprintf(fp, "%s</Comment>\n", indent(--indentation));
+
+  vtkWrapXML_ElementEnd(w, "Comment");
 }
 
 /**
  * Write the inheritance section
  */
 void vtkWrapXML_ClassInheritance(
-  FILE *fp, MergeInfo *merge, int indentation)
+  wrapxml_state_t *w, MergeInfo *merge)
 {
+#ifdef WRAPXML_ELEMENTS_ONLY
+  const char *elementName = "Inheritance";
+  const char *subElementName = "ClassName";
+#else
+  const char *elementName = "ResolutionOrder";
+  const char *subElementName = "Context";
+#endif
   unsigned long i, n;
 
   /* show the geneology */
   n = merge->NumberOfClasses;
 
-  fprintf(fp, "%s<Inheritance>\n", indent(indentation++));
+  vtkWrapXML_ElementStart(w, elementName);
+  vtkWrapXML_ElementBody(w);
   for (i = 0; i < n; i++)
     {
-    fprintf(fp, "%s<ClassName>%s</ClassName>\n", indent(indentation),
-            vtkWrapXML_Quote(merge->ClassNames[i], 500));
+    vtkWrapXML_ElementStart(w, subElementName);
+#ifdef WRAPXML_ELEMENTS_ONLY
+    vtkWrapXML_ElementBody(w);
+    fprintf(w->file, "%s", vtkWrapXML_Quote(merge->ClassNames[i], 500));
+#else
+    vtkWrapXML_Name(w, merge->ClassNames[i]);
+    vtkWrapXML_Attribute(w, "access", "public");
+#endif
+    vtkWrapXML_ElementEnd(w, subElementName);
     }
-  fprintf(fp, "%s</Inheritance>\n", indent(--indentation));
+  vtkWrapXML_ElementEnd(w, elementName);
 }
 
 /* needed for type */
 void vtkWrapXML_FunctionCommon(
-  FILE *fp, FunctionInfo *func, int doReturn, int indentation);
+  wrapxml_state_t *w, FunctionInfo *func, int doReturn);
 
 /**
  * Print out a type in XML format
  */
-void vtkWrapXML_Type(FILE *fp, ValueInfo *val, int indentation)
+void vtkWrapXML_TypeAttributes(wrapxml_state_t *w, ValueInfo *val)
 {
   unsigned int type = val->Type;
-  unsigned long j = 0;
-  unsigned int bits;
-  unsigned long ndims;
 
+#ifdef WRAPXML_ELEMENTS_ONLY
   if ((type & VTK_PARSE_CONST) != 0)
     {
-    fprintf(fp, "%s<Flag>const</Flag>\n", indent(indentation));
+    vtkWrapXML_Flag(w, "const", 1);
     }
+  vtkWrapXML_Attribute(w, "type", val->Class);
+#else
+  if ((type & VTK_PARSE_CONST) != 0)
+    {
+    vtkWrapXML_AttributeWithPrefix(w, "type", "const ", val->Class);
+    }
+  else
+    {
+    vtkWrapXML_Attribute(w, "type", val->Class);
+    }
+#endif
 
   if ((type & VTK_PARSE_REF) != 0)
     {
-    fprintf(fp, "%s<Flag>reference</Flag>\n", indent(indentation));
+    vtkWrapXML_Flag(w, "reference", 1);
     }
 
-  fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
-          vtkWrapXML_Quote(val->Class, 500));
+  vtkWrapXML_Pointer(w, val);
+  vtkWrapXML_Size(w, val);
+}
 
+/**
+ * Print out a type in XML format
+ */
+void vtkWrapXML_TypeElements(wrapxml_state_t *w, ValueInfo *val)
+{
   if (val->Function)
     {
     if (val->Function->Class)
       {
-      fprintf(fp, "%s<Method>\n", indent(indentation++));
-      fprintf(fp, "%s<ClassName>%s</ClassName>\n", indent(indentation),
-              val->Function->Class);
-      vtkWrapXML_FunctionCommon(fp, val->Function, 1, indentation);
-      fprintf(fp, "%s</Method>\n", indent(--indentation));
+      vtkWrapXML_ElementStart(w, "Method");
+      vtkWrapXML_Attribute(w, "context", val->Function->Class);
+      vtkWrapXML_FunctionCommon(w, val->Function, 1);
+      vtkWrapXML_ElementEnd(w, "Method");
       }
     else
       {
-      fprintf(fp, "%s<Function>\n", indent(indentation++));
-      vtkWrapXML_FunctionCommon(fp, val->Function, 1, indentation);
-      fprintf(fp, "%s</Function>\n", indent(--indentation));
-      }
-    }
-
-  type = (type & VTK_PARSE_POINTER_MASK);
-
-  if ((type & VTK_PARSE_INDIRECT) == VTK_PARSE_BAD_INDIRECT)
-    {
-    fprintf(fp, "%s<Pntr>unknown</Pntr>\n", indent(indentation));
-    return;
-    }
-
-  ndims = val->NumberOfDimensions;
-
-  if (ndims > 0)
-    {
-    for (j = 0; j < ndims; j++)
-      {
-      fprintf(fp, "%s<Size>%s</Size>\n", indent(indentation),
-              val->Dimensions[j]);
-      }
-    type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
-    }
-
-  while (type)
-    {
-    bits = (type & VTK_PARSE_POINTER_LOWMASK);
-    type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
-
-    if (bits == VTK_PARSE_ARRAY)
-      {
-      fprintf(fp, "%s<Size></Size>\n", indent(indentation));
-      }
-    else if (bits == VTK_PARSE_CONST_POINTER)
-      {
-      fprintf(fp, "%s<Pntr>const pointer</Pntr>\n", indent(indentation));
-      }
-    else
-      {
-      fprintf(fp, "%s<Pntr>pointer</Pntr>\n", indent(indentation));
+      vtkWrapXML_ElementStart(w, "Function");
+      vtkWrapXML_FunctionCommon(w, val->Function, 1);
+      vtkWrapXML_ElementEnd(w, "Function");
       }
     }
 }
+
 
 /**
  * Print out a simple type types
  */
 void vtkWrapXML_TypeSimple(
-  FILE *fp, unsigned int type, const char *classname, unsigned long size,
-  int indentation)
+  wrapxml_state_t *w, unsigned int type, const char *classname, unsigned long size)
 {
   char temp[256];
   char temp2[512];
@@ -485,109 +673,113 @@ void vtkWrapXML_TypeSimple(
     val.NumberOfDimensions = 1;
     }
 
-  vtkWrapXML_Type(fp, &val, indentation);
+  vtkWrapXML_TypeAttributes(w, &val);
+  vtkWrapXML_TypeElements(w, &val);
 }
 
 /**
  * Print a template
  */
 void vtkWrapXML_Template(
-  FILE *fp, TemplateArgs *args, int indentation)
+  wrapxml_state_t *w, TemplateArgs *args)
 {
+  const char *elementName = "TemplateArg";
   TemplateArg *arg;
   unsigned long i;
 
   for (i = 0; i < args->NumberOfArguments; i++)
     {
-    fprintf(fp, "%s<Template>\n", indent(indentation++));
+    vtkWrapXML_ElementStart(w, elementName);
 
     arg = args->Arguments[i];
 
     if (arg->Template)
       {
-      fprintf(fp, "%s<Type>template</Type>\n", indent(indentation));
-      vtkWrapXML_Template(fp, arg->Template, indentation);
+      vtkWrapXML_Attribute(w, "type", "template");
       }
     else if (arg->Type)
       {
-      fprintf(fp, "%s<Type>%s</Type>\n", indent(indentation),
-              vtkWrapXML_Quote(arg->Class, 500));
+      vtkWrapXML_Attribute(w, "type", arg->Class);
       }
     else
       {
-      fprintf(fp, "%s<Type>typename</Type>\n", indent(indentation));
+      vtkWrapXML_Attribute(w, "type", "typename");
       }
 
     if (arg->Name)
       {
-      fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-              vtkWrapXML_Quote(arg->Name, 500));
+      vtkWrapXML_Name(w, arg->Name);
       }
 
     if (arg->Value)
       {
-      fprintf(fp, "%s<Value>%s</Value>\n", indent(indentation),
-              vtkWrapXML_Quote(arg->Value, 500));
+      vtkWrapXML_Value(w, arg->Value);
       }
 
-    fprintf(fp, "%s</Template>\n", indent(--indentation));
-    }
+    if (arg->Template)
+      {
+      vtkWrapXML_Flag(w, "template", 1);
+      vtkWrapXML_Template(w, arg->Template);
+      }
 
+    vtkWrapXML_ElementEnd(w, elementName);
+    }
 }
 
 /**
  * Print an enum
  */
 void vtkWrapXML_Enum(
-  FILE *fp, EnumInfo *item, int inClass, int indentation)
+  wrapxml_state_t *w, EnumInfo *item, int inClass)
 {
-  fprintf(fp, "\n");
-  fprintf(fp, "%s<Enum>\n", indent(indentation++));
+  const char *elementName = "Enum";
+
+  fprintf(w->file, "\n");
+  vtkWrapXML_ElementStart(w, elementName);
 
   if (inClass)
     {
-    vtkWrapXML_Access(fp, item->Access, indentation);
+    vtkWrapXML_Access(w, item->Access);
     }
 
-  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          vtkWrapXML_Quote(item->Name, 500));
-  fprintf(fp, "%s</Enum>\n", indent(--indentation));
+  vtkWrapXML_Name(w, item->Name);
+  vtkWrapXML_ElementEnd(w, elementName);
 }
 
 /**
  * Print a constant
  */
 void vtkWrapXML_Constant(
-  FILE *fp, ValueInfo *con, int inClass, int indentation)
+  wrapxml_state_t *w, ValueInfo *con, int inClass)
 {
-  fprintf(fp, "\n");
-  fprintf(fp, "%s<Constant>\n", indent(indentation++));
+  const char *elementName = "Constant";
 
+  fprintf(w->file, "\n");
+  vtkWrapXML_ElementStart(w, elementName);
+  
   if (inClass)
     {
-    vtkWrapXML_Access(fp, con->Access, indentation);
+    vtkWrapXML_Access(w, con->Access);
     }
 
   if (con->IsEnum)
     {
-    fprintf(fp, "%s<Flag>enum<Flag>\n", indent(indentation));
+    vtkWrapXML_Flag(w, "enum", 1);
     }
   if (con->Type && con->Class && con->Class[0] != '\0')
     {
-    vtkWrapXML_Type(fp, con, indentation);
+    vtkWrapXML_TypeAttributes(w, con);
     }
-  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          vtkWrapXML_Quote(con->Name, 500));
+  vtkWrapXML_Name(w, con->Name);
 
   if (con->Value)
     {
-    fprintf(fp, "%s<Value>%s</Value>\n", indent(indentation),
-            vtkWrapXML_Quote(con->Value, 500));
+    vtkWrapXML_Value(w, con->Value);
     }
 
-  vtkWrapXML_Comment(fp, con->Comment, indentation);
-
-  fprintf(fp, "%s</Constant>\n", indent(--indentation));
+  vtkWrapXML_Comment(w, con->Comment);
+  vtkWrapXML_TypeElements(w, con);
+  vtkWrapXML_ElementEnd(w, elementName);
 }
 
 
@@ -595,40 +787,35 @@ void vtkWrapXML_Constant(
  * Print a variable
  */
 void vtkWrapXML_Variable(
-  FILE *fp, ValueInfo *var, int inClass, int indentation)
+  wrapxml_state_t *w, ValueInfo *var, int inClass)
 {
-  fprintf(fp, "\n");
+  const char *elementName = "Variable";
+
   if (inClass)
     {
-    fprintf(fp, "%s<Member>\n", indent(indentation++));
-    vtkWrapXML_Access(fp, var->Access, indentation);
+    elementName = "Member";
     }
-  else
+
+  fprintf(w->file, "\n");
+  vtkWrapXML_ElementStart(w, elementName);
+
+  vtkWrapXML_Name(w, var->Name);
+
+  if (inClass)
     {
-    fprintf(fp, "%s<Variable>\n", indent(indentation++));
+    vtkWrapXML_Access(w, var->Access);
     }
 
-  vtkWrapXML_Type(fp, var, indentation);
-
-  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          vtkWrapXML_Quote(var->Name, 500));
+  vtkWrapXML_TypeAttributes(w, var);
 
   if (var->Value)
     {
-    fprintf(fp, "%s<Value>%s</Value>\n", indent(indentation),
-            vtkWrapXML_Quote(var->Value, 500));
+    vtkWrapXML_Value(w, var->Value);
     }
 
-  vtkWrapXML_Comment(fp, var->Comment, indentation);
-
-  if (inClass)
-    {
-    fprintf(fp, "%s</Member>\n", indent(--indentation));
-    }
-  else
-    {
-    fprintf(fp, "%s</Variable>\n", indent(--indentation));
-    }
+  vtkWrapXML_Comment(w, var->Comment);
+  vtkWrapXML_TypeElements(w, var);
+  vtkWrapXML_ElementEnd(w, elementName);
 }
 
 
@@ -636,60 +823,60 @@ void vtkWrapXML_Variable(
  * Print a typedef
  */
 void vtkWrapXML_Typedef(
-  FILE *fp, ValueInfo *type, int inClass, int indentation)
+  wrapxml_state_t *w, ValueInfo *type, int inClass)
 {
-  fprintf(fp, "\n");
-  fprintf(fp, "%s<Typedef>\n", indent(indentation++));
+  const char *elementName = "Typedef";
+
+  fprintf(w->file, "\n");
+  vtkWrapXML_ElementStart(w, elementName);
 
   if (inClass)
     {
-    vtkWrapXML_Access(fp, type->Access, indentation);
+    vtkWrapXML_Access(w, type->Access);
     }
 
   if (type->Type)
     {
-    vtkWrapXML_Type(fp, type, indentation);
+    vtkWrapXML_TypeAttributes(w, type);
     }
-  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          vtkWrapXML_Quote(type->Name, 500));
 
-  vtkWrapXML_Comment(fp, type->Comment, indentation);
+  vtkWrapXML_Name(w, type->Name);
+  vtkWrapXML_Comment(w, type->Comment);
+  if (type->Type)
+    {
+    vtkWrapXML_TypeElements(w, type);
+    }
 
-  fprintf(fp, "%s</Typedef>\n", indent(--indentation));
+  vtkWrapXML_ElementEnd(w, elementName);
 }
 
 /**
  * Print a using declaration
  */
 void vtkWrapXML_Using(
-  FILE *fp, UsingInfo *data, int indentation)
+  wrapxml_state_t *w, UsingInfo *data)
 {
-  fprintf(fp, "\n");
-  fprintf(fp, "%s<Using>\n", indent(indentation++));
-
-  vtkWrapXML_Comment(fp, data->Comment, indentation);
+  const char *elementName = "Using";
+  const char *name = "namespace";
 
   if (data->Name)
     {
-    fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-            vtkWrapXML_Quote(data->Name, 500));
-    }
-  else
-    {
-    fprintf(fp, "%s<Name>namespace</Name>\n", indent(indentation));
+    name = data->Name;
     }
 
-  fprintf(fp, "%s<Scope>%s</Scope>\n", indent(indentation),
-          vtkWrapXML_Quote(data->Scope, 500));
-
-  fprintf(fp, "%s</Using>\n", indent(--indentation));
+  fprintf(w->file, "\n");
+  vtkWrapXML_ElementStart(w, elementName);
+  vtkWrapXML_Name(w, name);
+  vtkWrapXML_Attribute(w, "scope", data->Scope);
+  vtkWrapXML_Comment(w, data->Comment);
+  vtkWrapXML_ElementEnd(w, elementName);
 }
 
 /**
  * Print out items that are common to functions and methods
  */
 void vtkWrapXML_FunctionCommon(
-  FILE *fp, FunctionInfo *func, int printReturn, int indentation)
+  wrapxml_state_t *w, FunctionInfo *func, int printReturn)
 {
   ValueInfo *arg;
   unsigned long i, n;
@@ -698,22 +885,23 @@ void vtkWrapXML_FunctionCommon(
 
   if (func->IsStatic)
     {
-    fprintf(fp, "%s<Flag>static</Flag>\n", indent(indentation));
+    vtkWrapXML_Flag(w, "static", 1);
     }
 
   if (func->IsVariadic)
     {
-    fprintf(fp, "%s<Flag>variadic</Flag>\n", indent(indentation));
+    vtkWrapXML_Flag(w, "variadic", 1);
     }
 
   if (func->IsLegacy)
     {
-    fprintf(fp, "%s<Flag>legacy</Flag>\n", indent(indentation));
+    vtkWrapXML_Flag(w, "legacy", 1);
     }
 
   if (func->Signature)
     {
-    fprintf(fp, "%s<Signature>\n", indent(indentation++));
+    vtkWrapXML_ElementStart(w, "Signature");
+    vtkWrapXML_ElementBody(w);
 
     cp = func->Signature;
     for (i = 0; i < 400 && cp && cp[i] != '\0' && cp[i] != ';'; i++)
@@ -722,44 +910,40 @@ void vtkWrapXML_FunctionCommon(
       }
     temp[i] = '\0';
 
-    fprintf(fp, "%s %s\n", indent(indentation), vtkWrapXML_Quote(temp, 500));
+    fprintf(w->file, "%s %s\n", indent(w->indentation), vtkWrapXML_Quote(temp, 500));
 
-    fprintf(fp, "%s</Signature>\n", indent(--indentation));
+    vtkWrapXML_ElementEnd(w, "Signature");
   }
 
-  vtkWrapXML_Comment(fp, func->Comment, indentation);
+  vtkWrapXML_Comment(w, func->Comment);
 
   if (printReturn)
     {
-    fprintf(fp, "%s<Return>\n", indent(indentation++));
-
-    vtkWrapXML_Type(fp, func->ReturnValue, indentation);
-
-    fprintf(fp, "%s</Return>\n", indent(--indentation));
+    vtkWrapXML_ElementStart(w, "Return");
+    vtkWrapXML_TypeAttributes(w, func->ReturnValue);
+    vtkWrapXML_TypeElements(w, func->ReturnValue);
+    vtkWrapXML_ElementEnd(w, "Return");
     }
 
   n = func->NumberOfArguments;
   for (i = 0; i < n; i++)
     {
-    fprintf(fp, "%s<Arg>\n", indent(indentation++));
-
+    vtkWrapXML_ElementStart(w, "Arg");
     arg = func->Arguments[i];
-
-    vtkWrapXML_Type(fp, arg, indentation);
 
     if (arg->Name)
       {
-      fprintf(fp, "%s<Name>%s</Name>\n",
-              indent(indentation), vtkWrapXML_Quote(arg->Name, 500));
+      vtkWrapXML_Name(w, arg->Name);
       }
 
     if (arg->Value)
       {
-      fprintf(fp, "%s<Value>%s</Value>\n",
-              indent(indentation), vtkWrapXML_Quote(arg->Value, 500));
+      vtkWrapXML_Value(w, arg->Value);
       }
 
-    fprintf(fp, "%s</Arg>\n", indent(--indentation));
+    vtkWrapXML_TypeAttributes(w, arg);
+    vtkWrapXML_TypeElements(w, arg);
+    vtkWrapXML_ElementEnd(w, "Arg");
     }
 }
 
@@ -767,98 +951,112 @@ void vtkWrapXML_FunctionCommon(
  * Print out a function in XML format
  */
 void vtkWrapXML_Function(
-  FILE *fp, FunctionInfo *func, int indentation)
+  wrapxml_state_t *w, FunctionInfo *func)
 {
-  fprintf(fp, "\n");
-  fprintf(fp, "%s<Function>\n", indent(indentation++));
-  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          vtkWrapXML_Quote(func->Name, 500));
+  const char *elementName = "Function";
+
+  fprintf(w->file, "\n");
+  vtkWrapXML_ElementStart(w, elementName);
+  vtkWrapXML_Name(w, func->Name);
 
   if (func->Template)
     {
-    fprintf(fp, "\n");
-    vtkWrapXML_Template(fp, func->Template, indentation);
-    fprintf(fp, "\n");
+    vtkWrapXML_Flag(w, "template", 1);
+    vtkWrapXML_Template(w, func->Template);
+    fprintf(w->file, "\n");
     }
 
-  vtkWrapXML_FunctionCommon(fp, func, 1, indentation);
-
-  fprintf(fp, "%s</Function>\n", indent(--indentation));
+  vtkWrapXML_FunctionCommon(w, func, 1);
+  vtkWrapXML_ElementEnd(w, elementName);
 }
 
 /**
  * Print a bitfield of class property access methods
  */
 void vtkWrapXML_ClassPropertyMethods(
-  FILE *fp, unsigned int methodBitfield, int indentation)
+  wrapxml_state_t *w, unsigned int methodBitfield)
 {
   unsigned int i;
   unsigned int methodType;
+
+  fprintf(w->file, " bitfield=\"");
 
   for (i = 0; i < 32; i++)
     {
     methodType = methodBitfield & (1U << i);
     if (methodType)
       {
-      fprintf(fp, "%s<MethodType>%s</MethodType>\n", indent(indentation),
+      if ((methodType & VTK_METHOD_SET_CLAMP) != 0 &&
+          (methodBitfield & VTK_METHOD_SET_CLAMP) == VTK_METHOD_SET_CLAMP)
+        {
+        methodType = VTK_METHOD_SET_CLAMP;
+        methodBitfield &= ~VTK_METHOD_SET_CLAMP;
+        }
+      else if ((methodType & VTK_METHOD_SET_BOOL) != 0 &&
+          (methodBitfield & VTK_METHOD_SET_BOOL) == VTK_METHOD_SET_BOOL)
+        {
+        methodType = VTK_METHOD_SET_BOOL;
+        methodBitfield &= ~VTK_METHOD_SET_BOOL;
+        }
+
+      fprintf(w->file, "%s%s", ((i != 0) ? "|" : ""),
         vtkParseProperties_MethodTypeAsString(methodType));
       }
     }
+  fprintf(w->file, "\"");
 }
 
 /**
  * Print out a method in XML format
  */
 void vtkWrapXML_ClassMethod(
-  FILE *fp, ClassInfo *data, FunctionInfo *func, const char *classname,
-  const char *propname, int indentation)
+  wrapxml_state_t *w, ClassInfo *data, FunctionInfo *func, const char *classname,
+  const char *propname)
 {
+  const char *elementName = "Method";
   int needsReturnValue = 0;
 
-  fprintf(fp, "\n");
-  fprintf(fp, "%s<Method>\n", indent(indentation++));
-  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          vtkWrapXML_Quote(func->Name, 500));
-
-  if (func->Template)
-    {
-    fprintf(fp, "\n");
-    vtkWrapXML_Template(fp, func->Template, indentation);
-    fprintf(fp, "\n");
-    }
+  fprintf(w->file, "\n");
+  vtkWrapXML_ElementStart(w, elementName);
+  vtkWrapXML_Name(w, func->Name);
 
   if (classname)
     {
-    fprintf(fp, "%s<ClassName>%s</ClassName>\n", indent(indentation),
-            classname);
+    vtkWrapXML_Attribute(w, "context", classname);
     }
 
   if (propname)
     {
-    fprintf(fp, "%s<PropertyName>%s</PropertyName>\n", indent(indentation),
-            propname);
+    vtkWrapXML_Attribute(w, "property", propname);
     }
 
-  vtkWrapXML_Access(fp, func->Access, indentation);
+  if (func->Template)
+    {
+    vtkWrapXML_Flag(w, "template", 1);
+    vtkWrapXML_Template(w, func->Template);
+    fprintf(w->file, "\n");
+    }
+
+  vtkWrapXML_Access(w, func->Access);
 
   if (func->IsConst)
     {
-    fprintf(fp, "%s<Flag>const</Flag>\n", indent(indentation));
+    vtkWrapXML_Flag(w, "const", 1);
     }
 
   if (func->IsVirtual)
     {
-    fprintf(fp, "%s<Flag>virtual</Flag>\n", indent(indentation));
+    vtkWrapXML_Flag(w, "virtual", 1);
     }
 
   if (func->IsPureVirtual)
     {
-    fprintf(fp, "%s<Flag>pure</Flag>\n", indent(indentation));
+    vtkWrapXML_Flag(w, "pure", 1);
     }
 
   if (func->IsExplicit)
     {
-    fprintf(fp, "%s<Flag>explicit</Flag>\n", indent(indentation));
+    vtkWrapXML_Flag(w, "explicit", 1);
     }
 
   if (data == NULL || !(strcmp(data->Name, func->Name) == 0 ||
@@ -867,29 +1065,27 @@ void vtkWrapXML_ClassMethod(
     needsReturnValue = 1;
     }
 
-  vtkWrapXML_FunctionCommon(fp, func, needsReturnValue, indentation);
-
-  fprintf(fp, "%s</Method>\n", indent(--indentation));
+  vtkWrapXML_FunctionCommon(w, func, needsReturnValue);
+  vtkWrapXML_ElementEnd(w, elementName);
 }
 
 /**
  * Print out a property in XML format
  */
 void vtkWrapXML_ClassProperty(
-  FILE *fp, PropertyInfo *property, const char *classname, int indentation)
+  wrapxml_state_t *w, PropertyInfo *property, const char *classname)
 {
+  const char *elementName = "Property";
   const char *access = 0;
   unsigned long i;
 
-  fprintf(fp, "\n");
-  fprintf(fp, "%s<Property>\n", indent(indentation++));
-  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          property->Name);
+  fprintf(w->file, "\n");
+  vtkWrapXML_ElementStart(w, elementName);
+  vtkWrapXML_Name(w, property->Name);
 
   if (classname)
     {
-    fprintf(fp, "%s<ClassName>%s</ClassName>\n", indent(indentation),
-            classname);
+    vtkWrapXML_Attribute(w, "context", classname);
     }
 
   if (property->PublicMethods)
@@ -907,68 +1103,64 @@ void vtkWrapXML_ClassProperty(
 
   if (access)
     {
-    fprintf(fp, "%s<Access>%s</Access>\n", indent(indentation),
-            access);
+    vtkWrapXML_Attribute(w, "access", access);
     }
 
   if (property->IsStatic)
     {
-    fprintf(fp, "%s<Flag>static</Flag>\n", indent(indentation));
+    vtkWrapXML_Flag(w, "static", 1);
     }
 
   if (((property->PublicMethods | property->ProtectedMethods |
         property->PrivateMethods) & ~property->LegacyMethods) == 0)
     {
-    fprintf(fp, "%s<Flag>legacy</Flag>\n", indent(indentation));
+    vtkWrapXML_Flag(w, "legacy", 1);
     }
 
-  vtkWrapXML_Comment(fp, property->Comment, indentation);
+  vtkWrapXML_TypeSimple(w, property->Type, property->ClassName,
+                        property->Count);
 
-  vtkWrapXML_TypeSimple(fp, property->Type, property->ClassName,
-                        property->Count, indentation);
+  vtkWrapXML_Comment(w, property->Comment);
 
   if (property->EnumConstantNames)
     {
     for (i = 0; property->EnumConstantNames[i] != 0; i++)
       {
-      fprintf(fp, "%s<SetTo>%s</SetTo>\n", indent(indentation),
-              property->EnumConstantNames[i]);
+      vtkWrapXML_ElementStart(w, "SetTo");
+      vtkWrapXML_Attribute(w, "name", property->EnumConstantNames[i]);
+      vtkWrapXML_ElementEnd(w, "SetTo");
       }
     }
 
   if (property->PublicMethods)
     {
-    fprintf(fp, "%s<PublicMethods>\n", indent(indentation++));
-    vtkWrapXML_ClassPropertyMethods(fp, property->PublicMethods,
-                                    indentation);
-    fprintf(fp, "%s</PublicMethods>\n", indent(--indentation));
+    vtkWrapXML_ElementStart(w, "PublicMethods");
+    vtkWrapXML_ClassPropertyMethods(w, property->PublicMethods);
+    vtkWrapXML_ElementEnd(w, "PublicMethods");
     }
 
   if (property->ProtectedMethods)
     {
-    fprintf(fp, "%s<ProtectedMethods>\n", indent(indentation++));
-    vtkWrapXML_ClassPropertyMethods(fp, property->ProtectedMethods,
-                                    indentation);
-    fprintf(fp, "%s</ProtectedMethods>\n", indent(--indentation));
+    vtkWrapXML_ElementStart(w, "ProtectedMethods");
+    vtkWrapXML_ClassPropertyMethods(w, property->ProtectedMethods);
+    vtkWrapXML_ElementEnd(w, "ProtectedMethods");
     }
 
   if (property->PrivateMethods)
     {
-    fprintf(fp, "%s<PrivateMethods>\n", indent(indentation++));
-    vtkWrapXML_ClassPropertyMethods(fp, property->PrivateMethods,
-                                    indentation);
-    fprintf(fp, "%s</PrivateMethods>\n", indent(--indentation));
+    vtkWrapXML_ElementStart(w, "PrivateMethods");
+    vtkWrapXML_ClassPropertyMethods(w, property->PrivateMethods);
+    vtkWrapXML_ElementEnd(w, "PrivateMethods");
     }
 
   if (property->LegacyMethods)
     {
-    fprintf(fp, "%s<LegacyMethods>\n", indent(indentation++));
-    vtkWrapXML_ClassPropertyMethods(fp, property->LegacyMethods,
-                                    indentation);
-    fprintf(fp, "%s</LegacyMethods>\n", indent(--indentation));
+    vtkWrapXML_ElementStart(w, "LegacyMethods");
+    vtkWrapXML_ClassPropertyMethods(w, property->LegacyMethods);
+    vtkWrapXML_ElementEnd(w, "LegacyMethods");
     }
 
-  fprintf(fp, "%s</Property>\n", indent(--indentation));
+  vtkWrapXML_ElementEnd(w, elementName);
 }
 
 /**
@@ -1123,8 +1315,8 @@ MergeInfo *vtkWrapXML_MergeSuperClasses(
  * Synthesize additional information before printing a method
  */
 void vtkWrapXML_MethodHelper(
-  FILE *fp, MergeInfo *merge, ClassProperties *properties,
-  ClassInfo *classInfo, FunctionInfo *funcInfo, int indentation)
+  wrapxml_state_t *w, MergeInfo *merge, ClassProperties *properties,
+  ClassInfo *classInfo, FunctionInfo *funcInfo)
 {
   const char *classname = 0;
   const char *propname = 0;
@@ -1167,69 +1359,65 @@ void vtkWrapXML_MethodHelper(
 
   if (property)
     {
-    vtkWrapXML_ClassProperty(fp, property, classname, indentation);
+    vtkWrapXML_ClassProperty(w, property, classname);
     }
 
-  vtkWrapXML_ClassMethod(fp, classInfo, funcInfo,
-                         classname, propname, indentation);
+  vtkWrapXML_ClassMethod(w, classInfo, funcInfo,
+                         classname, propname);
 }
 
 /**
  * Print a class as xml
  */
 void vtkWrapXML_Class(
-  FILE *fp, NamespaceInfo *data, ClassInfo *classInfo, int inClass,
-  int indentation)
+  wrapxml_state_t *w, NamespaceInfo *data, ClassInfo *classInfo, int inClass)
 {
+  const char *elementName = "Class";
   ClassProperties *properties;
   MergeInfo *merge = NULL;
   unsigned long i, j, n;
 
   /* start new XML section for class */
-  fprintf(fp, "\n");
+  fprintf(w->file, "\n");
   if (classInfo->ItemType == VTK_STRUCT_INFO)
     {
-    fprintf(fp, "%s<Struct>\n", indent(indentation++));
+    elementName = "Struct";
     }
   else if (classInfo->ItemType == VTK_UNION_INFO)
     {
-    fprintf(fp, "%s<Union>\n", indent(indentation++));
+    elementName = "Union";
     }
-  else
-    {
-    fprintf(fp, "%s<Class>\n", indent(indentation++));
-    }
+
+  vtkWrapXML_ElementStart(w, elementName);
+
+  vtkWrapXML_Name(w, classInfo->Name);
 
   if (inClass)
     {
-    vtkWrapXML_Access(fp, classInfo->Access, indentation);
+    vtkWrapXML_Access(w, classInfo->Access);
     }
 
-  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-          vtkWrapXML_Quote(classInfo->Name, 500));
+  if (classInfo->IsAbstract)
+    {
+    vtkWrapXML_Flag(w, "abstract", 1);
+    }
 
-  vtkWrapXML_Comment(fp, classInfo->Comment, indentation);
+  if (classInfo->Template)
+    {
+    vtkWrapXML_Flag(w, "template", 1);
+    vtkWrapXML_Template(w, classInfo->Template);
+    }
+
+  vtkWrapXML_Comment(w, classInfo->Comment);
 
   /* actually, vtk classes never have more than one superclass */
   n = classInfo->NumberOfSuperClasses;
   for (i = 0; i < n; i++)
     {
-    fprintf(fp, "%s<SuperClass>\n", indent(indentation++));
-    fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation),
-            vtkWrapXML_Quote(classInfo->SuperClasses[i], 500));
-    fprintf(fp, "%s<Access>public</Access>\n", indent(indentation));
-    fprintf(fp, "%s</SuperClass>\n", indent(--indentation));
-    }
-
-  if (classInfo->IsAbstract)
-    {
-    fprintf(fp, "%s<Flag>abstract</Flag>\n", indent(indentation));
-    }
-
-  if (classInfo->Template)
-    {
-    fprintf(fp, "\n");
-    vtkWrapXML_Template(fp, classInfo->Template, indentation);
+    vtkWrapXML_ElementStart(w, "SuperClass");
+    vtkWrapXML_Name(w, classInfo->SuperClasses[i]);
+    vtkWrapXML_Attribute(w, "access", "public");
+    vtkWrapXML_ElementEnd(w, "SuperClass");
     }
 
   /* merge all the superclass information */
@@ -1240,8 +1428,8 @@ void vtkWrapXML_Class(
 
   if (merge)
     {
-    fprintf(fp, "\n");
-    vtkWrapXML_ClassInheritance(fp, merge, indentation);
+    fprintf(w->file, "\n");
+    vtkWrapXML_ClassInheritance(w, merge);
     }
 
   /* get information about the properties */
@@ -1255,40 +1443,40 @@ void vtkWrapXML_Class(
       {
       case VTK_VARIABLE_INFO:
         {
-        vtkWrapXML_Variable(fp, classInfo->Variables[j], 1, indentation);
+        vtkWrapXML_Variable(w, classInfo->Variables[j], 1);
         break;
         }
       case VTK_CONSTANT_INFO:
         {
-        vtkWrapXML_Constant(fp, classInfo->Constants[j], 1, indentation);
+        vtkWrapXML_Constant(w, classInfo->Constants[j], 1);
         break;
         }
       case VTK_ENUM_INFO:
         {
-        vtkWrapXML_Enum(fp, classInfo->Enums[j], 1, indentation);
+        vtkWrapXML_Enum(w, classInfo->Enums[j], 1);
         break;
         }
       case VTK_FUNCTION_INFO:
         {
-        vtkWrapXML_MethodHelper(fp, merge, properties, classInfo,
-                                classInfo->Functions[j], indentation);
+        vtkWrapXML_MethodHelper(w, merge, properties, classInfo,
+                                classInfo->Functions[j]);
         break;
         }
       case VTK_TYPEDEF_INFO:
         {
-        vtkWrapXML_Typedef(fp, classInfo->Typedefs[j], 1, indentation);
+        vtkWrapXML_Typedef(w, classInfo->Typedefs[j], 1);
         break;
         }
       case VTK_USING_INFO:
         {
-        vtkWrapXML_Using(fp, classInfo->Usings[j], indentation);
+        vtkWrapXML_Using(w, classInfo->Usings[j]);
         break;
         }
       case VTK_CLASS_INFO:
       case VTK_STRUCT_INFO:
       case VTK_UNION_INFO:
         {
-        vtkWrapXML_Class(fp, data, classInfo->Classes[j], 1, indentation);
+        vtkWrapXML_Class(w, data, classInfo->Classes[j], 1);
         break;
         }
       case VTK_NAMESPACE_INFO:
@@ -1305,28 +1493,16 @@ void vtkWrapXML_Class(
     vtkParseMerge_FreeMergeInfo(merge);
     }
 
-  /* print the class footer */
-  if (classInfo->ItemType == VTK_STRUCT_INFO)
-    {
-    fprintf(fp, "%s</Struct>\n", indent(indentation++));
-    }
-  else if (classInfo->ItemType == VTK_UNION_INFO)
-    {
-    fprintf(fp, "%s</Union>\n", indent(indentation++));
-    }
-  else
-    {
-    fprintf(fp, "%s</Class>\n", indent(indentation++));
-    }
+  vtkWrapXML_ElementEnd(w, elementName);
 }
 
 /* needed for vtkWrapXML_Body */
-void vtkWrapXML_Namespace(FILE *fp, NamespaceInfo *data, int indentation);
+void vtkWrapXML_Namespace(wrapxml_state_t *w, NamespaceInfo *data);
 
 /**
  * Print the body of a file or namespace
  */
-void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
+void vtkWrapXML_Body(wrapxml_state_t *w, NamespaceInfo *data)
 {
   unsigned long i, j;
 
@@ -1338,44 +1514,44 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
       {
       case VTK_VARIABLE_INFO:
         {
-        vtkWrapXML_Variable(fp, data->Variables[j], 0, indentation);
+        vtkWrapXML_Variable(w, data->Variables[j], 0);
         break;
         }
       case VTK_CONSTANT_INFO:
         {
-        vtkWrapXML_Constant(fp, data->Constants[j], 0, indentation);
+        vtkWrapXML_Constant(w, data->Constants[j], 0);
         break;
         }
       case VTK_TYPEDEF_INFO:
         {
-        vtkWrapXML_Typedef(fp, data->Typedefs[j], 0, indentation);
+        vtkWrapXML_Typedef(w, data->Typedefs[j], 0);
         break;
         }
       case VTK_USING_INFO:
         {
-        vtkWrapXML_Using(fp, data->Usings[j], indentation);
+        vtkWrapXML_Using(w, data->Usings[j]);
         break;
         }
       case VTK_ENUM_INFO:
         {
-        vtkWrapXML_Enum(fp, data->Enums[j], 0, indentation);
+        vtkWrapXML_Enum(w, data->Enums[j], 0);
         break;
         }
       case VTK_CLASS_INFO:
       case VTK_STRUCT_INFO:
       case VTK_UNION_INFO:
         {
-        vtkWrapXML_Class(fp, data, data->Classes[j], 0, indentation);
+        vtkWrapXML_Class(w, data, data->Classes[j], 0);
         break;
         }
       case VTK_FUNCTION_INFO:
         {
-        vtkWrapXML_Function(fp, data->Functions[j], indentation);
+        vtkWrapXML_Function(w, data->Functions[j]);
         break;
         }
       case VTK_NAMESPACE_INFO:
         {
-        vtkWrapXML_Namespace(fp, data->Namespaces[j], indentation);
+        vtkWrapXML_Namespace(w, data->Namespaces[j]);
         break;
         }
       }
@@ -1385,14 +1561,14 @@ void vtkWrapXML_Body(FILE *fp, NamespaceInfo *data, int indentation)
 /**
  * Print a namespace as xml
  */
-void vtkWrapXML_Namespace(FILE *fp, NamespaceInfo *data, int indentation)
+void vtkWrapXML_Namespace(wrapxml_state_t *w, NamespaceInfo *data)
 {
-  fprintf(fp, "\n");
-  fprintf(fp, "%s<Namespace>\n", indent(indentation++));
-  fprintf(fp, "%s<Name>%s</Name>\n", indent(indentation), data->Name);
-  vtkWrapXML_Body(fp, data, indentation);
-  fprintf(fp, "\n");
-  fprintf(fp, "%s</Namespace>\n", indent(--indentation));
+  fprintf(w->file, "\n");
+  fprintf(w->file, "%s<Namespace>\n", indent(w->indentation++));
+  fprintf(w->file, "%s<Name>%s</Name>\n", indent(w->indentation), data->Name);
+  vtkWrapXML_Body(w, data);
+  fprintf(w->file, "\n");
+  fprintf(w->file, "%s</Namespace>\n", indent(--w->indentation));
 }
 
 /**
@@ -1404,17 +1580,20 @@ void vtkWrapXML_Namespace(FILE *fp, NamespaceInfo *data, int indentation)
  */
 void vtkParseOutput(FILE *fp, FileInfo *data)
 {
-  int indentation = 0;
+  wrapxml_state_t ws;
+  ws.file = fp;
+  ws.indentation = 0;
+  ws.unclosed = 0;
 
   /* print the lead-in */
-  vtkWrapXML_FileHeader(fp, data, indentation);
+  vtkWrapXML_FileHeader(&ws, data);
 
   /* print the documentation */
-  vtkWrapXML_FileDoc(fp, data, indentation);
+  vtkWrapXML_FileDoc(&ws, data);
 
   /* print the main body */
-  vtkWrapXML_Body(fp, data->Contents, indentation);
+  vtkWrapXML_Body(&ws, data->Contents);
 
   /* print the closing tag */
-  vtkWrapXML_FileFooter(fp, data, indentation);
+  vtkWrapXML_FileFooter(&ws, data);
 }
