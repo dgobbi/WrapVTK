@@ -1422,6 +1422,8 @@ const char *vtkParseProperties_MethodTypeAsString(unsigned int methodType)
       return "REM_IDX";
     case VTK_METHOD_REM_ALL:
       return "REM_ALL";
+    default:
+      return "UNKNOWN";
     }
 
   return "";

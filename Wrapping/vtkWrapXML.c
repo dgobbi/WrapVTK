@@ -978,6 +978,7 @@ void vtkWrapXML_ClassPropertyMethods(
 {
   unsigned int i;
   unsigned int methodType;
+  int first = 1;
 
   fprintf(w->file, " bitfield=\"");
 
@@ -999,8 +1000,9 @@ void vtkWrapXML_ClassPropertyMethods(
         methodBitfield &= ~VTK_METHOD_SET_BOOL;
         }
 
-      fprintf(w->file, "%s%s", ((i != 0) ? "|" : ""),
+      fprintf(w->file, "%s%s", ((first == 0) ? "|" : ""),
         vtkParseProperties_MethodTypeAsString(methodType));
+      first = 0;
       }
     }
   fprintf(w->file, "\"");
