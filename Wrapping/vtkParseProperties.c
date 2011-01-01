@@ -1216,16 +1216,6 @@ static void categorizeProperties(
       }
     }
 
-  /* sweep SetNumberOf() methods that didn't have
-   * matching indexed Set methods */
-  for (i = 0; i < n; i++)
-    {
-    if (!matchedMethods[i] && isSetNumberOfMethod(methods->Methods[i]->Name))
-      {
-      addProperty(properties, methods, i, matchedMethods);
-      }
-    }
-
   /* next do the get methods that didn't have matching set methods */
   for (i = 0; i < n; i++)
     {
@@ -1234,6 +1224,16 @@ static void categorizeProperties(
     if (!matchedMethods[i] && isGetMethod(methods->Methods[i]->Name) &&
         !isAsStringMethod(methods->Methods[i]->Name) &&
         !isGetNumberOfMethod(methods->Methods[i]->Name))
+      {
+      addProperty(properties, methods, i, matchedMethods);
+      }
+    }
+
+  /* sweep SetNumberOf() methods that didn't have
+   * matching indexed Set methods */
+  for (i = 0; i < n; i++)
+    {
+    if (!matchedMethods[i] && isSetNumberOfMethod(methods->Methods[i]->Name))
       {
       addProperty(properties, methods, i, matchedMethods);
       }
