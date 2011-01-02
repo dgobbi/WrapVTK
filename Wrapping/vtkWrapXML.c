@@ -1016,11 +1016,39 @@ void vtkWrapXML_ClassMethod(
   const char *propname)
 {
   const char *elementName = "Method";
-  int needsReturnValue = 0;
+  const char *name = func->Name;
+  int isCtrOrDtr = 0;
+
+  if (data && strcmp(data->Name, func->Name) == 0)
+    {
+    elementName = "Constructor";
+    isCtrOrDtr = 1;
+    }
+  else if (data && func->Name[0] == '~' &&
+           strcmp(data->Name, &func->Name[1]) == 0)
+    {
+    elementName = "Destructor";
+    isCtrOrDtr = 1;
+    }
+  else if (func->IsOperator)
+    {
+    elementName = "Operator";
+    if (strncmp(name, "operator", 8) == 0)
+      {
+      name = &name[8];
+      while (isspace(name[0]))
+        {
+        name++;
+        }
+      }
+    }
 
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
-  vtkWrapXML_Name(w, func->Name);
+  if (!isCtrOrDtr)
+    {
+    vtkWrapXML_Name(w, name);
+    }
 
   if (classname)
     {
@@ -1061,13 +1089,7 @@ void vtkWrapXML_ClassMethod(
     vtkWrapXML_Flag(w, "explicit", 1);
     }
 
-  if (data == NULL || !(strcmp(data->Name, func->Name) == 0 ||
-      (func->Name[0] == '~' && strcmp(data->Name, &func->Name[1]) == 0)))
-    {
-    needsReturnValue = 1;
-    }
-
-  vtkWrapXML_FunctionCommon(w, func, needsReturnValue);
+  vtkWrapXML_FunctionCommon(w, func, !isCtrOrDtr);
   vtkWrapXML_ElementEnd(w, elementName);
 }
 
