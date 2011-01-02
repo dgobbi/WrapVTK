@@ -5164,6 +5164,6 @@ void print_preprocessor_error(int result, const char *cp, size_t n)
     while (j > 0 && data.FileName[j-1] != '/') { j--; }
     fn = &data.FileName[j];
     }
-  fprintf(yyout, "%s:%i: %s:\n", fn, yylineno, text);
+  fprintf(yyout, "In %s:%i: %s:\n", fn, yylineno, text);
   fprintf(yyout, "%*.*s\n", (int)n, (int)n, cp);
 }
