@@ -216,9 +216,10 @@ static void merge_function(FunctionInfo *merge, const FunctionInfo *func)
 unsigned long vtkParseMerge_Merge(
   MergeInfo *info, ClassInfo *merge, ClassInfo *super)
 {
-  unsigned long i, j, k, n, m, depth;
+  unsigned long i, j, k, ii, n, m, depth;
   int match;
   FunctionInfo *func;
+  FunctionInfo *f1;
   FunctionInfo *f2;
 
   depth = vtkParseMerge_PushClass(info, super->Name);
@@ -229,7 +230,7 @@ unsigned long vtkParseMerge_Merge(
     {
     func = super->Functions[i];
 
-    if (!func->Name)
+    if (!func || !func->Name)
       {
       continue;
       }
@@ -249,28 +250,52 @@ unsigned long vtkParseMerge_Merge(
       f2 = merge->Functions[j];
       if (f2->Name && strcmp(f2->Name, func->Name) == 0)
         {
-        if (f2->NumberOfArguments == func->NumberOfArguments)
-          {
-          for (k = 0; k < f2->NumberOfArguments; k++)
-            {
-            if (f2->ArgTypes[k] != func->ArgTypes[k]) { break; }
-            }
-          /* if all args match, then merge the comments */
-          if (k == f2->NumberOfArguments)
-            {
-            merge_function(f2, func);
-            vtkParseMerge_PushOverride(info, j, depth);
-            }
-          }
         match = 1;
+        break;
         }
       }
-    if (!match)
+
+    /* find all superclass methods with this name */
+    for (ii = i; ii < n; ii++)
       {
-      vtkParse_AddFunctionToClass(merge, super->Functions[i]);
-      super->Functions[i] = NULL;
-      vtkParseMerge_PushFunction(info, depth);
-      m++;
+      f1 = super->Functions[ii];
+      if (f1 && f1->Name && strcmp(f1->Name, func->Name) == 0)
+        {
+        if (match)
+          {
+          /* look for override of this signature */
+          for (j = 0; j < m; j++)
+            {
+            f2 = merge->Functions[j];
+            if (f2->Name && strcmp(f2->Name, f1->Name) == 0)
+              {
+              if (f2->NumberOfArguments == func->NumberOfArguments)
+                {
+                for (k = 0; k < f2->NumberOfArguments; k++)
+                  {
+                  if (f2->ArgTypes[k] != func->ArgTypes[k]) { break; }
+                  /* more in-depth checks here? */
+                  }
+                /* if all args match, then merge the comments */
+                if (k == f2->NumberOfArguments)
+                  {
+                  merge_function(f2, func);
+                  vtkParseMerge_PushOverride(info, j, depth);
+                  }
+                }
+              }
+            }
+          }
+        else /* no match */
+          {
+          /* copy into the merge */
+          vtkParse_AddFunctionToClass(merge, f1);
+          vtkParseMerge_PushFunction(info, depth);
+          m++;
+          }
+        /* remove from future consideration */
+        super->Functions[ii] = NULL;
+        }
       }
     }
 
