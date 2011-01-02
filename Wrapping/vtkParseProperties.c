@@ -43,6 +43,7 @@ typedef struct _MethodAttributes
   int IsIndexed;          /* method is e.g. SetValue(i, val) */
   int IsEnumerated;       /* method is e.g. SetValueToSomething() */
   int IsBoolean;          /* method is ValueOn() or ValueOff() */
+  int IsRHS;              /* method is GetValue(val), not val = GetValue() */
 } MethodAttributes;
 
 typedef struct _ClassPropertyMethods
@@ -305,7 +306,7 @@ static unsigned int methodCategory(MethodAttributes *meth, int shortForm)
       {
       return VTK_METHOD_GET_AS_STRING;
       }
-    else if (meth->IsIndexed && meth->Count > 0 && !meth->IsHinted)
+    else if (meth->IsIndexed && meth->IsRHS)
       {
       if (isGetNthMethod(name))
         {
@@ -331,7 +332,7 @@ static unsigned int methodCategory(MethodAttributes *meth, int shortForm)
       {
       return VTK_METHOD_GET_MULTI;
       }
-    else if (meth->Count > 0 && !meth->IsHinted)
+    else if (meth->IsRHS)
       {
       return VTK_METHOD_GET_RHS;
       }
@@ -490,6 +491,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   attrs->IsIndexed = 0;
   attrs->IsEnumerated = 0;
   attrs->IsBoolean = 0;
+  attrs->IsRHS = 0;
 
   if ((func->ReturnType & VTK_PARSE_STATIC) &&
       func->ReturnType != VTK_PARSE_FUNCTION)
@@ -568,6 +570,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     if (isSetMethod(func->Name))
       {
       attrs->HasProperty = 1;
+      attrs->IsRHS = 1;
       attrs->Type = func->ArgTypes[indexed];
       attrs->Count = func->ArgCounts[indexed];
       attrs->ClassName = func->ArgClasses[indexed];
@@ -576,12 +579,13 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       }
     /* "void GetValue(type *)" or "void GetValue(int, type *)" */
     else if (isGetMethod(func->Name) &&
-             func->ArgCounts[indexed] > 0 &&
+             /* func->ArgCounts[indexed] > 0 && */ 
              (func->ArgTypes[indexed] & VTK_PARSE_INDIRECT) ==
               VTK_PARSE_POINTER &&
              (func->ArgTypes[indexed] & VTK_PARSE_CONST) == 0)
       {
       attrs->HasProperty = 1;
+      attrs->IsRHS = 1;
       attrs->Type = func->ArgTypes[indexed];
       attrs->Count = func->ArgCounts[indexed];
       attrs->ClassName = func->ArgClasses[indexed];
@@ -594,6 +598,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
               VTK_PARSE_OBJECT_PTR)
       {
       attrs->HasProperty = 1;
+      attrs->IsRHS = 1;
       attrs->Type = func->ArgTypes[indexed];
       attrs->Count = func->ArgCounts[indexed];
       attrs->ClassName = func->ArgClasses[indexed];
