@@ -38,7 +38,7 @@
  * GET_IDX_RHS is "void GetValue(int, type [])"
  * GET_NTH_RHS   is "void GetNthValue(int, type [])"
  * GET_AS_STRING is "const char *GetValueAsString()"
- * SET_TO    is "void SetValueToEnumVal()"
+ * SET_VALUE_TO    is "void SetValueToEnumVal()"
  * BOOL_ON   is "void ValueOn()"
  * BOOL_OFF  is "void ValueOff()"
  * GET_MIN_VALUE is "type GetVarMinValue()"
@@ -67,7 +67,7 @@
 #define VTK_METHOD_GET_IDX_RHS   0x00000200
 #define VTK_METHOD_GET_NTH_RHS   0x00000400
 #define VTK_METHOD_GET_AS_STRING 0x00001000
-#define VTK_METHOD_SET_TO        0x00002000
+#define VTK_METHOD_SET_VALUE_TO  0x00002000
 #define VTK_METHOD_BOOL_ON       0x00004000
 #define VTK_METHOD_BOOL_OFF      0x00008000
 #define VTK_METHOD_GET_MIN_VALUE 0x00010000

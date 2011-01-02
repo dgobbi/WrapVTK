@@ -254,7 +254,7 @@ static unsigned int methodCategory(MethodAttributes *meth, int shortForm)
     {
     if (meth->IsEnumerated)
       {
-      return VTK_METHOD_SET_TO;
+      return VTK_METHOD_SET_VALUE_TO;
       }
     else if (meth->IsIndexed)
       {
@@ -1401,8 +1401,8 @@ const char *vtkParseProperties_MethodTypeAsString(unsigned int methodType)
       return "GET_NTH_RHS";
     case VTK_METHOD_GET_AS_STRING:
       return "GET_AS_STRING";
-    case VTK_METHOD_SET_TO:
-      return "SET_TO";
+    case VTK_METHOD_SET_VALUE_TO:
+      return "SET_VALUE_TO";
     case VTK_METHOD_BOOL_ON:
       return "BOOL_ON";
     case VTK_METHOD_BOOL_OFF:

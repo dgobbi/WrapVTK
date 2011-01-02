@@ -1150,9 +1150,9 @@ void vtkWrapXML_ClassProperty(
     {
     for (i = 0; property->EnumConstantNames[i] != 0; i++)
       {
-      vtkWrapXML_ElementStart(w, "SetTo");
+      vtkWrapXML_ElementStart(w, "SetValueTo");
       vtkWrapXML_Attribute(w, "name", property->EnumConstantNames[i]);
-      vtkWrapXML_ElementEnd(w, "SetTo");
+      vtkWrapXML_ElementEnd(w, "SetValueTo");
       }
     }
 
