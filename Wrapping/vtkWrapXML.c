@@ -693,6 +693,11 @@ void vtkWrapXML_Template(
 
     arg = args->Arguments[i];
 
+    if (arg->Name)
+      {
+      vtkWrapXML_Name(w, arg->Name);
+      }
+
     if (arg->Template)
       {
       vtkWrapXML_Attribute(w, "type", "template");
@@ -704,11 +709,6 @@ void vtkWrapXML_Template(
     else
       {
       vtkWrapXML_Attribute(w, "type", "typename");
-      }
-
-    if (arg->Name)
-      {
-      vtkWrapXML_Name(w, arg->Name);
       }
 
     if (arg->Value)
