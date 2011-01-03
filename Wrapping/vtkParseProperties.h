@@ -26,31 +26,31 @@
 /**
  * bitfield values to say what methods are available for a property
  *
- * GET is "type GetValue()" or "type *GetValue()"
- * SET is "void SetValue(type)" or "type SetValue(type [])"
+ * GET       is "type GetValue()" or "type *GetValue()"
+ * SET       is "void SetValue(type)" or "type SetValue(type [])"
  * GET_MULTI is "void GetValue(type&, type&, type&)"
  * SET_MULTI is "void SetValue(type, type, type)"
- * GET_IDX is "type GetValue(int)" or "type *GetValue(int)"
- * SET_IDX is "void SetValue(int, type)" or "void SetValue(int, type [])"
+ * GET_IDX   is "type GetValue(int)" or "type *GetValue(int)"
+ * SET_IDX   is "void SetValue(int, type)" or "void SetValue(int, type [])"
  * GET_NTH   is "type GetNthValue(int)" or "type *GetNthValue(int)"
  * SET_NTH   is "void SetNthValue(int,type)" or "void SetNthValue(int,type[])"
  * GET_RHS   is "void GetValue(type *)"
  * GET_IDX_RHS is "void GetValue(int, type [])"
- * GET_NTH_RHS   is "void GetNthValue(int, type [])"
+ * GET_NTH_RHS is "void GetNthValue(int, type [])"
  * GET_AS_STRING is "const char *GetValueAsString()"
- * SET_VALUE_TO    is "void SetValueToEnumVal()"
+ * SET_VALUE_TO is "void SetValueToEnumVal()"
  * BOOL_ON   is "void ValueOn()"
  * BOOL_OFF  is "void ValueOff()"
  * GET_MIN_VALUE is "type GetVarMinValue()"
  * GET_MAX_VALUE is "type GetVarMaxValue()"
  * GET_NUMBER_OF is "int GetNumberOfValues()"
  * SET_NUMBER_OF is "void SetNumberOfValues(int)"
- * ADD       is "void AddValue(type)"
- * ADD_MULTI is "void AddValue(type, type, type)"
- * ADD_IDX is "void AddValue(int, type)"
- * REM       is "void RemoveValue(type)"
- * REM_IDX is "void RemoveValue(int, type)"
- * REM_ALL   is "void RemoveAllValues()"
+ * ADD        is "void AddValue(type)"
+ * ADD_MULTI  is "void AddValue(type, type, type)"
+ * ADD_IDX    is "void AddValue(int, type)"
+ * REMOVE     is "void RemoveValue(type)"
+ * REMOVE_IDX is "void RemoveValue(int, type)"
+ * REMOVE_ALL is "void RemoveAllValues()"
  *
  * Items marked with two asterisks are not yet implemented.
  *
@@ -77,9 +77,9 @@
 #define VTK_METHOD_ADD           0x00100000
 #define VTK_METHOD_ADD_MULTI     0x00200000
 #define VTK_METHOD_ADD_IDX       0x00400000
-#define VTK_METHOD_REM           0x01000000
-#define VTK_METHOD_REM_IDX       0x04000000
-#define VTK_METHOD_REM_ALL       0x08000000
+#define VTK_METHOD_REMOVE        0x01000000
+#define VTK_METHOD_REMOVE_IDX    0x04000000
+#define VTK_METHOD_REMOVE_ALL    0x08000000
 
 #define VTK_METHOD_SET_CLAMP \
   (VTK_METHOD_GET_MIN_VALUE|VTK_METHOD_GET_MAX_VALUE)

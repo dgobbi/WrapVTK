@@ -349,15 +349,15 @@ static unsigned int methodCategory(MethodAttributes *meth, int shortForm)
     {
     if (isRemoveAllMethod(name))
       {
-      return VTK_METHOD_REM_ALL;
+      return VTK_METHOD_REMOVE_ALL;
       }
     else if (meth->IsIndexed)
       {
-      return VTK_METHOD_REM_IDX;
+      return VTK_METHOD_REMOVE_IDX;
       }
     else
       {
-      return VTK_METHOD_REM;
+      return VTK_METHOD_REMOVE;
       }
     }
   else if (isAddMethod(name))
@@ -1421,12 +1421,12 @@ const char *vtkParseProperties_MethodTypeAsString(unsigned int methodType)
       return "ADD_MULTI";
     case VTK_METHOD_ADD_IDX:
       return "ADD_IDX";
-    case VTK_METHOD_REM:
-      return "REM";
-    case VTK_METHOD_REM_IDX:
-      return "REM_IDX";
-    case VTK_METHOD_REM_ALL:
-      return "REM_ALL";
+    case VTK_METHOD_REMOVE:
+      return "REMOVE";
+    case VTK_METHOD_REMOVE_IDX:
+      return "REMOVE_IDX";
+    case VTK_METHOD_REMOVE_ALL:
+      return "REMOVE_ALL";
     default:
       return "UNKNOWN";
     }
