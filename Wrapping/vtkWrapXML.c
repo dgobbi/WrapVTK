@@ -1043,6 +1043,12 @@ void vtkWrapXML_ClassMethod(
       }
     }
 
+  /* eliminate macros masquerading as class methods */
+  if (!func->ReturnValue && !isCtrOrDtr)
+    {
+    return;
+    }
+
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
   if (!isCtrOrDtr)
