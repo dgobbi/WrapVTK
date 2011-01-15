@@ -380,7 +380,7 @@ void vtkWrapXML_Flag(wrapxml_state_t *w, const char *name, int value)
 #ifdef WRAPXML_ELEMENTS_ONLY
     vtkWrapXML_Attribute(w, "Flag", name);
 #else
-    fprintf(w->file, " %s=1", name);
+    fprintf(w->file, " %s=\"1\"", name);
 #endif
     }
 }
