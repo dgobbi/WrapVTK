@@ -830,6 +830,8 @@ void vtkWrapXML_Typedef(
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
 
+  vtkWrapXML_Name(w, type->Name);
+
   if (inClass)
     {
     vtkWrapXML_Access(w, type->Access);
@@ -840,7 +842,6 @@ void vtkWrapXML_Typedef(
     vtkWrapXML_TypeAttributes(w, type);
     }
 
-  vtkWrapXML_Name(w, type->Name);
   vtkWrapXML_Comment(w, type->Comment);
   if (type->Type)
     {
