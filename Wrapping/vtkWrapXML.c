@@ -955,10 +955,24 @@ void vtkWrapXML_Function(
   wrapxml_state_t *w, FunctionInfo *func)
 {
   const char *elementName = "Function";
+  const char *name = func->Name;
+
+  if (func->IsOperator)
+    {
+    elementName = "Operator";
+    if (strncmp(name, "operator", 8) == 0)
+      {
+      name = &name[8];
+      while (isspace(name[0]))
+        {
+        name++;
+        }
+      }
+    }
 
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
-  vtkWrapXML_Name(w, func->Name);
+  vtkWrapXML_Name(w, name);
 
   if (func->Template)
     {
