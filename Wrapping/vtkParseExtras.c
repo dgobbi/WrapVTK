@@ -266,7 +266,7 @@ void vtkParse_ExpandTypedef(ValueInfo *valinfo, ValueInfo *typedefinfo)
 void vtkParse_ExpandTypedefs(
   ValueInfo *val, unsigned long n, ValueInfo *typedefinfo[])
 {
-  size_t i;
+  unsigned long i;
 
   if (((val->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_OBJECT ||
        (val->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_UNKNOWN) &&
@@ -539,6 +539,7 @@ void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
       (*cp == '_'))
     {
     /* skip all chars that are part of a name */
+    n = 0;
     while ((cp[n] >= 'a' && cp[n] <= 'z') ||
            (cp[n] >= 'A' && cp[n] <= 'Z') ||
            (cp[n] >= '0' && cp[n] <= '9') ||
