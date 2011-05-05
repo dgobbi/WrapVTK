@@ -3,16 +3,25 @@
   Program:   Visualization Toolkit
   Module:    vtkParseHierarchy.c
 
-  Copyright (c) 2010 David Gobbi
+  Copyright (c) Ken Martin, Will Schroeder, Bill Lorensen
   All rights reserved.
+  See Copyright.txt or http://www.kitware.com/Copyright.htm for details.
 
      This software is distributed WITHOUT ANY WARRANTY; without even
      the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-     PURPOSE.  Please see Copyright.txt for more details.
+     PURPOSE.  See the above copyright notice for more information.
 
 =========================================================================*/
+/*-------------------------------------------------------------------------
+  Copyright (c) 2010 David Gobbi.
+
+  Contributed to the VisualizationToolkit by the author in June 2010
+  under the terms of the Visualization Toolkit 2008 copyright.
+-------------------------------------------------------------------------*/
 
 #include "vtkParseHierarchy.h"
+#include "vtkParseInternal.h"
+#include "vtkParseExtras.h"
 #include "vtkType.h"
 #include <stdio.h>
 #include <string.h>
@@ -38,14 +47,14 @@ static size_t skip_name(const char *text)
     i++;
     while (isalnum(text[i]) || text[i] == '_' ||
            (text[i] == ':' && text[i+1] == ':') ||
-           text[i] == '<' || text[i] == '>')
+           text[i] == '<')
       {
       if (text[i] == '<')
         {
         while (text[i] != '\0' && text[i] != '\n')
           {
           if (text[i] == '<') { depth++; }
-          if (text[i] == '>') { if (--depth == 0) { break; } }
+          if (text[i] == '>') { if (--depth == 0) { i++; break; } }
           i++;
           }
         }
@@ -96,7 +105,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
   char *cp;
   const char *ccp;
   size_t maxlen = 15;
-  size_t i, j, k, n;
+  size_t i, j, k, n, m;
   unsigned int bits, pointers;
 
   line = (char *)malloc(maxlen);
@@ -146,6 +155,9 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
     entry = &info->Entries[info->NumberOfEntries++];
     entry->Name = NULL;
     entry->HeaderFile = NULL;
+    entry->NumberOfTemplateArgs = 0;
+    entry->TemplateArgs = NULL;
+    entry->TemplateArgDefaults = NULL;
     entry->NumberOfProperties = 0;
     entry->Properties = NULL;
     entry->NumberOfSuperClasses = 0;
@@ -157,12 +169,90 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
 
     i = skip_space(line);
     n = skip_name(&line[i]);
+    for (m = 0; m < n; m++)
+      {
+      if (line[i+m] == '<') { break; }
+      }
 
-    cp = (char *)malloc(n+1);
-    strncpy(cp, &line[i], n);
-    cp[n] = '\0';
+    cp = (char *)malloc(m+1);
+    strncpy(cp, &line[i], m);
+    cp[m] = '\0';
     entry->Name = cp;
-    i += n;
+    i += m;
+
+    if (line[i] == '<')
+      {
+      i++;
+      i += skip_space(&line[i]);
+
+      for (j = 0; line[i] != '>' && line[i] != '\0'; j++)
+        {
+        if (j == 0)
+          {
+          entry->TemplateArgs = (const char **)malloc(sizeof(char *));
+          entry->TemplateArgDefaults = (const char **)malloc(sizeof(char *));
+          }
+        else
+          {
+          entry->TemplateArgs = (const char **)realloc(
+            (char **)entry->TemplateArgs, (j+1)*sizeof(char *));
+          entry->TemplateArgDefaults = (const char **)realloc(
+            (char **)entry->TemplateArgDefaults, (j+1)*sizeof(char *));
+          }
+        entry->NumberOfTemplateArgs++;
+        entry->TemplateArgDefaults[j] = NULL;
+
+        m = skip_name(&line[i]);
+
+        cp = (char *)malloc(m+1);
+        strncpy(cp, &line[i], m);
+        cp[m] = '\0';
+        entry->TemplateArgs[j] = cp;
+        i += m;
+        i += skip_space(&line[i]);
+
+        if (line[i] == '=')
+          {
+          i++;
+          i += skip_space(&line[i]);
+          m = skip_name(&line[i]);
+
+          cp = (char *)malloc(m+1);
+          strncpy(cp, &line[i], m);
+          cp[m] = '\0';
+          entry->TemplateArgDefaults[j] = cp;
+          i += m;
+          i += skip_space(&line[i]);
+          }
+
+        if (line[i] == ',')
+          {
+          i++;
+          i += skip_space(&line[i]);
+          }
+        }
+
+      if (line[i] == '>')
+        {
+        i++;
+        i += skip_space(&line[i]);
+        }
+
+      if (line[i] == ':' && line[i+1] == ':')
+        {
+        i += 2;
+        m = skip_name(&line[i]);
+        n = strlen(entry->Name);
+        cp = (char *)malloc(n+m+3);
+        strcpy(cp, entry->Name);
+        strcpy(&cp[n], "::");
+        strncpy(&cp[n+2], &line[i], m);
+        i += m;
+        cp[n+m+3] = '\0';
+        free((char *)entry->Name);
+        entry->Name = cp;
+        }
+      }
 
     i += skip_space(&line[i]);
 
@@ -584,6 +674,19 @@ void vtkParseHierarchy_Free(HierarchyInfo *info)
     entry = &info->Entries[i];
     free((char *)entry->Name);
     free((char *)entry->HeaderFile);
+    for (j = 0; j < entry->NumberOfTemplateArgs; j++)
+      {
+      free((char *)entry->TemplateArgs[j]);
+      if (entry->TemplateArgDefaults[j])
+        {
+        free((char *)entry->TemplateArgDefaults[j]);
+        }
+      }
+    if (entry->NumberOfTemplateArgs)
+      {
+      free((char **)entry->TemplateArgs);
+      free((char **)entry->TemplateArgDefaults);
+      }
     for (j = 0; j < entry->NumberOfSuperClasses; j++)
       {
       free((char *)entry->SuperClasses[j]);
@@ -649,6 +752,7 @@ int vtkParseHierarchy_IsTypeOf(
         else
           {
           /* outside of hierarchy, can't search */
+          /* fprintf(stderr, "not found \"%s\"\n", entry->SuperClasses[j]); */
           i = -2;
           ((HierarchyEntry *)entry)->SuperClassIndex[j] = i;
           }

@@ -44,6 +44,35 @@ void vtkParse_InitTemplateArg(TemplateArg *arg);
 /*@}*/
 
 /**
+ * Copy methods
+ */
+/*@{*/
+void vtkParse_CopyNamespace(NamespaceInfo *data, const NamespaceInfo *orig);
+void vtkParse_CopyClass(ClassInfo *data, const ClassInfo *orig);
+void vtkParse_CopyFunction(FunctionInfo *data, const FunctionInfo *orig);
+void vtkParse_CopyValue(ValueInfo *data, const ValueInfo *orig);
+void vtkParse_CopyEnum(EnumInfo *data, const EnumInfo *orig);
+void vtkParse_CopyUsing(UsingInfo *data, const UsingInfo *orig);
+void vtkParse_CopyTemplateArgs(TemplateArgs *data, const TemplateArgs *orig);
+void vtkParse_CopyTemplateArg(TemplateArg *data, const TemplateArg *orig);
+/*@}*/
+
+/**
+ * Free methods
+ */
+/*@{*/
+void vtkParse_FreeFile(FileInfo *file_info);
+void vtkParse_FreeNamespace(NamespaceInfo *namespace_info);
+void vtkParse_FreeClass(ClassInfo *cls);
+void vtkParse_FreeFunction(FunctionInfo *func);
+void vtkParse_FreeValue(ValueInfo *val);
+void vtkParse_FreeEnum(EnumInfo *item);
+void vtkParse_FreeUsing(UsingInfo *item);
+void vtkParse_FreeTemplateArgs(TemplateArgs *arg);
+void vtkParse_FreeTemplateArg(TemplateArg *arg);
+/*@}*/
+
+/**
  * Make a persistent copy of a string for use with AddStringToArray:
  * At most 'n' chars will be copied, and the string will be terminated.
  * If a null pointer is provided, then a null pointer will be returned.
@@ -86,11 +115,6 @@ void vtkParse_AddUsingToNamespace(NamespaceInfo *info, UsingInfo *item);
 void vtkParse_AddArgumentToFunction(FunctionInfo *info, ValueInfo *item);
 void vtkParse_AddArgumentToTemplate(TemplateArgs *info, TemplateArg *item);
 /*@}*/
-
-/**
- * Expand a typedef within a type declaration.
- */
-void vtkParse_ExpandTypedef(ValueInfo *valinfo, ValueInfo *typedefinfo);
 
 /**
  * Simple utility for mapping VTK types to VTK_PARSE types.

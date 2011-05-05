@@ -28,6 +28,8 @@
 #include <string.h>
 #include <ctype.h>
 #include "vtkParse.h"
+#include "vtkParseInternal.h"
+#include "vtkParseExtras.h"
 #include "vtkParseProperties.h"
 #include "vtkParseHierarchy.h"
 #include "vtkParseMerge.h"
@@ -1081,18 +1083,17 @@ void vtkWrapXML_ClassMethod(
     vtkWrapXML_Attribute(w, "property", propname);
     }
 
-  if (func->Template)
-    {
-    vtkWrapXML_Flag(w, "template", 1);
-    vtkWrapXML_Template(w, func->Template);
-    fprintf(w->file, "\n");
-    }
-
   vtkWrapXML_Access(w, func->Access);
 
   if (func->IsConst)
     {
     vtkWrapXML_Flag(w, "const", 1);
+    }
+
+  if (func->Template)
+    {
+    vtkWrapXML_Flag(w, "template", 1);
+    vtkWrapXML_Template(w, func->Template);
     }
 
   if (func->IsVirtual)
@@ -1218,11 +1219,16 @@ void vtkWrapXML_MergeHelper(
 {
   FILE *fp = NULL;
   ClassInfo *cinfo = NULL;
+  ClassInfo *new_cinfo = NULL;
   FileInfo *finfo = NULL;
   HierarchyEntry *entry = NULL;
+  char *new_classname = NULL;
+  const char **template_args = NULL;
+  unsigned long template_arg_count = 0;
   const char *header;
   const char *filename;
-  unsigned long i, n;
+  unsigned long i, j, k, n;
+  int depth = 0;
 
   /* Note: this method does not deal with scoping yet.
    * "classname" might be a scoped name, in which case the
@@ -1231,6 +1237,56 @@ void vtkWrapXML_MergeHelper(
    * Each containing namespace or class for the "merge"
    * must be searched, taking the "using" directives that
    * have been applied into account. */
+
+  /* is the class templated? */
+  for (i = 0; classname[i]; i++)
+    {
+    if (classname[i] == '<')
+      {
+      new_classname = (char *)malloc(i + 1);
+      strncpy(new_classname, classname, i);
+      new_classname[i] = '\0';
+      break;
+      }
+    }
+
+  if (classname[i] == '<')
+    {
+    i++;
+    /* extract the template arguments */
+    for (;;)
+      {
+      while (classname[i] == ' ' || classname[i] == '\t') { i++; }
+      j = i;
+      while (classname[j] != ',' && classname[j] != '>' &&
+             classname[j] != '\n' && classname[j] != '\0')
+        {
+        if (classname[j] == '<')
+          {
+          j++;
+          depth = 1;
+          while (classname[j] != '\n' && classname[j] != '\0')
+            {
+            if (classname[j] == '<') { depth++; }
+            if (classname[j] == '>') { if (--depth == 0) { break; } }
+            j++;
+            }
+          if (classname[j] == '\n' || classname[j] == '\0') { break; }
+          }
+        j++;
+        }
+      k = j;
+      while (classname[k-1] == ' ' || classname[k-1] == '\t') { --k; } 
+      vtkParse_AddStringToArray(&template_args, &template_arg_count,
+                                vtkParse_DuplicateString(&classname[i], k-i));
+      if (classname[j] != ',')
+        {
+        break;
+        }
+      i = j + 1;
+      } 
+    classname = new_classname;
+    }
 
   /* find out if "classname" is in the current namespace */
   n = data->NumberOfClasses;
@@ -1248,9 +1304,20 @@ void vtkWrapXML_MergeHelper(
     entry = vtkParseHierarchy_FindEntry(hinfo, classname);
     if (!entry)
       {
+      if (new_classname)
+        {
+        free(new_classname);
+        }
       return;
       }
     header = entry->HeaderFile;
+    if (!header)
+      {
+      if (hintfile) { fclose(hintfile); }
+      fprintf(stderr, "Null header file for class %s!\n", classname);
+      exit(1);
+      }
+
     filename = vtkParse_FindIncludeFile(header);
     if (!filename)
       {
@@ -1297,6 +1364,15 @@ void vtkWrapXML_MergeHelper(
 
   if (cinfo)
     {
+    if (template_args)
+      {
+      new_cinfo = (ClassInfo *)malloc(sizeof(ClassInfo));
+      vtkParse_CopyClass(new_cinfo, cinfo);
+      vtkParse_SpecializeTemplatedClass(
+        new_cinfo, template_arg_count, template_args);
+      cinfo = new_cinfo;
+      }
+
     vtkParseMerge_Merge(info, merge, cinfo);
     n = cinfo->NumberOfSuperClasses;
     for (i = 0; i < n; i++)
@@ -1304,6 +1380,16 @@ void vtkWrapXML_MergeHelper(
       vtkWrapXML_MergeHelper(data, hinfo, cinfo->SuperClasses[i],
                              hintfile, info, merge);
       }
+    }
+
+  if (new_classname)
+    {
+    free(new_classname);
+    }
+
+  if (template_args)
+    {
+    free((char **)template_args);
     }
 }
 

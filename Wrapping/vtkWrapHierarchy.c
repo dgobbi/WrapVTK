@@ -118,6 +118,37 @@ static char *append_scope_to_line(
 }
 
 /**
+ * Append template info
+ */
+static char *append_template_to_line(
+  char *line, size_t *m, size_t *maxlen, TemplateArgs *template_args)
+{
+  TemplateArg *arg;
+  unsigned long j;
+
+  line = append_to_line(line, "<", m, maxlen);
+
+  for (j = 0; j < template_args->NumberOfArguments; j++)
+    {
+    arg = template_args->Arguments[j];
+    line = append_to_line(line, arg->Name, m, maxlen);
+    if (arg->Value && arg->Value[0] != '\n')
+      {
+      line = append_to_line(line, "=", m, maxlen);
+      line = append_to_line(line, arg->Value, m, maxlen);
+      }
+    if (j+1 < template_args->NumberOfArguments)
+      {
+      line = append_to_line(line, ",", m, maxlen);
+      }
+    }
+
+  line = append_to_line(line, ">", m, maxlen);
+
+  return line;
+}
+
+/**
  * Append class info
  */
 static char *append_class_to_line(
@@ -126,7 +157,14 @@ static char *append_class_to_line(
   unsigned long j;
 
   line = append_to_line(line, class_info->Name, m, maxlen);
+
+  if (class_info->Template)
+    {
+    line = append_template_to_line(line, m, maxlen, class_info->Template);
+    }  
+
   line = append_to_line(line, " ", m, maxlen);
+
   if (class_info->NumberOfSuperClasses)
     {
     line = append_to_line(line, ": ", m, maxlen);
@@ -152,7 +190,7 @@ static char *append_enum_to_line(
   char *line, size_t *m, size_t *maxlen, EnumInfo *enum_info)
 {
   line = append_to_line(line, enum_info->Name, m, maxlen);
-  line = append_to_line(line, " : int ", m, maxlen);
+  line = append_to_line(line, " : enum ", m, maxlen);
 
   return line;
 }
@@ -265,6 +303,7 @@ static char **append_class_contents(
   char *new_scope;
   char *line;
   size_t m, n, maxlen;
+  size_t scope_m, scope_maxlen;
 
   /* append the name to the scope */
   new_scope = 0;
@@ -278,17 +317,23 @@ static char **append_class_contents(
     {
     m = strlen(data->Name);
     }
-  if (m && n)
+  if (m && (n || data->Template))
     {
-    new_scope = (char *)malloc(m + n + 3);
+    scope_maxlen = n + m + 3;
+    scope_m = 0;
+    new_scope = (char *)malloc(scope_maxlen);
+    new_scope[0] = '\0';
     if (n)
       {
-      strncpy(new_scope, scope, n);
-      new_scope[n++] = ':';
-      new_scope[n++] = ':';
+      new_scope = append_to_line(new_scope, scope, &scope_m, &scope_maxlen);
+      new_scope = append_to_line(new_scope, "::", &scope_m, &scope_maxlen);
       }
-    strncpy(&new_scope[n], data->Name, m);
-    new_scope[n+m] = '\0';
+    new_scope = append_to_line(new_scope, data->Name, &scope_m, &scope_maxlen);
+    if (data->Template)
+      {
+      new_scope = append_template_to_line(
+        new_scope, &scope_m, &scope_maxlen, data->Template); 
+      }
     scope = new_scope;
     }
   else if (m)
@@ -312,7 +357,7 @@ static char **append_class_contents(
     if (data->Items[i].Type == VTK_CLASS_INFO ||
         data->Items[i].Type == VTK_STRUCT_INFO)
       {
-      ClassInfo *class_info = 
+      ClassInfo *class_info =
         data->Classes[data->Items[i].Index];
 
       line = append_scope_to_line(line, &m, &maxlen, scope);
@@ -423,7 +468,7 @@ static char **append_namespace_contents(
     if (data->Items[i].Type == VTK_CLASS_INFO ||
         data->Items[i].Type == VTK_STRUCT_INFO)
       {
-      ClassInfo *class_info = 
+      ClassInfo *class_info =
         data->Classes[data->Items[i].Index];
 
       /* all but the main class in each file is excluded from wrapping */

@@ -33,7 +33,7 @@
 #define VTK_PARSE_HIERARCHY_H
 
 /* Need the ValueInfo struct for typedefs */
-#include "vtkParseInternal.h"
+#include "vtkParse.h"
 
 /**
  * One entry from the hierarchy file.
@@ -43,6 +43,9 @@ typedef struct _HierarchyEntry
 {
   const char  *Name;            /* the class or type name */
   const char  *HeaderFile;      /* header file the class is defined in */
+  int          NumberOfTemplateArgs; /* number of template arguments */
+  const char **TemplateArgs;
+  const char **TemplateArgDefaults;
   int          NumberOfProperties;   /* number of properties */
   const char **Properties;
   int          NumberOfSuperClasses; /* number of superclasses */
