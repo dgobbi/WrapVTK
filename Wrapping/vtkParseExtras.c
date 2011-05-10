@@ -802,6 +802,106 @@ static void class_substitution(
     }
 }
 
+/* Extract template args from a comma-separated list enclosed
+ * in angle brackets.  Returns zero if no angle brackets found. */
+size_t vtkParse_DecomposeTemplatedType(
+  const char *text, const char **classname,
+  unsigned long *np, const char ***argp)
+{
+  size_t i, j, k, n;
+  int depth = 0;
+  const char **template_args = NULL;
+  unsigned long template_arg_count = 0;
+  char *new_text;
+
+  n = vtkParse_NameLength(text);
+
+  /* is the class templated? */
+  for (i = 0; i < n; i++)
+    {
+    if (text[i] == '<')
+      {
+      break;
+      }
+    }
+
+  new_text = (char *)malloc(i + 1);
+  strncpy(new_text, text, i);
+  new_text[i] = '\0';
+  *classname = new_text;
+
+  if (text[i] == '<')
+    {
+    i++;
+    /* extract the template arguments */
+    for (;;)
+      {
+      while (text[i] == ' ' || text[i] == '\t') { i++; }
+      j = i;
+      while (text[j] != ',' && text[j] != '>' &&
+             text[j] != '\n' && text[j] != '\0')
+        {
+        if (text[j] == '<')
+          {
+          j++;
+          depth = 1;
+          while (text[j] != '\n' && text[j] != '\0')
+            {
+            if (text[j] == '<') { depth++; }
+            if (text[j] == '>') { if (--depth == 0) { break; } }
+            j++;
+            }
+          if (text[j] == '\n' || text[j] == '\0') { break; }
+          }
+        j++;
+        }
+
+      k = j;
+      while (text[k-1] == ' ' || text[k-1] == '\t') { --k; } 
+
+      new_text = (char *)malloc(k-i + 1);
+      strncpy(new_text, &text[i], k-i);
+      vtkParse_AddStringToArray(&template_args, &template_arg_count,
+                                new_text);
+
+      i = j + 1;
+
+      if (text[j] != ',')
+        {
+        break;
+        }
+      } 
+    }
+
+  *np = template_arg_count;
+  *argp = template_args;
+
+  return i;
+}
+
+/* Free the list of strings returned by ExtractTemplateArgs.  */
+void vtkParse_FreeTemplateDecomposition(
+  const char *name, unsigned long n, const char **args)
+{
+  unsigned long i;
+
+  if (name)
+    {
+    free((char *)name);
+    }
+
+  if (n > 0)
+    {
+    for (i = 0; i < n; i++)
+      {
+      free((char *)args[i]);
+      }
+
+    free((char **)args);
+    }
+}
+
+
 /* Specialize a templated class by substituting the provided arguments. */
 void vtkParse_SpecializeTemplatedClass(
   ClassInfo *data, unsigned long n, const char *args[])

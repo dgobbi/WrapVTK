@@ -1227,8 +1227,7 @@ void vtkWrapXML_MergeHelper(
   unsigned long template_arg_count = 0;
   const char *header;
   const char *filename;
-  unsigned long i, j, k, n;
-  int depth = 0;
+  unsigned long i, n;
 
   /* Note: this method does not deal with scoping yet.
    * "classname" might be a scoped name, in which case the
@@ -1238,55 +1237,9 @@ void vtkWrapXML_MergeHelper(
    * must be searched, taking the "using" directives that
    * have been applied into account. */
 
-  /* is the class templated? */
-  for (i = 0; classname[i]; i++)
-    {
-    if (classname[i] == '<')
-      {
-      new_classname = (char *)malloc(i + 1);
-      strncpy(new_classname, classname, i);
-      new_classname[i] = '\0';
-      break;
-      }
-    }
-
-  if (classname[i] == '<')
-    {
-    i++;
-    /* extract the template arguments */
-    for (;;)
-      {
-      while (classname[i] == ' ' || classname[i] == '\t') { i++; }
-      j = i;
-      while (classname[j] != ',' && classname[j] != '>' &&
-             classname[j] != '\n' && classname[j] != '\0')
-        {
-        if (classname[j] == '<')
-          {
-          j++;
-          depth = 1;
-          while (classname[j] != '\n' && classname[j] != '\0')
-            {
-            if (classname[j] == '<') { depth++; }
-            if (classname[j] == '>') { if (--depth == 0) { break; } }
-            j++;
-            }
-          if (classname[j] == '\n' || classname[j] == '\0') { break; }
-          }
-        j++;
-        }
-      k = j;
-      while (classname[k-1] == ' ' || classname[k-1] == '\t') { --k; } 
-      vtkParse_AddStringToArray(&template_args, &template_arg_count,
-                                vtkParse_DuplicateString(&classname[i], k-i));
-      if (classname[j] != ',')
-        {
-        break;
-        }
-      i = j + 1;
-      } 
-    classname = new_classname;
-    }
+  /* extract the template arguments */
+  vtkParse_DecomposeTemplatedType(
+    classname, &classname, &template_arg_count, &template_args);
 
   /* find out if "classname" is in the current namespace */
   n = data->NumberOfClasses;
@@ -1382,15 +1335,8 @@ void vtkWrapXML_MergeHelper(
       }
     }
 
-  if (new_classname)
-    {
-    free(new_classname);
-    }
-
-  if (template_args)
-    {
-    free((char **)template_args);
-    }
+  vtkParse_FreeTemplateDecomposition(
+    classname, template_arg_count, template_args);
 }
 
 /**

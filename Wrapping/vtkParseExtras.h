@@ -16,10 +16,11 @@
  * This file contains methods for handling typedefs and templates.
  */
 
-#ifndef VTK_PARSE_TYPES_H
-#define VTK_PARSE_TYPES_H
+#ifndef VTK_PARSE_EXTRAS_H
+#define VTK_PARSE_EXTRAS_H
 
 #include "vtkParse.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -67,6 +68,21 @@ void vtkParse_ExpandTypedefs(
  */
 void vtkParse_ExpandValues(
   ValueInfo *valinfo, unsigned long n, const char *name[], const char *val[]);
+
+/**
+ * Extract the class name and template args from a templated
+ * class type ID.  Returns the full number of characters that
+ * were consumed during the decomposition.
+ */
+size_t vtkParse_DecomposeTemplatedType(
+  const char *text, const char **classname,
+  unsigned long *n, const char ***args);
+
+/**
+ * Free the list of strings returned by ExtractTemplateArgs.
+ */
+void vtkParse_FreeTemplateDecomposition(
+  const char *classname, unsigned long n, const char **args);
 
 /**
  * Specialize a templated class by substituting the provided arguments
