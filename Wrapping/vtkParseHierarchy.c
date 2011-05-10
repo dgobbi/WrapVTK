@@ -35,36 +35,6 @@ static size_t skip_space(const char *text)
   return i;
 }
 
-static size_t skip_name(const char *text)
-{
-  unsigned int depth = 0;
-  size_t i = 0;
-
-  if (isalpha(text[i]) || text[i] == '_' ||
-      (text[i] == ':' && text[i+1] == ':'))
-    {
-    if (text[i] == ':') { i++; }
-    i++;
-    while (isalnum(text[i]) || text[i] == '_' ||
-           (text[i] == ':' && text[i+1] == ':') ||
-           text[i] == '<')
-      {
-      if (text[i] == '<')
-        {
-        while (text[i] != '\0' && text[i] != '\n')
-          {
-          if (text[i] == '<') { depth++; }
-          if (text[i] == '>') { if (--depth == 0) { i++; break; } }
-          i++;
-          }
-        }
-      if (text[i] == ':') { i++; }
-      i++;
-      }
-    }
-  return i;
-}
-
 /* helper: comparison of entries */
 static int compare_hierarchy_entries(const void *vp1, const void *vp2)
 {
@@ -105,7 +75,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
   char *cp;
   const char *ccp;
   size_t maxlen = 15;
-  size_t i, j, k, n, m;
+  size_t i, j, n, m;
   unsigned int bits, pointers;
 
   line = (char *)malloc(maxlen);
@@ -168,7 +138,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
     entry->IsEnum = 0;
 
     i = skip_space(line);
-    n = skip_name(&line[i]);
+    n = vtkParse_NameLength(&line[i]);
     for (m = 0; m < n; m++)
       {
       if (line[i+m] == '<') { break; }
@@ -202,7 +172,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
         entry->NumberOfTemplateArgs++;
         entry->TemplateArgDefaults[j] = NULL;
 
-        m = skip_name(&line[i]);
+        m = vtkParse_NameLength(&line[i]);
 
         cp = (char *)malloc(m+1);
         strncpy(cp, &line[i], m);
@@ -215,7 +185,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
           {
           i++;
           i += skip_space(&line[i]);
-          m = skip_name(&line[i]);
+          m = vtkParse_NameLength(&line[i]);
 
           cp = (char *)malloc(m+1);
           strncpy(cp, &line[i], m);
@@ -241,7 +211,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
       if (line[i] == ':' && line[i+1] == ':')
         {
         i += 2;
-        m = skip_name(&line[i]);
+        m = vtkParse_NameLength(&line[i]);
         n = strlen(entry->Name);
         cp = (char *)malloc(n+m+3);
         strcpy(cp, entry->Name);
@@ -261,7 +231,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
       {
       i++;
       i += skip_space(&line[i]);
-      n = skip_name(&line[i]);
+      n = vtkParse_NameLength(&line[i]);
       /* check for enum indicators */
       if ((n == 3 && strncmp(&line[i], "int", n)) ||
           (n == 4 && strncmp(&line[i], "enum", n)))
@@ -288,7 +258,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
         entry->NumberOfSuperClasses++;
 
         i += skip_space(&line[i]);
-        n = skip_name(&line[i]);
+        n = vtkParse_NameLength(&line[i]);
         cp = (char *)malloc(n+1);
         strncpy(cp, &line[i], n);
         cp[n] = '\0';
@@ -398,210 +368,8 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
 
       /* read the base type (and const) */
       bits = 0;
-      while (line[i] != ';' && line[i] != '\n' && line[i] != '\0')
-        {
-        n = skip_name(&line[i]);
-        if (n == 5 && strncmp(&line[i], "const", n) == 0)
-          {
-          entry->Typedef->Type |= VTK_PARSE_CONST;
-          }
-        else if (n == 8 && strncmp(&line[i], "unsigned", n) == 0)
-          {
-          entry->Typedef->Type |= VTK_PARSE_UNSIGNED;
-          if (bits == 0)
-            {
-            bits = VTK_PARSE_INT;
-            }
-          }
-        else if (n == 6 && strncmp(&line[i], "signed", n) == 0)
-          {
-          if (bits == VTK_PARSE_CHAR)
-            {
-            bits = VTK_PARSE_SIGNED_CHAR;
-            }
-          else
-            {
-            bits = VTK_PARSE_INT;
-            }
-          }
-        else if (n == 3 && strncmp(&line[i], "int", n) == 0)
-          {
-          if (bits == 0)
-            {
-            bits = VTK_PARSE_INT;
-            }
-          }
-        else if (n == 4 && strncmp(&line[i], "long", n) == 0)
-          {
-          if (bits == VTK_PARSE_LONG)
-            {
-            bits = VTK_PARSE_LONG_LONG;
-            }
-          else
-            {
-            bits = VTK_PARSE_LONG;
-            }
-          }
-        else if (n == 5 && strncmp(&line[i], "short", n) == 0)
-          {
-          bits = VTK_PARSE_SHORT;
-          }
-        else if (n == 4 && strncmp(&line[i], "char", n) == 0)
-          {
-          if (bits == VTK_PARSE_INT)
-            {
-            bits = VTK_PARSE_SIGNED_CHAR;
-            }
-          else
-            {
-            bits = VTK_PARSE_CHAR;
-            }
-          }
-        else if (n == 5 && strncmp(&line[i], "float", n) == 0)
-          {
-          bits = VTK_PARSE_FLOAT;
-          }
-        else if (n == 6 && strncmp(&line[i], "double", n) == 0)
-          {
-          bits = VTK_PARSE_DOUBLE;
-          }
-        else if (n == 4 && strncmp(&line[i], "bool", n) == 0)
-          {
-          bits = VTK_PARSE_BOOL;
-          }
-        else if (n == 4 && strncmp(&line[i], "void", n) == 0)
-          {
-          bits = VTK_PARSE_VOID;
-          }
-        else if (n == 7 && strncmp(&line[i], "__int64", n) == 0)
-          {
-          bits = VTK_PARSE___INT64;
-          }
-        else if (n == 6 && strncmp(&line[i], "size_t", n) == 0)
-          {
-          entry->Typedef->Class = "size_t";
-          bits = VTK_PARSE_SIZE_T;
-          }
-        else if (n == 7 && strncmp(&line[i], "ssize_t", n) == 0)
-          {
-          entry->Typedef->Class = "ssize_t";
-          bits = VTK_PARSE_SSIZE_T;
-          }
-        else if (n == 9 && strncmp(&line[i], "vtkIdType", n) == 0)
-          {
-          entry->Typedef->Class = "vtkIdType";
-          bits = vtkParse_MapType(VTK_ID_TYPE);
-          }
-        else if (n == 11 && strncmp(&line[i], "vtkTypeInt8", n) == 0)
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = vtkParse_MapType(VTK_TYPE_INT8);
-          }
-        else if (n == 12 && strncmp(&line[i], "vtkTypeUInt8", n) == 0)
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = vtkParse_MapType(VTK_TYPE_UINT8);
-          }
-        else if (n == 12 && strncmp(&line[i], "vtkTypeInt16", n) == 0)
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = vtkParse_MapType(VTK_TYPE_UINT16);
-          }
-        else if (n == 13 && strncmp(&line[i], "vtkTypeUInt16", n) == 0)
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = vtkParse_MapType(VTK_TYPE_UINT16);
-          }
-        else if (n == 12 && strncmp(&line[i], "vtkTypeInt32", n) == 0)
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = vtkParse_MapType(VTK_TYPE_UINT32);
-          }
-        else if (n == 13 && strncmp(&line[i], "vtkTypeUInt32", n) == 0)
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = vtkParse_MapType(VTK_TYPE_UINT32);
-          }
-        else if (n == 12 && strncmp(&line[i], "vtkTypeInt64", n) == 0)
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = vtkParse_MapType(VTK_TYPE_UINT64);
-          }
-        else if (n == 13 && strncmp(&line[i], "vtkTypeUInt64", n) == 0)
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = vtkParse_MapType(VTK_TYPE_UINT64);
-          }
-        else if (n == 14 && strncmp(&line[i], "vtkTypeFloat32", n) == 0)
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = vtkParse_MapType(VTK_TYPE_FLOAT32);
-          }
-        else if (n == 14 && strncmp(&line[i], "vtkTypeFloat64", n) == 0)
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = vtkParse_MapType(VTK_TYPE_FLOAT64);
-          }
-        else if (n == 12 && strncmp(&line[i], "vtkStdString", n) == 0)
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = VTK_PARSE_STRING;
-          }
-        else if (n == 16 && strncmp(&line[i], "vtkUnicodeString", n) == 0)
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = VTK_PARSE_UNICODE_STRING;
-          }
-        else if (strncmp(&line[i], "vtk", 3) == 0)
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = VTK_PARSE_OBJECT;
-          for (k = 0; k < n; k++)
-            {
-            if (line[i+k] == ':')
-              {
-              bits = VTK_PARSE_UNKNOWN;
-              break;
-              }
-            }
-          }
-        else
-          {
-          entry->Typedef->Class = vtkParse_DuplicateString(&line[i], n);
-          bits = VTK_PARSE_UNKNOWN;
-          }
-
-        i += n;
-        i += skip_space(&line[i]);
-        }
-
-      /* add the base type to the type */
+      i += vtkParse_BasicTypeFromString(&line[i], &bits, &entry->Typedef->Class);
       entry->Typedef->Type |= bits;
-      if (!entry->Typedef->Class)
-        {
-        ccp = 0;
-        switch (entry->Typedef->Type & VTK_PARSE_BASE_TYPE)
-          {
-          case VTK_PARSE_CHAR: ccp = "char"; break;
-          case VTK_PARSE_SHORT: ccp = "short"; break;
-          case VTK_PARSE_INT: ccp = "int"; break;
-          case VTK_PARSE_LONG: ccp = "long"; break;
-          case VTK_PARSE_LONG_LONG: ccp = "long long"; break;
-          case VTK_PARSE___INT64: ccp = "__int64"; break;
-          case VTK_PARSE_UNSIGNED_CHAR: ccp = "unsigned char"; break;
-          case VTK_PARSE_UNSIGNED_SHORT: ccp="unsigned short"; break;
-          case VTK_PARSE_UNSIGNED_INT: ccp = "unsigned int"; break;
-          case VTK_PARSE_UNSIGNED_LONG: ccp="unsigned long"; break;
-          case VTK_PARSE_UNSIGNED_LONG_LONG: ccp = "unsigned long long"; break;
-          case VTK_PARSE_UNSIGNED___INT64: ccp = "unsigned __int64"; break;
-          case VTK_PARSE_SIGNED_CHAR: ccp = "signed char"; break;
-          case VTK_PARSE_FLOAT: ccp = "float"; break;
-          case VTK_PARSE_DOUBLE: ccp = "double"; break;
-          case VTK_PARSE_BOOL: ccp = "bool"; break;
-          case VTK_PARSE_VOID: ccp = "void"; break;
-          }
-        entry->Typedef->Class = ccp;
-        }
       }
 
     /* get the header file */
@@ -791,7 +559,7 @@ const char *vtkParseHierarchy_GetProperty(
     for (i = 0; i < entry->NumberOfProperties; i++)
       {
       /* skip the property name, everything after is the property */
-      k = skip_name(entry->Properties[i]);
+      k = vtkParse_NameLength(entry->Properties[i]);
       if (k == strlen(property) &&
           strncmp(entry->Properties[i], property, k) == 0)
         {

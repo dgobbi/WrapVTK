@@ -23,7 +23,7 @@
 
 /* Search and replace, return the initial string if no replacements
  * occurred, otherwise return a new string. */
-static const char *vtkParse_Replace(
+const char *vtkParse_Replace(
   const char *str1, unsigned long n, const char *name[], const char *val[])
 {
   const char *cp = str1;
@@ -283,44 +283,117 @@ void vtkParse_ExpandTypedefs(
    }
 }
 
-/* Parse a type description in "text" and generate a typedef named "name" */
-void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
+/* skip over a name that might be scoped or templated, return the
+ * total number of characters in the name */
+size_t vtkParse_NameLength(const char *text)
 {
+  unsigned int depth = 0;
+  size_t i = 0;
+
+  if ((text[i] >= 'A' && text[i] <= 'Z') ||
+      (text[i] >= 'a' && text[i] <= 'z') ||
+      text[i] == '_' ||
+      (text[i] == ':' && text[i+1] == ':'))
+    {
+    if (text[i] == ':') { i++; }
+    i++;
+    while ((text[i] >= 'A' && text[i] <= 'Z') ||
+           (text[i] >= 'a' && text[i] <= 'z') ||
+           (text[i] >= '0' && text[i] <= '9') ||
+           text[i] == '_' ||
+           (text[i] == ':' && text[i+1] == ':') ||
+           text[i] == '<')
+      {
+      if (text[i] == '<')
+        {
+        while (text[i] != '\0' && text[i] != '\n')
+          {
+          if (text[i] == '<') { depth++; }
+          if (text[i] == '>') { if (--depth == 0) { i++; break; } }
+          i++;
+          }
+        }
+      if (text[i] == ':') { i++; }
+      i++;
+      }
+    }
+  return i;
+}
+
+/* Helper struct for VTK-specific types */
+struct vtk_type_struct
+{
+  size_t len;
+  const char *name;
+  int type;
+};
+
+/* Get a type from a type name, and return the number of characters used.
+ * If the "classname" argument is not NULL, then it is used to return
+ * the short name for the type, e.g. "long int" becomes "long", while
+ * typedef names and class names are returned unchanged.  If "const"
+ * appears in the type name, then the const bit flag is set for the
+ * type, but "const" will not appear in the returned classname. */
+size_t vtkParse_BasicTypeFromString(
+  const char *text, unsigned int *type_ptr, const char **classname_ptr)
+{
+  /* The various typedefs and types specific to VTK */
+  static struct vtk_type_struct vtktypes[] = {
+    { 9,  "vtkIdType", VTK_ID_TYPE },
+    { 12, "vtkStdString", VTK_STRING },
+    { 16, "vtkUnicodeString", VTK_UNICODE_STRING },
+    { 11, "vtkTypeInt8", VTK_TYPE_INT8 },
+    { 12, "vtkTypeUInt8", VTK_TYPE_UINT8 },
+    { 12, "vtkTypeInt16", VTK_TYPE_INT16 },
+    { 13, "vtkTypeUInt16", VTK_TYPE_UINT16 },
+    { 12, "vtkTypeInt32", VTK_TYPE_INT32 },
+    { 13, "vtkTypeUInt32", VTK_TYPE_UINT32 },
+    { 12, "vtkTypeInt64", VTK_TYPE_INT64 },
+    { 13, "vtkTypeUInt64", VTK_TYPE_UINT64 },
+    { 14, "vtkTypeFloat32", VTK_TYPE_FLOAT32 },
+    { 14, "vtkTypeFloat64", VTK_TYPE_FLOAT64 },
+    { 0, 0, 0 } };
+
+  /* Other typedefs and types */
+  static struct vtk_type_struct stdtypes[] = {
+    { 6,  "size_t", VTK_PARSE_SIZE_T },
+    { 7,  "ssize_t", VTK_PARSE_SSIZE_T },
+    { 7,  "ostream", VTK_PARSE_OSTREAM },
+    { 7,  "istream", VTK_PARSE_ISTREAM },
+    { 8,  "string", VTK_PARSE_STRING },
+    { 0, 0, 0 } };
+
   const char *cp = text;
+  const char *tmpcp;
   char *tmp;
-  size_t k, n;
-  unsigned long m, count;
+  size_t k, n, m;
+  unsigned long i;
   unsigned int const_bits = 0;
+  unsigned int static_bits = 0;
   unsigned int unsigned_bits = 0;
   unsigned int base_bits = 0;
-  unsigned int pointer_bits = 0;
   const char *classname = NULL;
 
   while (*cp == ' ' || *cp == '\t') { cp++; }
 
-  if (strncmp(cp, "static", 6) == 0 &&
-      (cp[6] < 'a' || cp[6] > 'z') &&
-      (cp[6] < 'A' || cp[6] > 'Z') &&
-      (cp[6] < '0' || cp[6] > '9') &&
-      cp[6] != '_')
-    {
-    cp += 6;
-    data->IsStatic = 1;
-    while (*cp == ' ' || *cp == '\t') { cp++; }
-    }
-
   while ((*cp >= 'a' && *cp <= 'z') ||
          (*cp >= 'A' && *cp <= 'Z') ||
-         (*cp == '_'))
+         (*cp == '_') || (cp[0] == ':' && cp[1] == ':'))
     {
     /* skip all chars that are part of a name */
-    n = 0;
-    while ((cp[n] >= 'a' && cp[n] <= 'z') ||
-           (cp[n] >= 'A' && cp[n] <= 'Z') ||
-           (cp[n] >= '0' && cp[n] <= '9') ||
-           cp[n] == '_') { n++; }
+    n = vtkParse_NameLength(cp);
 
-    if (n == 5 && strncmp(cp, "const", n) == 0)
+    if ((n == 6 && strncmp("static", cp, n) == 0) ||
+        (n == 4 && strncmp("auto", cp, n) == 0) ||
+        (n == 8 && strncmp("register", cp, n) == 0) ||
+        (n == 8 && strncmp("volatile", cp, n) == 0))
+      {
+      if (strncmp("static", cp, n) == 0)
+        {
+        static_bits = VTK_PARSE_STATIC;
+        }
+      }
+    else if (n == 5 && strncmp(cp, "const", n) == 0)
       {
       const_bits |= VTK_PARSE_CONST;
       }
@@ -410,104 +483,126 @@ void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
       classname = "__int64";
       base_bits = VTK_PARSE___INT64;
       }
-    else if (n == 6 && strncmp(cp, "size_t", n) == 0)
+    else
       {
-      classname = "size_t";
-      base_bits = VTK_PARSE_SIZE_T;
-      }
-    else if (n == 7 && strncmp(cp, "ssize_t", n) == 0)
-      {
-      classname = "ssize_t";
-      base_bits = VTK_PARSE_SSIZE_T;
-      }
-    else if (n == 9 && strncmp(cp, "vtkIdType", n) == 0)
-      {
-      classname = "vtkIdType";
-      base_bits = vtkParse_MapType(VTK_ID_TYPE);
-      }
-    else if (n == 11 && strncmp(cp, "vtkTypeInt8", n) == 0)
-      {
-      classname = "vtkTypeInt8";
-      base_bits = vtkParse_MapType(VTK_TYPE_INT8);
-      }
-    else if (n == 12 && strncmp(cp, "vtkTypeUInt8", n) == 0)
-      {
-      classname = "vtkTypeUInt8";
-      base_bits = vtkParse_MapType(VTK_TYPE_UINT8);
-      }
-    else if (n == 12 && strncmp(cp, "vtkTypeInt16", n) == 0)
-      {
-      classname = "vtkTypeInt16";
-      base_bits = vtkParse_MapType(VTK_TYPE_UINT16);
-      }
-    else if (n == 13 && strncmp(cp, "vtkTypeUInt16", n) == 0)
-      {
-      classname = "vtkTypeUInt16";
-      base_bits = vtkParse_MapType(VTK_TYPE_UINT16);
-      }
-    else if (n == 12 && strncmp(cp, "vtkTypeInt32", n) == 0)
-      {
-      classname = "vtkTypeInt32";
-      base_bits = vtkParse_MapType(VTK_TYPE_UINT32);
-      }
-    else if (n == 13 && strncmp(cp, "vtkTypeUInt32", n) == 0)
-      {
-      classname = "vtkTypeUInt32";
-      base_bits = vtkParse_MapType(VTK_TYPE_UINT32);
-      }
-    else if (n == 12 && strncmp(cp, "vtkTypeInt64", n) == 0)
-      {
-      classname = "vtkTypeInt64";
-      base_bits = vtkParse_MapType(VTK_TYPE_UINT64);
-      }
-    else if (n == 13 && strncmp(cp, "vtkTypeUInt64", n) == 0)
-      {
-      classname = "vtkTypeUInt64";
-      base_bits = vtkParse_MapType(VTK_TYPE_UINT64);
-      }
-    else if (n == 14 && strncmp(cp, "vtkTypeFloat32", n) == 0)
-      {
-      classname = "vtkTypeFloat32";
-      base_bits = vtkParse_MapType(VTK_TYPE_FLOAT32);
-      }
-    else if (n == 14 && strncmp(cp, "vtkTypeFloat64", n) == 0)
-      {
-      classname = "vtkTypeFloat64";
-      base_bits = vtkParse_MapType(VTK_TYPE_FLOAT64);
-      }
-    else if (n == 12 && strncmp(cp, "vtkStdString", n) == 0)
-      {
-      classname = "vtkStdString";
-      base_bits = VTK_PARSE_STRING;
-      }
-    else if (n == 16 && strncmp(cp, "vtkUnicodeString", n) == 0)
-      {
-      classname = "vtkUnicodeString";
-      base_bits = VTK_PARSE_UNICODE_STRING;
-      }
-    else if (strncmp(cp, "vtk", 3) == 0)
-      {
-      classname = vtkParse_DuplicateString(cp, n);
-      base_bits = VTK_PARSE_OBJECT;
-      for (k = 0; k < n; k++)
+      /* if type already found, break */
+      if (base_bits != 0)
         {
-        if (cp[k] == ':')
+        break;
+        }
+
+      /* check vtk typedefs */
+      if (strncmp(cp, "vtk", 3) == 0)
+        {
+        for (i = 0; vtktypes[i].len != 0; i++)
           {
-          base_bits = VTK_PARSE_UNKNOWN;
-          break;
+          if (n == vtktypes[i].len && strncmp(cp, vtktypes[i].name, n) == 0)
+            {
+            classname = vtktypes[i].name;
+            base_bits = vtkParse_MapType((int)vtktypes[i].type);
+            }
           }
         }
-      }
-    else if (!((n == 6 && strncmp(cp, "static", n) == 0) ||
-               (n == 4 && strncmp(cp, "auto", n) == 0) ||
-               (n == 8 && strncmp(cp, "volatile", n) == 0)))
-      {
-      classname = vtkParse_DuplicateString(cp, n);
-      base_bits = VTK_PARSE_UNKNOWN;
+
+      /* check standard typedefs */
+      if (base_bits == 0)
+        {
+        m = 0;
+        if (strncmp(cp, "::", 2) == 0) { m = 2; }
+        else if (strncmp(cp, "std::", 5) == 0) { m = 5; }
+        else if (strncmp(cp, "vtkstd::", 8) == 0) { m = 8; }
+
+        /* advance past the namespace */
+        tmpcp = cp + m;
+
+        for (i = 0; stdtypes[i].len != 0; i++)
+          {
+          if (n == stdtypes[i].len && strncmp(tmpcp, stdtypes[i].name, n) == 0)
+            {
+            classname = stdtypes[i].name;
+            base_bits = stdtypes[i].type;
+            }
+          }
+
+        /* include the namespace if present */
+        if (base_bits != 0 && m > 0)
+          {
+          classname = vtkParse_DuplicateString(cp, n);
+          }
+        }
+
+      /* anything else is assumed to be a class, enum, or who knows */
+      if (base_bits == 0)
+        {
+        base_bits = VTK_PARSE_UNKNOWN;
+        classname = vtkParse_DuplicateString(cp, n);
+
+        /* VTK classes all start with vtk */
+        if (strncmp(classname, "vtk", 3) == 0)
+          {
+          base_bits = VTK_PARSE_OBJECT;
+          /* make sure the "vtk" isn't just part of the namespace */
+          for (k = 0; k < n; k++)
+            {
+            if (cp[k] == ':')
+              {
+              base_bits = VTK_PARSE_UNKNOWN;
+              break;
+              }
+            }
+          }
+        /* Qt objects and enums */
+        else if (classname[0] == 'Q' &&
+                 ((classname[1] >= 'A' && classname[2] <= 'Z') ||
+                  strncmp(classname, "Qt::", 4) == 0))
+          {
+          base_bits = VTK_PARSE_QOBJECT;
+          }
+        }
       }
 
     cp += n;
     while (*cp == ' ' || *cp == '\t') { cp++; }
+    }
+
+  *type_ptr = (static_bits | const_bits | unsigned_bits | base_bits);
+
+  if (classname_ptr)
+    {
+    *classname_ptr = classname;
+    }
+
+  if ((unsigned_bits & VTK_PARSE_UNSIGNED) != 0 &&
+      (base_bits & VTK_PARSE_UNSIGNED) == 0)
+    {
+    n = strlen(classname) + 9;
+    tmp = (char *)malloc(n+1);
+    strcpy(tmp, "unsigned ");
+    strcpy(&tmp[9], classname);
+    classname = vtkParse_DuplicateString(tmp, n);
+    free(tmp);
+    }
+
+  return (cp - text);
+}
+
+/* Parse a type description in "text" and generate a typedef named "name" */
+void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
+{
+  const char *cp = text;
+  size_t n;
+  unsigned long m, count;
+  unsigned int base_bits = 0;
+  unsigned int pointer_bits = 0;
+  unsigned int ref_bits = 0;
+  const char *classname = NULL;
+
+  /* get the basic type with qualifiers */
+  cp += vtkParse_BasicTypeFromString(cp, &base_bits, &classname);
+
+  if ((base_bits & VTK_PARSE_STATIC) != 0)
+    {
+    data->IsStatic = 1;
     }
 
   /* look for pointers (and const pointers) */
@@ -531,6 +626,14 @@ void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
       pointer_bits = (pointer_bits | VTK_PARSE_POINTER);
       }
     pointer_bits = (pointer_bits & VTK_PARSE_POINTER_MASK);
+    }
+
+  /* look for ref */
+  if (*cp == '&')
+    {
+    cp++;
+    while (*cp == ' ' || *cp == '\t') { cp++; }
+    ref_bits = VTK_PARSE_REF;
     }
 
   /* look for the variable name */
@@ -576,17 +679,6 @@ void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
     while (*cp == ' ' || *cp == '\t') { cp++; }
     }
 
-  if ((unsigned_bits & VTK_PARSE_UNSIGNED) != 0 &&
-      (base_bits & VTK_PARSE_UNSIGNED) == 0)
-    {
-    n = strlen(classname) + 9;
-    tmp = (char *)malloc(n+1);
-    strcpy(tmp, "unsigned ");
-    strcpy(&tmp[9], classname);
-    classname = vtkParse_DuplicateString(tmp, n);
-    free(tmp);
-    }
-
   data->Class = classname;
 
   /* add pointer indirection to correspond to first array dimension */
@@ -600,8 +692,12 @@ void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
     }
   pointer_bits = (pointer_bits & VTK_PARSE_POINTER_MASK);
 
-  data->Type = (pointer_bits | base_bits | unsigned_bits | const_bits);
+  /* (Add code here to look for "=" followed by a value ) */
+
+  data->Type = (pointer_bits | ref_bits | base_bits);
 }
+
+
 
 /* substitute template types and values with specialized types and values */
 static void func_substitution(

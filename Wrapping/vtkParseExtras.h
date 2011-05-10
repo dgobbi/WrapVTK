@@ -25,6 +25,23 @@ extern "C" {
 #endif
 
 /**
+ * Get a type from a type name, and return the number of characters used.
+ * If the "classname" argument is not NULL, then it is used to return
+ * the short name for the type, e.g. "long int" becomes "long", while
+ * typedef names and class names are returned unchanged.  If "const"
+ * appears in the type name, then the const bit flag is set for the
+ * type, but "const" will not appear in the returned classname.
+ */
+size_t vtkParse_BasicTypeFromString(
+  const char *text, unsigned int *type, const char **classname);
+
+/**
+ * Skip over a name that might be scoped or templated, return the
+ * total number of characters in the name.
+ */
+size_t vtkParse_NameLength(const char *text);
+
+/**
  * Generate a ValueInfo by parsing the type from the provided text.
  * Only simple text strings are supported, e.g. "const T **".
  */
