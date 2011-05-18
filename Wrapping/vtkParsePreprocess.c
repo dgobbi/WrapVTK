@@ -2360,6 +2360,7 @@ const char *vtkParsePreprocess_FindIncludeFile(
   if (cp)
     {
     *already_loaded = 1;
+    return cp;
     }
 
   *already_loaded = 0;
