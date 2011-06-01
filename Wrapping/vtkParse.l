@@ -739,12 +739,18 @@ void print_preprocessor_error(int result, const char *cp, size_t n)
       break;
     }
 
+  /* be silent about missing include files */
+  if (result == VTK_PARSE_FILE_NOT_FOUND)
+    {
+    return;
+    }
+
   if (data.FileName)
     {
     j = strlen(data.FileName);
     while (j > 0 && data.FileName[j-1] != '/') { j--; }
     fn = &data.FileName[j];
     }
-  fprintf(yyout, "In %s:%i: %s:\n", fn, yylineno, text);
+  fprintf(yyout, "In %s:%i: %s: ", fn, yylineno, text);
   fprintf(yyout, "%*.*s\n", (int)n, (int)n, cp);
 }

@@ -1408,11 +1408,11 @@ class_def_item:
    | CLASS_REF
    | operator func_body { output_function(); }
    | FRIEND operator func_body { ClassInfo *tmpc = currentClass;
-     currentClass = NULL; reject_function(); currentClass = tmpc; }
+     currentClass = NULL; output_function(); currentClass = tmpc; }
    | template operator func_body { output_function(); }
    | method func_body { output_function(); }
    | FRIEND method func_body { ClassInfo *tmpc = currentClass;
-     currentClass = NULL; reject_function(); currentClass = tmpc; }
+     currentClass = NULL; output_function(); currentClass = tmpc; }
    | template method func_body { output_function(); }
    | legacy_method func_body { legacySig(); output_function(); }
    | VTK_BYTE_SWAP_DECL '(' maybe_other ')' ';'
@@ -2070,7 +2070,8 @@ templated_id:
       postSig(">"); $<str>$ = vtkstrdup(copySig()); clearTypeId();};
 
 template_params: template_param
-               | template_param ',' {postSig(", ");} template_params;
+               | template_param ',' {chopSig(); postSig(", ");}
+                 template_params;
 
 template_param: type | integer_literal {postSig($<str>1);};
 
@@ -2713,6 +2714,7 @@ void vtkParse_InitFunction(FunctionInfo *func)
   func->NumberOfArguments = 0;
   func->ReturnValue = NULL;
   func->Macro = NULL;
+  func->SizeHint = NULL;
   func->IsStatic = 0;
   func->IsVirtual = 0;
   func->IsPureVirtual = 0;
@@ -2778,6 +2780,7 @@ void vtkParse_CopyFunction(FunctionInfo *func, const FunctionInfo *orig)
     }
 
   func->Macro = orig->Macro;
+  func->SizeHint = orig->SizeHint;
   func->IsStatic = orig->IsStatic;
   func->IsVirtual = orig->IsVirtual;
   func->IsPureVirtual = orig->IsPureVirtual;
@@ -3170,6 +3173,8 @@ void vtkParse_CopyNamespace(NamespaceInfo *ninfo, const NamespaceInfo *orig)
     }
 }
 
+
+
 void vtkParse_InitFile(FileInfo *file_info)
 {
   /* file info */
@@ -3399,6 +3404,9 @@ void reject_class(const char *classname, int is_struct_or_union)
 /* reached the end of a class definition */
 void end_class()
 {
+  /* add default constructors */
+  vtkParse_AddDefaultConstructors(currentClass);
+
   popClass();
 }
 
@@ -3972,6 +3980,7 @@ void handle_complex_type(
   val->Dimensions = getArray();
   clearArray();
 
+  /* count is the product of the dimensions */
   val->Count = count_from_dimensions(val);
 }
 
@@ -4490,6 +4499,103 @@ const char *vtkParse_DuplicateString(const char *cp, size_t n)
   res[n] = '\0';
 
   return res;
+}
+
+/* Add default constructors if they do not already exist */
+void vtkParse_AddDefaultConstructors(ClassInfo *cls)
+{
+  FunctionInfo *func;
+  ValueInfo *arg;
+  size_t k;
+  int i, n;
+  int default_constructor = 1;
+  int copy_constructor = 1;
+  char *tname;
+  const char *ccname;
+
+  if (cls == NULL || cls->Name == NULL)
+    {
+    return;
+    }
+
+  n = cls->NumberOfFunctions;
+  for (i = 0; i < n; i++)
+    {
+    func = cls->Functions[i];
+    if (func->Name && strcmp(func->Name, cls->Name) == 0)
+      {
+      default_constructor = 0;
+
+      if (func->NumberOfArguments == 1)
+        {
+        arg = func->Arguments[0];
+        if (arg->Class &&
+            strcmp(arg->Class, cls->Name) == 0 &&
+            (arg->Type & VTK_PARSE_POINTER_MASK) == 0)
+          {
+          copy_constructor = 0;
+          }
+        }
+      }
+    }
+
+  if (default_constructor)
+    {
+    func = (FunctionInfo *)malloc(sizeof(FunctionInfo));
+    vtkParse_InitFunction(func);
+    func->Class = vtkstrdup(cls->Name);
+    func->Name = vtkstrdup(cls->Name);
+    func->Signature = vtkstrcat(cls->Name, "()");
+    vtkParse_AddFunctionToClass(cls, func);
+    }
+
+  if (copy_constructor)
+    {
+    if (cls->Template)
+      {
+      /* specialize the name */
+      n = cls->Template->NumberOfArguments;
+
+      k = strlen(cls->Name) + 2;
+      for (i = 0; i < n; i++)
+        {
+        k += strlen(cls->Template->Arguments[i]->Name) + 2;
+        }
+      tname = vtkstralloc(k);
+      strcpy(tname, cls->Name);
+      k = strlen(tname);
+      tname[k++] = '<';
+      for (i = 0; i < n; i++)
+        {
+        strcpy(&tname[k], cls->Template->Arguments[i]->Name);
+        k += strlen(cls->Template->Arguments[i]->Name);
+        if (i+1 < n)
+          {
+          tname[k++] = ',';
+          tname[k++] = ' ';
+          }
+        }
+      tname[k++] = '>';
+      tname[k] = '\0';
+      ccname = tname;
+      }
+    else
+      {
+      ccname = vtkstrdup(cls->Name);
+      }
+
+    func = (FunctionInfo *)malloc(sizeof(FunctionInfo));
+    vtkParse_InitFunction(func);
+    func->Class = vtkstrdup(cls->Name);
+    func->Name = vtkstrdup(cls->Name);
+    func->Signature = vtkstrcat4(cls->Name, "(const &", ccname, ")");
+    arg = (ValueInfo *)malloc(sizeof(ValueInfo));
+    vtkParse_InitValue(arg);
+    arg->Type = (VTK_PARSE_OBJECT_REF | VTK_PARSE_CONST);
+    arg->Class = ccname;
+    vtkParse_AddArgumentToFunction(func, arg);
+    vtkParse_AddFunctionToClass(cls, func);
+    }
 }
 
 /* Set a flag to ignore BTX/ETX markers in the files */

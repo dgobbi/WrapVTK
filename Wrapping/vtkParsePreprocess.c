@@ -100,7 +100,7 @@ static preproc_uint_t string_to_preproc_uint(const char *cp, int base)
 static void preproc_skip_comment(const char **cpp)
 {
   const char *cp = *cpp;
- 
+
   if (cp[0] == '/')
     {
     if (cp[1] == '/')
@@ -146,7 +146,7 @@ static void preproc_skip_whitespace(const char **cpp)
     else if (cp[0] == '\\' && cp[1] == '\r' && cp[2] == '\n')
       {
       cp += 3;
-      } 
+      }
     else if (cp[0] == '/' && (cp[1] == '/' || cp[1] == '*'))
       {
       preproc_skip_comment(&cp);
@@ -227,7 +227,7 @@ static void preproc_skip_number(const char **cpp)
         }
       }
     }
-  
+
   *cpp = cp;
 }
 
@@ -349,7 +349,7 @@ static int preproc_next(preproc_tokenizer *tokens)
         break;
       }
     }
-  
+
   return tokens->tok;
 }
 
@@ -840,7 +840,7 @@ static int preproc_evaluate_multiply(
           *val = (preproc_int_t)((preproc_uint_t)*val /
                                  (preproc_uint_t)rval);
           }
-        else 
+        else
           {
           *val = 2147483647;
           }
@@ -1443,7 +1443,7 @@ static int preproc_evaluate_if(
         {
         /* do not skip this clause */
         info->ConditionalDepth = 0;
-        /* make sure remaining else/elif clauses are skipped */ 
+        /* make sure remaining else/elif clauses are skipped */
         info->ConditionalDone = 1;
         }
       }
@@ -1613,7 +1613,7 @@ const char *preproc_find_include_file(
   /* allow filename to be terminated by quote or bracket */
   m = 0;
   while (filename[m] != '\"' && filename[m] != '>' &&
-         filename[m] != '\n' && filename[m] != '\0') { m++; } 
+         filename[m] != '\n' && filename[m] != '\0') { m++; }
 
   /* search file system for the file */
   output = (char *)malloc(outputsize);
@@ -1676,13 +1676,13 @@ const char *preproc_find_include_file(
     }
 
   /* Check twice. First check the cache, then stat the files. */
-  for (count = 0; count < (2-cache_only); count++) 
+  for (count = 0; count < (2-cache_only); count++)
     {
     n = info->NumberOfIncludeDirectories;
     for (i = 0; i < (n+1-system_first); i++)
       {
       /* search the directory of the file being processed */
-      if (i == 0 && system_first == 0) 
+      if (i == 0 && system_first == 0)
         {
         if (info->FileName)
           {
@@ -1725,13 +1725,13 @@ const char *preproc_find_include_file(
           outputsize += j+m+2;
           output = (char *)realloc(output, outputsize);
           }
-        
+
         strncpy(output, directory, j);
         if (directory[j-1] != '/') { output[j++] = '/'; }
         strncpy(&output[j], filename, m);
         output[j+m] = '\0';
         }
-  
+
       if (count == 0)
         {
         nn = info->NumberOfIncludeFiles;
@@ -1755,7 +1755,7 @@ const char *preproc_find_include_file(
         }
       }
     }
-  
+
   free(output);
   return NULL;
 }
@@ -1954,7 +1954,7 @@ static int preproc_include_file(
       }
     }
   while (n > 0);
-  
+
   free(tbuf);
   free(line);
   fclose(fp);
@@ -1974,7 +1974,6 @@ static int preproc_evaluate_include(
 {
   const char *cp;
   const char *filename;
-  size_t namelen = 0;
 
   if (strncmp("include", tokens->text, tokens->len) == 0)
     {
@@ -2008,7 +2007,6 @@ static int preproc_evaluate_include(
         {
         return VTK_PARSE_SYNTAX_ERROR;
         }
-      namelen = cp - filename - 1;
 
       return preproc_include_file(info, filename, 0);
       }
@@ -2017,7 +2015,6 @@ static int preproc_evaluate_include(
       cp++;
       filename = cp;
       while (*cp != '>' && *cp != '\n' && *cp != '\0') { cp++; }
-      namelen = cp - filename;
       if (*cp != '>')
         {
         return VTK_PARSE_SYNTAX_ERROR;

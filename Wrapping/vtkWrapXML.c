@@ -1237,9 +1237,17 @@ void vtkWrapXML_MergeHelper(
    * must be searched, taking the "using" directives that
    * have been applied into account. */
 
-  /* extract the template arguments */
-  vtkParse_DecomposeTemplatedType(
-    classname, &classname, &template_arg_count, &template_args);
+  /* get extra class info from the hierarchy file */
+  entry = vtkParseHierarchy_FindEntry(hinfo, classname);
+
+  if (entry && entry->NumberOfTemplateArgs > 0)
+    {
+    /* extract the template arguments */
+    template_arg_count = (unsigned long)entry->NumberOfTemplateArgs;
+    vtkParse_DecomposeTemplatedType(
+      classname, &classname, template_arg_count, &template_args,
+      entry->TemplateArgDefaults);
+    }
 
   /* find out if "classname" is in the current namespace */
   n = data->NumberOfClasses;
@@ -1254,7 +1262,6 @@ void vtkWrapXML_MergeHelper(
 
   if (n > 0 && !cinfo)
     {
-    entry = vtkParseHierarchy_FindEntry(hinfo, classname);
     if (!entry)
       {
       if (new_classname)
@@ -1321,7 +1328,7 @@ void vtkWrapXML_MergeHelper(
       {
       new_cinfo = (ClassInfo *)malloc(sizeof(ClassInfo));
       vtkParse_CopyClass(new_cinfo, cinfo);
-      vtkParse_SpecializeTemplatedClass(
+      vtkParse_InstantiateClassTemplate(
         new_cinfo, template_arg_count, template_args);
       cinfo = new_cinfo;
       }
@@ -1335,8 +1342,11 @@ void vtkWrapXML_MergeHelper(
       }
     }
 
-  vtkParse_FreeTemplateDecomposition(
-    classname, template_arg_count, template_args);
+  if (template_arg_count > 0)
+    {
+    vtkParse_FreeTemplateDecomposition(
+      classname, template_arg_count, template_args);
+    }
 }
 
 /**

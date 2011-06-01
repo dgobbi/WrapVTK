@@ -117,6 +117,11 @@ void vtkParse_AddArgumentToTemplate(TemplateArgs *info, TemplateArg *item);
 /*@}*/
 
 /**
+ * Add default constructors if they do not already exist
+ */
+void vtkParse_AddDefaultConstructors(ClassInfo *data);
+
+/**
  * Simple utility for mapping VTK types to VTK_PARSE types.
  */
 unsigned int vtkParse_MapType(int vtktype);
