@@ -20,11 +20,8 @@
   The preprocessing is done in-line while the file is being
   parsed.  Macros that are defined in the file are stored but
   are not automatically expanded.  The parser can query the
-  macro definitions, or can ask the preprocessor to evaluate
-  them and return an integer result.  Function-like macros
-  are not yet supported.  Since true macro expansion is not
-  done, things like symbol concatenation and conversion to
-  strings are not possible.
+  macro definitions, expand them into plain text, or ask the
+  preprocessor to evaluate them and return an integer result.
 
   The typical usage of this preprocessor is that the main
   parser will pass any lines that begin with '#' to the
@@ -34,9 +31,6 @@
   lookup error occurred, and will also let the parser know
   if an #if or #else directive requires that the next block
   of code be skipped.
-
-  No checks are done for recursively-defined macros.  If they
-  occur, the preprocessor will crash.
 */
 
 #ifndef VTK_PARSE_PREPROCESS_H
@@ -65,6 +59,7 @@ typedef struct _MacroInfo
   const char   **Arguments;  /* symbols for arguments */
   int            IsFunction; /* this macro takes arguments */
   int            IsExternal; /* this macro is from an included file */
+  int            IsExcluded; /* do not expand this macro */
 } MacroInfo;
 
 /**
@@ -113,7 +108,8 @@ enum _preproc_return_t {
   VTK_PARSE_FILE_NOT_FOUND = 7,  /* include file not found */
   VTK_PARSE_FILE_OPEN_ERROR = 8, /* include file not readable */
   VTK_PARSE_FILE_READ_ERROR = 9, /* error during read */
-  VTK_PARSE_SYNTAX_ERROR = 10    /* any and all syntax errors */
+  VTK_PARSE_MACRO_NUMARGS = 10,  /* wrong number of args to func macro */
+  VTK_PARSE_SYNTAX_ERROR = 11    /* any and all syntax errors */
 };
 
 /**
@@ -180,16 +176,26 @@ MacroInfo *vtkParsePreprocess_GetMacro(
   PreprocessInfo *info, const char *name);
 
 /**
- * Expand a function macro, given arguments in parentheses.
- * Returns a new string that was allocated with malloc.
+ * Expand a macro.  A function macro must be given an argstring
+ * with args in parentheses, otherwise the argstring can be NULL.
+ * Returns a new string that was allocated with malloc, or
+ * NULL if the wrong number of arguments were given.
  */
 const char *vtkParsePreprocess_ExpandMacro(
-  MacroInfo *macro, const char *argstring);
+  PreprocessInfo *info, MacroInfo *macro, const char *argstring);
 
 /**
- * Free an expanded macro.
+ * Fully process a string with the preprocessor, and
+ * return a new string or NULL if a fatal error occurred.
  */
-void vtkParsePreprocess_FreeExpandedMacro(const char *emacro);
+const char *vtkParsePreprocess_ProcessString(
+  PreprocessInfo *info, const char *text);
+
+/**
+ * Free an expanded macro or processed string.
+ */
+void vtkParsePreprocess_FreeString(
+  PreprocessInfo *info, const char *text);
 
 /**
  * Add an include directory.  The directories that were added

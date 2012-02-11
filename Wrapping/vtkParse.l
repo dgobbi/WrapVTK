@@ -59,7 +59,7 @@ static const char *get_macro_arguments();
 static void push_buffer();
 static int pop_buffer();
 
-static void push_macro();
+static void push_macro(MacroInfo *macro);
 static void pop_macro();
 
 %}
@@ -67,7 +67,6 @@ static void pop_macro();
 WS [\t\n\r ]+
 PS [\t\n\r ]*
 ID [a-zA-Z_][0-9a-zA-Z_]*
-PD [0-9a-zA-Z_]*
 
 %%
 
@@ -110,14 +109,25 @@ PD [0-9a-zA-Z_]*
 
 ^[\t ]*"#"[\t ]*"define"[\t ]+"VTK_"[a-zA-Z0-9_]+[^(](\\\n|\\\r\n|[^\n])*  {
       int result;
+      preproc_int_t val;
+      int is_unsigned;
       MacroInfo *macro;
       result = vtkParsePreprocess_HandleDirective(&preprocessor, yytext);
       if (result == VTK_PARSE_OK)
         {
         macro = preprocessor.Macros[preprocessor.NumberOfMacros-1];
-        if (!macro->IsFunction)
+        if (macro->Definition && !macro->IsFunction)
           {
-          add_constant(macro->Name, vtkstrdup(macro->Definition), 0, NULL, 1);
+          /* if macro evaluates to a constant, add it as a constant */
+          macro->IsExcluded = 1;
+          result = vtkParsePreprocess_EvaluateExpression(
+            &preprocessor, macro->Definition, &val, &is_unsigned);
+          macro->IsExcluded = 0;
+          if (result < VTK_PARSE_MACRO_UNDEFINED)
+            {
+            add_constant(
+              macro->Name, vtkstrdup(macro->Definition), 0, NULL, 1);
+            }
           }
         }
     }
@@ -425,25 +435,8 @@ PD [0-9a-zA-Z_]*
     }
 
 "vtkDataArray" {
-      yylval.str = vtkstrdup("vtkDataArray");
-      return(VTK_ID);
-    }
-
-"VTK_LEGACY" {
-      const char *args = get_macro_arguments();
-      if (args && args[0] != '\0')
-        {
-        size_t l = strlen(args);
-        push_macro("VTK_LEGACY");
-        push_buffer();
-        yy_switch_to_buffer(yy_scan_bytes(args+1, l-2));
-        }
-      free((char *)args);
-    }
-
-"VTK_"[0-9a-zA-Z_]* {
       yylval.str = vtkstrndup(yytext, yyleng);
-      return(ID);
+      return(VTK_ID);
     }
 
 "Qt::"{ID} {
@@ -453,39 +446,69 @@ PD [0-9a-zA-Z_]*
 
 "__attribute__"  get_macro_arguments();
 
+"__declspec"  get_macro_arguments();
+
 {ID}  {
       const char *name = vtkstrndup(yytext, yyleng);
       MacroInfo *macro = vtkParsePreprocess_GetMacro(&preprocessor, name);
       int expanded = 0;
       if (macro)
         {
+        const char *args = NULL;
+        const char *emacro = NULL;
         if (macro->IsFunction)
           {
-          const char *args = get_macro_arguments();
-          const char *emacro = NULL;
+          args = get_macro_arguments();
           if (args)
             {
-            emacro = vtkParsePreprocess_ExpandMacro(macro, args);
+            emacro = vtkParsePreprocess_ExpandMacro(
+              &preprocessor, macro, args);
+            if (!emacro)
+              {
+              print_preprocessor_error(VTK_PARSE_MACRO_NUMARGS, NULL, 0);
+              }
             free((char *)args);
             }
-          if (emacro)
+          }
+        else if (macro->Definition && macro->Definition[0])
+          {
+          /* first see if macro evaluates to a constant value */
+          preproc_int_t val;
+          int is_unsigned;
+          int r;
+          macro->IsExcluded = 1;
+          r = vtkParsePreprocess_EvaluateExpression(
+             &preprocessor, macro->Definition, &val, &is_unsigned);
+          macro->IsExcluded = 0;
+          /* if it isn't a constant expression, then expand it */
+          if (r >= VTK_PARSE_MACRO_UNDEFINED)
             {
-            push_macro(name);
-            push_buffer();
-            yy_switch_to_buffer(yy_scan_string(emacro));
-            vtkParsePreprocess_FreeExpandedMacro(emacro);
-            expanded = 1;
+            emacro = vtkParsePreprocess_ExpandMacro(
+              &preprocessor, macro, NULL);
+            if (!emacro)
+              {
+              print_preprocessor_error(r, NULL, 0);
+              }
             }
           }
-        else if (macro->Definition)
+        else
           {
+          /* macros with no definition expand to nothing */
+          expanded = 1;
+          }
+        if (emacro)
+          {
+          /* invoke the parser on any expanded macros */
+          push_macro(macro);
           push_buffer();
-          yy_switch_to_buffer(yy_scan_string(macro->Definition));
+          yy_switch_to_buffer(yy_scan_string(emacro));
+          vtkParsePreprocess_FreeString(&preprocessor, emacro);
           expanded = 1;
           }
         }
       if (!expanded)
         {
+        /* if no macro expansion occurred, return the ID */
         yylval.str = name;
         if (yyleng > 3 && name[0] == 'v' && name[1] == 't' && name[2] == 'k')
           {
@@ -528,7 +551,8 @@ PD [0-9a-zA-Z_]*
     }
 
 ("\\\n"|"\\\r\n") /* escaped newlines */
-[\t\n\r ]         /* whitespace */
+[\t ]+            /* whitespace */
+[\n\r\v\f]        /* whitespace */
 
 "<<="             return(OP_LSHIFT_EQ);
 ">>="             return(OP_RSHIFT_EQ);
@@ -579,6 +603,15 @@ const char *get_macro_arguments()
   int ws = 0;
   int sl = 0;
   int c1 = input();
+
+  if (c1 == '\0')
+    {
+    if (pop_buffer() == 0)
+      {
+      return NULL;
+      }
+    }
+
   while (c1 == ' ' || c1 == '\t' || c1 == '\r' || c1 == '\n')
     {
     c1 = input();
@@ -589,9 +622,7 @@ const char *get_macro_arguments()
   if (c1 != '(')
     {
     unput(c1);
-    strncpy(cp, "()", 3);
-    fprintf(stderr, "set args to %s\n", cp);
-    return cp;
+    return NULL;
     }
 
   cp[i++] = '(';
@@ -728,7 +759,8 @@ int skip_comment()
      {
      if (c2 == 0)
        {
-       fprintf(yyout,"Cannot find closing comment.\n");
+       print_preprocessor_error(VTK_PARSE_SYNTAX_ERROR,
+         "Cannot find end of comment.", 27);
        return 0;
        }
      if (c1 == '*' && c2 == '/') break;
@@ -897,7 +929,7 @@ int skip_ahead_multi(const char *strings[])
 
     if ((c = (char)input()) == '\0')
       {
-      fprintf(yyout, "Cannot find matching %s.\n", strings[0]);
+      print_preprocessor_error(VTK_PARSE_SYNTAX_ERROR, NULL, 0);
       return 0;
       }
 
@@ -981,26 +1013,27 @@ int pop_buffer()
  * macro stack, to tell what macro is being evaluated
  */
 static size_t macro_stack_size = 0;
-static const char **macro_stack = NULL;
+static MacroInfo **macro_stack = NULL;
 
 /*
  * push the current macro onto the macro stack.
  */
-void push_macro(const char *macname)
+void push_macro(MacroInfo *macro)
 {
   size_t n = macro_stack_size;
   if (macro_stack == NULL)
     {
-    macro_stack = (const char **)malloc(4*sizeof(const char *));
+    macro_stack = (MacroInfo **)malloc(4*sizeof(MacroInfo *));
     }
   // grow the stack whenever size reaches a power of two
   else if (n >= 4 && (n & (n-1)) == 0)
     {
-    macro_stack = (const char **)realloc(
-      (char **)macro_stack, 2*n*sizeof(const char *));
+    macro_stack = (MacroInfo **)realloc(
+      macro_stack, 2*n*sizeof(MacroInfo *));
     }
-  macro_stack[macro_stack_size++] = macname;
-  macroName = macname;
+  macro_stack[macro_stack_size++] = macro;
+  macro->IsExcluded = 1;
+  macroName = macro->Name;
   macroUsed = 0;
   macroEnded = 0;
 }
@@ -1012,7 +1045,7 @@ void pop_macro()
 {
   if (macro_stack_size > 0)
     {
-    --macro_stack_size;
+    macro_stack[--macro_stack_size]->IsExcluded = 0;
     }
   macroEnded = 1;
 }
@@ -1055,6 +1088,9 @@ void print_preprocessor_error(int result, const char *cp, size_t n)
     case VTK_PARSE_FILE_READ_ERROR:
       text = "input/output error";
       break;
+    case VTK_PARSE_MACRO_NUMARGS:
+      text = "wrong number of macro args";
+      break;
     case VTK_PARSE_SYNTAX_ERROR:
       text = "syntax error";
       break;
@@ -1073,5 +1109,8 @@ void print_preprocessor_error(int result, const char *cp, size_t n)
     fn = &data.FileName[j];
     }
   fprintf(yyout, "In %s:%i: %s: ", fn, yylineno, text);
-  fprintf(yyout, "%*.*s\n", (int)n, (int)n, cp);
+  if (cp)
+    {
+    fprintf(yyout, "%*.*s\n", (int)n, (int)n, cp);
+    }
 }
