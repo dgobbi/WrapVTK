@@ -1225,9 +1225,10 @@ void vtkWrapXML_MergeHelper(
   char *new_classname = NULL;
   const char **template_args = NULL;
   unsigned long template_arg_count = 0;
+  const char *nspacename = NULL;
   const char *header;
   const char *filename;
-  unsigned long i, n;
+  unsigned long i, j, n, m;
 
   /* Note: this method does not deal with scoping yet.
    * "classname" might be a scoped name, in which case the
@@ -1238,7 +1239,30 @@ void vtkWrapXML_MergeHelper(
    * have been applied into account. */
 
   /* get extra class info from the hierarchy file */
-  entry = vtkParseHierarchy_FindEntry(hinfo, classname);
+  nspacename = data->Name;
+  if (nspacename && classname[0] != ':')
+    {
+    size_t l1 = strlen(nspacename);
+    size_t l2 = strlen(classname);
+    char *ncp = (char *)malloc(l1 + l2 + 3);
+    strcpy(ncp, data->Name);
+    ncp[l1] = ':';
+    ncp[l1 + 1] = ':';
+    strcpy(&ncp[l1+2], classname);
+    /* fprintf(stderr, "searching for %s... ", ncp); */
+    entry = vtkParseHierarchy_FindEntry(hinfo, ncp);
+    /* if (entry) { fprintf(stderr, "found.\n"); } */
+    /* else { fprintf(stderr, "not found.\n"); } */
+    free(ncp);
+    }
+  if (!entry && classname[0] == ':' && classname[1] == ':')
+    {
+    entry = vtkParseHierarchy_FindEntry(hinfo, &classname[2]);
+    }
+  if (!entry)
+    {
+    entry = vtkParseHierarchy_FindEntry(hinfo, classname);
+    }
 
   if (entry && entry->NumberOfTemplateArgs > 0)
     {
@@ -1310,14 +1334,41 @@ void vtkWrapXML_MergeHelper(
       }
 
     data = finfo->Contents;
-
-    n = data->NumberOfClasses;
-    for (i = 0; i < n; i++)
+    if (nspacename)
       {
-      if (strcmp(data->Classes[i]->Name, classname) == 0)
+      m = data->NumberOfNamespaces;
+      for (j = 0; j < m; j++)
         {
-        cinfo = data->Classes[i];
-        break;
+        NamespaceInfo *ni = data->Namespaces[j];
+        if (ni->Name && strcmp(ni->Name, nspacename) == 0)
+          {
+          n = ni->NumberOfClasses;
+          for (i = 0; i < n; i++)
+            {
+            if (strcmp(ni->Classes[i]->Name, classname) == 0)
+              {
+              cinfo = ni->Classes[i];
+              data = ni;
+              break;
+              }
+            }
+          if (i < n)
+            {
+            break;
+            }
+          }
+        }
+      }
+    else
+      {
+      n = data->NumberOfClasses;
+      for (i = 0; i < n; i++)
+        {
+        if (strcmp(data->Classes[i]->Name, classname) == 0)
+          {
+          cinfo = data->Classes[i];
+          break;
+          }
         }
       }
     }
@@ -1388,6 +1439,10 @@ MergeInfo *vtkWrapXML_MergeSuperClasses(
       {
       fclose(hintfile);
       }
+
+    /*
+    vtkWrap_ExpandTypedefs(classInfo, hinfo);
+    */
     }
 
   if (hinfo)

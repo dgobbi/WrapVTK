@@ -131,7 +131,10 @@ static char *append_template_to_line(
   for (j = 0; j < template_args->NumberOfArguments; j++)
     {
     arg = template_args->Arguments[j];
-    line = append_to_line(line, arg->Name, m, maxlen);
+    if (arg->Name)
+      {
+      line = append_to_line(line, arg->Name, m, maxlen);
+      }
     if (arg->Value && arg->Value[0] != '\n')
       {
       line = append_to_line(line, "=", m, maxlen);
@@ -161,7 +164,7 @@ static char *append_class_to_line(
   if (class_info->Template)
     {
     line = append_template_to_line(line, m, maxlen, class_info->Template);
-    }  
+    }
 
   line = append_to_line(line, " ", m, maxlen);
 
@@ -493,17 +496,20 @@ static char **append_namespace_contents(
       line = append_typedef_to_line(line, &m, &maxlen,
         data->Typedefs[data->Items[i].Index]);
       }
-    else
+    else if (data->Items[i].Type != VTK_NAMESPACE_INFO)
       {
       /* unhandled file element */
       continue;
       }
 
-    /* append filename and flags */
-    line = append_trailer(line, &m, &maxlen, header_file, tmpflags);
+    if (data->Items[i].Type != VTK_NAMESPACE_INFO)
+      {
+      /* append filename and flags */
+      line = append_trailer(line, &m, &maxlen, header_file, tmpflags);
 
-    /* append the line to the file */
-    lines = append_unique_line(lines, line, np);
+      /* append the line to the file */
+      lines = append_unique_line(lines, line, np);
+      }
 
     /* for classes, add all typed defined within the class */
     if ((data->Items[i].Type == VTK_CLASS_INFO ||

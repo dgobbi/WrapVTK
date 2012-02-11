@@ -36,6 +36,58 @@ static size_t skip_space(const char *text)
   return i;
 }
 
+static size_t skip_expression(const char *text, const char *delims)
+{
+  char newdelims[2];
+  size_t i = 0;
+  size_t j;
+  int use_angle = 0;
+  char c;
+
+  for (j = 0; delims[j] != '\0'; j++)
+    {
+    if (delims[j] == '>')
+      {
+      use_angle = 1;
+      }
+    }
+
+  while (text[i] != '\0')
+    {
+    c = text[i];
+    j = 0;
+    while (c != delims[j] && delims[j] != '\0') { j++; }
+    if (delims[j] != '\0' || c == '\0') { break; }
+    if (c == '\"' || c == '\'')
+      {
+      char d = c;
+      i++;
+      while (text[i] != d && text[i] != '\0')
+        {
+        if (text[i] == '\\' && text[i+1] != '\0') { i++; }
+        i++;
+        }
+      c = text[i];
+      if (c == '\0') { break; }
+      }
+    i++;
+    if (c == '(' || c == '[' || c == '{' || (use_angle && c == '<'))
+      {
+      if (c == '(') { newdelims[0] = ')'; }
+      if (c == '[') { newdelims[0] = ']'; }
+      if (c == '{') { newdelims[0] = '}'; }
+      if (c == '<') { newdelims[0] = '>'; }
+      newdelims[1] = '\0';
+
+      i += skip_expression(&text[i], newdelims);
+
+      if (text[i] == newdelims[0]) { i++; } else { break; }
+      }
+    }
+
+  return i;
+}
+
 /* helper: comparison of entries */
 static int compare_hierarchy_entries(const void *vp1, const void *vp2)
 {
@@ -74,7 +126,7 @@ HierarchyEntry *vtkParseHierarchy_FindEntry(
     n = vtkParse_UnscopedNameLength(&classname[i]);
     }
   i += vtkParse_IdentifierLength(&classname[i]);
-      
+
   /* create a new (shorter) search string if necessary */
   if (classname[i] != '\0')
     {
@@ -117,6 +169,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
   size_t maxlen = 15;
   size_t i, j, n, m;
   unsigned int bits, pointers;
+  static const char *delims = ">,=";
 
   line = (char *)malloc(maxlen);
 
@@ -213,7 +266,11 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
         entry->NumberOfTemplateArgs++;
         entry->TemplateArgDefaults[j] = NULL;
 
-        m = vtkParse_NameLength(&line[i]);
+        m = skip_expression(&line[i], delims);
+        while (m > 0 && (line[i+m-1] == ' ' || line[i+m-1] == '\t'))
+          {
+          --m;
+          }
 
         cp = (char *)malloc(m+1);
         strncpy(cp, &line[i], m);
@@ -226,8 +283,11 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
           {
           i++;
           i += skip_space(&line[i]);
-          m = vtkParse_NameLength(&line[i]);
-
+          m = skip_expression(&line[i], delims);
+          while (m > 0 && (line[i+m-1] == ' ' || line[i+m-1] == '\t'))
+            {
+            --m;
+            }
           cp = (char *)malloc(m+1);
           strncpy(cp, &line[i], m);
           cp[m] = '\0';
@@ -540,7 +600,7 @@ void vtkParseHierarchy_Free(HierarchyInfo *info)
 
 /* Check whether class is derived from baseclass.  You must supply
  * the entry for the class (returned by FindEntry) as well as the
- * classname.  If the class is templated, the classname can include 
+ * classname.  If the class is templated, the classname can include
  * template args in angle brackets.  If you provide a pointer for
  * baseclass_with_args, then it will be used to return the name of
  * name of the baseclass with template args in angle brackets. */
