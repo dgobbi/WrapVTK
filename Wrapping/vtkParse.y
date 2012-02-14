@@ -1351,14 +1351,14 @@ strt:
     file_item;
 
 file_item:
-    var
-  | enum_def maybe_vars ';'
+    variables
+  | enum_def maybe_variables ';'
   | using
   | namespace
   | extern
   | type_def
-  | class_def maybe_vars ';'
-  | template class_def maybe_vars ';'
+  | class_def maybe_variables ';'
+  | template class_def maybe_variables ';'
   | class_forward_decl
   | operator func_body { output_function(); }
   | template maybe_templated_operator func_body { output_function(); }
@@ -1367,8 +1367,8 @@ file_item:
   | scoped_method func_body { reject_function(); }
   | template function func_body { output_function(); }
   | macro
-  | any_id ';'
-  | template maybe_scoped_id '(' maybe_other ')'
+  | simple_id ';'
+  | template any_id '(' maybe_other ')'
     maybe_initializers func_body { reject_function(); }
   | template templated_id DOUBLE_COLON '~' class_id '(' maybe_other ')'
     maybe_initializers func_body { reject_function(); }
@@ -1396,27 +1396,27 @@ namespace:
  */
 
 class_forward_decl:
-    CLASS maybe_scoped_id ';'
-  | STRUCT maybe_scoped_id ';'
-  | UNION maybe_scoped_id ';'
-  | FRIEND CLASS maybe_scoped_id ';'
-  | FRIEND STRUCT maybe_scoped_id ';'
-  | FRIEND UNION maybe_scoped_id ';'
-  | template CLASS maybe_scoped_id ';'
-  | template STRUCT maybe_scoped_id ';'
-  | template UNION maybe_scoped_id ';'
-  | FRIEND template CLASS maybe_scoped_id ';'
-  | FRIEND template STRUCT maybe_scoped_id ';'
-  | FRIEND template UNION maybe_scoped_id ';';
+    CLASS any_id ';'
+  | STRUCT any_id ';'
+  | UNION any_id ';'
+  | FRIEND CLASS any_id ';'
+  | FRIEND STRUCT any_id ';'
+  | FRIEND UNION any_id ';'
+  | template CLASS any_id ';'
+  | template STRUCT any_id ';'
+  | template UNION any_id ';'
+  | FRIEND template CLASS any_id ';'
+  | FRIEND template STRUCT any_id ';'
+  | FRIEND template UNION any_id ';';
 
 class_def:
-    CLASS maybe_scoped_id { start_class($<str>2, 0); }
-    optional_scope '{' class_def_body '}' { end_class(); }
-  | STRUCT maybe_scoped_id { start_class($<str>2, 1); }
-    optional_scope '{' class_def_body '}' { end_class(); }
+    CLASS any_id { start_class($<str>2, 0); }
+    maybe_bases '{' class_def_body '}' { end_class(); }
+  | STRUCT any_id { start_class($<str>2, 1); }
+    maybe_bases '{' class_def_body '}' { end_class(); }
   | STRUCT '{' maybe_other '}'
-  | UNION maybe_scoped_id { start_class($<str>2, 2); }
-    optional_scope '{' class_def_body '}' { end_class(); }
+  | UNION any_id { start_class($<str>2, 2); }
+    maybe_bases '{' class_def_body '}' { end_class(); }
   | UNION '{' maybe_other '}';
 
 class_def_body:
@@ -1428,15 +1428,15 @@ class_def_body:
       closeComment();
     }
     class_def_item
-  | class_def_body scope_type ':';
+  | class_def_body access_specifier ':';
 
 class_def_item:
-    var
+    variables
   | using
   | type_def
-  | enum_def maybe_vars ';'
-  | class_def maybe_vars ';'
-  | template class_def maybe_vars ';'
+  | enum_def maybe_variables ';'
+  | class_def maybe_variables ';'
+  | template class_def maybe_variables ';'
   | class_forward_decl
   | FRIEND internal_class
   | FRIEND template_internal_class
@@ -1462,24 +1462,24 @@ class_def_item:
   | macro
   | ';';
 
-optional_scope:
-  | ':' scope_list;
+maybe_bases:
+  | ':' base_list;
 
-scope_list:
-    scope_list_item
-  | scope_list_item ',' scope_list;
+base_list:
+    base_list_item
+  | base_list_item ',' base_list;
 
-scope_list_item: maybe_scoped_id
-  | PRIVATE maybe_scoped_id
-  | PROTECTED maybe_scoped_id
-  | PUBLIC maybe_scoped_id
+base_list_item: any_id
+  | PRIVATE any_id
+  | PROTECTED any_id
+  | PUBLIC any_id
     {
       vtkParse_AddStringToArray(&currentClass->SuperClasses,
                                 &currentClass->NumberOfSuperClasses,
                                 vtkstrdup($<str>2));
     };
 
-scope_type:
+access_specifier:
     PUBLIC { access_level = VTK_ACCESS_PUBLIC; }
   | PRIVATE { access_level = VTK_ACCESS_PRIVATE; }
   | PROTECTED { access_level = VTK_ACCESS_PROTECTED; };
@@ -1501,9 +1501,9 @@ enum_list:
   | enum_item ',' enum_list;
 
 enum_item:
-    any_id { add_enum($<str>1, NULL); }
-  | any_id '=' { postSig("="); markSig(); }
-    param_value { chopSig(); add_enum($<str>1, copySig()); };
+    simple_id { add_enum($<str>1, NULL); }
+  | simple_id '=' { postSig("="); markSig(); }
+    const_expr { chopSig(); add_enum($<str>1, copySig()); };
 
 /*
  * currently ignored items
@@ -1513,10 +1513,10 @@ template_internal_class:
     template internal_class;
 
 internal_class:
-    CLASS maybe_scoped_id internal_class_body
-  | STRUCT maybe_scoped_id internal_class_body
+    CLASS any_id internal_class_body
+  | STRUCT any_id internal_class_body
   | STRUCT internal_class_body
-  | UNION maybe_scoped_id internal_class_body
+  | UNION any_id internal_class_body
   | UNION internal_class_body;
 
 internal_class_body:
@@ -1556,8 +1556,8 @@ type_def:
   | TYPEDEF VAR_FUNCTION ';';
 
 complex_typedef_id:
-    complex_var_id
-  | var_id '(' { pushFunction(); postSig("("); } args_list ')'
+    var_decl
+  | var_id '(' { pushFunction(); postSig("("); } parameter_list ')'
     maybe_func_const
     { $<integer>$ = VTK_PARSE_FUNCTION; postSig(")"); popFunction(); };
 
@@ -1567,9 +1567,9 @@ complex_typedef_id:
  */
 
 using:
-    USING NAMESPACE maybe_scoped_id ';' { add_using($<str>3, 1); }
-  | USING TYPENAME maybe_scoped_id ';'  { add_using($<str>3, 0); }
-  | USING maybe_scoped_id ';' { add_using($<str>2, 0); }
+    USING NAMESPACE any_id ';' { add_using($<str>3, 1); }
+  | USING TYPENAME any_id ';'  { add_using($<str>3, 0); }
+  | USING any_id ';' { add_using($<str>2, 0); }
   | USING class_id DOUBLE_COLON OPERATOR op_token ';'
     { add_using(vtkstrcat3($<str>2, "operator", $<str>5), 0); }
   | USING DOUBLE_COLON class_id DOUBLE_COLON OPERATOR op_token ';'
@@ -1585,7 +1585,7 @@ template:
     { postSig("template<> "); clearTypeId(); }
   | TEMPLATE '<'
     { postSig("template<"); clearTypeId(); startTemplate(); }
-    template_args '>'
+    template_parameters '>'
     {
       chopSig();
       if (getSig()[strlen(getSig())-1] == '>') { postSig(" "); }
@@ -1593,14 +1593,14 @@ template:
       clearTypeId();
     };
 
-template_args:
-    template_arg
-  | template_arg ',' { chopSig(); postSig(", "); clearTypeId(); }
-    template_args;
+template_parameters:
+    template_parameter
+  | template_parameter ',' { chopSig(); postSig(", "); clearTypeId(); }
+    template_parameters;
 
-template_arg:
+template_parameter:
     { markSig(); }
-    type_simple maybe_complex_var_id
+    type_simple param_decl
     {
       ValueInfo val;
       TemplateArg *arg = (TemplateArg *)malloc(sizeof(TemplateArg));
@@ -1620,7 +1620,7 @@ template_arg:
     }
     maybe_template_default
   | { markSig(); }
-    class_or_typename maybe_complex_var_id
+    class_or_typename param_decl
     {
       ValueInfo val;
       TemplateArg *arg = (TemplateArg *)malloc(sizeof(TemplateArg));
@@ -1640,7 +1640,7 @@ template_arg:
     }
     maybe_template_default
   | { pushTemplate(); markSig(); }
-    template maybe_complex_var_id
+    template param_decl
     {
       ValueInfo val;
       TemplateArgs *newTemplate = currentTemplate;
@@ -1672,13 +1672,17 @@ maybe_template_default:
 
 template_default:
     '=' { postSig("="); markSig(); }
-    template_param_value
+    template_parameter_value
     {
       unsigned long i = currentTemplate->NumberOfArguments-1;
       TemplateArg *arg = currentTemplate->Arguments[i];
       chopSig();
       arg->Value = vtkstrdup(copySig());
     };
+
+template_parameter_value:
+    angle_bracket_pitem
+  | template_parameter_value angle_bracket_pitem;
 
 
 /*
@@ -1743,7 +1747,7 @@ typecast_op_func:
       postSig("(");
       set_return(currentFunction, getStorageType(), getTypeId(), 0);
     }
-    args_list ')' { postSig(")"); } func_trailer
+    parameter_list ')' { postSig(")"); } func_trailer
     {
       $<integer>$ = $<integer>3;
       postSig(";");
@@ -1771,7 +1775,7 @@ op_sig:
       currentFunction->IsOperator = 1;
       set_return(currentFunction, getStorageType(), getTypeId(), 0);
     }
-    args_list ')' { $<str>$ = $<str>3; };
+    parameter_list ')' { $<str>$ = $<str>3; };
 
 func:
     func_sig { postSig(")"); } func_trailer
@@ -1801,26 +1805,26 @@ func_body:
   | ';';
 
 func_sig:
-    any_id '('
+    simple_id '('
     {
       postSig("(");
       set_return(currentFunction, getStorageType(), getTypeId(), 0);
     }
-    args_list ')' { $<str>$ = $<str>1; }
+    parameter_list ')' { $<str>$ = $<str>1; }
   | templated_id '('
     {
       postSig("(");
       set_return(currentFunction, getStorageType(), getTypeId(), 0);
     }
-    args_list ')' { $<str>$ = $<str>1; }
-  | templated_id DOUBLE_COLON { markSig(); postSig("::"); } any_id '('
+    parameter_list ')' { $<str>$ = $<str>1; }
+  | templated_id DOUBLE_COLON { markSig(); postSig("::"); } simple_id '('
     {
       postSig("(");
       $<str>$ = vtkstrcat($<str>1, copySig());
       set_return(currentFunction, getStorageType(), getTypeId(), 0);
       $<str>$ = vtkstrcat($<str>1, copySig());
     }
-    args_list ')' { $<str>$ = $<str>6; };
+    parameter_list ')' { $<str>$ = $<str>6; };
 
 constructor:
     constructor_sig { postSig(");"); closeSig(); } maybe_initializers
@@ -1831,8 +1835,8 @@ constructor:
     };
 
 constructor_sig:
-    any_id '(' { postSig("("); } args_list ')'
-  | templated_id '(' { postSig("("); } args_list ')';
+    simple_id '(' { postSig("("); } parameter_list ')'
+  | templated_id '(' { postSig("("); } parameter_list ')';
 
 maybe_initializers:
   | ':' initializer more_initializers;
@@ -1841,7 +1845,7 @@ more_initializers:
   | ',' initializer more_initializers;
 
 initializer:
-    maybe_scoped_id parens;
+    any_id parens;
 
 destructor:
     destructor_sig { postSig(")"); } func_trailer
@@ -1854,24 +1858,24 @@ destructor:
     };
 
 destructor_sig:
-    '~' { postSig("~"); } any_id '(' { postSig("("); }
-    args_list ')' { $<str>$ = vtkstrcat("~", $<str>3); };
+    '~' { postSig("~"); } simple_id '(' { postSig("("); }
+    parameter_list ')' { $<str>$ = vtkstrcat("~", $<str>3); };
 
 /*
  * Arguments
  */
 
-args_list:
-  | { clearTypeId(); } more_args;
+parameter_list:
+  | { clearTypeId(); } more_parameters;
 
-more_args:
+more_parameters:
     ELLIPSIS { currentFunction->IsVariadic = 1; postSig("..."); }
-  | arg { clearTypeId(); }
-  | arg ',' { clearTypeId(); postSig(", "); } more_args;
+  | parameter { clearTypeId(); }
+  | parameter ',' { clearTypeId(); postSig(", "); } more_parameters;
 
-arg:
+parameter:
     { markSig(); }
-    type maybe_complex_var_id
+    type param_decl
     {
       unsigned long i = currentFunction->NumberOfArguments;
       ValueInfo *arg = (ValueInfo *)malloc(sizeof(ValueInfo));
@@ -1893,7 +1897,7 @@ arg:
 
       vtkParse_AddArgumentToFunction(currentFunction, arg);
     }
-    maybe_var_assign
+    maybe_assign_value
     {
       unsigned long i = currentFunction->NumberOfArguments-1;
       if (getVarValue())
@@ -1926,28 +1930,28 @@ arg:
     };
 
 maybe_indirect_id:
-   any_id
- | type_indirection any_id;
+   simple_id
+ | type_indirection simple_id;
 
-maybe_var_assign:
+maybe_assign_value:
     { clearVarValue(); }
-  | var_assign;
+  | assign_value;
 
-var_assign:
+assign_value:
     '=' { postSig("="); clearVarValue(); markSig(); }
-    param_value { chopSig(); setVarValue(copySig()); };
+    const_expr { chopSig(); setVarValue(copySig()); };
 
 /*
  * Variables
  */
 
-var:
-    storage_type var_id_maybe_assign maybe_other_vars ';'
-  | STATIC VAR_FUNCTION maybe_other_vars ';'
-  | VAR_FUNCTION maybe_other_vars ';';
+variables:
+    storage_type var_id_maybe_assign_value maybe_other_variables ';'
+  | STATIC VAR_FUNCTION maybe_other_variables ';'
+  | VAR_FUNCTION maybe_other_variables ';';
 
-var_id_maybe_assign:
-    complex_var_id maybe_var_assign
+var_id_maybe_assign_value:
+    var_decl maybe_assign_value
     {
       unsigned int type = getStorageType();
       ValueInfo *var = (ValueInfo *)malloc(sizeof(ValueInfo));
@@ -1998,22 +2002,22 @@ var_id_maybe_assign:
         }
     };
 
-maybe_vars:
-  | other_var maybe_other_vars;
+maybe_variables:
+  | other_variable maybe_other_variables;
 
-maybe_other_vars:
-  | maybe_other_vars ',' { postSig(", "); } other_var;
+maybe_other_variables:
+  | maybe_other_variables ',' { postSig(", "); } other_variable;
 
-other_var:
-    { setStorageTypeIndirection(0); } var_id_maybe_assign
+other_variable:
+    { setStorageTypeIndirection(0); } var_id_maybe_assign_value
   | type_indirection
-    { setStorageTypeIndirection($<integer>1); } var_id_maybe_assign;
+    { setStorageTypeIndirection($<integer>1); } var_id_maybe_assign_value;
 
-/* for args, the var_id is optional */
-maybe_complex_var_id:
-    maybe_var_id maybe_var_array { $<integer>$ = 0; }
-  | p_or_lp_or_la maybe_indirect_maybe_var_id ')' { postSig(")"); }
-    maybe_array_or_args
+/* for parameters, the var_id is optional */
+param_decl:
+    maybe_var_id maybe_array_decorator { $<integer>$ = 0; }
+  | p_or_lp_or_la maybe_indirect_param_decl ')' { postSig(")"); }
+    maybe_array_or_parameters
     {
       const char *scope = getScope();
       unsigned int parens = add_indirection($<integer>1, $<integer>2);
@@ -2029,10 +2033,11 @@ maybe_complex_var_id:
         }
     };
 
-/* for vars, the var_id is mandatory */
-complex_var_id:
-    var_id maybe_var_array { $<integer>$ = 0; }
-  | lp_or_la maybe_indirect_var_id ')' { postSig(")"); } maybe_array_or_args
+/* for variables, the var_id is mandatory */
+var_decl:
+    var_id maybe_array_decorator { $<integer>$ = 0; }
+  | lp_or_la maybe_indirect_var_decl ')' { postSig(")"); }
+    maybe_array_or_parameters
     {
       const char *scope = getScope();
       unsigned int parens = add_indirection($<integer>1, $<integer>2);
@@ -2065,23 +2070,23 @@ maybe_func_const:
   | CONST { currentFunction->IsConst = 1; }
   | THROW parens;
 
-maybe_array_or_args: { $<integer>$ = 0; }
-  | '(' { pushFunction(); postSig("("); } args_list ')' maybe_func_const
+maybe_array_or_parameters: { $<integer>$ = 0; }
+  | '(' { pushFunction(); postSig("("); } parameter_list ')' maybe_func_const
     {
       $<integer>$ = VTK_PARSE_FUNCTION;
       postSig(")");
       popFunction();
     }
-  | var_array { $<integer>$ = VTK_PARSE_ARRAY; };
+  | array_decorator { $<integer>$ = VTK_PARSE_ARRAY; };
 
-maybe_indirect_maybe_var_id:
-    maybe_complex_var_id { $<integer>$ = $<integer>1; }
-  | type_indirection maybe_complex_var_id
+maybe_indirect_param_decl:
+    param_decl { $<integer>$ = $<integer>1; }
+  | type_indirection param_decl
     { $<integer>$ = add_indirection($<integer>1, $<integer>2); };
 
-maybe_indirect_var_id:
-    complex_var_id { $<integer>$ = $<integer>1; }
-  | type_indirection complex_var_id
+maybe_indirect_var_decl:
+    var_decl { $<integer>$ = $<integer>1; }
+  | type_indirection var_decl
     { $<integer>$ = add_indirection($<integer>1, $<integer>2); };
 
 maybe_var_id:
@@ -2089,13 +2094,13 @@ maybe_var_id:
   | var_id;
 
 var_id:
-    any_id {setVarName($<str>1);};
+    simple_id {setVarName($<str>1);};
 
-maybe_var_array:
+maybe_array_decorator:
     { clearArray(); }
-  | var_array;
+  | array_decorator;
 
-var_array:
+array_decorator:
     { clearArray(); } array;
 
 array:
@@ -2106,13 +2111,13 @@ more_array:
 
 array_size:
     { pushArraySize(""); }
-  | { markSig(); } param_value { chopSig(); pushArraySize(copySig()); };
+  | { markSig(); } const_expr { chopSig(); pushArraySize(copySig()); };
 
 /*
- * any_id evaluates to string and sigs itself
+ * simple_id evaluates to string and sigs itself
  */
 
-any_id:
+simple_id:
     VTK_ID { postSig($<str>1); }
   | QT_ID { postSig($<str>1); }
   | ID { postSig($<str>1); }
@@ -2192,7 +2197,7 @@ type_red2:
     { postSig(" "); setTypeId($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
   | scoped_id
     { postSig(" "); setTypeId($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
-  | TYPENAME { postSig("typename "); } maybe_scoped_id
+  | TYPENAME { postSig("typename "); } any_id
     { postSig(" "); setTypeId($<str>3); $<integer>$ = VTK_PARSE_UNKNOWN; }
   | CLASS type_id { $<integer>$ = $<integer>2; }
   | STRUCT type_id { $<integer>$ = $<integer>2; }
@@ -2210,28 +2215,28 @@ templated_id:
       postSig(">"); $<str>$ = vtkstrdup(copySig()); clearTypeId();
     };
 
-maybe_scoped_id:
-    any_id
+any_id:
+    simple_id
   | templated_id
   | scoped_id;
 
 scoped_id:
-    class_id DOUBLE_COLON maybe_scoped_id
+    class_id DOUBLE_COLON any_id
     {
       $<str>$ = vtkstrcat3($<str>1, "::", $<str>3);
       preScopeSig($<str>1);
     }
-  | templated_id DOUBLE_COLON maybe_scoped_id
+  | templated_id DOUBLE_COLON any_id
     {
       $<str>$ = vtkstrcat3($<str>1, "::", $<str>3);
       preScopeSig("");
     }
-  | TEMPLATE templated_id DOUBLE_COLON maybe_scoped_id
+  | TEMPLATE templated_id DOUBLE_COLON any_id
     {
       $<str>$ = vtkstrcat3($<str>1, "::", $<str>4);
       preScopeSig("");
     }
-  | DOUBLE_COLON maybe_scoped_id
+  | DOUBLE_COLON any_id
     {
       $<str>$ = vtkstrcat("::", $<str>2);
       preScopeSig("");
@@ -2338,7 +2343,7 @@ pointer_or_const_pointer:
  */
 
 macro:
-  SetMacro '(' any_id ',' {preSig("void Set"); postSig("(");} type ')'
+  SetMacro '(' simple_id ',' {preSig("void Set"); postSig("(");} type ')'
    {
    postSig("a);");
    currentFunction->Macro = "vtkSetMacro";
@@ -2348,7 +2353,7 @@ macro:
    set_return(currentFunction, VTK_PARSE_VOID, "void", 0);
    output_function();
    }
-| GetMacro '(' {postSig("Get");} any_id ','
+| GetMacro '(' {postSig("Get");} simple_id ','
    {markSig();} type {swapSig();} ')'
    {
    postSig("();");
@@ -2358,7 +2363,7 @@ macro:
    set_return(currentFunction, $<integer>7, getTypeId(), 0);
    output_function();
    }
-| SetStringMacro '(' {preSig("void Set");} any_id ')'
+| SetStringMacro '(' {preSig("void Set");} simple_id ')'
    {
    postSig("(char *);");
    currentFunction->Macro = "vtkSetStringMacro";
@@ -2368,7 +2373,7 @@ macro:
    set_return(currentFunction, VTK_PARSE_VOID, "void", 0);
    output_function();
    }
-| GetStringMacro '(' {preSig("char *Get");} any_id ')'
+| GetStringMacro '(' {preSig("char *Get");} simple_id ')'
    {
    postSig("();");
    currentFunction->Macro = "vtkGetStringMacro";
@@ -2377,7 +2382,7 @@ macro:
    set_return(currentFunction, VTK_PARSE_CHAR_PTR, "char", 0);
    output_function();
    }
-| SetClampMacro '(' any_id ',' {startSig(); markSig();} type_red {closeSig();}
+| SetClampMacro '(' simple_id ',' {startSig(); markSig();} type_red {closeSig();}
      ',' maybe_other_no_semi ')'
    {
    const char *typeText;
@@ -2409,7 +2414,7 @@ macro:
    set_return(currentFunction, $<integer>6, getTypeId(), 0);
    output_function();
    }
-| SetObjectMacro '(' any_id ','
+| SetObjectMacro '(' simple_id ','
   {preSig("void Set"); postSig("("); } type_red ')'
    {
    postSig("*);");
@@ -2420,7 +2425,7 @@ macro:
    set_return(currentFunction, VTK_PARSE_VOID, "void", 0);
    output_function();
    }
-| GetObjectMacro '(' {postSig("*Get");} any_id ','
+| GetObjectMacro '(' {postSig("*Get");} simple_id ','
    {markSig();} type_red {swapSig();} ')'
    {
    postSig("();");
@@ -2430,7 +2435,7 @@ macro:
    set_return(currentFunction, VTK_PARSE_OBJECT_PTR, getTypeId(), 0);
    output_function();
    }
-| BooleanMacro '(' any_id ',' type_red ')'
+| BooleanMacro '(' simple_id ',' type_red ')'
    {
    currentFunction->Macro = "vtkBooleanMacro";
    currentFunction->Name = vtkstrcat($<str>3, "On");
@@ -2448,47 +2453,47 @@ macro:
    set_return(currentFunction, VTK_PARSE_VOID, "void", 0);
    output_function();
    }
-| SetVector2Macro '(' any_id ',' {startSig(); markSig();} type_red ')'
+| SetVector2Macro '(' simple_id ',' {startSig(); markSig();} type_red ')'
    {
    chopSig();
    outputSetVectorMacro($<str>3, $<integer>6, copySig(), 2);
    }
-| GetVector2Macro '(' any_id ',' {startSig(); markSig();} type_red ')'
+| GetVector2Macro '(' simple_id ',' {startSig(); markSig();} type_red ')'
    {
    chopSig();
    outputGetVectorMacro($<str>3, $<integer>6, copySig(), 2);
    }
-| SetVector3Macro '(' any_id ',' {startSig(); markSig();} type_red ')'
+| SetVector3Macro '(' simple_id ',' {startSig(); markSig();} type_red ')'
    {
    chopSig();
    outputSetVectorMacro($<str>3, $<integer>6, copySig(), 3);
    }
-| GetVector3Macro  '(' any_id ',' {startSig(); markSig();} type_red ')'
+| GetVector3Macro  '(' simple_id ',' {startSig(); markSig();} type_red ')'
    {
    chopSig();
    outputGetVectorMacro($<str>3, $<integer>6, copySig(), 3);
    }
-| SetVector4Macro '(' any_id ',' {startSig(); markSig();} type_red ')'
+| SetVector4Macro '(' simple_id ',' {startSig(); markSig();} type_red ')'
    {
    chopSig();
    outputSetVectorMacro($<str>3, $<integer>6, copySig(), 4);
    }
-| GetVector4Macro  '(' any_id ',' {startSig(); markSig();} type_red ')'
+| GetVector4Macro  '(' simple_id ',' {startSig(); markSig();} type_red ')'
    {
    chopSig();
    outputGetVectorMacro($<str>3, $<integer>6, copySig(), 4);
    }
-| SetVector6Macro '(' any_id ',' {startSig(); markSig();} type_red ')'
+| SetVector6Macro '(' simple_id ',' {startSig(); markSig();} type_red ')'
    {
    chopSig();
    outputSetVectorMacro($<str>3, $<integer>6, copySig(), 6);
    }
-| GetVector6Macro  '(' any_id ',' {startSig(); markSig();} type_red ')'
+| GetVector6Macro  '(' simple_id ',' {startSig(); markSig();} type_red ')'
    {
    chopSig();
    outputGetVectorMacro($<str>3, $<integer>6, copySig(), 6);
    }
-| SetVectorMacro  '(' any_id ',' {startSig(); markSig();}
+| SetVectorMacro  '(' simple_id ',' {startSig(); markSig();}
      type_red ',' INT_LITERAL ')'
    {
    const char *typeText;
@@ -2505,7 +2510,7 @@ macro:
    set_return(currentFunction, VTK_PARSE_VOID, "void", 0);
    output_function();
    }
-| GetVectorMacro  '(' any_id ',' {startSig();}
+| GetVectorMacro  '(' simple_id ',' {startSig();}
      type_red ',' INT_LITERAL ')'
    {
    chopSig();
@@ -2519,7 +2524,7 @@ macro:
               getTypeId(), (int)strtol($<str>8, NULL, 0));
    output_function();
    }
-| ViewportCoordinateMacro '(' any_id ')'
+| ViewportCoordinateMacro '(' simple_id ')'
    {
      currentFunction->Macro = "vtkViewportCoordinateMacro";
      currentFunction->Name = vtkstrcat3("Get", $<str>3, "Coordinate");
@@ -2556,7 +2561,7 @@ macro:
      set_return(currentFunction, VTK_PARSE_DOUBLE_PTR, "double", 2);
      output_function();
    }
-| WorldCoordinateMacro '(' any_id ')'
+| WorldCoordinateMacro '(' simple_id ')'
    {
      currentFunction->Macro = "vtkWorldCoordinateMacro";
      currentFunction->Name = vtkstrcat3("Get", $<str>3, "Coordinate");
@@ -2594,7 +2599,7 @@ macro:
      set_return(currentFunction, VTK_PARSE_DOUBLE_PTR, "double", 3);
      output_function();
    }
-| TypeMacro '(' any_id ',' any_id maybe_comma ')'
+| TypeMacro '(' simple_id ',' simple_id maybe_comma ')'
    {
    int is_concrete = 0;
    unsigned long i;
@@ -2736,16 +2741,12 @@ literal:
   | ZERO;
 
 /*
- * These eat the contents of angle brackets
+ * Constant expressions that evaluate to values
  */
 
-template_param_value:
-    angle_bracket_pitem
-  | template_param_value angle_bracket_pitem;
-
-param_value:
+const_expr:
     bracket_pitem
-  | param_value bracket_pitem;
+  | const_expr bracket_pitem;
 
 common_bracket_item:
     brackets_sig
