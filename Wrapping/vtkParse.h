@@ -67,6 +67,9 @@ typedef struct _TemplateArg
   const char   *Class; /* class name for type */
   const char   *Name;  /* name of template arg */
   const char   *Value; /* default value */
+  unsigned long NumberOfDimensions; /* dimensionality for arrays */
+  const char  **Dimensions; /* dimensions for arrays */
+  struct _FunctionInfo *Function;  /* for function pointer values */
   struct _TemplateArgs *Template; /* for templated template args */
 } TemplateArg;
 

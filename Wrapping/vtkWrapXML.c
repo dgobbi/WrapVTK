@@ -718,10 +718,35 @@ void vtkWrapXML_Template(
       vtkWrapXML_Value(w, arg->Value);
       }
 
+    if (arg->NumberOfDimensions)
+      {
+      ValueInfo val;
+      val.NumberOfDimensions = arg->NumberOfDimensions;
+      val.Dimensions = arg->Dimensions;
+      vtkWrapXML_Size(w, &val);
+      }
+
     if (arg->Template)
       {
       vtkWrapXML_Flag(w, "template", 1);
       vtkWrapXML_Template(w, arg->Template);
+      }
+
+    if (arg->Function)
+      {
+      if (arg->Function->Class)
+        {
+        vtkWrapXML_ElementStart(w, "Method");
+        vtkWrapXML_Attribute(w, "context", arg->Function->Class);
+        vtkWrapXML_FunctionCommon(w, arg->Function, 1);
+        vtkWrapXML_ElementEnd(w, "Method");
+        }
+      else
+        {
+        vtkWrapXML_ElementStart(w, "Function");
+        vtkWrapXML_FunctionCommon(w, arg->Function, 1);
+        vtkWrapXML_ElementEnd(w, "Function");
+        }
       }
 
     vtkWrapXML_ElementEnd(w, elementName);

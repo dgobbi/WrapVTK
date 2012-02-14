@@ -1598,9 +1598,6 @@ template_args:
   | template_arg ',' { chopSig(); postSig(", "); clearTypeId(); }
     template_args;
 
-/* NEEDS WORK due to maybe_complex_var_id, right now it tries
- * to fudge things by using code meant for variables.
- */
 template_arg:
     { markSig(); }
     type_simple maybe_complex_var_id
@@ -1612,6 +1609,9 @@ template_arg:
       handle_complex_type(&val, $<integer>2, $<integer>3, copySig());
       arg->Type = val.Type;
       arg->Class = val.Class;
+      arg->Function = val.Function;
+      arg->NumberOfDimensions = val.NumberOfDimensions;
+      arg->Dimensions = val.Dimensions;
       if (getVarName())
         {
         arg->Name = vtkstrdup(getVarName());
@@ -1619,10 +1619,19 @@ template_arg:
       vtkParse_AddArgumentToTemplate(currentTemplate, arg);
     }
     maybe_template_default
-  | class_or_typename maybe_var_id
+  | { markSig(); }
+    class_or_typename maybe_complex_var_id
     {
+      ValueInfo val;
       TemplateArg *arg = (TemplateArg *)malloc(sizeof(TemplateArg));
       vtkParse_InitTemplateArg(arg);
+      vtkParse_InitValue(&val);
+      handle_complex_type(&val, 0, $<integer>3, copySig());
+      arg->Type = val.Type;
+      arg->Class = val.Class;
+      arg->Function = val.Function;
+      arg->NumberOfDimensions = val.NumberOfDimensions;
+      arg->Dimensions = val.Dimensions;
       if (getVarName())
         {
         arg->Name = vtkstrdup(getVarName());
@@ -1630,14 +1639,22 @@ template_arg:
       vtkParse_AddArgumentToTemplate(currentTemplate, arg);
     }
     maybe_template_default
-  | { pushTemplate(); }
-    template maybe_var_id
+  | { pushTemplate(); markSig(); }
+    template maybe_complex_var_id
     {
+      ValueInfo val;
       TemplateArgs *newTemplate = currentTemplate;
       TemplateArg *arg = (TemplateArg *)malloc(sizeof(TemplateArg));
       vtkParse_InitTemplateArg(arg);
       popTemplate();
       arg->Template = newTemplate;
+      vtkParse_InitValue(&val);
+      handle_complex_type(&val, 0, $<integer>3, copySig());
+      arg->Type = val.Type;
+      arg->Class = val.Class;
+      arg->Function = val.Function;
+      arg->NumberOfDimensions = val.NumberOfDimensions;
+      arg->Dimensions = val.Dimensions;
       if (getVarName())
         {
         arg->Name = vtkstrdup(getVarName());
@@ -2892,10 +2909,18 @@ void vtkParse_InitTemplateArg(TemplateArg *arg)
   arg->Class = NULL;
   arg->Name = NULL;
   arg->Value = NULL;
+  arg->NumberOfDimensions = 0;
+  arg->Function = NULL;
 }
 
 void vtkParse_CopyTemplateArg(TemplateArg *arg, const TemplateArg *orig)
 {
+  unsigned long i, n;
+
+  arg->Type = orig->Type;
+  arg->Class = orig->Class;
+  arg->Name = orig->Name;
+  arg->Value = orig->Value;
   arg->Template = NULL;
 
   if (orig->Template)
@@ -2904,10 +2929,23 @@ void vtkParse_CopyTemplateArg(TemplateArg *arg, const TemplateArg *orig)
     vtkParse_CopyTemplateArgs(arg->Template, orig->Template);
     }
 
-  arg->Type = orig->Type;
-  arg->Class = orig->Class;
-  arg->Name = orig->Name;
-  arg->Value = orig->Value;
+  n = orig->NumberOfDimensions;
+  arg->NumberOfDimensions = n;
+  if (n)
+    {
+    arg->Dimensions = (const char **)malloc(n*sizeof(char *));
+    for (i = 0; i < n; i++)
+      {
+      arg->Dimensions[i] = orig->Dimensions[i];
+      }
+    }
+
+  arg->Function = NULL;
+  if (orig->Function)
+    {
+    arg->Function = (FunctionInfo *)malloc(sizeof(FunctionInfo));
+    vtkParse_CopyFunction(arg->Function, orig->Function);
+    }
 }
 
 /* initialize the structure */
@@ -3406,6 +3444,14 @@ void vtkParse_FreeTemplateArgs(TemplateArgs *template_info)
   m = template_info->NumberOfArguments;
   for (j = 0; j < m; j++)
     {
+    if (template_info->Arguments[j]->NumberOfDimensions)
+      {
+      free((char **)template_info->Arguments[j]->Dimensions);
+      }
+    if (template_info->Arguments[j]->Function)
+      {
+      vtkParse_FreeFunction(template_info->Arguments[j]->Function);
+      }
     if (template_info->Arguments[j]->Template)
       {
       vtkParse_FreeTemplateArgs(template_info->Arguments[j]->Template);
