@@ -1574,6 +1574,10 @@ void vtkWrapXML_Class(
     vtkWrapXML_Flag(w, "template", 1);
     vtkWrapXML_Template(w, classInfo->Template);
     }
+  else
+    {
+    vtkWrapXML_ElementBody(w);
+    }
 
   vtkWrapXML_Comment(w, classInfo->Comment);
 
