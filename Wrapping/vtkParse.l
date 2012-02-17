@@ -502,7 +502,8 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
           push_macro(macro);
           push_buffer();
           yy_switch_to_buffer(yy_scan_string(emacro));
-          vtkParsePreprocess_FreeString(&preprocessor, emacro);
+          vtkParsePreprocess_FreeMacroExpansion(
+            &preprocessor, macro, emacro);
           expanded = 1;
           }
         }

@@ -178,11 +178,16 @@ MacroInfo *vtkParsePreprocess_GetMacro(
 /**
  * Expand a macro.  A function macro must be given an argstring
  * with args in parentheses, otherwise the argstring can be NULL.
- * Returns a new string that was allocated with malloc, or
- * NULL if the wrong number of arguments were given.
+ * returns NULL if the wrong number of arguments were given.
  */
 const char *vtkParsePreprocess_ExpandMacro(
   PreprocessInfo *info, MacroInfo *macro, const char *argstring);
+
+/**
+ * Free an expanded macro
+ */
+void vtkParsePreprocess_FreeMacroExpansion(
+  PreprocessInfo *info, MacroInfo *macro, const char *text);
 
 /**
  * Fully process a string with the preprocessor, and
@@ -192,9 +197,12 @@ const char *vtkParsePreprocess_ProcessString(
   PreprocessInfo *info, const char *text);
 
 /**
- * Free an expanded macro or processed string.
+ * Free a processed string.  Only call this method if
+ * the string returned by ProcessString is different from
+ * the original string, because ProcessString will just
+ * return the original string if no processing was needed.
  */
-void vtkParsePreprocess_FreeString(
+void vtkParsePreprocess_FreeProcessedString(
   PreprocessInfo *info, const char *text);
 
 /**

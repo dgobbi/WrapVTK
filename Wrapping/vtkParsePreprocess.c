@@ -732,10 +732,11 @@ static int preproc_evaluate_single(
         result = vtkParsePreprocess_EvaluateExpression(
           info, expansion, val, is_unsigned);
         macro->IsExcluded = 0;
-        vtkParsePreprocess_FreeString(info, expansion);
+        vtkParsePreprocess_FreeMacroExpansion(
+          info, macro, expansion);
         return result;
         }
-      vtkParsePreprocess_FreeString(info, expansion);
+      vtkParsePreprocess_FreeMacroExpansion(info, macro, expansion);
       }
     /* if macro expansion was empty, continue */
     }
@@ -2350,10 +2351,12 @@ const char *vtkParsePreprocess_ExpandMacro(
   const char *cp = argstring;
   unsigned long n = 0;
   unsigned long j = 0;
+  const char *stack_values[8];
   const char **values = NULL;
   const char *pp = NULL;
   const char *dp = NULL;
   const char *wp = NULL;
+  char stack_rp[128];
   char *rp = NULL;
   size_t rs = 0;
   size_t i = 0;
@@ -2372,7 +2375,7 @@ const char *vtkParsePreprocess_ExpandMacro(
       }
 
     /* break the string into individual argument values */
-    values = (const char **)malloc(4*sizeof(const char **));
+    values = stack_values;
 
     cp++;
     values[n++] = cp;
@@ -2414,10 +2417,18 @@ const char *vtkParsePreprocess_ExpandMacro(
           cp++;
           }
         }
-      if (n >= 4 && (n & (n-1)) == 0)
+      if (n >= 8 && (n & (n-1)) == 0)
         {
-        values = (const char **)realloc(
-          (char **)values, 2*n*sizeof(const char **));
+        if (values != stack_values)
+          {
+          values = (const char **)realloc(
+            (char **)values, 2*n*sizeof(const char **));
+          }
+        else
+          {
+          values = (const char **)malloc(2*n*sizeof(const char **));
+          memcpy(values, stack_values, 8*sizeof(const char **));
+          }
         }
 
       values[n++] = cp;
@@ -2446,7 +2457,7 @@ const char *vtkParsePreprocess_ExpandMacro(
 
     if (n != macro->NumberOfArguments)
       {
-      free((char **)values);
+      if (values != stack_values) { free((char **)values); }
 #if PREPROC_DEBUG
       fprintf(stderr, "wrong number of macro args to %s, %lu != %lu\n",
               macro->Name, n, macro->NumberOfArguments);
@@ -2458,7 +2469,7 @@ const char *vtkParsePreprocess_ExpandMacro(
   cp = macro->Definition;
   cp = (cp ? cp : "");
   dp = cp;
-  rp = (char *)malloc(128);
+  rp = stack_rp;
   rp[0] = '\0';
   rs = 128;
 
@@ -2524,7 +2535,15 @@ const char *vtkParsePreprocess_ExpandMacro(
       if (i + l + 1 >= rs)
         {
         rs += rs + i + l + 1;
-        rp = (char *)realloc(rp, rs);
+        if (rp != stack_rp)
+          {
+          rp = (char *)realloc(rp, rs);
+          }
+        else
+          {
+          rp = (char *)malloc(rs);
+          memcpy(rp, stack_rp, i);
+          }
         }
       strncpy(&rp[i], pp, l);
       i += l;
@@ -2592,7 +2611,15 @@ const char *vtkParsePreprocess_ExpandMacro(
       if (i + l + stringify + 1 >= rs)
         {
         rs += rs + i + l + 1;
-        rp = (char *)realloc(rp, rs);
+        if (rp != stack_rp)
+          {
+          rp = (char *)realloc(rp, rs);
+          }
+        else
+          {
+          rp = (char *)malloc(rs);
+          memcpy(rp, stack_rp, i);
+          }
         }
       if (stringify)
         {
@@ -2625,13 +2652,23 @@ const char *vtkParsePreprocess_ExpandMacro(
         if (text)
           {
           l = strlen(text);
-          if (i + l + 1 >= rs)
+          if (text != &rp[i])
             {
-            rs += rs + i + l + 1;
-            rp = (char *)realloc(rp, rs);
+            char *tp = NULL;
+            if (i + l + 1 >= rs)
+              {
+              rs += rs + i + l + 1;
+              tp = rp;
+              rp = (char *)malloc(rs);
+              memcpy(rp, tp, i);
+              }
+            strncpy(&rp[i], text, l);
+            vtkParsePreprocess_FreeProcessedString(info, text);
+            if (tp && tp != stack_rp)
+              {
+              free(tp);
+              }
             }
-          strncpy(&rp[i], text, l);
-          vtkParsePreprocess_FreeString(info, text);
           }
         macro->IsExcluded = is_excluded;
         i += l;
@@ -2640,7 +2677,20 @@ const char *vtkParsePreprocess_ExpandMacro(
       }
     }
 
-  free((char **)values);
+  if (values != stack_values) { free((char **)values); }
+
+  if (!macro->IsFunction && macro->Definition &&
+      strcmp(rp, macro->Definition) == 0)
+    {
+    if (rp != stack_rp) { free(rp); }
+    return macro->Definition;
+    }
+
+  if (rp == stack_rp)
+    {
+    rp = (char *)malloc(strlen(stack_rp) + 1);
+    strcpy(rp, stack_rp);
+    }
 
   return rp;
 }
@@ -2651,6 +2701,7 @@ const char *vtkParsePreprocess_ExpandMacro(
 const char *vtkParsePreprocess_ProcessString(
   PreprocessInfo *info, const char *text)
 {
+  char stack_rp[128];
   char *rp;
   size_t i = 0;
   size_t rs = 128;
@@ -2658,7 +2709,7 @@ const char *vtkParsePreprocess_ProcessString(
   preproc_tokenizer tokens;
   preproc_init(&tokens, text);
 
-  rp = (char *)malloc(rs);
+  rp = stack_rp;
   rp[0] = '\0';
 
   while (tokens.tok)
@@ -2675,7 +2726,15 @@ const char *vtkParsePreprocess_ProcessString(
     if (i + l + 2 >= rs)
       {
       rs += rs + i + l + 2;
-      rp = (char *)realloc(rp, rs);
+      if (rp == stack_rp)
+        {
+        rp = (char *)malloc(rs);
+        memcpy(rp, stack_rp, i);
+        }
+      else
+        {
+        rp = (char *)realloc(rp, rs);
+        }
       }
     strncpy(&rp[i], cp, l);
 
@@ -2709,7 +2768,7 @@ const char *vtkParsePreprocess_ProcessString(
               }
             if (tokens.tok != ')')
               {
-              free(rp);
+              if (rp != stack_rp) { free(rp); }
               return NULL;
               }
             }
@@ -2728,16 +2787,16 @@ const char *vtkParsePreprocess_ProcessString(
           expansion = vtkParsePreprocess_ExpandMacro(info, macro, args);
           if (expansion == NULL)
             {
-            free(rp);
+            if (rp != stack_rp) { free(rp); }
             return NULL;
             }
           macro->IsExcluded = 1;
           processed = vtkParsePreprocess_ProcessString(info, expansion);
           macro->IsExcluded = 0;
-          vtkParsePreprocess_FreeString(info, expansion);
           if (processed == NULL)
             {
-            free(rp);
+            vtkParsePreprocess_FreeMacroExpansion(info, macro, expansion);
+            if (rp != stack_rp) { free(rp); }
             return NULL;
             }
           l = strlen(processed);
@@ -2746,11 +2805,23 @@ const char *vtkParsePreprocess_ProcessString(
             if (i + l + 2 >= rs)
               {
               rs += rs + i + l + 2;
-              rp = (char *)realloc(rp, rs);
+              if (rp == stack_rp)
+                {
+                rp = (char *)malloc(rs);
+                memcpy(rp, stack_rp, i);
+                }
+              else
+                {
+                rp = (char *)realloc(rp, rs);
+                }
               }
             strncpy(&rp[i], processed, l);
             }
-          vtkParsePreprocess_FreeString(info, processed);
+          if (processed != expansion)
+            {
+            vtkParsePreprocess_FreeProcessedString(info, processed);
+            }
+          vtkParsePreprocess_FreeMacroExpansion(info, macro, expansion);
           }
         }
       }
@@ -2767,13 +2838,48 @@ const char *vtkParsePreprocess_ProcessString(
     }
   rp[i] = '\0';
 
+  if (strcmp(rp, text) == 0)
+    {
+    /* no change, return */
+    if (rp != stack_rp) { free(rp); }
+    return text;
+    }
+  else
+    {
+    /* string changed, recursively reprocess */
+    const char *tp = vtkParsePreprocess_ProcessString(info, rp);
+    if (rp != tp)
+      {
+      if (rp != stack_rp) { free(rp); }
+      return tp;
+      }
+    if (rp == stack_rp)
+      {
+      rp = (char *)malloc(strlen(stack_rp) + 1);
+      strcpy(rp, stack_rp);
+      }
+    }
+
   return rp;
 }
 
 /**
- * Free a string returned by ExpandMacro or ProcessString
+ * Free a string returned by ExpandMacro
  */
-void vtkParsePreprocess_FreeString(
+void vtkParsePreprocess_FreeMacroExpansion(
+  PreprocessInfo *info, MacroInfo *macro, const char *text)
+{
+  /* only free expansion if it is different from definition */
+  if (info && text != macro->Definition)
+    {
+    free((char *)text);
+    }
+}
+
+/**
+ * Free a string returned by ProcessString
+ */
+void vtkParsePreprocess_FreeProcessedString(
   PreprocessInfo *info, const char *text)
 {
   if (info)
