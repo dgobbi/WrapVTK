@@ -139,12 +139,15 @@ int            IgnoreBTX = 0;
 void start_class(const char *classname, int is_struct_or_union);
 void reject_class(const char *classname, int is_struct_or_union);
 void end_class();
+void output_friend_function(void);
 void output_function(void);
 void reject_function(void);
 void set_return(FunctionInfo *func, unsigned int type,
                 const char *typeclass, unsigned long count);
 void add_argument(FunctionInfo *func, unsigned int type,
                   const char *classname, unsigned long count);
+void add_template_arg(unsigned int datatype,
+                      unsigned int extra, const char *funcSig);
 void add_using(const char *name, int is_namespace);
 void start_enum(const char *enumname);
 void add_enum(const char *name, const char *value);
@@ -326,21 +329,6 @@ static const char *vtkstrcat5(const char *str1, const char *str2,
   cp[3] = str4;
   cp[4] = str5;
   return vtkstrncat(5, cp);
-}
-
-static const char *vtkstrcat6(const char *str1, const char *str2,
-                              const char *str3, const char *str4,
-                              const char *str5, const char *str6)
-{
-  const char *cp[6];
-
-  cp[0] = str1;
-  cp[1] = str2;
-  cp[2] = str3;
-  cp[3] = str4;
-  cp[4] = str5;
-  cp[5] = str6;
-  return vtkstrncat(6, cp);
 }
 
 static const char *vtkstrcat7(const char *str1, const char *str2,
@@ -639,6 +627,7 @@ void checkSigSize(size_t n)
 
   if (sigAllocatedLength == 0)
     {
+    sigLength = 0;
     sigAllocatedLength = 80 + n;
     signature = vtkstralloc(sigAllocatedLength);
     signature[0] = '\0';
@@ -668,23 +657,16 @@ void openSig()
 /* insert text at the beginning of the signature */
 void preSig(const char *arg)
 {
-  size_t n;
-
-  n = strlen(arg);
-
-  if (!signature)
+  if (!sigClosed)
     {
+    size_t n = strlen(arg);
     checkSigSize(n);
-    strncpy(signature, arg, n);
-    signature[n] = '\0';
-    sigLength = n;
-    }
-  else if (!sigClosed && n > 0)
-    {
-    checkSigSize(n);
-    memmove(&signature[n], signature, sigLength);
-    strncpy(signature, arg, n);
-    sigLength += n;
+    if (n > 0)
+      {
+      memmove(&signature[n], signature, sigLength);
+      strncpy(signature, arg, n);
+      sigLength += n;
+      }
     signature[sigLength] = '\0';
     }
 }
@@ -692,45 +674,16 @@ void preSig(const char *arg)
 /* append text to the end of the signature */
 void postSig(const char *arg)
 {
-  size_t n;
-
-  n = strlen(arg);
-
-  if (!signature)
+  if (!sigClosed)
     {
+    size_t n = strlen(arg);
     checkSigSize(n);
-    strncpy(signature, arg, n);
-    signature[n] = '\0';
-    sigLength = n;
-    }
-  else if (!sigClosed)
-    {
-    checkSigSize(n);
-    strncpy(&signature[sigLength], arg, n);
-    sigLength += n;
+    if (n > 0)
+      {
+      strncpy(&signature[sigLength], arg, n);
+      sigLength += n;
+      }
     signature[sigLength] = '\0';
-    }
-}
-
-/* prepend a scope:: to the ID at the end of the signature */
-void preScopeSig(const char *arg)
-{
-  size_t n;
-
-  n = strlen(arg);
-
-  if (!signature)
-    {
-    checkSigSize(n);
-    strncpy(signature, arg, n);
-    signature[n] = '\0';
-    sigLength = n;
-    }
-  else if (!sigClosed)
-    {
-    checkSigSize(n+2);
-    prepend_scope(signature, arg);
-    sigLength = strlen(signature);
     }
 }
 
@@ -813,6 +766,12 @@ void chopSig(void)
 
 /* "private" variables */
 unsigned int storageType = 0;
+
+/* clear the storage type */
+void clearStorageType()
+{
+  storageType = 0;
+}
 
 /* save the storage type */
 void setStorageType(unsigned int val)
@@ -1344,6 +1303,7 @@ strt:
   | strt
     {
       startSig();
+      clearStorageType();
       clearTypeId();
       clearTemplate();
       closeComment();
@@ -1353,25 +1313,24 @@ strt:
 file_item:
     variables
   | enum_def maybe_variables ';'
+  | template_variable_initialization ';'
   | using
   | namespace
-  | extern
+  | extern_section
   | type_def
   | class_def maybe_variables ';'
   | template class_def maybe_variables ';'
   | class_forward_decl
-  | operator func_body { output_function(); }
-  | template maybe_templated_operator func_body { output_function(); }
-  | scoped_operator func_body { reject_function(); }
   | function func_body { output_function(); }
-  | scoped_method func_body { reject_function(); }
+  | operator func_body { output_function(); }
   | template function func_body { output_function(); }
+  | template operator func_body { output_function(); }
+  | scoped_operator func_body { reject_function(); }
+  | scoped_method func_body { reject_function(); }
+  | template scoped_operator func_body { reject_function(); }
+  | template scoped_method func_body { reject_function(); }
   | macro
-  | simple_id ';'
-  | template any_id '(' maybe_other ')'
-    maybe_initializers func_body { reject_function(); }
-  | template templated_id DOUBLE_COLON '~' class_id '(' maybe_other ')'
-    maybe_initializers func_body { reject_function(); }
+  | any_id ';'
   | ';';
 
 
@@ -1379,7 +1338,7 @@ file_item:
  * extern section is parsed, but "extern" is ignored
  */
 
-extern:
+extern_section:
     EXTERN STRING_LITERAL '{' strt '}';
 
 /*
@@ -1423,6 +1382,7 @@ class_def_body:
   | class_def_body
     {
       startSig();
+      clearStorageType();
       clearTypeId();
       clearTemplate();
       closeComment();
@@ -1440,26 +1400,13 @@ class_def_item:
   | class_forward_decl
   | FRIEND internal_class
   | FRIEND template_internal_class
-  | operator func_body { output_function(); }
-  | FRIEND operator func_body
-    {
-      ClassInfo *tmpc = currentClass;
-      currentClass = NULL;
-      output_function();
-      currentClass = tmpc;
-    }
-  | template operator func_body { output_function(); }
   | method func_body { output_function(); }
-  | FRIEND method func_body
-    {
-      ClassInfo *tmpc = currentClass;
-      currentClass = NULL;
-      output_function();
-      currentClass = tmpc;
-    }
   | template method func_body { output_function(); }
+  | FRIEND method func_body { output_friend_function(); }
   | VTK_BYTE_SWAP_DECL parens
   | macro
+  | any_id ';'
+  | scope OPERATOR op_token ';'
   | ';';
 
 maybe_bases:
@@ -1469,7 +1416,8 @@ base_list:
     base_list_item
   | base_list_item ',' base_list;
 
-base_list_item: any_id
+base_list_item:
+    any_id
   | PRIVATE any_id
   | PROTECTED any_id
   | PUBLIC any_id
@@ -1508,6 +1456,9 @@ enum_item:
 /*
  * currently ignored items
  */
+
+template_variable_initialization:
+    template storage_type scope simple_id '=' maybe_other_no_semi;
 
 template_internal_class:
     template internal_class;
@@ -1570,10 +1521,10 @@ using:
     USING NAMESPACE any_id ';' { add_using($<str>3, 1); }
   | USING TYPENAME any_id ';'  { add_using($<str>3, 0); }
   | USING any_id ';' { add_using($<str>2, 0); }
-  | USING class_id DOUBLE_COLON OPERATOR op_token ';'
-    { add_using(vtkstrcat3($<str>2, "operator", $<str>5), 0); }
-  | USING DOUBLE_COLON class_id DOUBLE_COLON OPERATOR op_token ';'
-    { add_using(vtkstrcat4("::", $<str>3, "operator", $<str>6), 0); };
+  | USING scope OPERATOR op_token ';'
+    { add_using(vtkstrcat3($<str>2, "operator", $<str>4), 0); }
+  | USING scope_resolution scope OPERATOR op_token ';'
+    { add_using(vtkstrcat4("::", $<str>3, "operator", $<str>5), 0); };
 
 
 /*
@@ -1601,65 +1552,21 @@ template_parameters:
 template_parameter:
     { markSig(); }
     type_simple param_decl
-    {
-      ValueInfo val;
-      TemplateArg *arg = (TemplateArg *)malloc(sizeof(TemplateArg));
-      vtkParse_InitTemplateArg(arg);
-      vtkParse_InitValue(&val);
-      handle_complex_type(&val, $<integer>2, $<integer>3, copySig());
-      arg->Type = val.Type;
-      arg->Class = val.Class;
-      arg->Function = val.Function;
-      arg->NumberOfDimensions = val.NumberOfDimensions;
-      arg->Dimensions = val.Dimensions;
-      if (getVarName())
-        {
-        arg->Name = vtkstrdup(getVarName());
-        }
-      vtkParse_AddArgumentToTemplate(currentTemplate, arg);
-    }
+    { add_template_arg($<integer>2, $<integer>3, copySig()); }
     maybe_template_default
   | { markSig(); }
     class_or_typename param_decl
-    {
-      ValueInfo val;
-      TemplateArg *arg = (TemplateArg *)malloc(sizeof(TemplateArg));
-      vtkParse_InitTemplateArg(arg);
-      vtkParse_InitValue(&val);
-      handle_complex_type(&val, 0, $<integer>3, copySig());
-      arg->Type = val.Type;
-      arg->Class = val.Class;
-      arg->Function = val.Function;
-      arg->NumberOfDimensions = val.NumberOfDimensions;
-      arg->Dimensions = val.Dimensions;
-      if (getVarName())
-        {
-        arg->Name = vtkstrdup(getVarName());
-        }
-      vtkParse_AddArgumentToTemplate(currentTemplate, arg);
-    }
+    { add_template_arg(0, $<integer>3, copySig()); }
     maybe_template_default
   | { pushTemplate(); markSig(); }
     template param_decl
     {
-      ValueInfo val;
+      unsigned long i;
       TemplateArgs *newTemplate = currentTemplate;
-      TemplateArg *arg = (TemplateArg *)malloc(sizeof(TemplateArg));
-      vtkParse_InitTemplateArg(arg);
       popTemplate();
-      arg->Template = newTemplate;
-      vtkParse_InitValue(&val);
-      handle_complex_type(&val, 0, $<integer>3, copySig());
-      arg->Type = val.Type;
-      arg->Class = val.Class;
-      arg->Function = val.Function;
-      arg->NumberOfDimensions = val.NumberOfDimensions;
-      arg->Dimensions = val.Dimensions;
-      if (getVarName())
-        {
-        arg->Name = vtkstrdup(getVarName());
-        }
-      vtkParse_AddArgumentToTemplate(currentTemplate, arg);
+      add_template_arg(0, $<integer>3, copySig());
+      i = currentTemplate->NumberOfArguments-1;
+      currentTemplate->Arguments[i]->Template = newTemplate;
     }
     maybe_template_default;
 
@@ -1689,52 +1596,22 @@ template_parameter_value:
  * Functions and Methods
  */
 
-function: storage_type func;
+function:
+    storage_type func;
 
 scoped_method:
-    storage_type scope func
-  | class_id DOUBLE_COLON destructor
-  | class_id DOUBLE_COLON constructor
-  | class_id DOUBLE_COLON class_id DOUBLE_COLON destructor
-  | class_id DOUBLE_COLON class_id DOUBLE_COLON constructor
-  | storage_mods class_id DOUBLE_COLON destructor
-  | storage_mods class_id DOUBLE_COLON constructor
-  | storage_mods class_id DOUBLE_COLON class_id DOUBLE_COLON destructor
-  | storage_mods class_id DOUBLE_COLON class_id DOUBLE_COLON constructor;
-
-scope:
-    class_id DOUBLE_COLON
-  | scope class_id DOUBLE_COLON;
+    storage_type scope func;
+  | scope structor
+  | storage_mods scope structor;
 
 method:
-    destructor
-  | constructor
-  | storage_mods destructor
-    {
-      if (($<integer>1 & VTK_PARSE_VIRTUAL) != 0)
-        {
-        currentFunction->IsVirtual = 1;
-        }
-    }
-  | storage_mods constructor
-    {
-      if (($<integer>1 & VTK_PARSE_EXPLICIT) != 0)
-        {
-        currentFunction->IsExplicit = 1;
-        }
-    }
-  | storage_type func;
-
-maybe_templated_operator:
-    class_id DOUBLE_COLON typecast_op_func
-  | templated_id DOUBLE_COLON typecast_op_func
-  | typecast_op_func
-  | storage_type templated_id DOUBLE_COLON op_func
-  | storage_type scope op_func
-  | storage_type op_func;
+    storage_type func
+  | operator
+  | structor
+  | storage_mods structor;
 
 scoped_operator:
-    class_id DOUBLE_COLON typecast_op_func
+    scope typecast_op_func
   | storage_type scope op_func;
 
 operator:
@@ -1778,7 +1655,7 @@ op_sig:
     parameter_list ')' { $<str>$ = $<str>3; };
 
 func:
-    func_sig { postSig(")"); } func_trailer
+    func_sig func_trailer
     {
       postSig(";");
       closeSig();
@@ -1788,16 +1665,22 @@ func:
     };
 
 func_trailer:
-  | THROW parens { postSig(" throw ()"); } func_trailer
-  | CONST { postSig(" const"); currentFunction->IsConst = 1; } func_trailer
-  | '=' ZERO
+  | func_trailer throw_trailer
+  | func_trailer const_trailer
+  | func_trailer pure_trailer;
+
+throw_trailer:
+    THROW { postSig(" throw "); } parens_sig { chopSig(); };
+
+const_trailer:
+    CONST { postSig(" const"); currentFunction->IsConst = 1; };
+
+pure_trailer:
+    '=' ZERO
     {
       postSig(" = 0");
-      if (currentClass)
-        {
-        currentFunction->IsPureVirtual = 1;
-        currentClass->IsAbstract = 1;
-        }
+      currentFunction->IsPureVirtual = 1;
+      if (currentClass) { currentClass->IsAbstract = 1; }
     };
 
 func_body:
@@ -1805,38 +1688,37 @@ func_body:
   | ';';
 
 func_sig:
-    simple_id '('
+    func_name '('
     {
       postSig("(");
       set_return(currentFunction, getStorageType(), getTypeId(), 0);
     }
-    parameter_list ')' { $<str>$ = $<str>1; }
-  | templated_id '('
-    {
-      postSig("(");
-      set_return(currentFunction, getStorageType(), getTypeId(), 0);
-    }
-    parameter_list ')' { $<str>$ = $<str>1; }
-  | templated_id DOUBLE_COLON { markSig(); postSig("::"); } simple_id '('
-    {
-      postSig("(");
-      $<str>$ = vtkstrcat($<str>1, copySig());
-      set_return(currentFunction, getStorageType(), getTypeId(), 0);
-      $<str>$ = vtkstrcat($<str>1, copySig());
-    }
-    parameter_list ')' { $<str>$ = $<str>6; };
+    parameter_list ')' { postSig(")"); };
 
-constructor:
-    constructor_sig { postSig(");"); closeSig(); } maybe_initializers
+func_name:
+    simple_id
+  | templated_id;
+
+structor:
+    structor_sig { closeSig(); }
+    maybe_initializers { openSig(); } func_trailer
     {
+      closeSig();
+      if (getStorageType() & VTK_PARSE_VIRTUAL)
+        {
+        currentFunction->IsVirtual = 1;
+        }
+      if (getStorageType() & VTK_PARSE_EXPLICIT)
+        {
+        currentFunction->IsExplicit = 1;
+        }
       currentFunction->Name = vtkstrdup($<str>1);
       currentFunction->Comment = vtkstrdup(getComment());
       vtkParseDebug("Parsed func", currentFunction->Name);
     };
 
-constructor_sig:
-    simple_id '(' { postSig("("); } parameter_list ')'
-  | templated_id '(' { postSig("("); } parameter_list ')';
+structor_sig:
+    func_name '(' { postSig("("); } parameter_list ')' { postSig(")"); };
 
 maybe_initializers:
   | ':' initializer more_initializers;
@@ -1846,20 +1728,6 @@ more_initializers:
 
 initializer:
     any_id parens;
-
-destructor:
-    destructor_sig { postSig(")"); } func_trailer
-    {
-      postSig(";");
-      closeSig();
-      currentFunction->Name = vtkstrdup($<str>1);
-      currentFunction->Comment = vtkstrdup(getComment());
-      vtkParseDebug("Parsed func", currentFunction->Name);
-    };
-
-destructor_sig:
-    '~' { postSig("~"); } simple_id '(' { postSig("("); }
-    parameter_list ')' { $<str>$ = vtkstrcat("~", $<str>3); };
 
 /*
  * Arguments
@@ -2125,20 +1993,27 @@ simple_id:
   | OSTREAM { postSig($<str>1); }
   | StdString { postSig($<str>1); }
   | UnicodeString { postSig($<str>1); }
-  | SIZE_T { $<str>$ = "size_t"; }
-  | SSIZE_T { $<str>$ = "ssize_t"; }
-  | TypeInt8 { $<str>$ = "vtkTypeInt8"; }
-  | TypeUInt8 { $<str>$ = "vtkTypeUInt8"; }
-  | TypeInt16 { $<str>$ = "vtkTypeInt16"; }
-  | TypeUInt16 { $<str>$ = "vtkTypeUInt16"; }
-  | TypeInt32 { $<str>$ = "vtkTypeInt32"; }
-  | TypeUInt32 { $<str>$ = "vtkTypeUInt32"; }
-  | TypeInt64 { $<str>$ = "vtkTypeInt64"; }
-  | TypeUInt64 { $<str>$ = "vtkTypeUInt64"; }
-  | TypeFloat32 { $<str>$ = "vtkTypeFloat32"; }
-  | TypeFloat64 { $<str>$ = "vtkTypeFloat64"; }
-  | IdType { $<str>$ = "vtkIdType"; }
-  | FloatType { $<str>$ = "vtkFloatingPointType"; };
+  | '~' VTK_ID { $<str>$ = vtkstrcat("~",$<str>2); postSig($<str>$); }
+  | '~' QT_ID { $<str>$ = vtkstrcat("~",$<str>2); postSig($<str>$); }
+  | '~' ID { $<str>$ = vtkstrcat("~",$<str>2); postSig($<str>$); }
+  | '~' ISTREAM { $<str>$ = vtkstrcat("~",$<str>2); postSig($<str>$); }
+  | '~' OSTREAM { $<str>$ = vtkstrcat("~",$<str>2); postSig($<str>$); }
+  | '~' StdString { $<str>$ = vtkstrcat("~",$<str>2); postSig($<str>$); }
+  | '~' UnicodeString { $<str>$ = vtkstrcat("~",$<str>2); postSig($<str>$); }
+  | SIZE_T { $<str>$ = "size_t"; postSig($<str>$); }
+  | SSIZE_T { $<str>$ = "ssize_t"; postSig($<str>$); }
+  | TypeInt8 { $<str>$ = "vtkTypeInt8"; postSig($<str>$); }
+  | TypeUInt8 { $<str>$ = "vtkTypeUInt8"; postSig($<str>$); }
+  | TypeInt16 { $<str>$ = "vtkTypeInt16"; postSig($<str>$); }
+  | TypeUInt16 { $<str>$ = "vtkTypeUInt16"; postSig($<str>$); }
+  | TypeInt32 { $<str>$ = "vtkTypeInt32"; postSig($<str>$); }
+  | TypeUInt32 { $<str>$ = "vtkTypeUInt32"; postSig($<str>$); }
+  | TypeInt64 { $<str>$ = "vtkTypeInt64"; postSig($<str>$); }
+  | TypeUInt64 { $<str>$ = "vtkTypeUInt64"; postSig($<str>$); }
+  | TypeFloat32 { $<str>$ = "vtkTypeFloat32"; postSig($<str>$); }
+  | TypeFloat64 { $<str>$ = "vtkTypeFloat64"; postSig($<str>$); }
+  | IdType { $<str>$ = "vtkIdType"; postSig($<str>$); }
+  | FloatType { $<str>$ = "vtkFloatingPointType"; postSig($<str>$); };
 
 /*
  * class_id does not have any side-effects
@@ -2158,16 +2033,15 @@ class_id:
  */
 
 storage_type:
-    type
-    {
-      $<integer>$ = $<integer>1;
-      setStorageType($<integer>$);
-    }
+    type { setStorageType($<integer>$); }
   | storage_mods type
     {
       $<integer>$ = ($<integer>1 | $<integer>2);
       setStorageType($<integer>$);
     };
+
+storage_mods:
+    storage_seq { setStorageType($<integer>1); };
 
 storage_mod:
     MUTABLE { $<integer>$ = 0; }
@@ -2178,21 +2052,21 @@ storage_mod:
   | STATIC { postSig("static "); $<integer>$ = VTK_PARSE_STATIC; }
   | VIRTUAL { postSig("virtual "); $<integer>$ = VTK_PARSE_VIRTUAL; };
 
-storage_mods:
-    storage_mod { $<integer>$ = $<integer>1; }
-  | storage_mods storage_mod { $<integer>$ = ($<integer>1 | $<integer>2); };
+storage_seq:
+    storage_mod
+  | storage_seq storage_mod { $<integer>$ = ($<integer>1 | $<integer>2); };
 
 type:
-    type_red { $<integer>$ = $<integer>1; }
+    type_red
   | type_red type_indirection { $<integer>$ = ($<integer>1 | $<integer>2); };
 
 type_red:
-    type_red2 { $<integer>$ = $<integer>1; }
+    type_red2
   | const_mod type_red2 { $<integer>$ = ($<integer>1 | $<integer>2); }
   | type_red2 const_mod { $<integer>$ = ($<integer>1 | $<integer>2); };
 
 type_red2:
-    type_simple { $<integer>$ = $<integer>1;}
+    type_simple
   | templated_id
     { postSig(" "); setTypeId($<str>1); $<integer>$ = VTK_PARSE_UNKNOWN; }
   | scoped_id
@@ -2221,30 +2095,31 @@ any_id:
   | scoped_id;
 
 scoped_id:
-    class_id DOUBLE_COLON any_id
-    {
-      $<str>$ = vtkstrcat3($<str>1, "::", $<str>3);
-      preScopeSig($<str>1);
-    }
-  | templated_id DOUBLE_COLON any_id
-    {
-      $<str>$ = vtkstrcat3($<str>1, "::", $<str>3);
-      preScopeSig("");
-    }
-  | TEMPLATE templated_id DOUBLE_COLON any_id
-    {
-      $<str>$ = vtkstrcat3($<str>1, "::", $<str>4);
-      preScopeSig("");
-    }
-  | DOUBLE_COLON any_id
-    {
-      $<str>$ = vtkstrcat("::", $<str>2);
-      preScopeSig("");
-    };
+    scope simple_id { $<str>$ = vtkstrcat($<str>1, $<str>2); }
+  | scope templated_id { $<str>$ = vtkstrcat($<str>1, $<str>2); }
+  | scope_resolution any_id { $<str>$ = vtkstrcat($<str>1, $<str>2); };
+
+scope:
+    class_id_sig scope_resolution
+    { $<str>$ = vtkstrcat($<str>1, $<str>2); }
+  | templated_id scope_resolution
+    { $<str>$ = vtkstrcat($<str>1, $<str>2); }
+  | scope class_id_sig scope_resolution
+    { $<str>$ = vtkstrcat3($<str>1, $<str>2, $<str>3); }
+  | scope templated_id scope_resolution
+    { $<str>$ = vtkstrcat3($<str>1, $<str>2, $<str>3); }
+  | scope TEMPLATE { postSig("template "); } templated_id scope_resolution
+    { $<str>$ = vtkstrcat4($<str>1, "template ", $<str>4, $<str>5); };
+
+class_id_sig:
+  class_id { postSig($<str>1); };
+
+scope_resolution:
+  DOUBLE_COLON { $<str>$ = "::"; postSig($<str>$); };
 
 type_simple:
-    type_primitive { $<integer>$ = $<integer>1; }
-  | type_id { $<integer>$ = $<integer>1; };
+    type_primitive
+  | type_id
 
 type_id:
     StdString { typeSig($<str>1); $<integer>$ = VTK_PARSE_STRING; }
@@ -2317,12 +2192,12 @@ type_primitive:
 type_indirection:
     '&' { postSig("&"); $<integer>$ = VTK_PARSE_REF;}
   | pointers '&' { postSig("&"); $<integer>$ = ($<integer>1 | VTK_PARSE_REF);}
-  | pointers { $<integer>$ = $<integer>1; };
+  | pointers;
 
 /* "VTK_BAD_INDIRECT" occurs when the bitfield fills up */
 
 pointers:
-    pointer_or_const_pointer { $<integer>$ = $<integer>1; }
+    pointer_or_const_pointer
   | pointers pointer_or_const_pointer
     {
       unsigned int n;
@@ -2785,7 +2660,7 @@ common_bracket_item:
     }
   | ':' { postSig(":"); postSig(" "); } | '.' { postSig("."); }
   | DOUBLE_COLON { chopSig(); postSig("::"); }
-  | keyword { postSig($<str>1); postSig(" ");}
+  | keyword { postSig($<str>1); postSig(" "); }
   | literal { postSig($<str>1); postSig(" "); }
   | type_simple;
 
@@ -2839,9 +2714,9 @@ brackets_sig:
 parens_sig:
     '(' { postSig("("); } any_bracket_contents ')'
     { chopSig(); postSig(") "); }
-  | LP {postSig("("); postSig($<str>1); postSig("*"); }
+  | LP { postSig("("); postSig($<str>1); postSig("*"); }
     any_bracket_contents ')' { chopSig(); postSig(") "); }
-  | LA {postSig("("); postSig($<str>1); postSig("&"); }
+  | LA { postSig("("); postSig($<str>1); postSig("&"); }
     any_bracket_contents ')' { chopSig(); postSig(") "); }
 
 braces_sig:
@@ -4067,6 +3942,27 @@ const char *add_const_scope(const char *name)
   return text;
 }
 
+/* add a template argument to the current template */
+void add_template_arg(
+  unsigned int datatype, unsigned int extra, const char *funcSig)
+{
+  ValueInfo val;
+  TemplateArg *arg = (TemplateArg *)malloc(sizeof(TemplateArg));
+  vtkParse_InitTemplateArg(arg);
+  vtkParse_InitValue(&val);
+  handle_complex_type(&val, datatype, extra, funcSig);
+  arg->Type = val.Type;
+  arg->Class = val.Class;
+  arg->Function = val.Function;
+  arg->NumberOfDimensions = val.NumberOfDimensions;
+  arg->Dimensions = val.Dimensions;
+  if (getVarName())
+    {
+    arg->Name = vtkstrdup(getVarName());
+    }
+  vtkParse_AddArgumentToTemplate(currentTemplate, arg);
+}
+
 /* add an arg to a function */
 void add_argument(FunctionInfo *func, unsigned int type,
                   const char *typeclass, unsigned long count)
@@ -4462,6 +4358,15 @@ void output_function()
 
   vtkParse_InitFunction(currentFunction);
   startSig();
+}
+
+/* output a function that is not a method of the current class */
+void output_friend_function()
+{
+  ClassInfo *tmpc = currentClass;
+  currentClass = NULL;
+  output_function();
+  currentClass = tmpc;
 }
 
 void outputSetVectorMacro(const char *var, unsigned int argType,
