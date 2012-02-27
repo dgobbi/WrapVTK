@@ -30,6 +30,23 @@ Modify vtkParse.tab.c:
 
 */
 
+/*
+The purpose of this parser is to read C++ header files in order to
+generate data structures that describe the C++ interface of a library,
+one header file at a time.  As such, it is not a complete C++ parser.
+It only parses what is relevant to the interface and skips the rest.
+
+While the parser reads method definitions, type definitions, and
+template definitions it generates a "signature" which is a string
+that matches (apart from whitespace) the text that was parsed.
+
+While parsing types, the parser creates an unsigned int that describes
+the type as well as creating other data structures for arrays, function
+pointers, etc.  The parse also creates a typeId string, which is either
+a simple id that gives the class name or type name, or is "function" for
+function pointer types, or "method" for method pointer types.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,8 +77,8 @@ Modify vtkParse.tab.c:
 # pragma warn -8066 /* unreachable code */
 #endif
 
-/* Map from the type anonymous_enumeration in vtkType.h to the VTK wrapping type
-   system number for the type. */
+/* Map from the type anonymous_enumeration in vtkType.h to the
+   VTK wrapping type system number for the type. */
 
 #include "vtkParse.h"
 #include "vtkParseInternal.h"
@@ -1150,22 +1167,37 @@ unsigned int add_indirection_to_array(unsigned int type)
  */
 
 
-/* The parser will shift/reduce values <str> or <integer> */
+/* The parser will shift/reduce values <str> or <integer>, where
+   <str> is for IDs and <integer> is for types, modifiers, etc. */
 
 %union{
   const char   *str;
   unsigned int  integer;
 }
 
-/* Lexical tokens defined in in vtkParse.l */
+/* Lexical tokens defined in vtkParse.l */
 
-%token STRUCT
-%token CLASS
-%token PUBLIC
-%token PRIVATE
-%token PROTECTED
-%token VIRTUAL
+/* various tokens that provide ID strings */
 %token <str> ID
+%token <str> VTK_ID
+%token <str> QT_ID
+%token <str> VAR_FUNCTION
+%token <str> StdString
+%token <str> UnicodeString
+%token <str> OSTREAM
+%token <str> ISTREAM
+
+/* LP = "(*" or "(name::*"    and     LA = "(&" or "(name::&"
+   These evaluate to an empty string or to "name::" as a string.
+   Without these, the rules for declaring function pointers will
+   produce errors because the parser cannot unambiguously choose
+   between evaluating ID tokens as names via simple_id, versus
+   evaluating ID tokens as types via type_id.  This construct forces
+   the parser to evaluate the ID as a name, not as a type. */
+%token <str> LP
+%token <str> LA
+
+/* literal tokens are provided as strings */
 %token <str> STRING_LITERAL
 %token <str> INT_LITERAL
 %token <str> HEX_LITERAL
@@ -1173,55 +1205,38 @@ unsigned int add_indirection_to_array(unsigned int type)
 %token <str> FLOAT_LITERAL
 %token <str> CHAR_LITERAL
 %token <str> ZERO
-%token FLOAT
-%token DOUBLE
-%token LONG_DOUBLE
-%token INT
-%token UNSIGNED_INT
-%token SHORT
-%token UNSIGNED_SHORT
-%token LONG
-%token UNSIGNED_LONG
-%token LONG_LONG
-%token UNSIGNED_LONG_LONG
-%token INT64__
-%token UNSIGNED_INT64__
-%token CHAR
-%token SIGNED_CHAR
-%token UNSIGNED_CHAR
-%token VOID
-%token BOOL
-%token SSIZE_T
-%token SIZE_T
-%token <str> OSTREAM
-%token <str> ISTREAM
-%token ENUM
+
+/* keywords (many unused keywords have been omitted) */
+%token STRUCT
+%token CLASS
 %token UNION
-%token OTHER
+%token ENUM
+%token PUBLIC
+%token PRIVATE
+%token PROTECTED
 %token CONST
-%token OPERATOR
-%token UNSIGNED
-%token SIGNED
-%token FRIEND
-%token INLINE
 %token MUTABLE
+%token STATIC
+%token VIRTUAL
+%token EXPLICIT
+%token INLINE
+%token FRIEND
+%token EXTERN
+%token OPERATOR
 %token TEMPLATE
 %token THROW
 %token TYPENAME
 %token TYPEDEF
 %token NAMESPACE
 %token USING
-%token <str> VTK_ID
-%token STATIC
-%token EXTERN
-%token <str> VAR_FUNCTION
 %token NEW
 %token DELETE
-%token EXPLICIT
 %token STATIC_CAST
 %token DYNAMIC_CAST
 %token CONST_CAST
 %token REINTERPRET_CAST
+
+/* operators */
 %token OP_LSHIFT_EQ
 %token OP_RSHIFT_EQ
 %token OP_LSHIFT
@@ -1248,13 +1263,37 @@ unsigned int add_indirection_to_array(unsigned int type)
 %token OP_LOGIC_GEQ
 %token ELLIPSIS
 %token DOUBLE_COLON
-%token <str> LP
-%token <str> LA
-%token <str> QT_ID
 
-/* type tokens */
-%token <str> StdString
-%token <str> UnicodeString
+/* unrecognized character */
+%token OTHER
+
+/* types */
+%token VOID
+%token BOOL
+%token FLOAT
+%token DOUBLE
+%token LONG_DOUBLE
+%token INT
+%token UNSIGNED_INT
+%token SHORT
+%token UNSIGNED_SHORT
+%token LONG
+%token UNSIGNED_LONG
+%token LONG_LONG
+%token UNSIGNED_LONG_LONG
+%token INT64__
+%token UNSIGNED_INT64__
+%token CHAR
+%token SIGNED_CHAR
+%token UNSIGNED_CHAR
+%token SIGNED
+%token UNSIGNED
+
+/* typedef types */
+%token SSIZE_T
+%token SIZE_T
+
+/* VTK typedef types */
 %token IdType
 %token FloatType
 %token TypeInt8
@@ -1268,7 +1307,7 @@ unsigned int add_indirection_to_array(unsigned int type)
 %token TypeFloat32
 %token TypeFloat64
 
-/* macro tokens */
+/* VTK macros */
 %token SetMacro
 %token GetMacro
 %token SetStringMacro
@@ -1291,7 +1330,7 @@ unsigned int add_indirection_to_array(unsigned int type)
 %token WorldCoordinateMacro
 %token TypeMacro
 
-/* special tokens */
+/* VTK special tokens */
 %token VTK_BYTE_SWAP_DECL
 
 %%
@@ -1311,16 +1350,16 @@ strt:
     file_item;
 
 file_item:
-    variables
-  | enum_def maybe_variables ';'
-  | template_variable_initialization ';'
+    class_forward_decl
   | using
   | namespace
   | extern_section
   | type_def
+  | variables
+  | template_variable_initialization
+  | enum_def maybe_variables ';'
   | class_def maybe_variables ';'
   | template class_def maybe_variables ';'
-  | class_forward_decl
   | function func_body { output_function(); }
   | operator func_body { output_function(); }
   | template function func_body { output_function(); }
@@ -1391,20 +1430,20 @@ class_def_body:
   | class_def_body access_specifier ':';
 
 class_def_item:
-    variables
+    class_forward_decl
   | using
   | type_def
+  | variables
   | enum_def maybe_variables ';'
   | class_def maybe_variables ';'
   | template class_def maybe_variables ';'
-  | class_forward_decl
   | FRIEND internal_class
   | FRIEND template_internal_class
+  | FRIEND method func_body { output_friend_function(); }
   | method func_body { output_function(); }
   | template method func_body { output_function(); }
-  | FRIEND method func_body { output_friend_function(); }
-  | VTK_BYTE_SWAP_DECL parens
   | macro
+  | VTK_BYTE_SWAP_DECL parens
   | any_id ';'
   | scope OPERATOR op_token ';'
   | ';';
@@ -1458,7 +1497,7 @@ enum_item:
  */
 
 template_variable_initialization:
-    template storage_type scope simple_id '=' maybe_other_no_semi;
+    template storage_type scope simple_id '=' maybe_other_no_semi ';';
 
 template_internal_class:
     template internal_class;
@@ -1627,7 +1666,6 @@ typecast_op_func:
     parameter_list ')' { postSig(")"); } func_trailer
     {
       $<integer>$ = $<integer>3;
-      postSig(";");
       closeSig();
       currentFunction->IsOperator = 1;
       currentFunction->Name = "operator typecast";
@@ -1638,7 +1676,6 @@ typecast_op_func:
 op_func:
     op_sig { postSig(")"); } func_trailer
     {
-      postSig(";");
       closeSig();
       currentFunction->Name = vtkstrdup($<str>1);
       currentFunction->Comment = vtkstrdup(getComment());
@@ -1657,7 +1694,6 @@ op_sig:
 func:
     func_sig func_trailer
     {
-      postSig(";");
       closeSig();
       currentFunction->Name = vtkstrdup($<str>1);
       currentFunction->Comment = vtkstrdup(getComment());
@@ -1698,6 +1734,11 @@ func_sig:
 func_name:
     simple_id
   | templated_id;
+
+
+/*
+ * Constructors and destructors are handled by the same rule
+ */
 
 structor:
     structor_sig { closeSig(); }
@@ -1798,8 +1839,8 @@ parameter:
     };
 
 maybe_indirect_id:
-   simple_id
- | type_indirection simple_id;
+    simple_id
+  | type_indirection simple_id;
 
 maybe_assign_value:
     { clearVarValue(); }
@@ -1948,12 +1989,12 @@ maybe_array_or_parameters: { $<integer>$ = 0; }
   | array_decorator { $<integer>$ = VTK_PARSE_ARRAY; };
 
 maybe_indirect_param_decl:
-    param_decl { $<integer>$ = $<integer>1; }
+    param_decl
   | type_indirection param_decl
     { $<integer>$ = add_indirection($<integer>1, $<integer>2); };
 
 maybe_indirect_var_decl:
-    var_decl { $<integer>$ = $<integer>1; }
+    var_decl
   | type_indirection var_decl
     { $<integer>$ = add_indirection($<integer>1, $<integer>2); };
 
@@ -1982,7 +2023,10 @@ array_size:
   | { markSig(); } const_expr { chopSig(); pushArraySize(copySig()); };
 
 /*
- * simple_id evaluates to string and sigs itself
+ * simple_id evaluates to string and sigs itself, note that '~' is
+ * considered part of the ID because this simplifies the handling of
+ * destructor names, and since the parser doesn't do any math, there
+ * is no conflict with the '~' operator.
  */
 
 simple_id:
@@ -2016,7 +2060,7 @@ simple_id:
   | FloatType { $<str>$ = "vtkFloatingPointType"; postSig($<str>$); };
 
 /*
- * class_id does not have any side-effects
+ * class_id does not have any side-effects, and is needes for some rules.
  */
 
 class_id:
@@ -2028,17 +2072,10 @@ class_id:
   | StdString
   | UnicodeString;
 
-/*
- * Types
- */
 
-storage_type:
-    type { setStorageType($<integer>$); }
-  | storage_mods type
-    {
-      $<integer>$ = ($<integer>1 | $<integer>2);
-      setStorageType($<integer>$);
-    };
+/*
+ * Modifiers
+ */
 
 storage_mods:
     storage_seq { setStorageType($<integer>1); };
@@ -2055,6 +2092,19 @@ storage_mod:
 storage_seq:
     storage_mod
   | storage_seq storage_mod { $<integer>$ = ($<integer>1 | $<integer>2); };
+
+
+/*
+ * Types
+ */
+
+storage_type:
+    type { setStorageType($<integer>$); }
+  | storage_mods type
+    {
+      $<integer>$ = ($<integer>1 | $<integer>2);
+      setStorageType($<integer>$);
+    };
 
 type:
     type_red
@@ -2112,10 +2162,10 @@ scope:
     { $<str>$ = vtkstrcat4($<str>1, "template ", $<str>4, $<str>5); };
 
 class_id_sig:
-  class_id { postSig($<str>1); };
+    class_id { postSig($<str>1); };
 
 scope_resolution:
-  DOUBLE_COLON { $<str>$ = "::"; postSig($<str>$); };
+    DOUBLE_COLON { $<str>$ = "::"; postSig($<str>$); };
 
 type_simple:
     type_primitive
