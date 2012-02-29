@@ -34,7 +34,7 @@
 */
 
 #include "vtkParse.h"
-#include "vtkParseInternal.h"
+#include "vtkParseData.h"
 #include "vtkParsePreprocess.h"
 #include <stdio.h>
 #include <string.h>
