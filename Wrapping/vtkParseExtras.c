@@ -19,15 +19,14 @@
   under the terms of the Visualization Toolkit 2008 copyright.
 -------------------------------------------------------------------------*/
 
+#include "vtkParseExtras.h"
+#include "vtkParseString.h"
+#include "vtkType.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
-#include "vtkParse.h"
-#include "vtkParseInternal.h"
-#include "vtkParseExtras.h"
-#include "vtkType.h"
 
 /* skip over an identifier */
 static size_t vtkparse_id_len(const char *text)
@@ -197,7 +196,7 @@ size_t vtkParse_NameLength(const char *text)
  * occurred, otherwise return a new string. */
 static const char *vtkparse_string_replace(
   const char *str1, unsigned long n, const char *name[], const char *val[],
-  int useDuplicateString)
+  int useCopyString)
 {
   const char *cp = str1;
   char result_store[1024];
@@ -303,12 +302,12 @@ static const char *vtkparse_string_replace(
     result[j] = '\0';
     }
 
-  if (useDuplicateString)
+  if (useCopyString)
     {
     if (any_replaced)
       {
-      /* use the efficient but leaky DuplicateString method */
-      cp = vtkParse_DuplicateString(result, j);
+      /* use the efficient but leaky CopyString method */
+      cp = vtkParse_CopyString(result, j);
       if (result != result_store)
         {
         free(result);
@@ -499,6 +498,43 @@ struct vtk_type_struct
   const char *name;
   int type;
 };
+
+/* Simple utility for mapping VTK types to VTK_PARSE types */
+unsigned int vtkParse_MapType(int vtktype)
+{
+  static unsigned int typemap[] =
+  {
+    VTK_PARSE_VOID,               /* VTK_VOID                0 */
+    0,                            /* VTK_BIT                 1 */
+    VTK_PARSE_CHAR,               /* VTK_CHAR                2 */
+    VTK_PARSE_UNSIGNED_CHAR,      /* VTK_UNSIGNED_CHAR       3 */
+    VTK_PARSE_SHORT,              /* VTK_SHORT               4 */
+    VTK_PARSE_UNSIGNED_SHORT,     /* VTK_UNSIGNED_SHORT      5 */
+    VTK_PARSE_INT,                /* VTK_INT                 6 */
+    VTK_PARSE_UNSIGNED_INT,       /* VTK_UNSIGNED_INT        7 */
+    VTK_PARSE_LONG,               /* VTK_LONG                8 */
+    VTK_PARSE_UNSIGNED_LONG,      /* VTK_UNSIGNED_LONG       9 */
+    VTK_PARSE_FLOAT,              /* VTK_FLOAT              10 */
+    VTK_PARSE_DOUBLE,             /* VTK_DOUBLE             11 */
+    VTK_PARSE_ID_TYPE,            /* VTK_ID_TYPE            12 */
+    VTK_PARSE_STRING,             /* VTK_STRING             13 */
+    0,                            /* VTK_OPAQUE             14 */
+    VTK_PARSE_SIGNED_CHAR,        /* VTK_SIGNED_CHAR        15 */
+    VTK_PARSE_LONG_LONG,          /* VTK_LONG_LONG          16 */
+    VTK_PARSE_UNSIGNED_LONG_LONG, /* VTK_UNSIGNED_LONG_LONG 17 */
+    VTK_PARSE___INT64,            /* VTK___INT64            18 */
+    VTK_PARSE_UNSIGNED___INT64,   /* VTK_UNSIGNED___INT64   19 */
+    0,                            /* VTK_VARIANT            20 */
+    0,                            /* VTK_OBJECT             21 */
+    VTK_PARSE_UNICODE_STRING      /* VTK_UNICODE_STRING     22 */
+    };
+
+  if (vtktype > 0 && vtktype <= VTK_UNICODE_STRING)
+    {
+    return typemap[vtktype];
+    }
+  return 0;
+}
 
 /* Get a type from a type name, and return the number of characters used.
  * If the "classname" argument is not NULL, then it is used to return
@@ -794,7 +830,7 @@ void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
   /* get the basic type with qualifiers */
   cp += vtkParse_BasicTypeFromString(cp, &base_bits, &classname, &n);
 
-  data->Class = vtkParse_DuplicateString(classname, n);
+  data->Class = vtkParse_CopyString(classname, n);
 
   if ((base_bits & VTK_PARSE_STATIC) != 0)
     {
@@ -839,7 +875,7 @@ void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
     {
     /* skip all chars that are part of a name */
     n = vtkparse_id_len(cp);
-    data->Name = vtkParse_DuplicateString(cp, n);
+    data->Name = vtkParse_CopyString(cp, n);
     cp += n;
     while (*cp == ' ' || *cp == '\t') { cp++; }
     }
@@ -862,7 +898,7 @@ void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
     while (n > 0 && (cp[n-1] == ' ' || cp[n-1] == '\t')) { n--; }
     vtkParse_AddStringToArray(&data->Dimensions,
                               &data->NumberOfDimensions,
-                              vtkParse_DuplicateString(cp, n));
+                              vtkParse_CopyString(cp, n));
     m = 0;
     if (*cp >= '0' && *cp <= '9' && vtkparse_number_len(cp) == n)
       {
@@ -1219,7 +1255,7 @@ void vtkParse_InstantiateClassTemplate(
     }
   new_name[k++] = '>';
   new_name[k] = '\0';
-  data->Name = vtkParse_DuplicateString(new_name, k);
+  data->Name = vtkParse_CopyString(new_name, k);
   free((char *)new_name);
 
   /* do the template arg substitution */

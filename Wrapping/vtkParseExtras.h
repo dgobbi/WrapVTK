@@ -26,7 +26,8 @@
 #ifndef VTK_PARSE_EXTRAS_H
 #define VTK_PARSE_EXTRAS_H
 
-#include "vtkParse.h"
+#include "vtkParseData.h"
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {

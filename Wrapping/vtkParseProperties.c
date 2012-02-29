@@ -12,13 +12,13 @@
 
 =========================================================================*/
 
+#include "vtkParseData.h"
+#include "vtkParseProperties.h"
+#include "vtkConfigure.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "vtkParse.h"
-#include "vtkParseProperties.h"
-#include "vtkConfigure.h"
 
 /*-------------------------------------------------------------------
  * A struct that lays out the function information in a way

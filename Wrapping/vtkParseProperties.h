@@ -21,7 +21,7 @@
 #ifndef VTK_PARSE_PROPERTIES_H
 #define VTK_PARSE_PROPERTIES_H
 
-#include "vtkParse.h"
+#include "vtkParseType.h"
 
 /**
  * bitfield values to say what methods are available for a property

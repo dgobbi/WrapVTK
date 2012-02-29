@@ -28,7 +28,6 @@
 #include <string.h>
 #include <ctype.h>
 #include "vtkParse.h"
-#include "vtkParseInternal.h"
 #include "vtkParseExtras.h"
 #include "vtkParseProperties.h"
 #include "vtkParseHierarchy.h"

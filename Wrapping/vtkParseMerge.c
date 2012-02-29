@@ -13,8 +13,7 @@
 =========================================================================*/
 
 #include "vtkParseMerge.h"
-#include "vtkParse.h"
-#include "vtkParseInternal.h"
+#include "vtkParseData.h"
 #include "vtkParseHierarchy.h"
 #include <string.h>
 #include <stdlib.h>

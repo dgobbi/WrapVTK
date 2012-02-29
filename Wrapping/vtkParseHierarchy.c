@@ -20,9 +20,8 @@
 -------------------------------------------------------------------------*/
 
 #include "vtkParseHierarchy.h"
-#include "vtkParseInternal.h"
 #include "vtkParseExtras.h"
-#include "vtkType.h"
+#include "vtkParseString.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -407,7 +406,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
           {
           n++;
           }
-        ccp = vtkParse_DuplicateString(&line[i], n);
+        ccp = vtkParse_CopyString(&line[i], n);
         vtkParse_AddStringToArray(&entry->Typedef->Dimensions,
                                   &entry->Typedef->NumberOfDimensions, ccp);
         if (ccp[0] >= '0' && ccp[0] <= '9')
@@ -470,7 +469,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
       /* read the base type (and const) */
       bits = 0;
       i += vtkParse_BasicTypeFromString(&line[i], &bits, &ccp, &n);
-      entry->Typedef->Class = vtkParse_DuplicateString(ccp, n);
+      entry->Typedef->Class = vtkParse_CopyString(ccp, n);
       entry->Typedef->Type |= bits;
       }
 
@@ -964,7 +963,7 @@ int vtkParseHierarchy_ExpandTypedefsInValue(
          info, val->Class, scope);
       if (newclass != val->Class)
         {
-        val->Class = vtkParse_DuplicateString(newclass, strlen(newclass));
+        val->Class = vtkParse_CopyString(newclass, strlen(newclass));
         free((char *)newclass);
         }
       result = 1;
