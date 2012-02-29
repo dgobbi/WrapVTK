@@ -1733,12 +1733,13 @@ void vtkWrapXML_Body(wrapxml_state_t *w, NamespaceInfo *data)
  */
 void vtkWrapXML_Namespace(wrapxml_state_t *w, NamespaceInfo *data)
 {
+  const char *elementName = "Namespace";
   fprintf(w->file, "\n");
-  fprintf(w->file, "%s<Namespace>\n", indent(w->indentation++));
-  fprintf(w->file, "%s<Name>%s</Name>\n", indent(w->indentation), data->Name);
+  vtkWrapXML_ElementStart(w, elementName);
+  vtkWrapXML_Name(w, data->Name);
   vtkWrapXML_Body(w, data);
   fprintf(w->file, "\n");
-  fprintf(w->file, "%s</Namespace>\n", indent(--w->indentation));
+  vtkWrapXML_ElementEnd(w, elementName);
 }
 
 /**
