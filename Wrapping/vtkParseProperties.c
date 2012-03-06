@@ -484,7 +484,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   attrs->IsPublic = func->IsPublic;
   attrs->IsProtected = func->IsProtected;
   attrs->IsLegacy = func->IsLegacy;
-  attrs->IsStatic = 0;
+  attrs->IsStatic = func->IsStatic;
   attrs->IsRepeat = 0;
   attrs->IsMultiValue = 0;
   attrs->IsHinted = 0;
@@ -492,12 +492,6 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   attrs->IsEnumerated = 0;
   attrs->IsBoolean = 0;
   attrs->IsRHS = 0;
-
-  if ((func->ReturnType & VTK_PARSE_STATIC) &&
-      func->ReturnType != VTK_PARSE_FUNCTION)
-    {
-    attrs->IsStatic = 1;
-    }
 
   /* check for major issues with the function */
   if (!func->Name || func->ArrayFailure || func->IsOperator)
@@ -507,12 +501,13 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
 
   /* check for indexed methods: the first argument will be an integer */
   if (func->NumberOfArguments > 0 &&
-      ((func->ArgTypes[0] & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_INT ||
-       (func->ArgTypes[0] & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_SIZE_T ||
-       (func->ArgTypes[0] & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_ID_TYPE))
+      ((func->Arguments[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_INT ||
+       (func->Arguments[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_SIZE_T ||
+       (func->Arguments[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_ID_TYPE))
     {
     /* methods of the form "void SetValue(int i, type value)" */
-    if ((func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID &&
+    if ((!func->ReturnValue ||
+         (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID) &&
         func->NumberOfArguments == 2)
       {
       indexed = 1;
@@ -520,14 +515,14 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       if (!isSetNumberOfMethod(func->Name))
         {
         /* make sure this isn't a multi-value int method */
-        tmptype = func->ArgTypes[0];
-        tmpclass = func->ArgClasses[0];
+        tmptype = func->Arguments[0]->Type;
+        tmpclass = func->Arguments[0]->Class;
         allSame = 1;
 
         n = func->NumberOfArguments;
         for (i = 0; i < n; i++)
           {
-          if (func->ArgTypes[i] != tmptype)
+          if (func->Arguments[i]->Type != tmptype)
             {
             allSame = 0;
             }
@@ -536,7 +531,8 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
         }
       }
     /* methods of the form "type GetValue(int i)" */
-    if ((func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) != VTK_PARSE_VOID &&
+    if ((!func->ReturnValue ||
+        (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) != VTK_PARSE_VOID) &&
         func->NumberOfArguments == 1)
       {
       indexed = 1;
@@ -546,24 +542,26 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     }
 
   /* if return type is not void and no args or 1 index */
-  if ((func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) != VTK_PARSE_VOID &&
+  if ((func->ReturnValue &&
+       (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) != VTK_PARSE_VOID) &&
       func->NumberOfArguments == (unsigned long)indexed)
     {
     /* methods of the form "type GetValue()" or "type GetValue(i)" */
     if (isGetMethod(func->Name))
       {
       attrs->HasProperty = 1;
-      attrs->Type = func->ReturnType;
+      attrs->Type = func->ReturnValue->Type;
       attrs->Count = (func->HaveHint ? func->HintSize : 0);
       attrs->IsHinted = func->HaveHint;
-      attrs->ClassName = func->ReturnClass;
+      attrs->ClassName = func->ReturnValue->Class;
 
       return 1;
       }
     }
 
   /* if return type is void and 1 arg or 1 index and 1 arg */
-  if ((func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID &&
+  if ((!func->ReturnValue ||
+       (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID) &&
       func->NumberOfArguments == (unsigned long)(1 + indexed))
     {
     /* "void SetValue(type)" or "void SetValue(int, type)" */
@@ -571,37 +569,37 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       {
       attrs->HasProperty = 1;
       attrs->IsRHS = 1;
-      attrs->Type = func->ArgTypes[indexed];
-      attrs->Count = func->ArgCounts[indexed];
-      attrs->ClassName = func->ArgClasses[indexed];
+      attrs->Type = func->Arguments[indexed]->Type;
+      attrs->Count = func->Arguments[indexed]->Count;
+      attrs->ClassName = func->Arguments[indexed]->Class;
 
       return 1;
       }
     /* "void GetValue(type *)" or "void GetValue(int, type *)" */
     else if (isGetMethod(func->Name) &&
-             /* func->ArgCounts[indexed] > 0 && */ 
-             (func->ArgTypes[indexed] & VTK_PARSE_INDIRECT) ==
+             /* func->Arguments[indexed]->Count > 0 && */
+             (func->Arguments[indexed]->Type & VTK_PARSE_INDIRECT) ==
               VTK_PARSE_POINTER &&
-             (func->ArgTypes[indexed] & VTK_PARSE_CONST) == 0)
+             (func->Arguments[indexed]->Type & VTK_PARSE_CONST) == 0)
       {
       attrs->HasProperty = 1;
       attrs->IsRHS = 1;
-      attrs->Type = func->ArgTypes[indexed];
-      attrs->Count = func->ArgCounts[indexed];
-      attrs->ClassName = func->ArgClasses[indexed];
+      attrs->Type = func->Arguments[indexed]->Type;
+      attrs->Count = func->Arguments[indexed]->Count;
+      attrs->ClassName = func->Arguments[indexed]->Class;
 
       return 1;
       }
     /* "void AddValue(vtkObject *)" or "void RemoveValue(vtkObject *)" */
     else if ((isAddMethod(func->Name) || isRemoveMethod(func->Name)) &&
-             (func->ArgTypes[indexed] & VTK_PARSE_UNQUALIFIED_TYPE) ==
+             (func->Arguments[indexed]->Type & VTK_PARSE_UNQUALIFIED_TYPE) ==
               VTK_PARSE_OBJECT_PTR)
       {
       attrs->HasProperty = 1;
       attrs->IsRHS = 1;
-      attrs->Type = func->ArgTypes[indexed];
-      attrs->Count = func->ArgCounts[indexed];
-      attrs->ClassName = func->ArgClasses[indexed];
+      attrs->Type = func->Arguments[indexed]->Type;
+      attrs->Count = func->Arguments[indexed]->Count;
+      attrs->ClassName = func->Arguments[indexed]->Class;
 
       return 1;
       }
@@ -610,14 +608,14 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   /* check for multiple arguments of the same type */
   if (func->NumberOfArguments > 1 && !indexed)
     {
-    tmptype = func->ArgTypes[0];
-    tmpclass = func->ArgClasses[0];
+    tmptype = func->Arguments[0]->Type;
+    tmpclass = func->Arguments[0]->Class;
     allSame = 1;
 
     n = func->NumberOfArguments;
     for (i = 0; i < n; i++)
       {
-      if (func->ArgTypes[i] != tmptype)
+      if (func->Arguments[i]->Type != tmptype)
         {
         allSame = 0;
         }
@@ -628,7 +626,8 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       /* "void SetValue(type x, type y, type z)" */
       if (isSetMethod(func->Name) &&
           (tmptype & VTK_PARSE_INDIRECT) == 0 &&
-          (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID)
+          (!func->ReturnValue ||
+           (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID))
         {
         attrs->HasProperty = 1;
         attrs->Type = tmptype;
@@ -642,8 +641,8 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       else if (isGetMethod(func->Name) &&
                (tmptype & VTK_PARSE_REF) != 0 &&
                (tmptype & VTK_PARSE_CONST) == 0 &&
-               (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
-                 VTK_PARSE_VOID)
+               (!func->ReturnValue ||
+                (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID))
         {
         attrs->HasProperty = 1;
         attrs->Type = tmptype;
@@ -656,13 +655,14 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       /* "void AddValue(type x, type y, type z)" */
       else if (isAddMethod(func->Name) &&
                (tmptype & VTK_PARSE_INDIRECT) == 0 &&
-               ((func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
+               (!func->ReturnValue ||
+                (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) ==
                   VTK_PARSE_VOID ||
-                (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
+                (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) ==
                   VTK_PARSE_INT ||
-                (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
+                (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) ==
                   VTK_PARSE_SIZE_T ||
-                (func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) ==
+                (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) ==
                   VTK_PARSE_ID_TYPE))
         {
         attrs->HasProperty = 1;
@@ -677,7 +677,8 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     }
 
   /* if return type is void, and there are no arguments */
-  if ((func->ReturnType & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID &&
+  if ((!func->ReturnValue ||
+       (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID) &&
       func->NumberOfArguments == 0)
     {
     attrs->Type = VTK_PARSE_VOID;
