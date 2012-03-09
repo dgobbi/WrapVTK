@@ -358,13 +358,11 @@ static int preproc_next(preproc_tokenizer *tokens)
         else if (cp[1] == '=') { l = 2; t = TOK_GE; }
         break;
       case '&':
-        if (cp[1] == '&' && cp[2] == '=') { l = 3; t = TOK_OTHER; }
-        else if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
+        if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
         else if (cp[1] == '&') { l = 2; t = TOK_AND; }
         break;
       case '|':
-        if (cp[1] == '|' && cp[2] == '=') { l = 3; t = TOK_OTHER; }
-        else if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
+        if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
         else if (cp[1] == '|') { l = 2; t = TOK_OR; }
         break;
       case '^': case '*': case '/': case '%':

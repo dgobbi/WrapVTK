@@ -571,8 +571,6 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
 "&="              return(OP_AND_EQ);
 "|="              return(OP_OR_EQ);
 "^="              return(OP_XOR_EQ);
-"&&="             return(OP_LOGIC_AND_EQ);
-"||="             return(OP_LOGIC_OR_EQ);
 "&&"              return(OP_LOGIC_AND);
 "||"              return(OP_LOGIC_OR);
 "=="              return(OP_LOGIC_EQ);

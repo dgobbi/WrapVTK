@@ -1201,8 +1201,6 @@ unsigned int add_indirection_to_array(unsigned int type)
 %token OP_AND_EQ
 %token OP_OR_EQ
 %token OP_XOR_EQ
-%token OP_LOGIC_AND_EQ
-%token OP_LOGIC_OR_EQ
 %token OP_LOGIC_AND
 %token OP_LOGIC_OR
 %token OP_LOGIC_EQ
@@ -2571,8 +2569,6 @@ op_token_no_delim:
   | OP_AND_EQ { $<str>$ = "&="; }
   | OP_OR_EQ { $<str>$ = "|="; }
   | OP_XOR_EQ { $<str>$ = "^="; }
-  | OP_LOGIC_AND_EQ { $<str>$ = "&&="; }
-  | OP_LOGIC_OR_EQ { $<str>$ = "||="; }
   | OP_LOGIC_AND { $<str>$ = "&&"; }
   | OP_LOGIC_OR { $<str>$ = "||"; }
   | OP_LOGIC_EQ { $<str>$ = "=="; }
