@@ -95,6 +95,67 @@ static preproc_uint_t string_to_preproc_uint(const char *cp, int base)
 #endif
 }
 
+/** Various possible char types */
+#define CPRE_WHITE   0x01  /* space, tab, carriage return */
+#define CPRE_ID      0x02  /* A-Z a-z and _ */
+#define CPRE_DIGIT   0x04  /* 0-9 */
+#define CPRE_IDGIT   0x06  /* 0-9 A-Z a-z and _ */
+#define CPRE_EXP     0x08  /* EPep (exponents for floats) */
+#define CPRE_SIGN    0x10  /* +- (sign for floats) */
+#define CPRE_QUOTE   0x20  /* " and ' */
+#define CPRE_HEX     0x40  /* 0-9A-Fa-f */
+#define CPRE_OCT     0x80  /* 0-7 */
+
+/** Array for quick lookup of char types */
+static unsigned char preproc_charbits[] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0,
+  CPRE_WHITE, /* tab */
+  0, /* newline ( marks end of line, so not technically whitespace ) */
+  0, 0,
+  CPRE_WHITE, /* carriage return */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  CPRE_WHITE, /* ' ' */
+  0, CPRE_QUOTE, 0, 0, 0, 0, CPRE_QUOTE, 0, 0, /* !"#$%&'() */
+  0, CPRE_SIGN, 0, CPRE_SIGN, 0, 0, /* *+,-./ */
+  CPRE_DIGIT|CPRE_OCT|CPRE_HEX, /* 0 */
+  CPRE_DIGIT|CPRE_OCT|CPRE_HEX, CPRE_DIGIT|CPRE_OCT|CPRE_HEX,
+  CPRE_DIGIT|CPRE_OCT|CPRE_HEX, CPRE_DIGIT|CPRE_OCT|CPRE_HEX,
+  CPRE_DIGIT|CPRE_OCT|CPRE_HEX, CPRE_DIGIT|CPRE_OCT|CPRE_HEX,
+  CPRE_DIGIT|CPRE_OCT|CPRE_HEX, CPRE_DIGIT|CPRE_HEX,
+  CPRE_DIGIT|CPRE_HEX, /* 9 */
+  0, 0, 0, 0, 0, 0, 0, /* :;<=>?@ */
+  CPRE_ID|CPRE_HEX, /* A */
+  CPRE_ID|CPRE_HEX, CPRE_ID|CPRE_HEX, CPRE_ID|CPRE_HEX, /* BCD */
+  CPRE_ID|CPRE_HEX|CPRE_EXP, /* E */
+  CPRE_ID|CPRE_HEX, CPRE_ID, CPRE_ID, CPRE_ID, /* FGHI */
+  CPRE_ID, CPRE_ID, CPRE_ID, CPRE_ID, /* JKLM */
+  CPRE_ID, CPRE_ID, CPRE_ID|CPRE_EXP, CPRE_ID, /* NOPQ */
+  CPRE_ID, CPRE_ID, CPRE_ID, CPRE_ID, /* RSTU */
+  CPRE_ID, CPRE_ID, CPRE_ID, CPRE_ID, /* VWXY */
+  CPRE_ID, /* Z */
+  0, 0, 0, 0, /* [\\]^ */
+  CPRE_ID, /* _ */
+  0, /* ` */
+  CPRE_ID|CPRE_HEX, /* a */
+  CPRE_ID|CPRE_HEX, CPRE_ID|CPRE_HEX, CPRE_ID|CPRE_HEX, /* bcd */
+  CPRE_ID|CPRE_HEX|CPRE_EXP, /* e */
+  CPRE_ID|CPRE_HEX, CPRE_ID, CPRE_ID, CPRE_ID, /* fghi */
+  CPRE_ID, CPRE_ID, CPRE_ID, CPRE_ID, /* jklm */
+  CPRE_ID, CPRE_ID, CPRE_ID|CPRE_EXP, CPRE_ID, /* nopq */
+  CPRE_ID, CPRE_ID, CPRE_ID, CPRE_ID, /* rstu */
+  CPRE_ID, CPRE_ID, CPRE_ID, CPRE_ID, /* vwxy */
+  CPRE_ID, /* z */
+  0, 0, 0, 0, /* {|}~ */
+  0, /* '\x7f' */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+/** Macro to get char type */
+#define preproc_chartype(c, bits) \
+  ((preproc_charbits[(unsigned char)(c)] & bits) != 0)
 
 /** Skip over a comment. */
 static void preproc_skip_comment(const char **cpp)
@@ -137,19 +198,33 @@ static void preproc_skip_whitespace(const char **cpp)
 
   for (;;)
     {
-    while (*cp == ' ' || *cp == '\t' || *cp == '\r') { cp++; }
+    while (preproc_chartype(*cp, CPRE_WHITE)) { cp++; }
 
-    if (cp[0] == '\\' && cp[1] == '\n')
+    if (cp[0] == '\\')
       {
-      cp += 2;
+      if (cp[1] == '\n')
+        {
+        cp += 2;
+        }
+      else if (cp[1] == '\r' && cp[2] == '\n')
+        {
+        cp += 3;
+        }
+      else
+        {
+        break;
+        }
       }
-    else if (cp[0] == '\\' && cp[1] == '\r' && cp[2] == '\n')
+    else if (cp[0] == '/')
       {
-      cp += 3;
-      }
-    else if (cp[0] == '/' && (cp[1] == '/' || cp[1] == '*'))
-      {
-      preproc_skip_comment(&cp);
+      if (cp[1] == '/' || cp[1] == '*')
+        {
+        preproc_skip_comment(&cp);
+        }
+      else
+        {
+        break;
+        }
       }
     else
       {
@@ -188,18 +263,13 @@ static void preproc_skip_name(const char **cpp)
 {
   const char *cp = *cpp;
 
-  if ((*cp >= 'a' && *cp <= 'z') ||
-      (*cp >= 'A' && *cp <= 'Z') ||
-      (*cp == '_'))
+  if (preproc_chartype(*cp, CPRE_ID))
     {
-    cp++;
-    while ((*cp >= '0' && *cp <= '9') ||
-           (*cp >= 'a' && *cp <= 'z') ||
-           (*cp >= 'A' && *cp <= 'Z') ||
-           (*cp == '_'))
+    do
       {
       cp++;
       }
+    while (preproc_chartype(*cp, CPRE_IDGIT));
     }
 
   *cpp = cp;
@@ -210,22 +280,19 @@ static void preproc_skip_number(const char **cpp)
 {
   const char *cp = *cpp;
 
-  if ((cp[0] >= '0' && cp[0] <= '9') ||
-      (cp[0] == '.' && (cp[1] >= '0' && cp[1] <= '9')))
+  if (preproc_chartype(cp[0], CPRE_DIGIT) ||
+      (cp[0] == '.' && preproc_chartype(cp[1], CPRE_DIGIT)))
     {
-    cp++;
-    while ((*cp >= '0' && *cp <= '9') ||
-           (*cp >= 'a' && *cp <= 'z') ||
-           (*cp >= 'A' && *cp <= 'Z') ||
-           *cp == '_' || *cp == '.')
+    do
       {
       char c = *cp++;
-      if (c == 'e' || c == 'E' ||
-          c == 'p' || c == 'P')
+      if (preproc_chartype(c, CPRE_EXP) &&
+          preproc_chartype(*cp, CPRE_SIGN))
         {
-        if (*cp == '-' || *cp == '+') { cp++; }
+        cp++;
         }
       }
+      while (preproc_chartype(*cp, CPRE_IDGIT) || *cp == '.');
     }
 
   *cpp = cp;
@@ -238,36 +305,27 @@ static int preproc_next(preproc_tokenizer *tokens)
   preproc_skip_whitespace(&cp);
   tokens->text = cp;
 
-  if (cp[0] == '_' ||
-      (cp[0] >= 'a' && cp[0] <= 'z') ||
-      (cp[0] >= 'A' && cp[0] <= 'Z'))
+  if (preproc_chartype(*cp, CPRE_ID))
     {
     const char *ep = cp;
     preproc_skip_name(&ep);
     tokens->len = ep - cp;
     tokens->tok = TOK_ID;
     }
-  else if ((cp[0] >= '0' && cp[0] <= '9') ||
-           (cp[0] == '.' && (cp[1] >= '0' && cp[1] <= '9')))
+  else if (preproc_chartype(*cp, CPRE_DIGIT) ||
+           (cp[0] == '.' && preproc_chartype(cp[1], CPRE_DIGIT)))
     {
     const char *ep = cp;
     preproc_skip_number(&ep);
     tokens->len = ep - cp;
     tokens->tok = TOK_NUMBER;
     }
-  else if (cp[0] == '\'')
+  else if (preproc_chartype(*cp, CPRE_QUOTE))
     {
     const char *ep = cp;
     preproc_skip_quotes(&ep);
     tokens->len = ep - cp;
-    tokens->tok = TOK_CHAR;
-    }
-  else if (cp[0] == '\"')
-    {
-    const char *ep = cp;
-    preproc_skip_quotes(&ep);
-    tokens->len = ep - cp;
-    tokens->tok = TOK_STRING;
+    tokens->tok = (*cp == '\"' ? TOK_STRING : TOK_CHAR);
     }
   else
     {
@@ -536,15 +594,12 @@ static int preproc_evaluate_char(
       else if (*cp == '0')
         {
         *val = string_to_preproc_int(cp, 8);
-        while (*cp >= '0' && *cp <= '7') { cp++; }
+        do { cp++; } while (preproc_chartype(*cp, CPRE_OCT));
         }
       else if (*cp == 'x')
         {
-        cp++;
-        *val = string_to_preproc_int(cp, 16);
-        while ((*cp >= '0' && *cp <= '9') ||
-               (*cp >= 'a' && *cp <= 'z') ||
-               (*cp >= 'A' && *cp <= 'Z')) { cp++; }
+        *val = string_to_preproc_int(cp+1, 16);
+        do { cp++; } while (preproc_chartype(*cp, CPRE_HEX));
         }
       }
     if (*cp != '\'')
@@ -579,20 +634,18 @@ static int preproc_evaluate_integer(
     base = 16;
     *is_unsigned = 1;
     ep = cp;
-    while ((*ep >= '0' && *ep <= '9') ||
-           (*ep >= 'a' && *ep <= 'f') ||
-           (*ep >= 'A' && *ep <= 'F'))
+    while (preproc_chartype(*ep, CPRE_HEX))
       {
       ep++;
       }
     }
-  else if (cp[0] == '0' && (cp[1] >= '0' && cp[1] <= '9'))
+  else if (cp[0] == '0' && preproc_chartype(cp[1], CPRE_DIGIT))
     {
     cp += 1;
     base = 8;
     *is_unsigned = 1;
     ep = cp;
-    while (*ep >= '0' && *ep <= '7')
+    while (preproc_chartype(*ep, CPRE_OCT))
       {
       ep++;
       }
@@ -601,7 +654,7 @@ static int preproc_evaluate_integer(
     {
     base = 10;
     *is_unsigned = 0;
-    while (*ep >= '0' && *ep <= '9')
+    while (preproc_chartype(*ep, CPRE_DIGIT))
       {
       ep++;
       }
@@ -1649,10 +1702,7 @@ const char *preproc_find_include_file(
 
   /* check for absolute path of form DRIVE: or /path/to/file */
   j = 0;
-  while (filename[j] == '_' ||
-         (filename[j] >= '0' && filename[j] <= '9') ||
-         (filename[j] >= 'a' && filename[j] <= 'z') ||
-         (filename[j] >= 'Z' && filename[j] <= 'Z')) { j++; }
+  while (preproc_chartype(filename[j], CPRE_IDGIT)) { j++; }
 
   if (filename[j] == ':' || filename[0] == '/' || filename[0] == '\\')
     {
@@ -2480,9 +2530,7 @@ const char *vtkParsePreprocess_ExpandMacro(
     stringify = 0;
     noexpand = 0;
     /* skip all chars that aren't part of a name */
-    while ((*cp < 'a' || *cp > 'z') &&
-           (*cp < 'A' || *cp > 'Z') &&
-           *cp != '_' && *cp != '\0')
+    while (!preproc_chartype(*cp, CPRE_ID) && *cp != '\0')
       {
       dp = cp;
       preproc_skip_whitespace(&cp);
@@ -2490,14 +2538,14 @@ const char *vtkParsePreprocess_ExpandMacro(
         {
         dp = cp;
         }
-      else if (*cp == '\'' || *cp == '\"')
+      else if (preproc_chartype(*cp, CPRE_QUOTE))
         {
         preproc_skip_quotes(&cp);
         dp = cp;
         wp = cp;
         noexpand = 0;
         }
-      else if (*cp >= '0' && *cp <= '9')
+      else if (preproc_chartype(*cp, CPRE_DIGIT))
         {
         preproc_skip_number(&cp);
         dp = cp;
@@ -2567,7 +2615,7 @@ const char *vtkParsePreprocess_ExpandMacro(
           pp = values[j];
           /* remove leading whitespace from argument */
           c = *pp;
-          while (c == ' ' || c == '\n' || c == '\t' || c == '\r')
+          while (preproc_chartype(c, CPRE_WHITE) || c == '\n')
             {
             c = *(++pp);
             l--;
@@ -2576,7 +2624,7 @@ const char *vtkParsePreprocess_ExpandMacro(
           if (l > 0)
             {
             c = pp[l - 1];
-            while (c == ' ' || c == '\n' || c == '\t' || c == '\r')
+            while (preproc_chartype(c, CPRE_WHITE) || c == '\n')
               {
               if (--l == 0)
                 {
