@@ -39,8 +39,8 @@ enum _preproc_token_t
   TOK_EQ,
   TOK_GE,
   TOK_LE,
-  TOK_LSHIFT,
   TOK_RSHIFT,
+  TOK_LSHIFT,
   TOK_DBLHASH,
   TOK_ELLIPSIS,
   TOK_OTHER
@@ -329,83 +329,68 @@ static int preproc_next(preproc_tokenizer *tokens)
     }
   else
     {
+    int t = cp[0];
+    size_t l = 1;
+
     switch (cp[0])
       {
       case ':':
-        if (cp[1] == ':') { tokens->len = 2; tokens->tok = TOK_OTHER; }
-        else { tokens->len = 1; tokens->tok = cp[0]; }
+        if (cp[1] == ':') { l = 2; t = TOK_OTHER; }
         break;
       case '.':
-        if (cp[1] == '.' && cp[2] == '.')
-          { tokens->len = 3; tokens->tok = TOK_ELLIPSIS; }
-        else if (cp[1] == '*') { tokens->len = 2; tokens->tok = TOK_OTHER; }
-        else { tokens->len = 1; tokens->tok = cp[0]; }
+        if (cp[1] == '.' && cp[2] == '.') { l = 3; t = TOK_ELLIPSIS; }
+        else if (cp[1] == '*') { l = 2; t = TOK_OTHER; }
         break;
       case '=':
-        if (cp[1] == '=') { tokens->len = 2; tokens->tok = TOK_EQ; }
-        else { tokens->len = 1; tokens->tok = cp[0]; }
+        if (cp[1] == '=') { l = 2; t = TOK_EQ; }
         break;
       case '!':
-        if (cp[1] == '=') { tokens->len = 2; tokens->tok = TOK_NE; }
-        else { tokens->len = 1; tokens->tok = cp[0]; }
+        if (cp[1] == '=') { l = 2; t = TOK_NE; }
         break;
       case '<':
-        if (cp[1] == '<' && cp[2] == '=')
-          { tokens->len = 3; tokens->tok = TOK_OTHER; }
-        else if (cp[1] == '<') { tokens->len = 2; tokens->tok = TOK_RSHIFT; }
-        else if (cp[1] == '=') { tokens->len = 2; tokens->tok = TOK_LE; }
-        else { tokens->len = 1; tokens->tok = cp[0]; }
+        if (cp[1] == '<' && cp[2] == '=') { l = 3; t = TOK_OTHER; }
+        else if (cp[1] == '<') { l = 2; t = TOK_LSHIFT; }
+        else if (cp[1] == '=') { l = 2; t = TOK_LE; }
         break;
       case '>':
-        if (cp[1] == '>' && cp[2] == '=')
-          { tokens->len = 3; tokens->tok = TOK_OTHER; }
-        else if (cp[1] == '>') { tokens->len = 2; tokens->tok = TOK_LSHIFT; }
-        else if (cp[1] == '=') { tokens->len = 2; tokens->tok = TOK_GE; }
-        else { tokens->len = 1; tokens->tok = cp[0]; }
+        if (cp[1] == '>' && cp[2] == '=') { l = 3; t = TOK_OTHER; }
+        else if (cp[1] == '>') { l = 2; t = TOK_RSHIFT; }
+        else if (cp[1] == '=') { l = 2; t = TOK_GE; }
         break;
       case '&':
-        if (cp[1] == '&' && cp[2] == '=')
-          { tokens->len = 3; tokens->tok = TOK_OTHER; }
-        else if (cp[1] == '=') { tokens->len = 2; tokens->tok = TOK_OTHER; }
-        else if (cp[1] == '&') { tokens->len = 2; tokens->tok = TOK_AND; }
-        else { tokens->len = 1; tokens->tok = cp[0]; }
+        if (cp[1] == '&' && cp[2] == '=') { l = 3; t = TOK_OTHER; }
+        else if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
+        else if (cp[1] == '&') { l = 2; t = TOK_AND; }
         break;
       case '|':
-        if (cp[1] == '|' && cp[2] == '=')
-          { tokens->len = 3; tokens->tok = TOK_OTHER; }
-        else if (cp[1] == '=') { tokens->len = 2; tokens->tok = TOK_OTHER; }
-        else if (cp[1] == '|') { tokens->len = 2; tokens->tok = TOK_OR; }
-        else { tokens->len = 1; tokens->tok = cp[0]; }
+        if (cp[1] == '|' && cp[2] == '=') { l = 3; t = TOK_OTHER; }
+        else if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
+        else if (cp[1] == '|') { l = 2; t = TOK_OR; }
         break;
       case '^': case '*': case '/': case '%':
-        if (cp[1] == '=') { tokens->len = 2; tokens->tok = TOK_OTHER; }
-        else { tokens->len = 1; tokens->tok = cp[0]; }
+        if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
         break;
       case '+':
-        if (cp[1] == '+') { tokens->len = 2; tokens->tok = TOK_OTHER; }
-        else if (cp[1] == '=') { tokens->len = 2; tokens->tok = TOK_OTHER; }
-        else { tokens->len = 1; tokens->tok = cp[0]; }
+        if (cp[1] == '+') { l = 2; t = TOK_OTHER; }
+        else if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
         break;
       case '-':
-        if (cp[1] == '>' && cp[2] == '*')
-          { tokens->len = 3; tokens->tok = TOK_OTHER; }
-        else if (cp[1] == '>') { tokens->len = 2; tokens->tok = TOK_OTHER; }
-        else if (cp[1] == '-') { tokens->len = 2; tokens->tok = TOK_OTHER; }
-        else if (cp[1] == '=') { tokens->len = 2; tokens->tok = TOK_OTHER; }
-        else { tokens->len = 1; tokens->tok = cp[0]; }
+        if (cp[1] == '>' && cp[2] == '*') { l = 3; t = TOK_OTHER; }
+        else if (cp[1] == '>') { l = 2; t = TOK_OTHER; }
+        else if (cp[1] == '-') { l = 2; t = TOK_OTHER; }
+        else if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
         break;
       case '#':
-        if (cp[1] == '#') { tokens->len = 2; tokens->tok = TOK_DBLHASH; }
-        else { tokens->len = 1; tokens->tok = cp[0]; }
+        if (cp[1] == '#') { l = 2; t = TOK_DBLHASH; }
         break;
       case '\n':
       case '\0':
-        { tokens->len = 0; tokens->tok = 0; }
-        break;
-      default:
-        { tokens->len = 1; tokens->tok = cp[0]; }
+        { l = 0; t = 0; }
         break;
       }
+
+    tokens->len = l;
+    tokens->tok = t;
     }
 
   return tokens->tok;
@@ -1023,7 +1008,7 @@ static int preproc_evaluate_bitshift(
     {
     op = tokens->tok;
 
-    if (op != TOK_RSHIFT && op != TOK_LSHIFT)
+    if (op != TOK_LSHIFT && op != TOK_RSHIFT)
       {
       return result;
       }
@@ -1034,22 +1019,22 @@ static int preproc_evaluate_bitshift(
 
     if (*is_unsigned)
       {
-      if (op == TOK_RSHIFT)
+      if (op == TOK_LSHIFT)
         {
         *val = (preproc_int_t)((preproc_uint_t)*val << rval);
         }
-      else if (op == TOK_LSHIFT)
+      else if (op == TOK_RSHIFT)
         {
         *val = (preproc_int_t)((preproc_uint_t)*val >> rval);
         }
       }
     else
       {
-      if (op == TOK_RSHIFT)
+      if (op == TOK_LSHIFT)
         {
         *val = *val << rval;
         }
-      else if (op == TOK_LSHIFT)
+      else if (op == TOK_RSHIFT)
         {
         *val = *val >> rval;
         }
