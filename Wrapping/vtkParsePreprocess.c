@@ -198,8 +198,6 @@ static void preproc_skip_whitespace(const char **cpp)
 
   for (;;)
     {
-    while (preproc_chartype(*cp, CPRE_WHITE)) { cp++; }
-
     if (cp[0] == '\\')
       {
       if (cp[1] == '\n')
@@ -225,6 +223,14 @@ static void preproc_skip_whitespace(const char **cpp)
         {
         break;
         }
+      }
+    else if (preproc_chartype(*cp, CPRE_WHITE))
+      {
+      do
+        {
+        cp++;
+        }
+      while (preproc_chartype(*cp, CPRE_WHITE));
       }
     else
       {
