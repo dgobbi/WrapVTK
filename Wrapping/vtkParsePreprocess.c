@@ -292,7 +292,7 @@ static void preproc_skip_number(const char **cpp)
         cp++;
         }
       }
-      while (preproc_chartype(*cp, CPRE_IDGIT) || *cp == '.');
+    while (preproc_chartype(*cp, CPRE_IDGIT) || *cp == '.');
     }
 
   *cpp = cp;
