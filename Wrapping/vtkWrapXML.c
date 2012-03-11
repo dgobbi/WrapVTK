@@ -1191,16 +1191,6 @@ void vtkWrapXML_ClassProperty(
 
   vtkWrapXML_Comment(w, property->Comment);
 
-  if (property->EnumConstantNames)
-    {
-    for (i = 0; property->EnumConstantNames[i] != 0; i++)
-      {
-      vtkWrapXML_ElementStart(w, "setto");
-      vtkWrapXML_Attribute(w, "name", property->EnumConstantNames[i]);
-      vtkWrapXML_ElementEnd(w, "setto");
-      }
-    }
-
   if (property->PublicMethods)
     {
     vtkWrapXML_ElementStart(w, "methods");
@@ -1231,6 +1221,16 @@ void vtkWrapXML_ClassProperty(
     vtkWrapXML_ClassPropertyMethods(w, property->LegacyMethods);
     vtkWrapXML_Flag(w, "legacy", 1);
     vtkWrapXML_ElementEnd(w, "methods");
+    }
+
+  if (property->EnumConstantNames)
+    {
+    for (i = 0; property->EnumConstantNames[i] != 0; i++)
+      {
+      vtkWrapXML_ElementStart(w, "valname");
+      vtkWrapXML_Attribute(w, "name", property->EnumConstantNames[i]);
+      vtkWrapXML_ElementEnd(w, "valname");
+      }
     }
 
   vtkWrapXML_ElementEnd(w, elementName);
