@@ -244,9 +244,8 @@ void vtkWrapXML_AttributeWithPrefix(
 {
 #ifdef WRAPXML_ELEMENTS_ONLY
   vtkWrapXML_ElementBody(w);
-  fprintf(w->file, "%s<%c%s>%s%s</%c%s>", indent(w->indentation),
-          toupper(name[0]), &name[1], prefix, vtkWrapXML_Quote(value, 500),
-          toupper(name[0]), &name[1]);
+  fprintf(w->file, "%s<%s>%s%s<%s>", indent(w->indentation),
+          name, prefix, vtkWrapXML_Quote(value, 500), name);
 #else
   fprintf(w->file, " %s=\"%s%s\"", name, prefix, vtkWrapXML_Quote(value, 500));
 #endif
@@ -269,7 +268,7 @@ void vtkWrapXML_Size(wrapxml_state_t *w, ValueInfo *val)
       {
 #ifdef WRAPXML_ELEMENTS_ONLY
       vtkWrapXML_ElementBody(w);
-      fprintf(w->file, "%s<Size>%s</Size>\n", indent(w->indentation),
+      fprintf(w->file, "%s<size>%s</size>\n", indent(w->indentation),
               val->Dimensions[j]);
 #else
       fprintf(w->file, "%s%s",
@@ -337,7 +336,7 @@ void vtkWrapXML_Pointer(wrapxml_state_t *w, ValueInfo *val)
  */
 void vtkWrapXML_Comment(wrapxml_state_t *w, const char *comment)
 {
-  const char *elementName = "Comment";
+  const char *elementName = "comment";
 
   if (comment)
     {
@@ -379,7 +378,7 @@ void vtkWrapXML_Flag(wrapxml_state_t *w, const char *name, int value)
   if (value)
     {
 #ifdef WRAPXML_ELEMENTS_ONLY
-    vtkWrapXML_Attribute(w, "Flag", name);
+    vtkWrapXML_Attribute(w, "flag", name);
 #else
     fprintf(w->file, " %s=\"1\"", name);
 #endif
@@ -407,7 +406,7 @@ void vtkWrapXML_Value(wrapxml_state_t *w, const char *value)
  */
 void vtkWrapXML_FileHeader(wrapxml_state_t *w, const FileInfo *data)
 {
-  const char *elementName = "File";
+  const char *elementName = "file";
   const char *cp = data->FileName;
   size_t i;
 
@@ -430,7 +429,7 @@ void vtkWrapXML_FileHeader(wrapxml_state_t *w, const FileInfo *data)
  */
 void vtkWrapXML_FileFooter(wrapxml_state_t *w, const FileInfo *data)
 {
-  const char *elementName = "File";
+  const char *elementName = "file";
   /* avoid warning */
   data = NULL;
 
@@ -474,7 +473,7 @@ void vtkWrapXML_FileDoc(wrapxml_state_t *w, FileInfo *data)
     return;
     }
 
-  vtkWrapXML_ElementStart(w, "Comment");
+  vtkWrapXML_ElementStart(w, "comment");
   vtkWrapXML_ElementBody(w);
 
   if (data->NameComment)
@@ -544,7 +543,7 @@ void vtkWrapXML_FileDoc(wrapxml_state_t *w, FileInfo *data)
       }
     }
 
-  vtkWrapXML_ElementEnd(w, "Comment");
+  vtkWrapXML_ElementEnd(w, "comment");
 }
 
 /**
@@ -554,11 +553,11 @@ void vtkWrapXML_ClassInheritance(
   wrapxml_state_t *w, MergeInfo *merge)
 {
 #ifdef WRAPXML_ELEMENTS_ONLY
-  const char *elementName = "Inheritance";
-  const char *subElementName = "ClassName";
+  const char *elementName = "inheritance";
+  const char *subElementName = "classname";
 #else
-  const char *elementName = "ResolutionOrder";
-  const char *subElementName = "Context";
+  const char *elementName = "mro";
+  const char *subElementName = "context";
 #endif
   unsigned long i, n;
 
@@ -628,16 +627,16 @@ void vtkWrapXML_TypeElements(wrapxml_state_t *w, ValueInfo *val)
     {
     if (val->Function->Class)
       {
-      vtkWrapXML_ElementStart(w, "Method");
+      vtkWrapXML_ElementStart(w, "method");
       vtkWrapXML_Attribute(w, "context", val->Function->Class);
       vtkWrapXML_FunctionCommon(w, val->Function, 1);
-      vtkWrapXML_ElementEnd(w, "Method");
+      vtkWrapXML_ElementEnd(w, "method");
       }
     else
       {
-      vtkWrapXML_ElementStart(w, "Function");
+      vtkWrapXML_ElementStart(w, "function");
       vtkWrapXML_FunctionCommon(w, val->Function, 1);
-      vtkWrapXML_ElementEnd(w, "Function");
+      vtkWrapXML_ElementEnd(w, "function");
       }
     }
 }
@@ -684,7 +683,7 @@ void vtkWrapXML_TypeSimple(
 void vtkWrapXML_Template(
   wrapxml_state_t *w, TemplateArgs *args)
 {
-  const char *elementName = "TemplateArg";
+  const char *elementName = "tparam";
   TemplateArg *arg;
   unsigned long i;
 
@@ -735,16 +734,16 @@ void vtkWrapXML_Template(
       {
       if (arg->Function->Class)
         {
-        vtkWrapXML_ElementStart(w, "Method");
+        vtkWrapXML_ElementStart(w, "method");
         vtkWrapXML_Attribute(w, "context", arg->Function->Class);
         vtkWrapXML_FunctionCommon(w, arg->Function, 1);
-        vtkWrapXML_ElementEnd(w, "Method");
+        vtkWrapXML_ElementEnd(w, "method");
         }
       else
         {
-        vtkWrapXML_ElementStart(w, "Function");
+        vtkWrapXML_ElementStart(w, "function");
         vtkWrapXML_FunctionCommon(w, arg->Function, 1);
-        vtkWrapXML_ElementEnd(w, "Function");
+        vtkWrapXML_ElementEnd(w, "function");
         }
       }
 
@@ -758,7 +757,7 @@ void vtkWrapXML_Template(
 void vtkWrapXML_Enum(
   wrapxml_state_t *w, EnumInfo *item, int inClass)
 {
-  const char *elementName = "Enum";
+  const char *elementName = "enum";
 
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
@@ -778,7 +777,7 @@ void vtkWrapXML_Enum(
 void vtkWrapXML_Constant(
   wrapxml_state_t *w, ValueInfo *con, int inClass)
 {
-  const char *elementName = "Constant";
+  const char *elementName = "constant";
 
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
@@ -815,11 +814,11 @@ void vtkWrapXML_Constant(
 void vtkWrapXML_Variable(
   wrapxml_state_t *w, ValueInfo *var, int inClass)
 {
-  const char *elementName = "Variable";
+  const char *elementName = "variable";
 
   if (inClass)
     {
-    elementName = "Member";
+    elementName = "member";
     }
 
   fprintf(w->file, "\n");
@@ -851,7 +850,7 @@ void vtkWrapXML_Variable(
 void vtkWrapXML_Typedef(
   wrapxml_state_t *w, ValueInfo *type, int inClass)
 {
-  const char *elementName = "Typedef";
+  const char *elementName = "typedef";
 
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
@@ -883,7 +882,7 @@ void vtkWrapXML_Typedef(
 void vtkWrapXML_Using(
   wrapxml_state_t *w, UsingInfo *data)
 {
-  const char *elementName = "Using";
+  const char *elementName = "using";
   const char *name = "namespace";
 
   if (data->Name)
@@ -894,7 +893,7 @@ void vtkWrapXML_Using(
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
   vtkWrapXML_Name(w, name);
-  vtkWrapXML_Attribute(w, "scope", data->Scope);
+  vtkWrapXML_Attribute(w, "context", data->Scope);
   vtkWrapXML_Comment(w, data->Comment);
   vtkWrapXML_ElementEnd(w, elementName);
 }
@@ -927,7 +926,7 @@ void vtkWrapXML_FunctionCommon(
 
   if (func->Signature)
     {
-    vtkWrapXML_ElementStart(w, "Signature");
+    vtkWrapXML_ElementStart(w, "signature");
     vtkWrapXML_ElementBody(w);
 
     cp = func->Signature;
@@ -939,23 +938,15 @@ void vtkWrapXML_FunctionCommon(
 
     fprintf(w->file, "%s %s\n", indent(w->indentation), vtkWrapXML_Quote(temp, 500));
 
-    vtkWrapXML_ElementEnd(w, "Signature");
-  }
+    vtkWrapXML_ElementEnd(w, "signature");
+    }
 
   vtkWrapXML_Comment(w, func->Comment);
-
-  if (printReturn)
-    {
-    vtkWrapXML_ElementStart(w, "Return");
-    vtkWrapXML_TypeAttributes(w, func->ReturnValue);
-    vtkWrapXML_TypeElements(w, func->ReturnValue);
-    vtkWrapXML_ElementEnd(w, "Return");
-    }
 
   n = func->NumberOfArguments;
   for (i = 0; i < n; i++)
     {
-    vtkWrapXML_ElementStart(w, "Arg");
+    vtkWrapXML_ElementStart(w, "param");
     arg = func->Arguments[i];
 
     if (arg->Name)
@@ -970,7 +961,15 @@ void vtkWrapXML_FunctionCommon(
 
     vtkWrapXML_TypeAttributes(w, arg);
     vtkWrapXML_TypeElements(w, arg);
-    vtkWrapXML_ElementEnd(w, "Arg");
+    vtkWrapXML_ElementEnd(w, "param");
+    }
+
+  if (printReturn)
+    {
+    vtkWrapXML_ElementStart(w, "return");
+    vtkWrapXML_TypeAttributes(w, func->ReturnValue);
+    vtkWrapXML_TypeElements(w, func->ReturnValue);
+    vtkWrapXML_ElementEnd(w, "return");
     }
 }
 
@@ -980,12 +979,12 @@ void vtkWrapXML_FunctionCommon(
 void vtkWrapXML_Function(
   wrapxml_state_t *w, FunctionInfo *func)
 {
-  const char *elementName = "Function";
+  const char *elementName = "function";
   const char *name = func->Name;
 
   if (func->IsOperator)
     {
-    elementName = "Operator";
+    elementName = "operator";
     if (strncmp(name, "operator", 8) == 0)
       {
       name = &name[8];
@@ -1056,24 +1055,24 @@ void vtkWrapXML_ClassMethod(
   wrapxml_state_t *w, ClassInfo *data, FunctionInfo *func, const char *classname,
   const char *propname)
 {
-  const char *elementName = "Method";
+  const char *elementName = "method";
   const char *name = func->Name;
   int isCtrOrDtr = 0;
 
   if (data && strcmp(data->Name, func->Name) == 0)
     {
-    elementName = "Constructor";
+    elementName = "constructor";
     isCtrOrDtr = 1;
     }
   else if (data && func->Name[0] == '~' &&
            strcmp(data->Name, &func->Name[1]) == 0)
     {
-    elementName = "Destructor";
+    elementName = "destructor";
     isCtrOrDtr = 1;
     }
   else if (func->IsOperator)
     {
-    elementName = "Operator";
+    elementName = "operator";
     if (strncmp(name, "operator", 8) == 0)
       {
       name = &name[8];
@@ -1145,7 +1144,7 @@ void vtkWrapXML_ClassMethod(
 void vtkWrapXML_ClassProperty(
   wrapxml_state_t *w, PropertyInfo *property, const char *classname)
 {
-  const char *elementName = "Property";
+  const char *elementName = "property";
   const char *access = 0;
   unsigned long i;
 
@@ -1196,38 +1195,42 @@ void vtkWrapXML_ClassProperty(
     {
     for (i = 0; property->EnumConstantNames[i] != 0; i++)
       {
-      vtkWrapXML_ElementStart(w, "SetValueTo");
+      vtkWrapXML_ElementStart(w, "setto");
       vtkWrapXML_Attribute(w, "name", property->EnumConstantNames[i]);
-      vtkWrapXML_ElementEnd(w, "SetValueTo");
+      vtkWrapXML_ElementEnd(w, "setto");
       }
     }
 
   if (property->PublicMethods)
     {
-    vtkWrapXML_ElementStart(w, "PublicMethods");
+    vtkWrapXML_ElementStart(w, "methods");
     vtkWrapXML_ClassPropertyMethods(w, property->PublicMethods);
-    vtkWrapXML_ElementEnd(w, "PublicMethods");
+    vtkWrapXML_Attribute(w, "access", "public");
+    vtkWrapXML_ElementEnd(w, "methods");
     }
 
   if (property->ProtectedMethods)
     {
-    vtkWrapXML_ElementStart(w, "ProtectedMethods");
+    vtkWrapXML_ElementStart(w, "methods");
     vtkWrapXML_ClassPropertyMethods(w, property->ProtectedMethods);
-    vtkWrapXML_ElementEnd(w, "ProtectedMethods");
+    vtkWrapXML_Attribute(w, "access", "protected");
+    vtkWrapXML_ElementEnd(w, "methods");
     }
 
   if (property->PrivateMethods)
     {
-    vtkWrapXML_ElementStart(w, "PrivateMethods");
+    vtkWrapXML_ElementStart(w, "methods");
     vtkWrapXML_ClassPropertyMethods(w, property->PrivateMethods);
-    vtkWrapXML_ElementEnd(w, "PrivateMethods");
+    vtkWrapXML_Attribute(w, "access", "private");
+    vtkWrapXML_ElementEnd(w, "methods");
     }
 
   if (property->LegacyMethods)
     {
-    vtkWrapXML_ElementStart(w, "LegacyMethods");
+    vtkWrapXML_ElementStart(w, "methods");
     vtkWrapXML_ClassPropertyMethods(w, property->LegacyMethods);
-    vtkWrapXML_ElementEnd(w, "LegacyMethods");
+    vtkWrapXML_Flag(w, "legacy", 1);
+    vtkWrapXML_ElementEnd(w, "methods");
     }
 
   vtkWrapXML_ElementEnd(w, elementName);
@@ -1538,7 +1541,7 @@ void vtkWrapXML_MethodHelper(
 void vtkWrapXML_Class(
   wrapxml_state_t *w, NamespaceInfo *data, ClassInfo *classInfo, int inClass)
 {
-  const char *elementName = "Class";
+  const char *elementName = "class";
   ClassProperties *properties;
   MergeInfo *merge = NULL;
   unsigned long i, j, n;
@@ -1547,11 +1550,11 @@ void vtkWrapXML_Class(
   fprintf(w->file, "\n");
   if (classInfo->ItemType == VTK_STRUCT_INFO)
     {
-    elementName = "Struct";
+    elementName = "struct";
     }
   else if (classInfo->ItemType == VTK_UNION_INFO)
     {
-    elementName = "Union";
+    elementName = "union";
     }
 
   vtkWrapXML_ElementStart(w, elementName);
@@ -1584,10 +1587,10 @@ void vtkWrapXML_Class(
   n = classInfo->NumberOfSuperClasses;
   for (i = 0; i < n; i++)
     {
-    vtkWrapXML_ElementStart(w, "SuperClass");
+    vtkWrapXML_ElementStart(w, "superclass");
     vtkWrapXML_Name(w, classInfo->SuperClasses[i]);
     vtkWrapXML_Attribute(w, "access", "public");
-    vtkWrapXML_ElementEnd(w, "SuperClass");
+    vtkWrapXML_ElementEnd(w, "superclass");
     }
 
   /* merge all the superclass information */
@@ -1733,7 +1736,7 @@ void vtkWrapXML_Body(wrapxml_state_t *w, NamespaceInfo *data)
  */
 void vtkWrapXML_Namespace(wrapxml_state_t *w, NamespaceInfo *data)
 {
-  const char *elementName = "Namespace";
+  const char *elementName = "namespace";
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
   vtkWrapXML_Name(w, data->Name);
