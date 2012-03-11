@@ -29,21 +29,37 @@
 /** Preprocessor tokens. */
 enum _preproc_token_t
 {
-  TOK_ID = 258,
-  TOK_CHAR,
-  TOK_STRING,
-  TOK_NUMBER,
-  TOK_AND,
-  TOK_OR,
-  TOK_NE,
-  TOK_EQ,
-  TOK_GE,
-  TOK_LE,
-  TOK_RSHIFT,
-  TOK_LSHIFT,
-  TOK_DBLHASH,
-  TOK_ELLIPSIS,
-  TOK_OTHER
+  TOK_OTHER = 257,
+  TOK_ID,        /* any id */
+  TOK_CHAR,      /* char literal */
+  TOK_STRING,    /* string literal */
+  TOK_NUMBER,    /* any numeric literal */
+  TOK_DBLHASH,   /* ## */
+  TOK_SCOPE,     /* :: */
+  TOK_INCR,      /* ++ */
+  TOK_DECR,      /* -- */
+  TOK_RSHIFT,    /* >> */
+  TOK_LSHIFT,    /* << */
+  TOK_AND,       /* && */
+  TOK_OR,        /* || */
+  TOK_EQ,        /* == */
+  TOK_NE,        /* != */
+  TOK_GE,        /* >= */
+  TOK_LE,        /* <= */
+  TOK_ADD_EQ,    /* += */
+  TOK_SUB_EQ,    /* -= */
+  TOK_MUL_EQ,    /* *= */
+  TOK_DIV_EQ,    /* /= */
+  TOK_MOD_EQ,    /* %= */
+  TOK_AND_EQ,    /* &= */
+  TOK_OR_EQ,     /* |= */
+  TOK_XOR_EQ,    /* ^= */
+  TOK_ARROW,     /* -> */
+  TOK_DOT_STAR,  /* .* */
+  TOK_ARROW_STAR,/* ->* */
+  TOK_RSHIFT_EQ, /* >>= */
+  TOK_LSHIFT_EQ, /* <<= */
+  TOK_ELLIPSIS,  /* ... */
 };
 
 /** A struct for going through the input one token at a time. */
@@ -318,6 +334,13 @@ static int preproc_next(preproc_tokenizer *tokens)
     tokens->len = ep - cp;
     tokens->tok = TOK_ID;
     }
+  else if (preproc_chartype(*cp, CPRE_QUOTE))
+    {
+    const char *ep = cp;
+    preproc_skip_quotes(&ep);
+    tokens->len = ep - cp;
+    tokens->tok = (*cp == '\"' ? TOK_STRING : TOK_CHAR);
+    }
   else if (preproc_chartype(*cp, CPRE_DIGIT) ||
            (cp[0] == '.' && preproc_chartype(cp[1], CPRE_DIGIT)))
     {
@@ -325,13 +348,6 @@ static int preproc_next(preproc_tokenizer *tokens)
     preproc_skip_number(&ep);
     tokens->len = ep - cp;
     tokens->tok = TOK_NUMBER;
-    }
-  else if (preproc_chartype(*cp, CPRE_QUOTE))
-    {
-    const char *ep = cp;
-    preproc_skip_quotes(&ep);
-    tokens->len = ep - cp;
-    tokens->tok = (*cp == '\"' ? TOK_STRING : TOK_CHAR);
     }
   else
     {
@@ -341,11 +357,11 @@ static int preproc_next(preproc_tokenizer *tokens)
     switch (cp[0])
       {
       case ':':
-        if (cp[1] == ':') { l = 2; t = TOK_OTHER; }
+        if (cp[1] == ':') { l = 2; t = TOK_SCOPE; }
         break;
       case '.':
         if (cp[1] == '.' && cp[2] == '.') { l = 3; t = TOK_ELLIPSIS; }
-        else if (cp[1] == '*') { l = 2; t = TOK_OTHER; }
+        else if (cp[1] == '*') { l = 2; t = TOK_DOT_STAR; }
         break;
       case '=':
         if (cp[1] == '=') { l = 2; t = TOK_EQ; }
@@ -354,35 +370,44 @@ static int preproc_next(preproc_tokenizer *tokens)
         if (cp[1] == '=') { l = 2; t = TOK_NE; }
         break;
       case '<':
-        if (cp[1] == '<' && cp[2] == '=') { l = 3; t = TOK_OTHER; }
+        if (cp[1] == '<' && cp[2] == '=') { l = 3; t = TOK_LSHIFT_EQ; }
         else if (cp[1] == '<') { l = 2; t = TOK_LSHIFT; }
         else if (cp[1] == '=') { l = 2; t = TOK_LE; }
         break;
       case '>':
-        if (cp[1] == '>' && cp[2] == '=') { l = 3; t = TOK_OTHER; }
+        if (cp[1] == '>' && cp[2] == '=') { l = 3; t = TOK_RSHIFT_EQ; }
         else if (cp[1] == '>') { l = 2; t = TOK_RSHIFT; }
         else if (cp[1] == '=') { l = 2; t = TOK_GE; }
         break;
       case '&':
-        if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
+        if (cp[1] == '=') { l = 2; t = TOK_AND_EQ; }
         else if (cp[1] == '&') { l = 2; t = TOK_AND; }
         break;
       case '|':
-        if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
+        if (cp[1] == '=') { l = 2; t = TOK_OR_EQ; }
         else if (cp[1] == '|') { l = 2; t = TOK_OR; }
         break;
-      case '^': case '*': case '/': case '%':
-        if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
+      case '^':
+        if (cp[1] == '=') { l = 2; t = TOK_XOR_EQ; }
+        break;
+      case '*':
+        if (cp[1] == '=') { l = 2; t = TOK_MUL_EQ; }
+        break;
+      case '/':
+        if (cp[1] == '=') { l = 2; t = TOK_DIV_EQ; }
+        break;
+      case '%':
+        if (cp[1] == '=') { l = 2; t = TOK_MOD_EQ; }
         break;
       case '+':
-        if (cp[1] == '+') { l = 2; t = TOK_OTHER; }
-        else if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
+        if (cp[1] == '+') { l = 2; t = TOK_INCR; }
+        else if (cp[1] == '=') { l = 2; t = TOK_ADD_EQ; }
         break;
       case '-':
-        if (cp[1] == '>' && cp[2] == '*') { l = 3; t = TOK_OTHER; }
-        else if (cp[1] == '>') { l = 2; t = TOK_OTHER; }
-        else if (cp[1] == '-') { l = 2; t = TOK_OTHER; }
-        else if (cp[1] == '=') { l = 2; t = TOK_OTHER; }
+        if (cp[1] == '>' && cp[2] == '*') { l = 3; t = TOK_ARROW_STAR; }
+        else if (cp[1] == '>') { l = 2; t = TOK_ARROW; }
+        else if (cp[1] == '-') { l = 2; t = TOK_DECR; }
+        else if (cp[1] == '=') { l = 2; t = TOK_SUB_EQ; }
         break;
       case '#':
         if (cp[1] == '#') { l = 2; t = TOK_DBLHASH; }
@@ -1256,7 +1281,7 @@ static int preproc_evaluate_logic_and(
       /* short circuit */
       while (tokens->tok != 0 && tokens->tok != ')' &&
              tokens->tok != ':' && tokens->tok != '?' &&
-             tokens->tok != TOK_OR && tokens->tok != TOK_OTHER)
+             tokens->tok != ',' && tokens->tok != TOK_OR)
         {
         if (tokens->tok == '(')
           {
@@ -1311,7 +1336,7 @@ static int preproc_evaluate_logic_or(
       /* short circuit */
       while (tokens->tok != 0 && tokens->tok != ')' &&
              tokens->tok != ':' && tokens->tok != '?' &&
-             tokens->tok != TOK_OTHER)
+             tokens->tok != ',')
         {
         if (tokens->tok == '(')
           {
