@@ -247,7 +247,7 @@ static void preproc_skip_quotes(const char **cpp)
   const char *cp = *cpp;
   const char qc = *cp;
 
-  if (*cp == '\'' || *cp == '\"')
+  if (preproc_chartype(*cp, CPRE_QUOTE))
     {
     cp++;
     while (*cp != qc && *cp != '\n' && *cp != '\0')
