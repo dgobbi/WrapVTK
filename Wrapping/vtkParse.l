@@ -526,7 +526,17 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
         }
     }
 
-(([0-9]+"."|[0-9]*"."[0-9]+)([eE][+-]?[0-9]+)?|[0-9]+[eE][+-]?[0-9]+)[a-zA-Z_]*  {
+[0-9]*"."[0-9]+([eE][+-]?[0-9]+)?[a-zA-Z_]*  {
+      yylval.str = vtkstrndup(yytext, yyleng);
+      return(FLOAT_LITERAL);
+    }
+
+[0-9]+"."([eE][+-]?[0-9]+)?[a-zA-Z_]*  {
+      yylval.str = vtkstrndup(yytext, yyleng);
+      return(FLOAT_LITERAL);
+    }
+
+[0-9]+[eE][+-]?[0-9]+[a-zA-Z_]*  {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(FLOAT_LITERAL);
     }
