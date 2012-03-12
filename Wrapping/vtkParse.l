@@ -568,6 +568,7 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
 "<<="             return(OP_LSHIFT_EQ);
 ">>="             return(OP_RSHIFT_EQ);
 "<<"              return(OP_LSHIFT);
+".*"              return(OP_DOT_POINTER);
 "->*"             return(OP_ARROW_POINTER);
 "->"              return(OP_ARROW);
 ">>"              return(OP_RSHIFT);

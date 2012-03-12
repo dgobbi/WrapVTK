@@ -1189,6 +1189,7 @@ unsigned int add_indirection_to_array(unsigned int type)
 %token OP_RSHIFT_EQ
 %token OP_LSHIFT
 %token OP_RSHIFT
+%token OP_DOT_POINTER
 %token OP_ARROW_POINTER
 %token OP_ARROW
 %token OP_INCR
@@ -2557,6 +2558,7 @@ op_token_no_delim:
   | OP_RSHIFT_EQ { $<str>$ = ">>="; }
   | OP_LSHIFT { $<str>$ = "<<"; }
   | OP_RSHIFT { $<str>$ = ">>"; }
+  | OP_DOT_POINTER { $<str>$ = ".*"; }
   | OP_ARROW_POINTER { $<str>$ = "->*"; }
   | OP_ARROW { $<str>$ = "->"; }
   | OP_PLUS_EQ { $<str>$ = "+="; }
