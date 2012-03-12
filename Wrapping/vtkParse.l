@@ -282,7 +282,7 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
 "size_t"        return(SIZE_T);
 "ssize_t"       return(SSIZE_T);
 
-"Q_OBJECT"      /* ignore the Q_OBJECT macro from Qt */                    
+"Q_OBJECT"      /* ignore the Q_OBJECT macro from Qt */
 "public"{WS}"slots"{PS}/:    return(PUBLIC);
 "private"{WS}"slots"{PS}/:   return(PRIVATE);
 "protected"{WS}"slots"{PS}/: return(PROTECTED);
@@ -408,7 +408,7 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
 ("APIENTRYP"|"CALLBACKP"|"WINAPIP") return('*');
 
 ("APIENTRY"|"CALLBACK"|"WINAPI") /* misc unused win32 macros */
- 
+
 ("vtkstd::"|"std::")?"ostream"\[^a-zA-Z_] {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(OSTREAM);
@@ -526,7 +526,7 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
         }
     }
 
-[0-9]+"."[0-9]*([eE][+-]?[0-9]+)?[a-zA-Z_]*  {
+(([0-9]+"."|[0-9]*"."[0-9]+)([eE][+-]?[0-9]+)?|[0-9]+[eE][+-]?[0-9]+)[a-zA-Z_]*  {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(FLOAT_LITERAL);
     }
