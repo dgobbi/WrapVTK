@@ -268,8 +268,11 @@ static void preproc_skip_quotes(const char **cpp)
     cp++;
     while (*cp != qc && *cp != '\n' && *cp != '\0')
       {
-      if (cp[0] == '\\' && cp[1] == qc) { cp++; }
-      cp++;
+      if (*cp++ == '\\')
+        {
+        if (cp[0] == '\r' && cp[1] == '\n') { cp += 2; }
+        else if (*cp != '\0') { cp++; }
+        }
       }
     }
   if (*cp == qc)
@@ -2765,6 +2768,7 @@ const char *vtkParsePreprocess_ProcessString(
 {
   char stack_rp[128];
   char *rp;
+  char *ep;
   size_t i = 0;
   size_t rs = 128;
   int last_tok = 0;
@@ -2777,7 +2781,9 @@ const char *vtkParsePreprocess_ProcessString(
   while (tokens.tok)
     {
     size_t l = tokens.len;
+    size_t j;
     const char *cp = tokens.text;
+    const char *dp;
 
     if (tokens.tok == TOK_STRING && last_tok == TOK_STRING)
       {
@@ -2798,7 +2804,24 @@ const char *vtkParsePreprocess_ProcessString(
         rp = (char *)realloc(rp, rs);
         }
       }
-    strncpy(&rp[i], cp, l);
+
+    /* copy the token, removing backslash-newline */
+    dp = cp;
+    ep = &rp[i];
+    for (j = 0; j < l; j++)
+      {
+      if (*dp == '\\')
+        {
+        if (dp[1] == '\n') { dp += 2; }
+        else if (dp[1] == '\r' && dp[2] == '\n') { dp += 3; }
+        else { *ep++ = *dp++; }
+        }
+      else
+        {
+        *ep++ = *dp++;
+        }
+      }
+    l = ep - &rp[i];
 
     if (tokens.tok == TOK_ID)
       {
