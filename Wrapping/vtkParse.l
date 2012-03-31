@@ -48,6 +48,7 @@ Modify lex.yy.c:
  * Return 0 if no match found.
  */
 static int skip_comment();
+static int skip_trailing_comment(const char *text, size_t l);
 static int skip_ahead_multi(const char *strings[]);
 static int skip_ahead_until(const char *text);
 static int skip_to_next_directive();
@@ -112,6 +113,7 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
       preproc_int_t val;
       int is_unsigned;
       MacroInfo *macro;
+      skip_trailing_comment(yytext, yyleng);
       result = vtkParsePreprocess_HandleDirective(&preprocessor, yytext);
       if (result == VTK_PARSE_OK)
         {
@@ -134,6 +136,7 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
 
 ^[\t ]*"#"(\\\n|\\\r\n|[^\n])*  {
       int result = 0;
+      skip_trailing_comment(yytext, yyleng);
       vtkParsePreprocess_RemoveMacro(&preprocessor,
                                      "VTK_WORKAROUND_WINDOWS_MANGLE");
       result = vtkParsePreprocess_HandleDirective(&preprocessor, yytext);
@@ -777,6 +780,72 @@ int skip_comment()
      c1 = c2; c2 = input();
      }
    return 1;
+}
+
+/*
+ * If token contains a comment, make sure whole comment is skipped.
+ */
+int skip_trailing_comment(const char *text, size_t l)
+{
+  const char *cp = text;
+  const char *ep = text + l;
+  int incomment = 0;
+
+  while (cp < ep)
+    {
+    while (cp < ep && *cp != '/' && *cp != '\"') { cp++; };
+    if (cp >= ep)
+      {
+      break;
+      }
+    else if (cp[0] == '/' && cp[1] == '*')
+      {
+      incomment = 1;
+      cp += 2;
+      while (cp < ep && *cp != '*') { cp++; };
+      if (cp[0] == '*' && cp[1] == '/')
+        {
+        incomment = 0;
+        cp += 2;
+        }
+      else
+        {
+        cp++;
+        }
+      }
+    else if (cp[0] == '\"')
+      {
+      cp++;
+      while (cp < ep)
+        {
+        while (cp < ep && *cp != '\\' && *cp != '\"') { cp++; };
+        if (cp >= ep)
+          {
+          break;
+          }
+        else if (*cp == '\"')
+          {
+          cp++;
+          break;
+          }
+        else /* if (*cp == '\\') */
+          {
+          cp += 2;
+          }
+        }
+      }
+    else
+      {
+      cp++;
+      }
+    }
+
+  if (incomment)
+    {
+    return skip_comment();
+    }
+
+  return 1;
 }
 
 /*
