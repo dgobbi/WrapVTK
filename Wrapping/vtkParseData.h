@@ -248,6 +248,8 @@ typedef struct _FileInfo
   const char *Caveats;
   const char *SeeAlso;
 
+  unsigned long NumberOfIncludes;
+  struct _FileInfo **Includes;
   ClassInfo *MainClass;
   NamespaceInfo *Contents;
 } FileInfo;
@@ -324,6 +326,7 @@ void vtkParse_AddItemToArray(
  * Add various items to the structs.
  */
 /*@{*/
+void vtkParse_AddIncludeToFile(FileInfo *info, FileInfo *item);
 void vtkParse_AddClassToClass(ClassInfo *info, ClassInfo *item);
 void vtkParse_AddFunctionToClass(ClassInfo *info, FunctionInfo *item);
 void vtkParse_AddEnumToClass(ClassInfo *info, EnumInfo *item);

@@ -28,6 +28,8 @@ void vtkParse_InitFile(FileInfo *file_info)
   file_info->Caveats = NULL;
   file_info->SeeAlso = NULL;
 
+  file_info->NumberOfIncludes = 0;
+  file_info->Includes = NULL;
   file_info->MainClass = NULL;
   file_info->Contents = NULL;
 }
@@ -35,6 +37,19 @@ void vtkParse_InitFile(FileInfo *file_info)
 /* Free the FileInfo struct */
 void vtkParse_FreeFile(FileInfo *file_info)
 {
+  unsigned long i, n;
+
+  n = file_info->NumberOfIncludes;
+  for (i = 0; i < n; i++)
+    {
+    vtkParse_FreeFile(file_info->Includes[i]);
+    free(file_info->Includes[i]);
+    }
+  if (file_info->Includes)
+    {
+    free(file_info->Includes);
+    }
+
   vtkParse_FreeNamespace(file_info->Contents);
   file_info->Contents = NULL;
 }
@@ -774,6 +789,17 @@ static void *array_size_check(
   return arraymem;
 }
 
+
+/* Utility method to add an included file to a FileInfo */
+void vtkParse_AddIncludeToFile(
+  FileInfo *file_info, FileInfo *include_file)
+{
+  file_info->Includes = (FileInfo **)array_size_check(
+    (FileInfo **)file_info->Includes, sizeof(FileInfo *),
+    file_info->NumberOfIncludes);
+
+  file_info->Includes[file_info->NumberOfIncludes++] = include_file;
+}
 
 /* Utility method to add a const char pointer to an array */
 void vtkParse_AddStringToArray(

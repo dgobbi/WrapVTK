@@ -136,7 +136,7 @@ int yylex(void);
 PreprocessInfo preprocessor = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 /* global variables */
-FileInfo data;
+FileInfo      *data;
 
 unsigned long  NumberOfConcreteClasses = 0;
 const char   **ConcreteClasses;
@@ -384,15 +384,15 @@ void closeComment()
       commentState = -1;
       break;
     case 2:
-      data.Description = vtkstrdup(getComment());
+      data->Description = vtkstrdup(getComment());
       clearComment();
       break;
     case 3:
-      data.SeeAlso = vtkstrdup(getComment());
+      data->SeeAlso = vtkstrdup(getComment());
       clearComment();
       break;
     case 4:
-      data.Caveats = vtkstrdup(getComment());
+      data->Caveats = vtkstrdup(getComment());
       clearComment();
       break;
     }
@@ -3164,8 +3164,8 @@ void add_constant(const char *name, const char *value,
   if (flag == 1)
     {
     /* actually a macro, need to guess the type */
-    ValueInfo **cptr = data.Contents->Constants;
-    unsigned long n = data.Contents->NumberOfConstants;
+    ValueInfo **cptr = data->Contents->Constants;
+    unsigned long n = data->Contents->NumberOfConstants;
     unsigned long i;
 
     con->Access = VTK_ACCESS_PUBLIC;
@@ -3184,7 +3184,7 @@ void add_constant(const char *name, const char *value,
 
     if (i == n)
       {
-      vtkParse_AddConstantToNamespace(data.Contents, con);
+      vtkParse_AddConstantToNamespace(data->Contents, con);
       }
     else
       {
@@ -3769,8 +3769,11 @@ FileInfo *vtkParse_ParseFile(
   char *main_class;
   const char **include_dirs;
 
-  vtkParse_InitFile(&data);
+  /* "data" is a global variable used by the parser */
+  data = (FileInfo *)malloc(sizeof(FileInfo));
+  vtkParse_InitFile(data);
 
+  /* "preprocessor" is a global struct used by the parser */
   i = preprocessor.NumberOfIncludeDirectories;
   include_dirs = preprocessor.IncludeDirectories;
   preprocessor.NumberOfIncludeDirectories = 0;
@@ -3785,14 +3788,14 @@ FileInfo *vtkParse_ParseFile(
   vtkParsePreprocess_AddMacro(&preprocessor, "VTK_USE_64BIT_IDS", NULL);
 #endif
 
-  data.FileName = vtkstrdup(filename);
+  data->FileName = vtkstrdup(filename);
 
   clearComment();
 
   namespaceDepth = 0;
   currentNamespace = (NamespaceInfo *)malloc(sizeof(NamespaceInfo));
   vtkParse_InitNamespace(currentNamespace);
-  data.Contents = currentNamespace;
+  data->Contents = currentNamespace;
 
   templateDepth = 0;
   currentTemplate = NULL;
@@ -3845,15 +3848,15 @@ FileInfo *vtkParse_ParseFile(
     {
     if (strcmp(currentNamespace->Classes[i]->Name, main_class) == 0)
       {
-      data.MainClass = currentNamespace->Classes[i];
+      data->MainClass = currentNamespace->Classes[i];
       break;
       }
     }
 
   free(main_class);
 
-  file_info = (FileInfo *)malloc(sizeof(FileInfo));
-  memcpy(file_info, &data, sizeof(FileInfo));
+  file_info = data;
+  data = NULL;
 
   return file_info;
 }

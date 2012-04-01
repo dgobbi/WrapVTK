@@ -2264,7 +2264,7 @@ YY_RULE_SETUP
         {
         pos++;
         }
-      data.NameComment = vtkstrndup(&yytext[pos + 1], yyleng - pos - 1);
+      data->NameComment = vtkstrndup(&yytext[pos + 1], yyleng - pos - 1);
     }
         YY_BREAK
 case 6:
@@ -5197,7 +5197,7 @@ void push_buffer()
     {
     buffer_stack = (YY_BUFFER_STATE *)malloc(4*sizeof(YY_BUFFER_STATE));
     }
-  // grow the stack whenever size reaches a power of two
+  /* grow the stack whenever size reaches a power of two */
   else if (n >= 4 && (n & (n-1)) == 0)
     {
     buffer_stack = (YY_BUFFER_STATE *)realloc(
@@ -5232,7 +5232,7 @@ int pop_buffer()
  * include stack, to tell what include is being evaluated
  */
 static size_t include_stack_size = 0;
-static const char **include_stack = NULL;
+static FileInfo **include_stack = NULL;
 static int *lineno_stack = NULL;
 
 /*
@@ -5240,24 +5240,51 @@ static int *lineno_stack = NULL;
  */
 void push_include(const char *filename)
 {
+  FileInfo *file_info = NULL;
+  int same_file = 0;
   size_t n = include_stack_size;
+
   if (include_stack == NULL)
     {
-    include_stack = (const char **)malloc(4*sizeof(const char *));
+    include_stack = (FileInfo **)malloc(4*sizeof(FileInfo *));
     lineno_stack = (int *)malloc(4*sizeof(int));
     }
-  // grow the stack whenever size reaches a power of two
+
+  /* grow the stack whenever size reaches a power of two */
   else if (n >= 4 && (n & (n-1)) == 0)
     {
-    include_stack = (const char **)realloc(
-      include_stack, 2*n*sizeof(const char *));
+    include_stack = (FileInfo **)realloc(
+      include_stack, 2*n*sizeof(FileInfo *));
     lineno_stack = (int *)realloc(
       lineno_stack, 2*n*sizeof(int));
     }
+
   lineno_stack[include_stack_size] = yyget_lineno();
   yyset_lineno(0);
-  include_stack[include_stack_size++] = filename;
-  //fprintf(stderr, "s include %s\n", filename);
+  include_stack[include_stack_size++] = data;
+
+  /* if the file is including itself */
+  if (filename == data->FileName ||
+      (filename != 0 && data->FileName != 0 &&
+       strcmp(filename, data->FileName) == 0))
+    {
+    same_file = 1;
+    }
+
+  /* make a new fileinfo, but only if we are in the base namespace
+   * and only if the only items added so far are constants */
+  if (!same_file && currentNamespace == data->Contents &&
+      data->Contents->NumberOfItems == data->Contents->NumberOfConstants)
+    {
+    file_info = (FileInfo *)malloc(sizeof(FileInfo));
+    vtkParse_InitFile(file_info);
+    file_info->FileName = vtkstrdup(filename);
+    file_info->Contents = (NamespaceInfo *)malloc(sizeof(NamespaceInfo));
+    vtkParse_InitNamespace(file_info->Contents);
+    vtkParse_AddIncludeToFile(data, file_info);
+    data = file_info;
+    currentNamespace = file_info->Contents;
+    }
 }
 
 /*
@@ -5268,9 +5295,13 @@ void pop_include()
   if (include_stack_size > 0)
     {
     --include_stack_size;
-    //fprintf(stderr, "e include %s\n", include_stack[include_stack_size]);
     fclose(yyin);
     yyset_lineno(lineno_stack[include_stack_size]);
+    if (data != include_stack[include_stack_size])
+      {
+      data = include_stack[include_stack_size];
+      currentNamespace = data->Contents;
+      }
     }
 }
 
@@ -5291,7 +5322,7 @@ void push_macro(MacroInfo *macro)
     {
     macro_stack = (MacroInfo **)malloc(4*sizeof(MacroInfo *));
     }
-  // grow the stack whenever size reaches a power of two
+  /* grow the stack whenever size reaches a power of two */
   else if (n >= 4 && (n & (n-1)) == 0)
     {
     macro_stack = (MacroInfo **)realloc(
@@ -5394,14 +5425,15 @@ void print_parser_error(const char *text, const char *cp, size_t n)
   size_t j = 0;
   const char *fn = "(none)";
 
-  if (data.FileName)
+  if (data->FileName)
     {
-    fn = data.FileName;
+    fn = data->FileName;
     }
   fprintf(yyout, "In %s:", fn);
   for (j = 0; j < include_stack_size; j++)
     {
-    fprintf(yyout, "%i:\nIn %s:", lineno_stack[j], include_stack[j]);
+    fprintf(yyout, "%i:\nIn %s:",
+            lineno_stack[j], include_stack[j]->FileName);
     }
   fprintf(yyout, "%i:\n", yylineno);
 
@@ -5442,7 +5474,7 @@ void preprocessor_directive(const char *text, size_t l)
     if (*cp == '<' || *cp == '\"')
       {
       /* if include file begins with "vtk" */
-      if (0 && ep - cp > 4 && strncmp("vtk", &cp[1], 3))
+      if (0 && ep - cp > 4 && strncmp("vtk", &cp[1], 3) == 0)
         {
         const char *dp;
         dp = vtkParsePreprocess_FindIncludeFile(&preprocessor,
