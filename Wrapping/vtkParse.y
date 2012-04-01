@@ -153,6 +153,9 @@ int            parseDebug;
 parse_access_t access_level = VTK_ACCESS_PUBLIC;
 int            IgnoreBTX = 0;
 
+/* functions from vtkParse.l */
+void print_parser_error(const char *text, const char *cp, size_t n);
+
 /* helper functions */
 void start_class(const char *classname, int is_struct_or_union);
 void reject_class(const char *classname, int is_struct_or_union);
@@ -3160,12 +3163,33 @@ void add_constant(const char *name, const char *value,
 
   if (flag == 1)
     {
+    /* actually a macro, need to guess the type */
+    ValueInfo **cptr = data.Contents->Constants;
+    unsigned long n = data.Contents->NumberOfConstants;
+    unsigned long i;
+
     con->Access = VTK_ACCESS_PUBLIC;
     if (con->Type == 0)
       {
       con->Type = guess_constant_type(con->Value);
       }
-    vtkParse_AddConstantToNamespace(data.Contents, con);
+
+    for (i = 0; i < n; i++)
+      {
+      if (strcmp(cptr[i]->Name, con->Name))
+        {
+        break;
+        }
+      }
+
+    if (i == n)
+      {
+      vtkParse_AddConstantToNamespace(data.Contents, con);
+      }
+    else
+      {
+      vtkParse_FreeValue(con);
+      }
     }
   else if (currentClass)
     {
@@ -3740,7 +3764,6 @@ FileInfo *vtkParse_ParseFile(
   const char *filename, FILE *ifile, FILE *errfile)
 {
   unsigned long i, j;
-  int lineno;
   int ret;
   FileInfo *file_info;
   char *main_class;
@@ -3787,19 +3810,15 @@ FileInfo *vtkParse_ParseFile(
   yyset_in(ifile);
   yyset_out(errfile);
   ret = yyparse();
-  lineno = yyget_lineno();
-  yylex_destroy();
-
-  free(currentFunction);
 
   if (ret)
     {
-    fprintf(errfile,
-            "*** SYNTAX ERROR found in parsing the header file %s "
-            "before line %d ***\n",
-            filename, lineno);
+    print_parser_error("syntax error", NULL, 0);
     return NULL;
     }
+
+  free(currentFunction);
+  yylex_destroy();
 
   /* The main class name should match the file name */
   i = strlen(filename);

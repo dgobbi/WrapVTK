@@ -54,14 +54,19 @@ static int skip_ahead_until(const char *text);
 static int skip_to_next_directive();
 static int skip_conditional_block();
 
+static void preprocessor_directive(const char *text, size_t l);
 static void print_preprocessor_error(int result, const char *cp, size_t n);
 static const char *get_macro_arguments();
 
 static void push_buffer();
 static int pop_buffer();
 
+static void push_include(const char *filename);
+static void pop_include();
+
 static void push_macro(MacroInfo *macro);
 static void pop_macro();
+static int in_macro();
 
 %}
 
@@ -108,47 +113,10 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
 
 "//".*  /* eat C++ comments */
 
-^[\t ]*"#"[\t ]*"define"[\t ]+"VTK_"[a-zA-Z0-9_]+[^(](\\\n|\\\r\n|[^\n])*  {
-      int result;
-      preproc_int_t val;
-      int is_unsigned;
-      MacroInfo *macro;
-      skip_trailing_comment(yytext, yyleng);
-      result = vtkParsePreprocess_HandleDirective(&preprocessor, yytext);
-      if (result == VTK_PARSE_OK)
-        {
-        macro = preprocessor.Macros[preprocessor.NumberOfMacros-1];
-        if (macro->Definition && !macro->IsFunction)
-          {
-          /* if macro evaluates to a constant, add it as a constant */
-          macro->IsExcluded = 1;
-          result = vtkParsePreprocess_EvaluateExpression(
-            &preprocessor, macro->Definition, &val, &is_unsigned);
-          macro->IsExcluded = 0;
-          if (result < VTK_PARSE_MACRO_UNDEFINED)
-            {
-            add_constant(
-              macro->Name, vtkstrdup(macro->Definition), 0, NULL, 1);
-            }
-          }
-        }
-    }
-
 ^[\t ]*"#"(\\\n|\\\r\n|[^\n])*  {
-      int result = 0;
       skip_trailing_comment(yytext, yyleng);
-      vtkParsePreprocess_RemoveMacro(&preprocessor,
-                                     "VTK_WORKAROUND_WINDOWS_MANGLE");
-      result = vtkParsePreprocess_HandleDirective(&preprocessor, yytext);
-      if (result == VTK_PARSE_SKIP)
-        {
-        skip_conditional_block();
-        }
-      else if (result != VTK_PARSE_OK)
-        {
-        print_preprocessor_error(result, yytext, yyleng);
-        }
-    }
+      preprocessor_directive(yytext, yyleng);
+   }
 
 \"([^\"]|\\\")*\"  {
       yylval.str = vtkstrndup(yytext, yyleng);
@@ -1078,7 +1046,14 @@ void push_buffer()
  */
 int pop_buffer()
 {
-  pop_macro();
+  if (in_macro())
+    {
+    pop_macro();
+    }
+  else
+    {
+    pop_include();
+    }
   if (buffer_stack_size == 0)
     {
     return 0;
@@ -1087,6 +1062,53 @@ int pop_buffer()
   yy_switch_to_buffer(buffer_stack[--buffer_stack_size]);
   return 1;
 }
+
+/*
+ * include stack, to tell what include is being evaluated
+ */
+static size_t include_stack_size = 0;
+static const char **include_stack = NULL;
+static int *lineno_stack = NULL;
+
+/*
+ * push the current include onto the include stack.
+ */
+void push_include(const char *filename)
+{
+  size_t n = include_stack_size;
+  if (include_stack == NULL)
+    {
+    include_stack = (const char **)malloc(4*sizeof(const char *));
+    lineno_stack = (int *)malloc(4*sizeof(int));
+    }
+  // grow the stack whenever size reaches a power of two
+  else if (n >= 4 && (n & (n-1)) == 0)
+    {
+    include_stack = (const char **)realloc(
+      include_stack, 2*n*sizeof(const char *));
+    lineno_stack = (int *)realloc(
+      lineno_stack, 2*n*sizeof(int));
+    }
+  lineno_stack[include_stack_size] = yyget_lineno();
+  yyset_lineno(0);
+  include_stack[include_stack_size++] = filename;
+  //fprintf(stderr, "s include %s\n", filename);
+}
+
+/*
+ * pop the include stack
+ */
+void pop_include()
+{
+  if (include_stack_size > 0)
+    {
+    --include_stack_size;
+    //fprintf(stderr, "e include %s\n", include_stack[include_stack_size]);
+    fclose(yyin);
+    yyset_lineno(lineno_stack[include_stack_size]);
+    }
+}
+
 
 /*
  * macro stack, to tell what macro is being evaluated
@@ -1111,10 +1133,13 @@ void push_macro(MacroInfo *macro)
       macro_stack, 2*n*sizeof(MacroInfo *));
     }
   macro_stack[macro_stack_size++] = macro;
-  macro->IsExcluded = 1;
-  macroName = macro->Name;
-  macroUsed = 0;
-  macroEnded = 0;
+  if (macro)
+    {
+    macro->IsExcluded = 1;
+    macroName = macro->Name;
+    macroUsed = 0;
+    macroEnded = 0;
+    }
 }
 
 /*
@@ -1122,20 +1147,32 @@ void push_macro(MacroInfo *macro)
  */
 void pop_macro()
 {
+  MacroInfo *macro;
+
   if (macro_stack_size > 0)
     {
-    macro_stack[--macro_stack_size]->IsExcluded = 0;
+    macro = macro_stack[--macro_stack_size];
+    if (macro)
+      {
+      macro->IsExcluded = 0;
+      }
     }
   macroEnded = 1;
 }
 
 /*
- * print an error with filename and line number.
+ * are we currently processing a macro?
+ */
+int in_macro()
+{
+  return (macro_stack_size > 0);
+}
+
+/*
+ * print a preprocessor error code with filename and line number.
  */
 void print_preprocessor_error(int result, const char *cp, size_t n)
 {
-  size_t j = 0;
-  const char *fn = "";
   const char *text = "";
 
   switch (result)
@@ -1181,15 +1218,121 @@ void print_preprocessor_error(int result, const char *cp, size_t n)
     return;
     }
 
+  print_parser_error(text, cp, n);
+}
+
+/*
+ * print an error with filename and line number.
+ */
+void print_parser_error(const char *text, const char *cp, size_t n)
+{
+  size_t j = 0;
+  const char *fn = "(none)";
+
   if (data.FileName)
     {
-    j = strlen(data.FileName);
-    while (j > 0 && data.FileName[j-1] != '/') { j--; }
-    fn = &data.FileName[j];
+    fn = data.FileName;
     }
-  fprintf(yyout, "In %s:%i: %s: ", fn, yylineno, text);
+  fprintf(yyout, "In %s:", fn);
+  for (j = 0; j < include_stack_size; j++)
+    {
+    fprintf(yyout, "%i:\nIn %s:", lineno_stack[j], include_stack[j]);
+    }
+  fprintf(yyout, "%i:\n", yylineno);
+
   if (cp)
     {
-    fprintf(yyout, "%*.*s\n", (int)n, (int)n, cp);
+    fprintf(yyout, "%s: %*.*s\n", text, (int)n, (int)n, cp);
+    }
+  else if (text)
+    {
+    fprintf(yyout, "%s.\n", text);
+    }
+}
+
+/*
+ * Execute a preprocessor directive.
+ */
+void preprocessor_directive(const char *text, size_t l)
+{
+  int result = 0;
+  size_t n = 0;
+  const char *cp = text;
+  const char *ep = text + l;
+  const char *directive = NULL;
+
+  /* find the directive, store its length in "n" */
+  while (*cp == ' ' || *cp == '\t') { cp++; }
+  if (*cp == '#') { cp++; }
+  while ((*cp == ' ' || *cp == '\t') && cp < ep) { cp++; }
+  directive = cp;
+  while (*cp >= 'a' && *cp <= 'z' && cp < ep) { cp++; }
+  n = cp - directive;
+  while ((*cp == ' ' || *cp == '\t') && cp < ep) { cp++; }
+
+  if (n == 7 && strncmp(directive, "include", n) == 0)
+    {
+    /* include files */
+    int already_loaded = 0;
+    if (*cp == '<' || *cp == '\"')
+      {
+      /* if include file begins with "vtk" */
+      if (0 && ep - cp > 4 && strncmp("vtk", &cp[1], 3))
+        {
+        const char *dp;
+        dp = vtkParsePreprocess_FindIncludeFile(&preprocessor,
+          &cp[1], (*cp != '\"'), &already_loaded);
+        if (dp)
+          {
+          yyin = fopen(dp, "r");
+          if (yyin)
+            {
+            push_include(dp);
+            push_buffer();
+            yy_switch_to_buffer(yy_create_buffer(yyin, YY_BUF_SIZE));
+            return;
+            }
+          }
+        }
+      }
+    }
+
+  /* force removal of this macro (might not be necessary anymore) */
+  vtkParsePreprocess_RemoveMacro(&preprocessor,
+                                 "VTK_WORKAROUND_WINDOWS_MANGLE");
+
+  /* let the preprocessor handle the directive */
+  result = vtkParsePreprocess_HandleDirective(&preprocessor, text);
+
+  if (result == VTK_PARSE_SKIP)
+    {
+    skip_conditional_block();
+    }
+  else if (result != VTK_PARSE_OK)
+    {
+    print_preprocessor_error(result, text, l);
+    }
+  else if (n == 6 && strncmp(directive, "define", n) == 0 &&
+           ep - cp > 4 && strncmp(cp, "VTK", 3) == 0)
+    {
+    /* macros that start with "VTK" */
+    preproc_int_t val;
+    int is_unsigned;
+    MacroInfo *macro;
+
+    macro = preprocessor.Macros[preprocessor.NumberOfMacros-1];
+    if (macro->Definition && !macro->IsFunction)
+      {
+      /* if macro evaluates to a constant, add it as a constant */
+      macro->IsExcluded = 1;
+      result = vtkParsePreprocess_EvaluateExpression(
+        &preprocessor, macro->Definition, &val, &is_unsigned);
+      macro->IsExcluded = 0;
+      if (result < VTK_PARSE_MACRO_UNDEFINED)
+        {
+        add_constant(
+          macro->Name, vtkstrdup(macro->Definition), 0, NULL, 1);
+        }
+      }
     }
 }
