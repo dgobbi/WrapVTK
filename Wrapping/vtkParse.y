@@ -3759,7 +3759,7 @@ FileInfo *vtkParse_ParseFile(
   preprocessor.IncludeDirectories = include_dirs;
   /* should explicitly check for vtkConfigure.h, or even explicitly load it */
 #ifdef VTK_USE_64BIT_IDS
-  vtkParsePreprocess_AddMacro(&preprocessor, "VTK_USE_64BIT_IDS", "1");
+  vtkParsePreprocess_AddMacro(&preprocessor, "VTK_USE_64BIT_IDS", NULL);
 #endif
 
   data.FileName = vtkstrdup(filename);

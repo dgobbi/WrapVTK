@@ -1629,6 +1629,12 @@ static int preproc_evaluate_define(
       }
     if (preproc_find_macro(info, name, &i))
       {
+      if (info->Macros[i]->Definition == definition ||
+          (definition && info->Macros[i]->Definition &&
+           strcmp(info->Macros[i]->Definition, definition) == 0))
+        {
+        return VTK_PARSE_OK;
+        }
       if (args) { free((char **)args); }
 #if PREPROC_DEBUG
       fprintf(stderr, "macro redefined %d\n", __LINE__);
@@ -1640,6 +1646,7 @@ static int preproc_evaluate_define(
     macro->IsFunction = is_function;
     macro->NumberOfArguments = n;
     macro->Arguments = args;
+
     return VTK_PARSE_OK;
     }
   else if (strncmp("undef", tokens->text, tokens->len) == 0)
