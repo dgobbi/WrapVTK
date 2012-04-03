@@ -380,17 +380,17 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
 
 ("APIENTRY"|"CALLBACK"|"WINAPI") /* misc unused win32 macros */
 
-("vtkstd::"|"std::")?"ostream"\[^a-zA-Z_] {
+("vtkstd::"|"std::")?"ostream"/[^a-zA-Z_] {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(OSTREAM);
     }
 
-("vtkstd::"|"std::")?"istream"\[^a-zA-Z_] {
+("vtkstd::"|"std::")?"istream"/[^a-zA-Z_] {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(ISTREAM);
     }
 
-("vtkstd::"|"std::")?"string"\[^a-zA-Z_] {
+("vtkstd::"|"std::")?"string"/[^a-zA-Z_] {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(StdString);
     }

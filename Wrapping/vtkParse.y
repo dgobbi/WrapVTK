@@ -588,6 +588,21 @@ const char *getSig()
   return signature;
 }
 
+/* get the signature length */
+size_t getSigLength()
+{
+  return sigLength;
+}
+
+/* reset the sig to the specified length */
+void resetSig(size_t n)
+{
+  if (n < sigLength)
+    {
+    sigLength = n;
+    }
+}
+
 /* reallocate Signature if n chars cannot be appended */
 void checkSigSize(size_t n)
 {
@@ -1528,7 +1543,7 @@ template:
     template_parameters '>'
     {
       chopSig();
-      if (getSig()[strlen(getSig())-1] == '>') { postSig(" "); }
+      if (getSig()[getSigLength()-1] == '>') { postSig(" "); }
       postSig("> ");
       clearTypeId();
     };
@@ -1627,7 +1642,7 @@ op_func:
     op_sig { postSig(")"); } func_trailer
     {
       closeSig();
-      currentFunction->Name = vtkstrdup($<str>1);
+      currentFunction->Name = vtkstrcat("operator", $<str>1);
       currentFunction->Comment = vtkstrdup(getComment());
       vtkParseDebug("Parsed operator", currentFunction->Name);
     };
@@ -2085,7 +2100,7 @@ templated_id:
     class_id '<' { markSig(); postSig($<str>1); postSig("<"); }
     angle_bracket_contents '>'
     {
-      chopSig(); if (getSig()[strlen(getSig())-1] == '>') { postSig(" "); }
+      chopSig(); if (getSig()[getSigLength()-1] == '>') { postSig(" "); }
       postSig(">"); $<str>$ = vtkstrdup(copySig()); clearTypeId();
     };
 
@@ -2119,7 +2134,7 @@ scope_resolution:
 
 type_simple:
     type_primitive
-  | type_id
+  | type_id;
 
 type_id:
     StdString { typeSig($<str>1); $<integer>$ = VTK_PARSE_STRING; }
@@ -2637,7 +2652,7 @@ common_bracket_item:
         const char *cp;
         chopSig();
         cp = getSig();
-        l = strlen(cp);
+        l = getSigLength();
         if (l != 0) { c1 = cp[l-1]; }
         if (c1 != 0 && c1 != '(' && c1 != '[' && c1 != '=')
           {
@@ -2661,7 +2676,29 @@ common_bracket_item:
   | DOUBLE_COLON { chopSig(); postSig("::"); }
   | keyword { postSig($<str>1); postSig(" "); }
   | literal { postSig($<str>1); postSig(" "); }
-  | type_simple;
+  | type_primitive
+  | type_id
+    {
+      int c1 = 0;
+      size_t l;
+      const char *cp;
+      chopSig();
+      cp = getSig();
+      l = getSigLength();
+      if (l != 0) { c1 = cp[l-1]; }
+      while (((c1 >= 'A' && c1 <= 'Z') || (c1 >= 'a' && c1 <= 'z') ||
+              (c1 >= '0' && c1 <= '9') || c1 == '_') && l != 0)
+        {
+        --l;
+        c1 = cp[l-1];
+        }
+      if (l < 2 || cp[l-1] != ':' || cp[l-2] != ':')
+        {
+        cp = add_const_scope(&cp[l]);
+        resetSig(l);
+        postSig(cp);
+        }
+    };
 
 any_bracket_contents:
   | any_bracket_contents any_bracket_item;
@@ -2696,13 +2733,13 @@ angle_brackets_sig:
     '<'
     {
       chopSig();
-      if (getSig()[strlen(getSig())-1] == '<') { postSig(" "); }
+      if (getSig()[getSigLength()-1] == '<') { postSig(" "); }
       postSig("<");
     }
     angle_bracket_contents '>'
     {
       chopSig();
-      if (getSig()[strlen(getSig())-1] == '>') { postSig(" "); }
+      if (getSig()[getSigLength()-1] == '>') { postSig(" "); }
       postSig("> ");
     };
 
@@ -3176,7 +3213,7 @@ void add_constant(const char *name, const char *value,
 
     for (i = 0; i < n; i++)
       {
-      if (strcmp(cptr[i]->Name, con->Name))
+      if (strcmp(cptr[i]->Name, con->Name) == 0)
         {
         break;
         }
