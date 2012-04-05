@@ -43,12 +43,15 @@ size_t vtkParse_IdentifierLength(const char *text);
 /**
  * Skip over a name, including any namespace prefixes and
  * any template arguments.  Return the number of characters.
+ * Examples are "name", "::name", "name<arg>", "name::name2",
+ * "::name::name2<arg1,arg2>".
  */
 size_t vtkParse_NameLength(const char *text);
 
 /**
- * Skip over a name, including any template parameters, but stopping
+ * Skip over a name, including any template arguments, but stopping
  * if a '::' is encoutered.  Return the number of characters.
+ * Examples are "name" and "name<arg>"
  */
 size_t vtkParse_UnscopedNameLength(const char *text);
 
@@ -74,8 +77,17 @@ size_t vtkParse_BasicTypeFromString(
 /**
  * Generate a ValueInfo by parsing the type from the provided text.
  * Only simple text strings are supported, e.g. "const T **".
+ * Returns the number of characters consumed.
  */
-void vtkParse_ValueInfoFromString(ValueInfo *val, const char *text);
+size_t vtkParse_ValueInfoFromString(ValueInfo *val, const char *text);
+
+/**
+ * Generate a declaration string from a ValueInfo struct.  If the
+ * "nf" arg is set, the returned string must be freed.
+ * Only simple text strings are supported, e.g. "const T **".
+ * The variable or typedef name, if present, is ignored.
+ */
+const char *vtkParse_ValueInfoToString(ValueInfo *val, int *nf);
 
 /**
  * Expand a typedef within a variable, parameter, or typedef declaration.
@@ -100,10 +112,8 @@ void vtkParse_ExpandValues(
   ValueInfo *valinfo, unsigned long n, const char *name[], const char *val[]);
 
 /**
- * Search for all occurrences of "name" and replace with the corresponding
- * "val", return the initial string if no replacements occurred, otherwise
- * return a new string allocated with malloc.
- */
+ * Search and replace, return the initial string if no replacements
+ * occurred, otherwise return a new string allocated with malloc. */
 const char *vtkParse_StringReplace(
   const char *str1, unsigned long n, const char *name[], const char *val[]);
 
@@ -140,7 +150,7 @@ void vtkParse_InstantiateClassTemplate(
  * printed to stderr and NULL will be returned.
  */
 void vtkParse_IntantiateFunctionTemplate(
-  FunctionInfo *data, unsigned long n, const char *args);
+  FunctionInfo *data, unsigned long n, const char *args[]);
 
 /**
  * Get a zero-terminated array of the types in vtkTemplateMacro.

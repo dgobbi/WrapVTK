@@ -111,7 +111,7 @@ static size_t vtkparse_quote_len(const char *text)
 }
 
 /* skip over an expression in brackets */
-size_t vtkparse_bracket_len(const char *text)
+static size_t vtkparse_bracket_len(const char *text)
 {
   size_t i = 0;
   size_t j = 1;
@@ -171,6 +171,7 @@ size_t vtkParse_UnscopedNameLength(const char *text)
     if (text[i-1] != '>')
       {
       fprintf(stderr, "Bad template args %*.*s\n", (int)i, (int)i, text);
+      assert(text[i-1] == '>');
       return 0;
       }
     }
@@ -496,7 +497,7 @@ struct vtk_type_struct
 {
   size_t len;
   const char *name;
-  int type;
+  unsigned int type;
 };
 
 /* Simple utility for mapping VTK types to VTK_PARSE types */
@@ -817,7 +818,7 @@ size_t vtkParse_BasicTypeFromString(
 }
 
 /* Parse a type description in "text" and generate a typedef named "name" */
-void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
+size_t vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
 {
   const char *cp = text;
   size_t n;
@@ -889,10 +890,10 @@ void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
   while (*cp == '[')
     {
     n = vtkparse_bracket_len(cp);
-    if (n > 0)
+    if (n > 1)
       {
       cp++;
-      n--;
+      n -= 2;
       }
     while (*cp == ' ' || *cp == '\t') { cp++; n--; }
     while (n > 0 && (cp[n-1] == ' ' || cp[n-1] == '\t')) { n--; }
@@ -908,7 +909,7 @@ void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
 
     cp += n;
     while (*cp == ' ' || *cp == '\t') { cp++; }
-    if (cp[n] == ']') { cp++; }
+    if (*cp == ']') { cp++; }
     while (*cp == ' ' || *cp == '\t') { cp++; }
     }
 
@@ -926,9 +927,131 @@ void vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
   /* (Add code here to look for "=" followed by a value ) */
 
   data->Type = (pointer_bits | ref_bits | base_bits);
+
+  return (cp - text);
 }
 
+/* Generate a C++ declaration string from a ValueInfo struct */
+const char *vtkParse_ValueInfoToString(
+  ValueInfo *data, int *needs_free)
+{
+  unsigned int pointer_bits = (data->Type & VTK_PARSE_POINTER_MASK);
+  unsigned int ref_bits = (data->Type & VTK_PARSE_REF);
+  unsigned int qualifier_bits = (data->Type & VTK_PARSE_CONST);
+  unsigned int reverse_bits = 0;
+  unsigned int pointer_type = 0;
+  const char *classname = data->Class;
+  const char *name = data->Name;
+  char *text = NULL;
+  size_t i = 0;
+  size_t l;
+  unsigned long j = 0;
 
+  if (pointer_bits == 0 && ref_bits == 0 && qualifier_bits == 0 &&
+      name == NULL)
+    {
+    if (needs_free)
+      {
+      *needs_free = 0;
+      }
+    return classname;
+    }
+
+  /* compute the length of string to allocate */
+  l = 6; /* for const */
+  l += 4*7; /* for pointers */
+  l += 1; /* for ref */
+  l += strlen(classname) + 1; /* for type */
+  for (j = 0; j < data->NumberOfDimensions; j++)
+    {
+    l += 2 + strlen(data->Dimensions[j]);
+    }
+  l++; /* for NULL */
+  l += 4; /* for safety */
+
+  text = (char *)malloc(l);
+
+  if ((qualifier_bits & VTK_PARSE_CONST) != 0)
+    {
+    strcpy(&text[i], "const ");
+    i += 6;
+    }
+
+  strcpy(&text[i], classname);
+  i += strlen(classname);
+  text[i++] = ' ';
+  
+  while (pointer_bits != 0)
+    {
+    reverse_bits <<= 2;
+    reverse_bits |= (pointer_bits & VTK_PARSE_POINTER_LOWMASK);
+    pointer_bits = ((pointer_bits >> 2) & VTK_PARSE_POINTER_MASK);
+    }
+
+  while (reverse_bits != 0)
+    {
+    pointer_type = (reverse_bits & VTK_PARSE_POINTER_LOWMASK);
+    if (pointer_type == VTK_PARSE_ARRAY ||
+        (reverse_bits == VTK_PARSE_POINTER &&
+         data->NumberOfDimensions > 0))
+      {
+      break;
+      }
+    else if (pointer_type == VTK_PARSE_POINTER)
+      {
+      text[i++] = '*';
+      }
+    else if (pointer_type == VTK_PARSE_CONST_POINTER)
+      {
+      strcpy(&text[i], "*const ");
+      i += 7;
+      }
+
+    reverse_bits = ((reverse_bits >> 2) & VTK_PARSE_POINTER_MASK);
+    }
+
+  if (ref_bits)
+    {
+    text[i++] = '&';
+    }
+
+  if (name)
+    {
+    strcpy(&text[i], name);
+    i += strlen(name);
+    }
+
+  for (j = 0; j < data->NumberOfDimensions; j++)
+    {
+    text[i++] = '[';
+    if (data->Dimensions[j])
+      {
+      strcpy(&text[i], data->Dimensions[j]);
+      i += strlen(data->Dimensions[j]);
+      }
+    text[i++] = ']';
+    }
+
+  text[i] = '\0';
+
+  /* make sure enough space was allocated */
+  assert(i < l);
+
+  if (needs_free)
+    {
+    *needs_free = 1;
+    }
+
+  return text;
+}
+
+/* Search and replace, return the initial string if no replacements
+ * occurred, otherwise return a new string allocated with malloc. */
+const char *vtkParse_StringReplace(
+  const char *str1, unsigned long n, const char *name[], const char *val[])
+{
+  return vtkparse_string_replace(str1, n, name, val, 0);
+}
 
 /* substitute generic types and values with actual types and values */
 static void func_substitution(
@@ -1033,15 +1156,6 @@ static void class_substitution(
     }
 }
 
-
-/* Search and replace, return the initial string if no replacements
- * occurred, otherwise return a new string allocated with malloc. */
-const char *vtkParse_StringReplace(
-  const char *str1, unsigned long n, const char *name[], const char *val[])
-{
-  return vtkparse_string_replace(str1, n, name, val, 0);
-}
-
 /* Extract template args from a comma-separated list enclosed
  * in angle brackets.  Returns zero if no angle brackets found. */
 size_t vtkParse_DecomposeTemplatedType(
@@ -1065,10 +1179,13 @@ size_t vtkParse_DecomposeTemplatedType(
       }
     }
 
-  new_text = (char *)malloc(i + 1);
-  strncpy(new_text, text, i);
-  new_text[i] = '\0';
-  *classname = new_text;
+  if (classname)
+    {
+    new_text = (char *)malloc(i + 1);
+    strncpy(new_text, text, i);
+    new_text[i] = '\0';
+    *classname = new_text;
+    }
 
   if (text[i] == '<')
     {
@@ -1153,7 +1270,6 @@ void vtkParse_FreeTemplateDecomposition(
     }
 }
 
-
 /* Instantiate a class template by substituting the provided arguments. */
 void vtkParse_InstantiateClassTemplate(
   ClassInfo *data, unsigned long n, const char *args[])
@@ -1192,22 +1308,19 @@ void vtkParse_InstantiateClassTemplate(
       }
     }
 
-  if (n < m)
+  new_args = (const char **)malloc((m + 1)*sizeof(char **));
+  for (i = 0; i < n; i++)
     {
-    new_args = (const char **)malloc(m*sizeof(char **));
-    for (i = 0; i < n; i++)
-      {
-      new_args[i] = args[i];
-      }
-    for (i = n; i < m; i++)
-      {
-      new_args[i] = t->Arguments[i]->Value;
-      }
-    args = new_args;
+    new_args[i] = args[i];
     }
+  for (i = n; i < m; i++)
+    {
+    new_args[i] = t->Arguments[i]->Value;
+    }
+  args = new_args;
 
-  arg_names = (const char **)malloc(m*sizeof(char **));
-  arg_types = (ValueInfo **)malloc(m*sizeof(ValueInfo *));
+  arg_names = (const char **)malloc((m + 1)*sizeof(char **));
+  arg_types = (ValueInfo **)malloc((m + 1)*sizeof(ValueInfo *));
   for (i = 0; i < m; i++)
     {
     arg_names[i] = t->Arguments[i]->Name;
@@ -1255,18 +1368,19 @@ void vtkParse_InstantiateClassTemplate(
     }
   new_name[k++] = '>';
   new_name[k] = '\0';
+
+  /* also substitute instantiated classname for bare classname */
+  arg_names[m] = data->Name;
   data->Name = vtkParse_CopyString(new_name, k);
-  free((char *)new_name);
+  args[m] = data->Name;
+  arg_types[m] = NULL;
+  free(new_name);
 
   /* do the template arg substitution */
-  class_substitution(data, m, arg_names, args, arg_types);
+  class_substitution(data, m+1, arg_names, args, arg_types);
 
   /* free all allocated arrays */
-  if (new_args)
-    {
-    free((char **)new_args);
-    }
-
+  free((char **)new_args);
   free((char **)arg_names);
 
   for (i = 0; i < m; i++)
