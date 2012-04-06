@@ -58,6 +58,11 @@ void vtkParse_IncludeDirectory(const char *dirname);
 const char *vtkParse_FindIncludeFile(const char *filename);
 
 /**
+ * Parse included files, in addition to the main header file.
+ */
+void vtkParse_SetRecursive(int option);
+
+/**
  * Ignore BTX/ETX markers
  */
 void vtkParse_SetIgnoreBTX(int option);

@@ -341,6 +341,7 @@ const char    *currentEnumValue = 0;
 int            parseDebug;
 parse_access_t access_level = VTK_ACCESS_PUBLIC;
 int            IgnoreBTX = 0;
+int            Recursive = 0;
 
 /* functions from vtkParse.l */
 void print_parser_error(const char *text, const char *cp, size_t n);
@@ -373,7 +374,6 @@ void handle_complex_type(ValueInfo *val, unsigned int datatype,
                          unsigned int extra, const char *funcSig);
 void handle_function_type(ValueInfo *arg, const char *name,
                           const char *funcSig);
-
 void outputSetVectorMacro(const char *var, unsigned int argType,
                           const char *typeText, unsigned long n);
 void outputGetVectorMacro(const char *var, unsigned int argType,
@@ -8190,6 +8190,19 @@ void vtkParse_SetIgnoreBTX(int option)
   else
     {
     IgnoreBTX = 0;
+    }
+}
+
+/* Set a flag to recurse into included files */
+void vtkParse_SetRecursive(int option)
+{
+  if (option)
+    {
+    Recursive = 1;
+    }
+  else
+    {
+    Recursive = 0;
     }
 }
 

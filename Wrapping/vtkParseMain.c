@@ -127,7 +127,7 @@ OptionInfo *vtkParse_GetCommandLineOptions()
   return &options;
 }
 
-int main(int argc, char *argv[])
+FileInfo *vtkParse_Main(int argc, char *argv[], FILE **ofile_p)
 {
   int argi;
   int has_options = 0;
@@ -252,11 +252,6 @@ int main(int argc, char *argv[])
     data->MainClass->IsAbstract = 1;
     }
 
-  vtkParseOutput(ofile, data);
-
-  fclose(ofile);
-
-  vtkParse_Free(data);
-
-  return 0;
+  *ofile_p = ofile;
+  return data;
 }

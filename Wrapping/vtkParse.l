@@ -1308,8 +1308,8 @@ void preprocessor_directive(const char *text, size_t l)
     int already_loaded = 0;
     if (*cp == '<' || *cp == '\"')
       {
-      /* if include file begins with "vtk" */
-      if (0 && ep - cp > 4 && strncmp("vtk", &cp[1], 3) == 0)
+      /* if asked to recurse into header files */
+      if (Recursive && ep - cp > 3)
         {
         const char *dp;
         dp = vtkParsePreprocess_FindIncludeFile(&preprocessor,

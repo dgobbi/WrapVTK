@@ -35,6 +35,9 @@
 #ifndef VTK_PARSE_MAIN_H
 #define VTK_PARSE_MAIN_H
 
+#include "vtkParseData.h"
+#include <stdio.h>
+
 /**
  * Options for the wrappers
  */
@@ -58,6 +61,11 @@ extern "C" {
  * Return the options provided on the command line
  */
 OptionInfo *vtkParse_GetCommandLineOptions();
+
+/**
+ * The main function, returns the result of the parse and the output file
+ */
+FileInfo *vtkParse_Main(int argc, char *argv[], FILE **ofile);
 
 #ifdef __cplusplus
 } /* extern "C" */

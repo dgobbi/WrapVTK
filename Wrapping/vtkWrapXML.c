@@ -1745,16 +1745,19 @@ void vtkWrapXML_Namespace(wrapxml_state_t *w, NamespaceInfo *data)
   vtkWrapXML_ElementEnd(w, elementName);
 }
 
-/**
- * Main function that takes a parsed FileInfo from vtk and produces a
- * specific vtkXML format for desired functions to be incorporated in SimVTK
- * (ie. certain add, remove, get and set methods).
- *
- * This method is called from vtkParseMain.c
- */
-void vtkParseOutput(FILE *fp, FileInfo *data)
+int main(int argc, char *argv[])
 {
+  FILE *fp;
+  FileInfo *data;
   wrapxml_state_t ws;
+
+  /* recurse through included headers (off for now) */
+  vtkParse_SetRecursive(0);
+
+  /* handle args, parse header, get output file handle */
+  data = vtkParse_Main(argc, argv, &fp);
+
+  /* a struct to keep track of things */
   ws.file = fp;
   ws.indentation = 0;
   ws.unclosed = 0;
@@ -1770,4 +1773,10 @@ void vtkParseOutput(FILE *fp, FileInfo *data)
 
   /* print the closing tag */
   vtkWrapXML_FileFooter(&ws, data);
+
+  fclose(fp);
+
+  vtkParse_Free(data);
+
+  return 0;
 }
