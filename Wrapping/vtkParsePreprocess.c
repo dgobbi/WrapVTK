@@ -2179,7 +2179,7 @@ static int preproc_include_file(
           line[j++] = tbuf[i++];
           in_quote = 0;
           }
-        else if (tbuf[i] == '\\' && tbuf[i] == '\"')
+        else if (tbuf[i] == '\\' && tbuf[i+1] == '\"')
           {
           line[j++] = tbuf[i++];
           line[j++] = tbuf[i++];
@@ -2189,7 +2189,7 @@ static int preproc_include_file(
           line[j++] = tbuf[i++];
           }
         }
-      else if (tbuf[i] == '/' && tbuf[i] == '*')
+      else if (tbuf[i] == '/' && tbuf[i+1] == '*')
         {
         line[j++] = tbuf[i++];
         line[j++] = tbuf[i++];
