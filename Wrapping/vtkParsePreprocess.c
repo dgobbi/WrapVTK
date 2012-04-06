@@ -1644,6 +1644,7 @@ int preproc_evaluate_conditional(
 static int preproc_evaluate_if(
   PreprocessInfo *info, preproc_tokenizer *tokens)
 {
+  MacroInfo *macro;
   int v1, v2;
   int result = VTK_PARSE_OK;
 
@@ -1669,7 +1670,8 @@ static int preproc_evaluate_if(
 #endif
           return VTK_PARSE_SYNTAX_ERROR;
           }
-        v2 = (vtkParsePreprocess_GetMacro(info, tokens->text) != NULL);
+        macro = preproc_find_macro(info, tokens);
+        v2 = (macro && !macro->IsExcluded);
         preproc_next(tokens);
         result = ( (v1 ^ v2) ? VTK_PARSE_SKIP : VTK_PARSE_OK);
         }
@@ -2262,9 +2264,8 @@ static int preproc_evaluate_include(
 
     if (tokens->tok == TOK_ID)
       {
-      MacroInfo *macro;
-      macro = vtkParsePreprocess_GetMacro(info, cp);
-      if (macro && macro->Definition)
+      MacroInfo *macro = preproc_find_macro(info, tokens);
+      if (macro && !macro->IsExcluded && macro->Definition)
         {
         cp = macro->Definition;
         }
@@ -3044,9 +3045,8 @@ const char *vtkParsePreprocess_ProcessString(
 
     if (tokens.tok == TOK_ID)
       {
-      rp[i+l] = '\0';
-      MacroInfo *macro = vtkParsePreprocess_GetMacro(info, rp);
-      if (macro)
+      MacroInfo *macro = preproc_find_macro(info, &tokens);
+      if (macro && !macro->IsExcluded)
         {
         const char *args = NULL;
         int expand = 1;
