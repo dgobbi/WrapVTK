@@ -69,8 +69,7 @@ typedef struct _MacroInfo
 typedef struct _PreprocessInfo
 {
   const char    *FileName;         /* the file that is being parsed */
-  unsigned long  NumberOfMacros;
-  MacroInfo    **Macros;
+  MacroInfo   ***MacroHashTable;   /* hash table for macro lookup */
   unsigned long  NumberOfIncludeDirectories;
   const char   **IncludeDirectories;
   unsigned long  NumberOfIncludeFiles; /* all included files */

@@ -26,6 +26,35 @@
 
 #define PREPROC_DEBUG 0
 
+/** Size of hash table must be a power of two */
+#define PREPROC_HASH_TABLE_SIZE 1024u
+
+/** Hashes for preprocessor keywords */
+#define HASH_IFDEF      0x0fa4b283u
+#define HASH_IFNDEF     0x04407ab1u
+#define HASH_IF         0x00597834u
+#define HASH_ELIF       0x7c964b25u
+#define HASH_ELSE       0x7c964c6eu
+#define HASH_ENDIF      0x0f60b40bu
+#define HASH_DEFINED    0x088998d4u
+#define HASH_DEFINE     0xf8804a70u
+#define HASH_UNDEF      0x10823b97u
+#define HASH_INCLUDE    0x9e36af89u
+#define HASH_ERROR      0x0f6321efu
+#define HASH_LINE       0x7c9a15adu
+#define HASH_PRAGMA     0x1566a9fdu
+
+/** Various possible char types */
+#define CPRE_WHITE      0x01  /* space, tab, carriage return */
+#define CPRE_ID         0x02  /* A-Z a-z and _ */
+#define CPRE_DIGIT      0x04  /* 0-9 */
+#define CPRE_IDGIT      0x06  /* 0-9 A-Z a-z and _ */
+#define CPRE_EXP        0x08  /* EPep (exponents for floats) */
+#define CPRE_SIGN       0x10  /* +- (sign for floats) */
+#define CPRE_QUOTE      0x20  /* " and ' */
+#define CPRE_HEX        0x40  /* 0-9A-Fa-f */
+#define CPRE_OCT        0x80  /* 0-7 */
+
 /** Preprocessor tokens. */
 enum _preproc_token_t
 {
@@ -66,8 +95,9 @@ enum _preproc_token_t
 typedef struct _preproc_tokenizer
 {
   int tok;
-  size_t len;
+  unsigned int hash;
   const char *text;
+  size_t len;
 } preproc_tokenizer;
 
 /** Extend dynamic arrays in a progression of powers of two.
@@ -110,17 +140,6 @@ static preproc_uint_t string_to_preproc_uint(const char *cp, int base)
   return strtoull(cp, NULL, base);
 #endif
 }
-
-/** Various possible char types */
-#define CPRE_WHITE   0x01  /* space, tab, carriage return */
-#define CPRE_ID      0x02  /* A-Z a-z and _ */
-#define CPRE_DIGIT   0x04  /* 0-9 */
-#define CPRE_IDGIT   0x06  /* 0-9 A-Z a-z and _ */
-#define CPRE_EXP     0x08  /* EPep (exponents for floats) */
-#define CPRE_SIGN    0x10  /* +- (sign for floats) */
-#define CPRE_QUOTE   0x20  /* " and ' */
-#define CPRE_HEX     0x40  /* 0-9A-Fa-f */
-#define CPRE_OCT     0x80  /* 0-7 */
 
 /** Array for quick lookup of char types */
 static unsigned char preproc_charbits[] = {
@@ -300,6 +319,22 @@ static void preproc_skip_name(const char **cpp)
   *cpp = cp;
 }
 
+/** A simple 32-bit hash function based on "djb2". */
+static unsigned int preproc_hash_name(const char **cpp)
+{
+  const char *cp = (*cpp);
+  int h = 5381;
+
+  if (preproc_chartype(*cp, CPRE_ID))
+    {
+    do { h = (h << 5) + h + (unsigned char)*cp++; }
+    while (preproc_chartype(*cp, CPRE_IDGIT));
+    }
+
+  *cpp = cp;
+  return h;
+}
+
 /** Skip over a number. */
 static void preproc_skip_number(const char **cpp)
 {
@@ -328,29 +363,34 @@ static int preproc_next(preproc_tokenizer *tokens)
 {
   const char *cp = tokens->text + tokens->len;
   preproc_skip_whitespace(&cp);
-  tokens->text = cp;
 
   if (preproc_chartype(*cp, CPRE_ID))
     {
     const char *ep = cp;
-    preproc_skip_name(&ep);
-    tokens->len = ep - cp;
+    unsigned int h = preproc_hash_name(&ep);
     tokens->tok = TOK_ID;
+    tokens->hash = h;
+    tokens->text = cp;
+    tokens->len = ep - cp;
     }
   else if (preproc_chartype(*cp, CPRE_QUOTE))
     {
     const char *ep = cp;
     preproc_skip_quotes(&ep);
-    tokens->len = ep - cp;
     tokens->tok = (*cp == '\"' ? TOK_STRING : TOK_CHAR);
+    tokens->hash = 0;
+    tokens->text = cp;
+    tokens->len = ep - cp;
     }
   else if (preproc_chartype(*cp, CPRE_DIGIT) ||
            (cp[0] == '.' && preproc_chartype(cp[1], CPRE_DIGIT)))
     {
     const char *ep = cp;
     preproc_skip_number(&ep);
-    tokens->len = ep - cp;
     tokens->tok = TOK_NUMBER;
+    tokens->hash = 0;
+    tokens->text = cp;
+    tokens->len = ep - cp;
     }
   else
     {
@@ -421,8 +461,10 @@ static int preproc_next(preproc_tokenizer *tokens)
         break;
       }
 
-    tokens->len = l;
     tokens->tok = t;
+    tokens->hash = 0;
+    tokens->text = cp;
+    tokens->len = l;
     }
 
   return tokens->tok;
@@ -432,9 +474,48 @@ static int preproc_next(preproc_tokenizer *tokens)
 static void preproc_init(preproc_tokenizer *tokens, const char *text)
 {
   tokens->tok = 0;
-  tokens->len = 0;
+  tokens->hash = 0;
   tokens->text = text;
+  tokens->len = 0;
   preproc_next(tokens);
+}
+
+/** Tokenize and compare two strings */
+static int preproc_identical(const char *text1, const char *text2)
+{
+  int result = 1;
+
+  if (text1 != text2)
+    {
+    result = 0;
+
+    if (text1 && text2)
+      {
+      preproc_tokenizer t1;
+      preproc_tokenizer t2;
+
+      preproc_init(&t1, text1);
+      preproc_init(&t2, text2);
+
+      do
+        {
+        if (t1.tok != t2.tok ||
+            t1.hash != t2.hash ||
+            t1.len != t2.len ||
+            strncmp(t1.text, t2.text, t1.len) != 0)
+          {
+          break;
+          }
+        preproc_next(&t1);
+        preproc_next(&t2);
+        }
+      while (t1.tok && t2.tok);
+
+      result = (t1.tok == 0 && t2.tok == 0);
+      }
+    }
+
+  return result;
 }
 
 /** Duplicate the first n bytes of a string. */
@@ -449,23 +530,8 @@ static const char *preproc_strndup(const char *in, size_t n)
   return res;
 }
 
-/** Free a preprocessor macro struct. */
-static void preproc_free_macro(MacroInfo *info)
-{
-  free(info);
-}
-
-/** Add a preprocessor macro to the PreprocessInfo. */
-static void preproc_add_macro(
-  PreprocessInfo *info, MacroInfo *macro)
-{
-  info->Macros = (MacroInfo **)preproc_array_check(
-    info->Macros, sizeof(MacroInfo *), info->NumberOfMacros);
-  info->Macros[info->NumberOfMacros++] = macro;
-}
-
-/** A simple way to add a preprocessor macro definition. */
-static MacroInfo *preproc_add_macro_definition(
+/** Create a new preprocessor macro. */
+static MacroInfo *preproc_new_macro(
   PreprocessInfo *info, const char *name, const char *definition)
 {
   MacroInfo *macro = (MacroInfo *)malloc(sizeof(MacroInfo));
@@ -498,56 +564,177 @@ static MacroInfo *preproc_add_macro_definition(
     }
 
   macro->IsExternal = info->IsExternal;
-  preproc_add_macro(info, macro);
 
   return macro;
 }
 
-/** Find a preprocessor macro, return 0 if not found. */
-static int preproc_find_macro(
-  PreprocessInfo *info, const char *name, unsigned long *idx)
+/** Free a preprocessor macro struct. */
+static void preproc_free_macro(MacroInfo *info)
 {
-  unsigned long i, n;
-  size_t m;
-  const char *cp = name;
+  free(info);
+}
 
-  preproc_skip_name(&cp);
-  m = cp - name;
+/** Find a preprocessor macro, return 0 if not found. */
+static MacroInfo *preproc_find_macro(
+  PreprocessInfo *info, preproc_tokenizer *token)
+{
+  unsigned int m = PREPROC_HASH_TABLE_SIZE - 1;
+  unsigned int i = (token->hash & m);
+  const char *name = token->text;
+  size_t l = token->len;
+  MacroInfo ***htable = info->MacroHashTable;
+  MacroInfo **hptr;
+  const char *mname;
 
-  n = info->NumberOfMacros;
-  for (i = 0; i < n; i++)
+  if (htable && ((hptr = htable[i]) != NULL) && *hptr)
     {
-    if (strncmp(name, info->Macros[i]->Name, m) == 0 &&
-        info->Macros[i]->Name[m] == '\0')
+    do
       {
-      *idx = i;
-      return 1;
+      mname = (*hptr)->Name;
+      if (mname[0] == name[0] &&
+          strncmp(mname, name, l) == 0 &&
+          mname[l] == '\0')
+        {
+        return *hptr;
+        }
+      hptr++;
+      }
+    while (*hptr);
+    }
+
+  return NULL;
+}
+
+/** Return the address of the macro within the hash table.
+  * If "insert" is nonzero, add a new location if macro not found. */
+static MacroInfo **preproc_macro_location(
+  PreprocessInfo *info, preproc_tokenizer *token, int insert)
+{
+  MacroInfo ***htable = info->MacroHashTable;
+  unsigned int m = PREPROC_HASH_TABLE_SIZE - 1;
+  unsigned int i = (token->hash & m);
+  const char *name = token->text;
+  size_t l = token->len;
+  size_t n;
+  MacroInfo **hptr;
+  const char *mname;
+
+  if (htable == NULL)
+    {
+    if (!insert)
+      {
+      return NULL;
+      }
+
+    m = PREPROC_HASH_TABLE_SIZE;
+    htable = (MacroInfo ***)malloc(m*sizeof(MacroInfo **));
+    info->MacroHashTable = htable;
+    do { *htable++ = NULL; } while (--m);
+    htable = info->MacroHashTable;
+    }
+
+  hptr = htable[i];
+
+  if (hptr == NULL)
+    {
+    if (!insert)
+      {
+      return NULL;
+      }
+
+    hptr = (MacroInfo **)malloc(2*sizeof(MacroInfo *));
+    hptr[0] = NULL;
+    hptr[1] = NULL;
+    htable[i] = hptr;
+    }
+  else if (*hptr)
+    {
+    /* see if macro is already there */
+    n = 0;
+    do
+      {
+      mname = (*hptr)->Name;
+      if (mname[0] == name[0] &&
+          strncmp(mname, name, l) == 0 &&
+          mname[l] == '\0')
+        {
+        break;
+        }
+      n++;
+      hptr++;
+      }
+    while (*hptr);
+
+    if (*hptr == NULL)
+      {
+      if (!insert)
+        {
+        return NULL;
+        }
+
+      /* if n+1 is a power of two, double allocated space */
+      if (n > 0 && (n & (n+1)) == 0)
+        {
+        hptr = htable[i];
+        hptr = (MacroInfo **)realloc(hptr, (2*(n+1))*sizeof(MacroInfo *));
+        htable[i] = hptr;
+        hptr += n;
+        }
+
+      /* add a terminating null */
+      hptr[1] = NULL;
       }
     }
 
-  *idx = 0;
-  return 0;
+  return hptr;
 }
 
-/** Remove a preprocessor macro.  Returns 1 if macro not found. */
+/** Remove a preprocessor macro.  Returns 0 if macro not found. */
 static int preproc_remove_macro(
-  PreprocessInfo *info, const char *name)
+  PreprocessInfo *info, preproc_tokenizer *token)
 {
-  unsigned long i, n;
+  MacroInfo **hptr;
 
-  if (preproc_find_macro(info, name, &i))
+  hptr = preproc_macro_location(info, token, 0);
+
+  if (hptr && *hptr)
     {
-    preproc_free_macro(info->Macros[i]);
-    n = info->NumberOfMacros-1;
-    for (; i < n; i++)
+    preproc_free_macro(*hptr);
+
+    do
       {
-      info->Macros[i] = info->Macros[i+1];
+      hptr[0] = hptr[1];
+      hptr++;
       }
-    info->NumberOfMacros = n;
+    while (*hptr);
+
     return 1;
     }
 
   return 0;
+}
+
+/** A simple way to add a preprocessor macro definition. */
+static MacroInfo *preproc_add_macro_definition(
+  PreprocessInfo *info, const char *name, const char *definition)
+{
+  preproc_tokenizer token;
+  MacroInfo *macro;
+  MacroInfo **macro_p;
+
+  preproc_init(&token, name);
+
+  macro = preproc_new_macro(info, name, definition);
+  macro_p = preproc_macro_location(info, &token, 1);
+#if PREPROC_DEBUG
+  if (*macro_p)
+    {
+    fprintf(stderr, "duplicate macro definition %s\n", name);
+    }
+#endif
+  *macro_p = macro;
+
+  return macro;
 }
 
 /** Skip over parentheses, return nonzero if not closed. */
@@ -717,10 +904,9 @@ static int preproc_evaluate_single(
   while (tokens->tok == TOK_ID)
     {
     /* handle the "defined" keyword */
-    if (strncmp("defined", tokens->text, tokens->len) == 0)
+    if (tokens->hash == HASH_DEFINED && tokens->len == 7 &&
+        strncmp("defined", tokens->text, tokens->len) == 0)
       {
-      unsigned long i;
-      const char *name;
       int paren = 0;
       preproc_next(tokens);
 
@@ -736,7 +922,11 @@ static int preproc_evaluate_single(
 #endif
         return VTK_PARSE_SYNTAX_ERROR;
         }
-      name = tokens->text;
+
+      /* do the name lookup */
+      *is_unsigned = 0;
+      *val = (preproc_find_macro(info, tokens) != 0);
+
       preproc_next(tokens);
       if (paren)
         {
@@ -750,25 +940,20 @@ static int preproc_evaluate_single(
         preproc_next(tokens);
         }
 
-      /* do the name lookup */
-      *is_unsigned = 0;
-      *val = (preproc_find_macro(info, name, &i) != 0);
-
       return result;
       }
     else
       {
       /* look up and evaluate the macro */
-      const char *name = tokens->text;
+      MacroInfo *macro = preproc_find_macro(info, tokens);
       const char *args = NULL;
       const char *expansion = NULL;
       const char *cp;
-      MacroInfo *macro = vtkParsePreprocess_GetMacro(info, name);
       preproc_next(tokens);
       *val = 0;
       *is_unsigned = 0;
 
-      if (macro == NULL)
+      if (macro == NULL || macro->IsExcluded)
         {
         return VTK_PARSE_MACRO_UNDEFINED;
         }
@@ -1462,20 +1647,20 @@ static int preproc_evaluate_if(
   int v1, v2;
   int result = VTK_PARSE_OK;
 
-  if (strncmp("if", tokens->text, tokens->len) == 0 ||
-      strncmp("ifdef", tokens->text, tokens->len) == 0 ||
-      strncmp("ifndef", tokens->text, tokens->len) == 0)
+  if (tokens->hash == HASH_IF ||
+      tokens->hash == HASH_IFDEF ||
+      tokens->hash == HASH_IFNDEF)
     {
     if (info->ConditionalDepth == 0)
       {
-      if (strncmp("if", tokens->text, tokens->len) == 0)
+      if (tokens->hash == HASH_IF)
         {
         preproc_next(tokens);
         result = preproc_evaluate_conditional(info, tokens);
         }
       else
         {
-        v1 = (strncmp("ifndef", tokens->text, tokens->len) != 0);
+        v1 = (tokens->hash != HASH_IFNDEF);
         preproc_next(tokens);
         if (tokens->tok != TOK_ID)
           {
@@ -1484,7 +1669,7 @@ static int preproc_evaluate_if(
 #endif
           return VTK_PARSE_SYNTAX_ERROR;
           }
-        v2 = (vtkParsePreprocess_GetMacro(info, tokens->text) != 0);
+        v2 = (vtkParsePreprocess_GetMacro(info, tokens->text) != NULL);
         preproc_next(tokens);
         result = ( (v1 ^ v2) ? VTK_PARSE_SKIP : VTK_PARSE_OK);
         }
@@ -1508,8 +1693,8 @@ static int preproc_evaluate_if(
       info->ConditionalDepth++;
       }
     }
-  else if (strncmp("elif", tokens->text, tokens->len) == 0 ||
-           strncmp("else", tokens->text, tokens->len) == 0)
+  else if (tokens->hash == HASH_ELIF ||
+           tokens->hash == HASH_ELSE)
     {
     if (info->ConditionalDepth == 0)
       {
@@ -1519,7 +1704,7 @@ static int preproc_evaluate_if(
     else if (info->ConditionalDepth == 1 &&
              info->ConditionalDone == 0)
       {
-      if (strncmp("elif", tokens->text, tokens->len) == 0)
+      if (tokens->hash == HASH_ELIF)
         {
         preproc_next(tokens);
         result = preproc_evaluate_conditional(info, tokens);
@@ -1537,7 +1722,7 @@ static int preproc_evaluate_if(
         }
       }
     }
-  else if (strncmp("endif", tokens->text, tokens->len) == 0)
+  else if (tokens->hash == HASH_ENDIF)
     {
     preproc_next(tokens);
     if (info->ConditionalDepth > 0)
@@ -1561,16 +1746,16 @@ static int preproc_evaluate_if(
 static int preproc_evaluate_define(
   PreprocessInfo *info, preproc_tokenizer *tokens)
 {
+  MacroInfo **macro_p;
   MacroInfo *macro;
   int is_function;
   const char *name;
   size_t namelen;
   const char *definition = 0;
-  unsigned long i;
   unsigned long n = 0;
   const char **args = NULL;
 
-  if (strncmp("define", tokens->text, tokens->len) == 0)
+  if (tokens->hash == HASH_DEFINE)
     {
     preproc_next(tokens);
     if (tokens->tok != TOK_ID)
@@ -1581,6 +1766,7 @@ static int preproc_evaluate_define(
       return VTK_PARSE_SYNTAX_ERROR;
       }
 
+    macro_p = preproc_macro_location(info, tokens, 1);
     name = tokens->text;
     namelen = tokens->len;
     preproc_next(tokens);
@@ -1627,11 +1813,11 @@ static int preproc_evaluate_define(
       {
       definition = tokens->text;
       }
-    if (preproc_find_macro(info, name, &i))
+
+    macro = *macro_p;
+    if (macro)
       {
-      if (info->Macros[i]->Definition == definition ||
-          (definition && info->Macros[i]->Definition &&
-           strcmp(info->Macros[i]->Definition, definition) == 0))
+      if (preproc_identical(macro->Definition, definition))
         {
         return VTK_PARSE_OK;
         }
@@ -1642,14 +1828,15 @@ static int preproc_evaluate_define(
       return VTK_PARSE_MACRO_REDEFINED;
       }
 
-    macro = preproc_add_macro_definition(info, name, definition);
+    macro = preproc_new_macro(info, name, definition);
     macro->IsFunction = is_function;
     macro->NumberOfArguments = n;
     macro->Arguments = args;
+    *macro_p = macro;
 
     return VTK_PARSE_OK;
     }
-  else if (strncmp("undef", tokens->text, tokens->len) == 0)
+  else if (tokens->hash == HASH_UNDEF)
     {
     preproc_next(tokens);
     if (tokens->tok != TOK_ID)
@@ -1659,8 +1846,7 @@ static int preproc_evaluate_define(
 #endif
       return VTK_PARSE_SYNTAX_ERROR;
       }
-    name = tokens->text;
-    preproc_remove_macro(info, name);
+    preproc_remove_macro(info, tokens);
     return VTK_PARSE_OK;
     }
 
@@ -2068,7 +2254,7 @@ static int preproc_evaluate_include(
   const char *cp;
   const char *filename;
 
-  if (strncmp("include", tokens->text, tokens->len) == 0)
+  if (tokens->hash == HASH_INCLUDE)
     {
     preproc_next(tokens);
 
@@ -2141,12 +2327,18 @@ int vtkParsePreprocess_HandleDirective(
 
   if (tokens.tok == TOK_ID)
     {
-    if (strncmp("ifdef", tokens.text, tokens.len) == 0 ||
-        strncmp("ifndef", tokens.text, tokens.len) == 0 ||
-        strncmp("if", tokens.text, tokens.len) == 0 ||
-        strncmp("elif", tokens.text, tokens.len) == 0 ||
-        strncmp("else", tokens.text, tokens.len) == 0 ||
-        strncmp("endif", tokens.text, tokens.len) == 0)
+    if ((tokens.hash == HASH_IFDEF && tokens.len == 5 &&
+         strncmp("ifdef", tokens.text, tokens.len) == 0) ||
+        (tokens.hash == HASH_IFNDEF && tokens.len == 6 &&
+         strncmp("ifndef", tokens.text, tokens.len) == 0) ||
+        (tokens.hash == HASH_IF && tokens.len == 2 &&
+         strncmp("if", tokens.text, tokens.len) == 0) ||
+        (tokens.hash == HASH_ELIF && tokens.len == 4 &&
+         strncmp("elif", tokens.text, tokens.len) == 0) ||
+        (tokens.hash == HASH_ELSE && tokens.len == 4 &&
+         strncmp("else", tokens.text, tokens.len) == 0) ||
+        (tokens.hash == HASH_ENDIF && tokens.len == 5 &&
+         strncmp("endif", tokens.text, tokens.len) == 0))
       {
       result = preproc_evaluate_if(info, &tokens);
       while (tokens.tok) { preproc_next(&tokens); }
@@ -2172,12 +2364,15 @@ int vtkParsePreprocess_HandleDirective(
       }
     else if (info->ConditionalDepth == 0)
       {
-      if (strncmp("define", tokens.text, tokens.len) == 0 ||
-          strncmp("undef", tokens.text, tokens.len) == 0)
+      if ((tokens.hash == HASH_DEFINE && tokens.len == 6 &&
+           strncmp("define", tokens.text, tokens.len) == 0) ||
+          (tokens.hash == HASH_UNDEF && tokens.len == 5 &&
+           strncmp("undef", tokens.text, tokens.len) == 0))
         {
         result = preproc_evaluate_define(info, &tokens);
         }
-      else if (strncmp("include", tokens.text, tokens.len) == 0)
+      else if (tokens.hash == HASH_INCLUDE && tokens.len == 7 &&
+               strncmp("include", tokens.text, tokens.len) == 0)
         {
         result = preproc_evaluate_include(info, &tokens);
         }
@@ -2369,16 +2564,28 @@ void vtkParsePreprocess_AddStandardMacros(
 int vtkParsePreprocess_AddMacro(
   PreprocessInfo *info, const char *name, const char *definition)
 {
-  unsigned long i;
+  preproc_tokenizer token;
+  MacroInfo **macro_p;
   MacroInfo *macro;
 
-  if (preproc_find_macro(info, name, &i))
+  preproc_init(&token, name);
+  macro_p = preproc_macro_location(info, &token, 1);
+  if (*macro_p)
     {
-    return VTK_PARSE_MACRO_REDEFINED;
+    macro = *macro_p;
+    if (preproc_identical(macro->Definition, definition))
+      {
+      return VTK_PARSE_OK;
+      }
+    else
+      {
+      return VTK_PARSE_MACRO_REDEFINED;
+      }
     }
 
-  macro = preproc_add_macro_definition(info, name, definition);
+  macro = preproc_new_macro(info, name, definition);
   macro->IsExternal = 1;
+  *macro_p = macro;
 
   return VTK_PARSE_OK;
 }
@@ -2389,14 +2596,15 @@ int vtkParsePreprocess_AddMacro(
 MacroInfo *vtkParsePreprocess_GetMacro(
   PreprocessInfo *info, const char *name)
 {
-  unsigned long i = 0;
+  preproc_tokenizer token;
+  MacroInfo *macro;
 
-  if (preproc_find_macro(info, name, &i))
+  preproc_init(&token, name);
+  macro = preproc_find_macro(info, &token);
+
+  if (macro && !macro->IsExcluded)
     {
-    if (!info->Macros[i]->IsExcluded)
-      {
-      return info->Macros[i];
-      }
+    return macro;
     }
 
   return NULL;
@@ -2406,9 +2614,13 @@ MacroInfo *vtkParsePreprocess_GetMacro(
  * Remove a preprocessor macro.
  */
 int vtkParsePreprocess_RemoveMacro(
- PreprocessInfo *info, const char *name)
+  PreprocessInfo *info, const char *name)
 {
-  if (preproc_remove_macro(info, name))
+  preproc_tokenizer token;
+
+  preproc_init(&token, name);
+
+  if (preproc_remove_macro(info, &token))
     {
     return VTK_PARSE_OK;
     }
@@ -3045,8 +3257,7 @@ void vtkParsePreprocess_InitMacro(MacroInfo *macro)
 void vtkParsePreprocess_InitPreprocess(PreprocessInfo *info)
 {
   info->FileName = NULL;
-  info->NumberOfMacros = 0;
-  info->Macros = NULL;
+  info->MacroHashTable = NULL;
   info->NumberOfIncludeDirectories = 0;
   info->IncludeDirectories = NULL;
   info->NumberOfIncludeFiles = 0;

@@ -1348,17 +1348,17 @@ void preprocessor_directive(const char *text, size_t l)
            ep - cp > 4 && strncmp(cp, "VTK", 3) == 0)
     {
     /* macros that start with "VTK" */
-    preproc_int_t val;
-    int is_unsigned;
     MacroInfo *macro;
 
-    macro = preprocessor.Macros[preprocessor.NumberOfMacros-1];
-    if (macro->Definition && !macro->IsFunction)
+    macro = vtkParsePreprocess_GetMacro(&preprocessor, cp);
+    if (macro && macro->Definition && !macro->IsFunction)
       {
       /* if macro evaluates to a constant, add it as a constant */
       macro->IsExcluded = 1;
-      result = vtkParsePreprocess_EvaluateExpression(
-        &preprocessor, macro->Definition, &val, &is_unsigned);
+      if (guess_constant_type(macro->Definition) == 0)
+        {
+        result = VTK_PARSE_MACRO_UNDEFINED;
+        }
       macro->IsExcluded = 0;
       if (result < VTK_PARSE_MACRO_UNDEFINED)
         {

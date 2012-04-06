@@ -133,7 +133,7 @@ static unsigned int vtkParseTypeMap[] =
 int yylex(void);
 
 /* the "preprocessor" */
-PreprocessInfo preprocessor = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+PreprocessInfo preprocessor = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 /* global variables */
 FileInfo      *data;
@@ -173,6 +173,7 @@ void add_using(const char *name, int is_namespace);
 void start_enum(const char *enumname);
 void add_enum(const char *name, const char *value);
 void end_enum();
+unsigned int guess_constant_type(const char *value);
 void add_constant(const char *name, const char *value,
                   unsigned int type, const char *typeclass, int global);
 const char *add_const_scope(const char *name);
