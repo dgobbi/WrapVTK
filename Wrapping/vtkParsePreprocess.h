@@ -228,9 +228,20 @@ const char *vtkParsePreprocess_FindIncludeFile(
 void vtkParsePreprocess_InitMacro(MacroInfo *symbol);
 
 /**
+ * Free a preprocessor macro struct
+ */
+void vtkParsePreprocess_FreeMacro(MacroInfo *macro);
+
+/**
  * Initialize a preprocessor struct.
  */
-void vtkParsePreprocess_InitPreprocess(PreprocessInfo *info);
+void vtkParsePreprocess_Init(
+  PreprocessInfo *info, const char *filename);
+
+/**
+ * Free a preprocessor struct and its contents;
+ */
+void vtkParsePreprocess_Free(PreprocessInfo *info);
 
 #ifdef __cplusplus
 } /* extern "C" */

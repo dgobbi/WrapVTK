@@ -421,7 +421,7 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
 
 {ID}  {
       const char *name = vtkstrndup(yytext, yyleng);
-      MacroInfo *macro = vtkParsePreprocess_GetMacro(&preprocessor, name);
+      MacroInfo *macro = vtkParsePreprocess_GetMacro(preprocessor, name);
       int expanded = 0;
       if (macro)
         {
@@ -433,7 +433,7 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
           if (args)
             {
             emacro = vtkParsePreprocess_ExpandMacro(
-              &preprocessor, macro, args);
+              preprocessor, macro, args);
             if (!emacro)
               {
               print_preprocessor_error(VTK_PARSE_MACRO_NUMARGS, NULL, 0);
@@ -449,13 +449,12 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
           int r;
           macro->IsExcluded = 1;
           r = vtkParsePreprocess_EvaluateExpression(
-             &preprocessor, macro->Definition, &val, &is_unsigned);
+             preprocessor, macro->Definition, &val, &is_unsigned);
           macro->IsExcluded = 0;
           /* if it isn't a constant expression, then expand it */
           if (r >= VTK_PARSE_MACRO_UNDEFINED)
             {
-            emacro = vtkParsePreprocess_ExpandMacro(
-              &preprocessor, macro, NULL);
+            emacro = vtkParsePreprocess_ExpandMacro(preprocessor, macro, NULL);
             if (!emacro)
               {
               print_preprocessor_error(r, NULL, 0);
@@ -473,8 +472,7 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
           push_macro(macro);
           push_buffer();
           yy_switch_to_buffer(yy_scan_string(emacro));
-          vtkParsePreprocess_FreeMacroExpansion(
-            &preprocessor, macro, emacro);
+          vtkParsePreprocess_FreeMacroExpansion(preprocessor, macro, emacro);
           expanded = 1;
           }
         }
@@ -938,7 +936,7 @@ int skip_conditional_block()
       }
     linebuf[i++] = c;
 
-    result = vtkParsePreprocess_HandleDirective(&preprocessor, linebuf);
+    result = vtkParsePreprocess_HandleDirective(preprocessor, linebuf);
     if (result != VTK_PARSE_SKIP && result != VTK_PARSE_OK)
       {
       print_preprocessor_error(result, linebuf, i);
@@ -1312,7 +1310,7 @@ void preprocessor_directive(const char *text, size_t l)
       if (Recursive && ep - cp > 3)
         {
         const char *dp;
-        dp = vtkParsePreprocess_FindIncludeFile(&preprocessor,
+        dp = vtkParsePreprocess_FindIncludeFile(preprocessor,
           &cp[1], (*cp != '\"'), &already_loaded);
         if (dp)
           {
@@ -1330,11 +1328,11 @@ void preprocessor_directive(const char *text, size_t l)
     }
 
   /* force removal of this macro (might not be necessary anymore) */
-  vtkParsePreprocess_RemoveMacro(&preprocessor,
+  vtkParsePreprocess_RemoveMacro(preprocessor,
                                  "VTK_WORKAROUND_WINDOWS_MANGLE");
 
   /* let the preprocessor handle the directive */
-  result = vtkParsePreprocess_HandleDirective(&preprocessor, text);
+  result = vtkParsePreprocess_HandleDirective(preprocessor, text);
 
   if (result == VTK_PARSE_SKIP)
     {
@@ -1350,7 +1348,7 @@ void preprocessor_directive(const char *text, size_t l)
     /* macros that start with "VTK" */
     MacroInfo *macro;
 
-    macro = vtkParsePreprocess_GetMacro(&preprocessor, cp);
+    macro = vtkParsePreprocess_GetMacro(preprocessor, cp);
     if (macro && macro->Definition && !macro->IsFunction)
       {
       /* if macro evaluates to a constant, add it as a constant */

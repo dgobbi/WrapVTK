@@ -917,6 +917,8 @@ static int preproc_evaluate_single(
         }
       if (tokens->tok != TOK_ID)
         {
+        *val = 0;
+        *is_unsigned = 0;
 #if PREPROC_DEBUG
         fprintf(stderr, "syntax error %d\n", __LINE__);
 #endif
@@ -1043,6 +1045,8 @@ static int preproc_evaluate_single(
     return VTK_PARSE_PREPROC_STRING;
     }
 
+  *val = 0;
+  *is_unsigned = 0;
 #if PREPROC_DEBUG
   fprintf(stderr, "syntax error %d \"%*.*s\"\n", __LINE__,
           (int)tokens->len, (int)tokens->len, tokens->text);
@@ -1861,6 +1865,7 @@ static int preproc_evaluate_define(
 static int preproc_add_include_file(PreprocessInfo *info, const char *name)
 {
   unsigned long i, n;
+  char *dp;
 
   n = info->NumberOfIncludeFiles;
   for (i = 0; i < n; i++)
@@ -1871,9 +1876,12 @@ static int preproc_add_include_file(PreprocessInfo *info, const char *name)
       }
     }
 
+  dp = (char *)malloc(strlen(name)+1);
+  strcpy(dp, name);
+
   info->IncludeFiles = (const char **)preproc_array_check(
     (char **)info->IncludeFiles, sizeof(char *), info->NumberOfIncludeFiles);
-  info->IncludeFiles[info->NumberOfIncludeFiles++] = name;
+  info->IncludeFiles[info->NumberOfIncludeFiles++] = dp;
 
   return 1;
 }
@@ -3007,7 +3015,10 @@ const char *vtkParsePreprocess_ProcessString(
 
     if (tokens.tok == TOK_STRING && last_tok == TOK_STRING)
       {
-      while (i > 0 && rp[i] != '\"') { --i; }
+      if (i > 0)
+        {
+        do { --i; } while (i > 0 && rp[i] != '\"');
+        }
       cp++;
       }
 
@@ -3252,9 +3263,31 @@ void vtkParsePreprocess_InitMacro(MacroInfo *macro)
 }
 
 /**
+ * Free a preprocessor macro struct
+ */
+void vtkParsePreprocess_FreeMacro(MacroInfo *macro)
+{
+  unsigned long i, n;
+
+  free((char *)macro->Name);
+  free((char *)macro->Definition);
+  free((char *)macro->Comment);
+
+  n = macro->NumberOfArguments;
+  for (i = 0; i < n; i++)
+    {
+    free((char *)macro->Arguments[i]);
+    }
+  free(macro->Arguments);
+
+  free(macro);
+}
+
+/**
  * Initialize a preprocessor struct
  */
-void vtkParsePreprocess_InitPreprocess(PreprocessInfo *info)
+void vtkParsePreprocess_Init(
+  PreprocessInfo *info, const char *filename)
 {
   info->FileName = NULL;
   info->MacroHashTable = NULL;
@@ -3265,4 +3298,54 @@ void vtkParsePreprocess_InitPreprocess(PreprocessInfo *info)
   info->IsExternal = 0;
   info->ConditionalDepth = 0;
   info->ConditionalDone = 0;
+
+  if (filename)
+    {
+    info->FileName = preproc_strndup(filename, strlen(filename));
+    }
+}
+
+/**
+ * Free a preprocessor struct and its contents
+ */
+void vtkParsePreprocess_Free(PreprocessInfo *info)
+{
+  unsigned long i, n;
+  MacroInfo **mptr;
+
+  free((char *)info->FileName);
+
+  if (info->MacroHashTable)
+    {
+    n = PREPROC_HASH_TABLE_SIZE;
+    for (i = 0; i < n; i++)
+      {
+      mptr = info->MacroHashTable[i];
+      if (mptr)
+        {
+        while (*mptr)
+          {
+          vtkParsePreprocess_FreeMacro(*mptr++);
+          }
+        }
+      free(info->MacroHashTable[i]);
+      }
+    free(info->MacroHashTable);
+    }
+   
+  n = info->NumberOfIncludeDirectories;
+  for (i = 0; i < n; i++)
+    {
+    free((char *)info->IncludeDirectories[i]);
+    }
+  free(info->IncludeDirectories);
+
+  n = info->NumberOfIncludeFiles;
+  for (i = 0; i < n; i++)
+    {
+    free((char *)info->IncludeFiles[i]);
+    }
+  free(info->IncludeFiles);
+
+  free(info);
 }

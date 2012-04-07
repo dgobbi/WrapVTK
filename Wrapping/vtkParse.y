@@ -132,27 +132,37 @@ static unsigned int vtkParseTypeMap[] =
 /* the tokenizer */
 int yylex(void);
 
-/* the "preprocessor" */
-PreprocessInfo preprocessor = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
 /* global variables */
-FileInfo      *data;
+FileInfo      *data = NULL;
+int            parseDebug;
 
+/* the "preprocessor" */
+PreprocessInfo *preprocessor = NULL;
+
+/* include dirs specified on the command line */
+unsigned long  NumberOfIncludeDirectories= 0;
+const char   **IncludeDirectories;
+
+/* macros specified on the command line */
+unsigned long  NumberOfDefinitions = 0;
+const char   **Definitions;
+
+/* names of classes marked as "concrete" */
 unsigned long  NumberOfConcreteClasses = 0;
 const char   **ConcreteClasses;
 
+/* options that can be set by the programs that use the parser */
+int            IgnoreBTX = 0;
+int            Recursive = 0;
+
+/* various state variables */
 NamespaceInfo *currentNamespace = NULL;
 ClassInfo     *currentClass = NULL;
 FunctionInfo  *currentFunction = NULL;
 TemplateArgs  *currentTemplate = NULL;
-
-const char    *currentEnumName = 0;
-const char    *currentEnumValue = 0;
-
-int            parseDebug;
+const char    *currentEnumName = NULL;
+const char    *currentEnumValue = NULL;
 parse_access_t access_level = VTK_ACCESS_PUBLIC;
-int            IgnoreBTX = 0;
-int            Recursive = 0;
 
 /* functions from vtkParse.l */
 void print_parser_error(const char *text, const char *cp, size_t n);
@@ -315,6 +325,28 @@ static const char *vtkstrcat7(const char *str1, const char *str2,
   cp[5] = str6;
   cp[6] = str7;
   return vtkstrncat(7, cp);
+}
+
+static size_t vtkidlen(const char *text)
+{
+  size_t i = 0;
+  char c = text[0];
+
+  if ((c >= 'a' && c <= 'z') ||
+      (c >= 'A' && c <= 'Z') ||
+       c == '_')
+    {
+    do
+      {
+      c = text[++i];
+      }
+    while ((c >= 'a' && c <= 'z') ||
+           (c >= 'A' && c <= 'Z') ||
+           (c >= '0' && c <= '9') ||
+           c == '_');
+    }
+
+  return i;
 }
 
 /*----------------------------------------------------------------
@@ -3110,7 +3142,7 @@ unsigned int guess_constant_type(const char *valstring)
   if (is_name)
     {
     MacroInfo *macro = vtkParsePreprocess_GetMacro(
-      &preprocessor, valstring);
+      preprocessor, valstring);
 
     if (macro && !macro->IsFunction)
       {
@@ -3123,7 +3155,7 @@ unsigned int guess_constant_type(const char *valstring)
     preproc_int_t val;
     int is_unsigned;
     int result = vtkParsePreprocess_EvaluateExpression(
-      &preprocessor, valstring, &val, &is_unsigned);
+      preprocessor, valstring, &val, &is_unsigned);
 
     if (result == VTK_PARSE_PREPROC_DOUBLE)
       {
@@ -3525,6 +3557,7 @@ void reject_function()
 {
   vtkParse_InitFunction(currentFunction);
   startSig();
+  getMacro();
 }
 
 /* a simple routine that updates a few variables */
@@ -3818,25 +3851,53 @@ FileInfo *vtkParse_ParseFile(
   int ret;
   FileInfo *file_info;
   char *main_class;
-  const char **include_dirs;
 
   /* "data" is a global variable used by the parser */
   data = (FileInfo *)malloc(sizeof(FileInfo));
   vtkParse_InitFile(data);
 
   /* "preprocessor" is a global struct used by the parser */
-  i = preprocessor.NumberOfIncludeDirectories;
-  include_dirs = preprocessor.IncludeDirectories;
-  preprocessor.NumberOfIncludeDirectories = 0;
-  preprocessor.IncludeDirectories = NULL;
-  vtkParsePreprocess_InitPreprocess(&preprocessor);
-  vtkParsePreprocess_AddStandardMacros(&preprocessor, VTK_PARSE_NATIVE);
-  preprocessor.FileName = vtkstrdup(filename);
-  preprocessor.NumberOfIncludeDirectories = i;
-  preprocessor.IncludeDirectories = include_dirs;
+  preprocessor = (PreprocessInfo *)malloc(sizeof(PreprocessInfo));
+  vtkParsePreprocess_Init(preprocessor, filename);
+  vtkParsePreprocess_AddStandardMacros(preprocessor, VTK_PARSE_NATIVE);
+
+  /* add include files specified on the command line */
+  for (i = 0; i < NumberOfIncludeDirectories; i++)
+    {
+    vtkParsePreprocess_IncludeDirectory(preprocessor, IncludeDirectories[i]);
+    } 
+
+  /* add macros specified on the command line */
+  for (i = 0; i < NumberOfDefinitions; i++)
+    {
+    const char *cp = Definitions[i];
+
+    if (*cp == 'U')
+      {
+      vtkParsePreprocess_RemoveMacro(preprocessor, &cp[1]);
+      }
+    else if (*cp == 'D')
+      {
+      const char *definition = &cp[1];
+      while (*definition != '=' && *definition != '\0')
+        {
+        definition++;
+        }
+      if (*definition == '=')
+        {
+        definition++;
+        }
+      else
+        {
+        definition = NULL;
+        }
+      vtkParsePreprocess_AddMacro(preprocessor, &cp[1], definition);
+      }
+    }
+
   /* should explicitly check for vtkConfigure.h, or even explicitly load it */
 #ifdef VTK_USE_64BIT_IDS
-  vtkParsePreprocess_AddMacro(&preprocessor, "VTK_USE_64BIT_IDS", NULL);
+  vtkParsePreprocess_AddMacro(preprocessor, "VTK_USE_64BIT_IDS", NULL);
 #endif
 
   data->FileName = vtkstrdup(filename);
@@ -3903,8 +3964,11 @@ FileInfo *vtkParse_ParseFile(
       break;
       }
     }
-
   free(main_class);
+
+  vtkParsePreprocess_Free(preprocessor);
+  preprocessor = NULL;
+  macroName = NULL;
 
   file_info = data;
   data = NULL;
@@ -4027,33 +4091,91 @@ void vtkParse_SetClassProperty(
        strcmp(property, "CONCRETE") == 0 ||
        strcmp(property, "Concrete") == 0)
      {
+     char *cp = (char *)malloc(strlen(classname) + 1);
+     strcpy(cp, classname);
+
      vtkParse_AddStringToArray(&ConcreteClasses,
                                &NumberOfConcreteClasses,
-                               vtkstrdup(classname));
+                               cp);
      }
 }
 
 /** Define a preprocessor macro. Function macros are not supported.  */
 void vtkParse_DefineMacro(const char *name, const char *definition)
 {
-  vtkParsePreprocess_AddMacro(&preprocessor, name, definition);
+  size_t n = vtkidlen(name);
+  size_t l;
+  char *cp;
+
+  if (definition == NULL)
+    {
+    definition = "";
+    }
+
+  l = n + strlen(definition) + 3;
+  cp = (char *)malloc(l);
+  cp[0] = 'D';
+  strncpy(&cp[1], name, n);
+  cp[n+1] = '\0';
+  if (definition[0] != '\0')
+    {
+    cp[n+1] = '=';
+    strcpy(&cp[n+2], definition);
+    }
+  cp[l] = '\0';
+
+  vtkParse_AddStringToArray(&Definitions, &NumberOfDefinitions, cp);
 }
 
 /** Undefine a preprocessor macro.  */
 void vtkParse_UndefineMacro(const char *name)
 {
-  vtkParsePreprocess_RemoveMacro(&preprocessor, name);
+  size_t n = vtkidlen(name);
+  char *cp;
+
+  cp = (char *)malloc(n+2);
+  cp[0] = 'U';
+  strncpy(&cp[1], name, n);
+  cp[n+1] = '\0';
+
+  vtkParse_AddStringToArray(&Definitions, &NumberOfDefinitions, cp);
 }
 
 /** Add an include directory, for use with the "-I" option.  */
 void vtkParse_IncludeDirectory(const char *dirname)
 {
-  vtkParsePreprocess_IncludeDirectory(&preprocessor, dirname);
+  size_t n = strlen(dirname);
+  char *cp;
+  unsigned long i;
+
+  for (i = 0; i < NumberOfIncludeDirectories; i++)
+    {
+    if (strncmp(IncludeDirectories[i], dirname, n) == 0 &&
+        IncludeDirectories[i][n] == '\0')
+      {
+      return;
+      }
+    }
+
+  cp = (char *)malloc(n+1);
+  strcpy(cp, dirname);
+
+  vtkParse_AddStringToArray(
+    &IncludeDirectories, &NumberOfIncludeDirectories, cp);
 }
 
 /** Return the full path to a header file.  */
 const char *vtkParse_FindIncludeFile(const char *filename)
 {
+  static PreprocessInfo info = {0, 0, 0, 0, 0, 0, 0, 0, 0};
   int val;
-  return vtkParsePreprocess_FindIncludeFile(&preprocessor, filename, 0, &val);
+  unsigned long i;
+
+  /* add include files specified on the command line */
+  for (i = 0; i < NumberOfIncludeDirectories; i++)
+    {
+    vtkParsePreprocess_IncludeDirectory(&info, IncludeDirectories[i]);
+    } 
+
+  return vtkParsePreprocess_FindIncludeFile(&info, filename, 0, &val);
 }
