@@ -1308,7 +1308,7 @@ void vtkParse_InstantiateClassTemplate(
       }
     }
 
-  new_args = (const char **)malloc((m + 1)*sizeof(char **));
+  new_args = (const char **)malloc(m*sizeof(char **));
   for (i = 0; i < n; i++)
     {
     new_args[i] = args[i];
@@ -1319,8 +1319,8 @@ void vtkParse_InstantiateClassTemplate(
     }
   args = new_args;
 
-  arg_names = (const char **)malloc((m + 1)*sizeof(char **));
-  arg_types = (ValueInfo **)malloc((m + 1)*sizeof(ValueInfo *));
+  arg_names = (const char **)malloc(m*sizeof(char **));
+  arg_types = (ValueInfo **)malloc(m*sizeof(ValueInfo *));
   for (i = 0; i < m; i++)
     {
     arg_names[i] = t->Arguments[i]->Name;
@@ -1369,15 +1369,11 @@ void vtkParse_InstantiateClassTemplate(
   new_name[k++] = '>';
   new_name[k] = '\0';
 
-  /* also substitute instantiated classname for bare classname */
-  arg_names[m] = data->Name;
   data->Name = vtkParse_CopyString(new_name, k);
-  args[m] = data->Name;
-  arg_types[m] = NULL;
   free(new_name);
 
   /* do the template arg substitution */
-  class_substitution(data, m+1, arg_names, args, arg_types);
+  class_substitution(data, m, arg_names, args, arg_types);
 
   /* free all allocated arrays */
   free((char **)new_args);
