@@ -51,9 +51,9 @@ typedef struct _HierarchyEntry
   const char  *Name;            /* the class or type name */
   const char  *HeaderFile;      /* header file the class is defined in */
   const char  *Module;          /* library the class is defined in */
-  int          NumberOfTemplateArgs; /* number of template arguments */
-  const char **TemplateArgs;
-  const char **TemplateArgDefaults;
+  int          NumberOfTemplateParameters; /* number of template params */
+  const char **TemplateParameters;
+  const char **TemplateDefaults;
   int          NumberOfProperties;   /* number of properties */
   const char **Properties;
   int          NumberOfSuperClasses; /* number of superclasses */

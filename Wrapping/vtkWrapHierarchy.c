@@ -121,26 +121,26 @@ static char *append_scope_to_line(
  * Append template info
  */
 static char *append_template_to_line(
-  char *line, size_t *m, size_t *maxlen, TemplateArgs *template_args)
+  char *line, size_t *m, size_t *maxlen, TemplateInfo *template_info)
 {
-  TemplateArg *arg;
+  ValueInfo *param;
   unsigned long j;
 
   line = append_to_line(line, "<", m, maxlen);
 
-  for (j = 0; j < template_args->NumberOfArguments; j++)
+  for (j = 0; j < template_info->NumberOfParameters; j++)
     {
-    arg = template_args->Arguments[j];
-    if (arg->Name)
+    param = template_info->Parameters[j];
+    if (param->Name)
       {
-      line = append_to_line(line, arg->Name, m, maxlen);
+      line = append_to_line(line, param->Name, m, maxlen);
       }
-    if (arg->Value && arg->Value[0] != '\n')
+    if (param->Value && param->Value[0] != '\n')
       {
       line = append_to_line(line, "=", m, maxlen);
-      line = append_to_line(line, arg->Value, m, maxlen);
+      line = append_to_line(line, param->Value, m, maxlen);
       }
-    if (j+1 < template_args->NumberOfArguments)
+    if (j+1 < template_info->NumberOfParameters)
       {
       line = append_to_line(line, ",", m, maxlen);
       }

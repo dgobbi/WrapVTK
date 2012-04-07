@@ -218,9 +218,9 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
     entry->Name = NULL;
     entry->HeaderFile = NULL;
     entry->Module = NULL;
-    entry->NumberOfTemplateArgs = 0;
-    entry->TemplateArgs = NULL;
-    entry->TemplateArgDefaults = NULL;
+    entry->NumberOfTemplateParameters = 0;
+    entry->TemplateParameters = NULL;
+    entry->TemplateDefaults = NULL;
     entry->NumberOfProperties = 0;
     entry->Properties = NULL;
     entry->NumberOfSuperClasses = 0;
@@ -252,18 +252,18 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
         {
         if (j == 0)
           {
-          entry->TemplateArgs = (const char **)malloc(sizeof(char *));
-          entry->TemplateArgDefaults = (const char **)malloc(sizeof(char *));
+          entry->TemplateParameters = (const char **)malloc(sizeof(char *));
+          entry->TemplateDefaults = (const char **)malloc(sizeof(char *));
           }
         else
           {
-          entry->TemplateArgs = (const char **)realloc(
-            (char **)entry->TemplateArgs, (j+1)*sizeof(char *));
-          entry->TemplateArgDefaults = (const char **)realloc(
-            (char **)entry->TemplateArgDefaults, (j+1)*sizeof(char *));
+          entry->TemplateParameters = (const char **)realloc(
+            (char **)entry->TemplateParameters, (j+1)*sizeof(char *));
+          entry->TemplateDefaults = (const char **)realloc(
+            (char **)entry->TemplateDefaults, (j+1)*sizeof(char *));
           }
-        entry->NumberOfTemplateArgs++;
-        entry->TemplateArgDefaults[j] = NULL;
+        entry->NumberOfTemplateParameters++;
+        entry->TemplateDefaults[j] = NULL;
 
         m = skip_expression(&line[i], delims);
         while (m > 0 && (line[i+m-1] == ' ' || line[i+m-1] == '\t'))
@@ -274,7 +274,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
         cp = (char *)malloc(m+1);
         strncpy(cp, &line[i], m);
         cp[m] = '\0';
-        entry->TemplateArgs[j] = cp;
+        entry->TemplateParameters[j] = cp;
         i += m;
         i += skip_space(&line[i]);
 
@@ -290,7 +290,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
           cp = (char *)malloc(m+1);
           strncpy(cp, &line[i], m);
           cp[m] = '\0';
-          entry->TemplateArgDefaults[j] = cp;
+          entry->TemplateDefaults[j] = cp;
           i += m;
           i += skip_space(&line[i]);
           }
@@ -560,18 +560,18 @@ void vtkParseHierarchy_Free(HierarchyInfo *info)
     entry = &info->Entries[i];
     free((char *)entry->Name);
     free((char *)entry->HeaderFile);
-    for (j = 0; j < entry->NumberOfTemplateArgs; j++)
+    for (j = 0; j < entry->NumberOfTemplateParameters; j++)
       {
-      free((char *)entry->TemplateArgs[j]);
-      if (entry->TemplateArgDefaults[j])
+      free((char *)entry->TemplateParameters[j]);
+      if (entry->TemplateDefaults[j])
         {
-        free((char *)entry->TemplateArgDefaults[j]);
+        free((char *)entry->TemplateDefaults[j]);
         }
       }
-    if (entry->NumberOfTemplateArgs)
+    if (entry->NumberOfTemplateParameters)
       {
-      free((char **)entry->TemplateArgs);
-      free((char **)entry->TemplateArgDefaults);
+      free((char **)entry->TemplateParameters);
+      free((char **)entry->TemplateDefaults);
       }
     for (j = 0; j < entry->NumberOfSuperClasses; j++)
       {
@@ -656,7 +656,7 @@ int vtkParseHierarchy_IsTypeOfTemplated(
       }
 
     /* if class is templated */
-    if (entry->NumberOfTemplateArgs)
+    if (entry->NumberOfTemplateParameters)
       {
       /* check for template args for classname */
       m = strlen(entry->Name);
@@ -664,9 +664,9 @@ int vtkParseHierarchy_IsTypeOfTemplated(
         {
         templated = 1;
 
-        nargs = entry->NumberOfTemplateArgs;
+        nargs = entry->NumberOfTemplateParameters;
         vtkParse_DecomposeTemplatedType(classname, &name, nargs, &args,
-          entry->TemplateArgDefaults);
+          entry->TemplateDefaults);
         }
       }
 
@@ -677,11 +677,11 @@ int vtkParseHierarchy_IsTypeOfTemplated(
 
       if (templated)
         {
-        for (k = 0; k < entry->NumberOfTemplateArgs; k++)
+        for (k = 0; k < entry->NumberOfTemplateParameters; k++)
           {
           /* check if the baseclass itself is a template parameter */
-          m = strlen(entry->TemplateArgs[k]);
-          if (strncmp(entry->TemplateArgs[k], supername, m) == 0 &&
+          m = strlen(entry->TemplateParameters[k]);
+          if (strncmp(entry->TemplateParameters[k], supername, m) == 0 &&
               !isalnum(supername[m]) && supername[m] != '_')
             {
             baseclass_is_template_parameter = 1;
@@ -691,7 +691,7 @@ int vtkParseHierarchy_IsTypeOfTemplated(
 
         /* use the class template args to find baseclass template args */
         supername = vtkParse_StringReplace(
-          supername, entry->NumberOfTemplateArgs, entry->TemplateArgs, args);
+          supername, entry->NumberOfTemplateParameters, entry->TemplateParameters, args);
         if (supername != entry->SuperClasses[j])
           {
           supername_needs_free = 1;
@@ -830,11 +830,11 @@ const char *vtkParseHierarchy_TemplatedSuperClass(
     if (classname[j] == '<')
       {
       vtkParse_DecomposeTemplatedType(classname, &name,
-        entry->NumberOfTemplateArgs, &args, entry->TemplateArgDefaults);
+        entry->NumberOfTemplateParameters, &args, entry->TemplateDefaults);
       supername = vtkParse_StringReplace(entry->SuperClasses[i],
-        entry->NumberOfTemplateArgs, entry->TemplateArgs, args);
+        entry->NumberOfTemplateParameters, entry->TemplateParameters, args);
       vtkParse_FreeTemplateDecomposition(
-        name, entry->NumberOfTemplateArgs, args);
+        name, entry->NumberOfTemplateParameters, args);
       }
 
     if (supername == entry->SuperClasses[i])

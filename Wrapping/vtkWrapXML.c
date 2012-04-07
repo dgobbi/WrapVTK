@@ -681,68 +681,68 @@ void vtkWrapXML_TypeSimple(
  * Print a template
  */
 void vtkWrapXML_Template(
-  wrapxml_state_t *w, TemplateArgs *args)
+  wrapxml_state_t *w, TemplateInfo *info)
 {
   const char *elementName = "tparam";
-  TemplateArg *arg;
+  ValueInfo *param;
   unsigned long i;
 
-  for (i = 0; i < args->NumberOfArguments; i++)
+  for (i = 0; i < info->NumberOfParameters; i++)
     {
     vtkWrapXML_ElementStart(w, elementName);
 
-    arg = args->Arguments[i];
+    param = info->Parameters[i];
 
-    if (arg->Name)
+    if (param->Name)
       {
-      vtkWrapXML_Name(w, arg->Name);
+      vtkWrapXML_Name(w, param->Name);
       }
 
-    if (arg->Template)
+    if (param->Template)
       {
       vtkWrapXML_Attribute(w, "type", "template");
       }
-    else if (arg->Type)
+    else if (param->Type)
       {
-      vtkWrapXML_Attribute(w, "type", arg->Class);
+      vtkWrapXML_Attribute(w, "type", param->Class);
       }
     else
       {
       vtkWrapXML_Attribute(w, "type", "typename");
       }
 
-    if (arg->Value)
+    if (param->Value)
       {
-      vtkWrapXML_Value(w, arg->Value);
+      vtkWrapXML_Value(w, param->Value);
       }
 
-    if (arg->NumberOfDimensions)
+    if (param->NumberOfDimensions)
       {
       ValueInfo val;
-      val.NumberOfDimensions = arg->NumberOfDimensions;
-      val.Dimensions = arg->Dimensions;
+      val.NumberOfDimensions = param->NumberOfDimensions;
+      val.Dimensions = param->Dimensions;
       vtkWrapXML_Size(w, &val);
       }
 
-    if (arg->Template)
+    if (param->Template)
       {
       vtkWrapXML_Flag(w, "template", 1);
-      vtkWrapXML_Template(w, arg->Template);
+      vtkWrapXML_Template(w, param->Template);
       }
 
-    if (arg->Function)
+    if (param->Function)
       {
-      if (arg->Function->Class)
+      if (param->Function->Class)
         {
         vtkWrapXML_ElementStart(w, "method");
-        vtkWrapXML_Attribute(w, "context", arg->Function->Class);
-        vtkWrapXML_FunctionCommon(w, arg->Function, 1);
+        vtkWrapXML_Attribute(w, "context", param->Function->Class);
+        vtkWrapXML_FunctionCommon(w, param->Function, 1);
         vtkWrapXML_ElementEnd(w, "method");
         }
       else
         {
         vtkWrapXML_ElementStart(w, "function");
-        vtkWrapXML_FunctionCommon(w, arg->Function, 1);
+        vtkWrapXML_FunctionCommon(w, param->Function, 1);
         vtkWrapXML_ElementEnd(w, "function");
         }
       }
@@ -943,11 +943,11 @@ void vtkWrapXML_FunctionCommon(
 
   vtkWrapXML_Comment(w, func->Comment);
 
-  n = func->NumberOfArguments;
+  n = func->NumberOfParameters;
   for (i = 0; i < n; i++)
     {
     vtkWrapXML_ElementStart(w, "param");
-    arg = func->Arguments[i];
+    arg = func->Parameters[i];
 
     if (arg->Name)
       {
@@ -1291,13 +1291,13 @@ void vtkWrapXML_MergeHelper(
     entry = vtkParseHierarchy_FindEntry(hinfo, classname);
     }
 
-  if (entry && entry->NumberOfTemplateArgs > 0)
+  if (entry && entry->NumberOfTemplateParameters > 0)
     {
     /* extract the template arguments */
-    template_arg_count = (unsigned long)entry->NumberOfTemplateArgs;
+    template_arg_count = (unsigned long)entry->NumberOfTemplateParameters;
     vtkParse_DecomposeTemplatedType(
       classname, &classname, template_arg_count, &template_args,
-      entry->TemplateArgDefaults);
+      entry->TemplateDefaults);
     }
 
   /* find out if "classname" is in the current namespace */

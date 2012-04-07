@@ -268,15 +268,19 @@ unsigned long vtkParseMerge_Merge(
             f2 = merge->Functions[j];
             if (f2->Name && strcmp(f2->Name, f1->Name) == 0)
               {
-              if (f2->NumberOfArguments == func->NumberOfArguments)
+              if (f2->NumberOfParameters == func->NumberOfParameters)
                 {
-                for (k = 0; k < f2->NumberOfArguments; k++)
+                for (k = 0; k < f2->NumberOfParameters; k++)
                   {
-                  if (f2->ArgTypes[k] != func->ArgTypes[k]) { break; }
-                  /* more in-depth checks here? */
+                  if (f2->Parameters[k]->Type != func->Parameters[k]->Type &&
+                      strcmp(f2->Parameters[k]->Class,
+                             func->Parameters[k]->Class) == 0)
+                    {
+                    break;
+                    }
                   }
                 /* if all args match, then merge the comments */
-                if (k == f2->NumberOfArguments)
+                if (k == f2->NumberOfParameters)
                   {
                   merge_function(f2, func);
                   vtkParseMerge_PushOverride(info, j, depth);

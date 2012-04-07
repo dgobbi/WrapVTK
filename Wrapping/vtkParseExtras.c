@@ -1077,24 +1077,40 @@ static void func_substitution(
 {
   unsigned long i, n;
 
-  n = data->NumberOfArguments;
+  n = data->NumberOfParameters;
   for (i = 0; i < n; i++)
     {
-    value_substitution(data->Arguments[i], m, arg_names, arg_values, arg_types);
-    if (i < MAX_ARGS)
-      {
-      data->ArgTypes[i] = data->Arguments[i]->Type;
-      data->ArgClasses[i] = data->Arguments[i]->Class;
-      if (data->Arguments[i]->NumberOfDimensions == 1 &&
-          data->Arguments[i]->Count > 0)
-        {
-        data->ArgCounts[i] = data->Arguments[i]->Count;
-        }
-      }
+    value_substitution(
+      data->Parameters[i], m, arg_names, arg_values, arg_types);
     }
+
   if (data->ReturnValue)
     {
     value_substitution(data->ReturnValue, m, arg_names, arg_values, arg_types);
+    }
+
+  if (data->Signature)
+    {
+    data->Signature =
+      vtkparse_string_replace(data->Signature, m, arg_names, arg_values, 1);
+    }
+
+  /* legacy information for old wrappers */
+#ifndef VTK_PARSE_LEGACY_REMOVE
+  n = data->NumberOfArguments;
+  for (i = 0; i < n; i++)
+    {
+    data->ArgTypes[i] = data->Parameters[i]->Type;
+    data->ArgClasses[i] = data->Parameters[i]->Class;
+    if (data->Parameters[i]->NumberOfDimensions == 1 &&
+        data->Parameters[i]->Count > 0)
+      {
+      data->ArgCounts[i] = data->Parameters[i]->Count;
+      }
+    }
+
+  if (data->ReturnValue)
+    {
     data->ReturnType = data->ReturnValue->Type;
     data->ReturnClass = data->ReturnValue->Class;
     if (data->ReturnValue->NumberOfDimensions == 1 &&
@@ -1104,11 +1120,7 @@ static void func_substitution(
       data->HaveHint = 1;
       }
     }
-  if (data->Signature)
-    {
-    data->Signature =
-      vtkparse_string_replace(data->Signature, m, arg_names, arg_values, 1);
-    }
+#endif /* VTK_PARSE_LEGACY_REMOVE */
 }
 
 static void class_substitution(
@@ -1274,7 +1286,7 @@ void vtkParse_FreeTemplateDecomposition(
 void vtkParse_InstantiateClassTemplate(
   ClassInfo *data, unsigned long n, const char *args[])
 {
-  TemplateArgs *t = data->Template;
+  TemplateInfo *t = data->Template;
   const char **new_args = NULL;
   const char **arg_names = NULL;
   ValueInfo **arg_types = NULL;
@@ -1289,7 +1301,7 @@ void vtkParse_InstantiateClassTemplate(
     return;
     }
 
-  m = t->NumberOfArguments;
+  m = t->NumberOfParameters;
   if (n > m)
     {
     fprintf(stderr, "vtkParse_InstantiateClassTemplate: "
@@ -1299,8 +1311,8 @@ void vtkParse_InstantiateClassTemplate(
 
   for (i = n; i < m; i++)
     {
-    if (t->Arguments[i]->Value == NULL ||
-        t->Arguments[i]->Value[0] == '\0')
+    if (t->Parameters[i]->Value == NULL ||
+        t->Parameters[i]->Value[0] == '\0')
       {
       fprintf(stderr, "vtkParse_InstantiateClassTemplate: "
               "too few template args.\n");
@@ -1315,7 +1327,7 @@ void vtkParse_InstantiateClassTemplate(
     }
   for (i = n; i < m; i++)
     {
-    new_args[i] = t->Arguments[i]->Value;
+    new_args[i] = t->Parameters[i]->Value;
     }
   args = new_args;
 
@@ -1323,9 +1335,9 @@ void vtkParse_InstantiateClassTemplate(
   arg_types = (ValueInfo **)malloc(m*sizeof(ValueInfo *));
   for (i = 0; i < m; i++)
     {
-    arg_names[i] = t->Arguments[i]->Name;
+    arg_names[i] = t->Parameters[i]->Name;
     arg_types[i] = NULL;
-    if (t->Arguments[i]->Type == 0)
+    if (t->Parameters[i]->Type == 0)
       {
       arg_types[i] = (ValueInfo *)malloc(sizeof(ValueInfo));
       vtkParse_InitValue(arg_types[i]);
@@ -1338,7 +1350,7 @@ void vtkParse_InstantiateClassTemplate(
   /* no longer a template (has been instantiated) */
   if (data->Template)
     {
-    vtkParse_FreeTemplateArgs(data->Template);
+    vtkParse_FreeTemplate(data->Template);
     }
   data->Template = NULL;
 

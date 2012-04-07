@@ -32,9 +32,8 @@ typedef struct _MethodAttributes
   unsigned long Count;    /* count for gettable/settable value */
   const char *ClassName;  /* class name for if the type is a class */
   const char *Comment;    /* documentation for method */
+  parse_access_t Access;  /* method is private, protected */
   int HasProperty;        /* method accesses a property */
-  int IsPublic;           /* method is public */
-  int IsProtected;        /* method is protected */
   int IsLegacy;           /* method is marked "legacy" */
   int IsStatic;           /* method is static */
   int IsRepeat;           /* method is a repeat of a similar method */
@@ -481,8 +480,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   attrs->Count = 0;
   attrs->ClassName = 0;
   attrs->Comment = func->Comment;
-  attrs->IsPublic = func->IsPublic;
-  attrs->IsProtected = func->IsProtected;
+  attrs->Access = func->Access;
   attrs->IsLegacy = func->IsLegacy;
   attrs->IsStatic = func->IsStatic;
   attrs->IsRepeat = 0;
@@ -494,35 +492,45 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   attrs->IsRHS = 0;
 
   /* check for major issues with the function */
-  if (!func->Name || func->ArrayFailure || func->IsOperator)
+  if (!func->Name || func->IsOperator ||
+      (func->ReturnValue && func->ReturnValue->Function) ||
+      (func->ReturnValue && func->ReturnValue->NumberOfDimensions > 1))
     {
     return 0;
     }
+  for (i = 0; i < func->NumberOfParameters; i++)
+    {
+    if (func->Parameters[i]->Function ||
+        func->Parameters[i]->NumberOfDimensions > 1)
+      {
+      return 0;
+      }
+    }
 
   /* check for indexed methods: the first argument will be an integer */
-  if (func->NumberOfArguments > 0 &&
-      ((func->Arguments[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_INT ||
-       (func->Arguments[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_SIZE_T ||
-       (func->Arguments[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_ID_TYPE))
+  if (func->NumberOfParameters > 0 &&
+      ((func->Parameters[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_INT ||
+       (func->Parameters[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_SIZE_T ||
+       (func->Parameters[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_ID_TYPE))
     {
     /* methods of the form "void SetValue(int i, type value)" */
     if ((!func->ReturnValue ||
          (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID) &&
-        func->NumberOfArguments == 2)
+        func->NumberOfParameters == 2)
       {
       indexed = 1;
 
       if (!isSetNumberOfMethod(func->Name))
         {
         /* make sure this isn't a multi-value int method */
-        tmptype = func->Arguments[0]->Type;
-        tmpclass = func->Arguments[0]->Class;
+        tmptype = func->Parameters[0]->Type;
+        tmpclass = func->Parameters[0]->Class;
         allSame = 1;
 
-        n = func->NumberOfArguments;
+        n = func->NumberOfParameters;
         for (i = 0; i < n; i++)
           {
-          if (func->Arguments[i]->Type != tmptype)
+          if (func->Parameters[i]->Type != tmptype)
             {
             allSame = 0;
             }
@@ -533,7 +541,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     /* methods of the form "type GetValue(int i)" */
     if ((!func->ReturnValue ||
         (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) != VTK_PARSE_VOID) &&
-        func->NumberOfArguments == 1)
+        func->NumberOfParameters == 1)
       {
       indexed = 1;
       }
@@ -541,18 +549,18 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
     attrs->IsIndexed = indexed;
     }
 
-  /* if return type is not void and no args or 1 index */
+  /* if return type is not void and no parameters or 1 index */
   if ((func->ReturnValue &&
        (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) != VTK_PARSE_VOID) &&
-      func->NumberOfArguments == (unsigned long)indexed)
+      func->NumberOfParameters == (unsigned long)indexed)
     {
     /* methods of the form "type GetValue()" or "type GetValue(i)" */
     if (isGetMethod(func->Name))
       {
       attrs->HasProperty = 1;
       attrs->Type = func->ReturnValue->Type;
-      attrs->Count = (func->HaveHint ? func->HintSize : 0);
-      attrs->IsHinted = func->HaveHint;
+      attrs->Count = func->ReturnValue->Count;
+      attrs->IsHinted = (attrs->Count > 0);
       attrs->ClassName = func->ReturnValue->Class;
 
       return 1;
@@ -562,60 +570,60 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   /* if return type is void and 1 arg or 1 index and 1 arg */
   if ((!func->ReturnValue ||
        (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID) &&
-      func->NumberOfArguments == (unsigned long)(1 + indexed))
+      func->NumberOfParameters == (unsigned long)(1 + indexed))
     {
     /* "void SetValue(type)" or "void SetValue(int, type)" */
     if (isSetMethod(func->Name))
       {
       attrs->HasProperty = 1;
       attrs->IsRHS = 1;
-      attrs->Type = func->Arguments[indexed]->Type;
-      attrs->Count = func->Arguments[indexed]->Count;
-      attrs->ClassName = func->Arguments[indexed]->Class;
+      attrs->Type = func->Parameters[indexed]->Type;
+      attrs->Count = func->Parameters[indexed]->Count;
+      attrs->ClassName = func->Parameters[indexed]->Class;
 
       return 1;
       }
     /* "void GetValue(type *)" or "void GetValue(int, type *)" */
     else if (isGetMethod(func->Name) &&
-             /* func->Arguments[indexed]->Count > 0 && */
-             (func->Arguments[indexed]->Type & VTK_PARSE_INDIRECT) ==
+             /* func->Parameters[indexed]->Count > 0 && */
+             (func->Parameters[indexed]->Type & VTK_PARSE_INDIRECT) ==
               VTK_PARSE_POINTER &&
-             (func->Arguments[indexed]->Type & VTK_PARSE_CONST) == 0)
+             (func->Parameters[indexed]->Type & VTK_PARSE_CONST) == 0)
       {
       attrs->HasProperty = 1;
       attrs->IsRHS = 1;
-      attrs->Type = func->Arguments[indexed]->Type;
-      attrs->Count = func->Arguments[indexed]->Count;
-      attrs->ClassName = func->Arguments[indexed]->Class;
+      attrs->Type = func->Parameters[indexed]->Type;
+      attrs->Count = func->Parameters[indexed]->Count;
+      attrs->ClassName = func->Parameters[indexed]->Class;
 
       return 1;
       }
     /* "void AddValue(vtkObject *)" or "void RemoveValue(vtkObject *)" */
     else if ((isAddMethod(func->Name) || isRemoveMethod(func->Name)) &&
-             (func->Arguments[indexed]->Type & VTK_PARSE_UNQUALIFIED_TYPE) ==
+             (func->Parameters[indexed]->Type & VTK_PARSE_UNQUALIFIED_TYPE) ==
               VTK_PARSE_OBJECT_PTR)
       {
       attrs->HasProperty = 1;
       attrs->IsRHS = 1;
-      attrs->Type = func->Arguments[indexed]->Type;
-      attrs->Count = func->Arguments[indexed]->Count;
-      attrs->ClassName = func->Arguments[indexed]->Class;
+      attrs->Type = func->Parameters[indexed]->Type;
+      attrs->Count = func->Parameters[indexed]->Count;
+      attrs->ClassName = func->Parameters[indexed]->Class;
 
       return 1;
       }
     }
 
   /* check for multiple arguments of the same type */
-  if (func->NumberOfArguments > 1 && !indexed)
+  if (func->NumberOfParameters > 1 && !indexed)
     {
-    tmptype = func->Arguments[0]->Type;
-    tmpclass = func->Arguments[0]->Class;
+    tmptype = func->Parameters[0]->Type;
+    tmpclass = func->Parameters[0]->Class;
     allSame = 1;
 
-    n = func->NumberOfArguments;
+    n = func->NumberOfParameters;
     for (i = 0; i < n; i++)
       {
-      if (func->Arguments[i]->Type != tmptype)
+      if (func->Parameters[i]->Type != tmptype)
         {
         allSame = 0;
         }
@@ -679,7 +687,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   /* if return type is void, and there are no arguments */
   if ((!func->ReturnValue ||
        (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID) &&
-      func->NumberOfArguments == 0)
+      func->NumberOfParameters == 0)
     {
     attrs->Type = VTK_PARSE_VOID;
     attrs->ClassName = "void";
@@ -728,11 +736,11 @@ static int methodMatchesProperty(
   int methodBitfield = 0;
 
   /* get the bitfield containing all found methods for this property */
-  if (meth->IsPublic)
+  if (meth->Access == VTK_ACCESS_PUBLIC)
     {
     methodBitfield = property->PublicMethods;
     }
-  else if (meth->IsProtected)
+  else if (meth->Access == VTK_ACCESS_PROTECTED)
     {
     methodBitfield = property->ProtectedMethods;
     }
@@ -959,11 +967,11 @@ static void initializePropertyInfo(
   property->LegacyMethods = 0;
   property->Comment = meth->Comment;
 
-  if (meth->IsPublic)
+  if (meth->Access == VTK_ACCESS_PUBLIC)
     {
     property->PublicMethods = methodBit;
     }
-  else if (meth->IsProtected)
+  else if (meth->Access == VTK_ACCESS_PROTECTED)
     {
     property->ProtectedMethods = methodBit;
     }
@@ -1025,11 +1033,11 @@ static void findAllMatches(
         methodHasProperty[i] = 1;
         methodProperties[i] = propertyId;
 
-        if (meth->IsPublic)
+        if (meth->Access == VTK_ACCESS_PUBLIC)
           {
           property->PublicMethods |= methodBit;
           }
-        else if (meth->IsProtected)
+        else if (meth->Access == VTK_ACCESS_PROTECTED)
           {
           property->ProtectedMethods |= methodBit;
           }
@@ -1099,8 +1107,7 @@ static int searchForRepeatedMethods(
     if (meth->Name && strcmp(attrs->Name, meth->Name) == 0 &&
         ((attrs->Type & VTK_PARSE_POINTER_MASK) ==
            (meth->Type & VTK_PARSE_POINTER_MASK)) &&
-        attrs->IsPublic == meth->IsPublic &&
-        attrs->IsProtected == meth->IsProtected &&
+        attrs->Access == meth->Access &&
         attrs->IsHinted == meth->IsHinted &&
         attrs->IsMultiValue == meth->IsMultiValue &&
         attrs->IsIndexed == meth->IsIndexed &&

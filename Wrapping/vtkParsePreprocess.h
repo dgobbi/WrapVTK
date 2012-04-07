@@ -55,9 +55,9 @@ typedef struct _MacroInfo
   const char    *Name;
   const char    *Definition;
   const char    *Comment; /* unused */
-  unsigned long  NumberOfArguments; /* only if IsFunction == 1 */
-  const char   **Arguments;  /* symbols for arguments */
-  int            IsFunction; /* this macro takes arguments */
+  unsigned long  NumberOfParameters; /* only if IsFunction == 1 */
+  const char   **Parameters; /* symbols for parameters */
+  int            IsFunction; /* this macro requires arguments */
   int            IsExternal; /* this macro is from an included file */
   int            IsExcluded; /* do not expand this macro */
 } MacroInfo;

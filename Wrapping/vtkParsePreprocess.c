@@ -1759,7 +1759,7 @@ static int preproc_evaluate_define(
   size_t namelen;
   const char *definition = 0;
   unsigned long n = 0;
-  const char **args = NULL;
+  const char **params = NULL;
 
   if (tokens->hash == HASH_DEFINE)
     {
@@ -1786,7 +1786,7 @@ static int preproc_evaluate_define(
         {
         if (tokens->tok != TOK_ID && tokens->tok != TOK_ELLIPSIS)
           {
-          if (args) { free((char **)args); }
+          if (params) { free((char **)params); }
 #if PREPROC_DEBUG
           fprintf(stderr, "syntax error %d\n", __LINE__);
 #endif
@@ -1794,9 +1794,9 @@ static int preproc_evaluate_define(
           }
 
         /* add to the arg list */
-        args = (const char **)preproc_array_check(
-          (char **)args, sizeof(char *), n);
-        args[n++] = preproc_strndup(tokens->text, tokens->len);
+        params = (const char **)preproc_array_check(
+          (char **)params, sizeof(char *), n);
+        params[n++] = preproc_strndup(tokens->text, tokens->len);
 
         preproc_next(tokens);
         if (tokens->tok == ',')
@@ -1805,7 +1805,7 @@ static int preproc_evaluate_define(
           }
         else if (tokens->tok != ')')
           {
-          if (args) { free((char **)args); }
+          if (params) { free((char **)params); }
 #if PREPROC_DEBUG
           fprintf(stderr, "syntax error %d\n", __LINE__);
 #endif
@@ -1827,7 +1827,7 @@ static int preproc_evaluate_define(
         {
         return VTK_PARSE_OK;
         }
-      if (args) { free((char **)args); }
+      if (params) { free((char **)params); }
 #if PREPROC_DEBUG
       fprintf(stderr, "macro redefined %d\n", __LINE__);
 #endif
@@ -1836,8 +1836,8 @@ static int preproc_evaluate_define(
 
     macro = preproc_new_macro(info, name, definition);
     macro->IsFunction = is_function;
-    macro->NumberOfArguments = n;
-    macro->Arguments = args;
+    macro->NumberOfParameters = n;
+    macro->Parameters = params;
     *macro_p = macro;
 
     return VTK_PARSE_OK;
@@ -2740,7 +2740,7 @@ const char *vtkParsePreprocess_ExpandMacro(
       }
 #endif
 
-    if (macro->NumberOfArguments == 0 && n == 1)
+    if (macro->NumberOfParameters == 0 && n == 1)
       {
       const char *tp = values[0];
       preproc_skip_whitespace(&tp);
@@ -2750,12 +2750,12 @@ const char *vtkParsePreprocess_ExpandMacro(
         }
       }
 
-    if (n != macro->NumberOfArguments)
+    if (n != macro->NumberOfParameters)
       {
       if (values != stack_values) { free((char **)values); }
 #if PREPROC_DEBUG
       fprintf(stderr, "wrong number of macro args to %s, %lu != %lu\n",
-              macro->Name, n, macro->NumberOfArguments);
+              macro->Name, n, macro->NumberOfParameters);
 #endif
       return NULL;
       }
@@ -2851,9 +2851,9 @@ const char *vtkParsePreprocess_ExpandMacro(
       {
       for (j = 0; j < n; j++)
         {
-        /* check whether the name matches an argument */
-        if (strncmp(pp, macro->Arguments[j], l) == 0 &&
-            macro->Arguments[j][l] == '\0')
+        /* check whether the name matches a parameter */
+        if (strncmp(pp, macro->Parameters[j], l) == 0 &&
+            macro->Parameters[j][l] == '\0')
           {
           /* substitute the argument value */
           l = values[j+1] - values[j] - 1;
@@ -3255,8 +3255,8 @@ void vtkParsePreprocess_InitMacro(MacroInfo *macro)
   macro->Name = NULL;
   macro->Definition = NULL;
   macro->Comment = NULL;
-  macro->NumberOfArguments = 0;
-  macro->Arguments = NULL;
+  macro->NumberOfParameters = 0;
+  macro->Parameters = NULL;
   macro->IsFunction = 0;
   macro->IsExternal = 0;
   macro->IsExcluded = 0;
@@ -3273,12 +3273,12 @@ void vtkParsePreprocess_FreeMacro(MacroInfo *macro)
   free((char *)macro->Definition);
   free((char *)macro->Comment);
 
-  n = macro->NumberOfArguments;
+  n = macro->NumberOfParameters;
   for (i = 0; i < n; i++)
     {
-    free((char *)macro->Arguments[i]);
+    free((char *)macro->Parameters[i]);
     }
-  free(macro->Arguments);
+  free(macro->Parameters);
 
   free(macro);
 }
