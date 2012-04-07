@@ -427,13 +427,21 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
         {
         const char *args = NULL;
         const char *emacro = NULL;
+
+        /* make sure that vtkNotUsed is never expanded */
+        MacroInfo *ex;
+        ex = vtkParsePreprocess_GetMacro(preprocessor, "vtkNotUsed");
+        if (ex)
+          {
+          ex->IsExcluded = 1;
+          } 
+
         if (macro->IsFunction)
           {
           args = get_macro_arguments();
           if (args)
             {
-            emacro = vtkParsePreprocess_ExpandMacro(
-              preprocessor, macro, args);
+            emacro = vtkParsePreprocess_ExpandMacro(preprocessor, macro, args);
             if (!emacro)
               {
               print_preprocessor_error(VTK_PARSE_MACRO_NUMARGS, NULL, 0);
@@ -1165,9 +1173,12 @@ void push_macro(MacroInfo *macro)
   if (macro)
     {
     macro->IsExcluded = 1;
-    macroName = macro->Name;
-    macroUsed = 0;
-    macroEnded = 0;
+    if (macro_stack_size == 1)
+      {
+      macroName = macro->Name;
+      macroUsed = 0;
+      macroEnded = 0;
+      }
     }
 }
 
