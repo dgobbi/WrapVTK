@@ -12,6 +12,12 @@
      PURPOSE.  See the above copyright notice for more information.
 
 =========================================================================*/
+/*-------------------------------------------------------------------------
+  Copyright (c) 2010 David Gobbi.
+
+  Contributed to the VisualizationToolkit by the author in May 2010
+  under the terms of the Visualization Toolkit 2008 copyright.
+-------------------------------------------------------------------------*/
 
 /*
   Data structures used by vtkParse.
@@ -21,9 +27,9 @@
 #define VTK_PARSE_DATA_H
 
 #include "vtkParseType.h"
+#include "vtkParseString.h"
 
 /* legacy */
-#define VTK_PARSE_LEGACY_REMOVE
 #ifndef VTK_PARSE_LEGACY_REMOVE
 #define MAX_ARGS 20
 #endif
@@ -67,6 +73,10 @@ typedef struct _ItemInfo
 /* forward declarations */
 struct _ValueInfo;
 struct _FunctionInfo;
+struct _FileInfo;
+typedef struct _ValueInfo ValueInfo;
+typedef struct _FunctionInfo FunctionInfo;
+typedef struct _FileInfo FileInfo;
 
 /**
  * TemplateInfo holds template definitions
@@ -74,7 +84,8 @@ struct _FunctionInfo;
 typedef struct _TemplateInfo
 {
   unsigned long  NumberOfParameters;
-  struct _ValueInfo **Parameters;
+  ValueInfo    **Parameters;
+  FileInfo      *File;
 } TemplateInfo;
 
 /**
@@ -85,10 +96,11 @@ typedef struct _TemplateInfo
  * order to support dimensions that are sized according to
  * template parameter values or according to named constants.
  */
-typedef struct _ValueInfo
+struct _ValueInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
+  FileInfo      *File;
   const char    *Name;
   const char    *Comment;
   const char    *Value;      /* for vars or default paramter values */
@@ -98,19 +110,20 @@ typedef struct _ValueInfo
   const char    *CountHint;  /* hint about how to get the count */
   unsigned long  NumberOfDimensions; /* dimensionality for arrays */
   const char   **Dimensions; /* dimensions for arrays */
-  struct _FunctionInfo *Function;  /* for function pointer values */
+  FunctionInfo  *Function;  /* for function pointer values */
   TemplateInfo  *Template;   /* template parameters, or NULL */
   int            IsStatic;   /* for class variables only */
   int            IsEnum;     /* for constants only */
-} ValueInfo;
+};
 
 /**
  * FunctionInfo is for functions and methods
  */
-typedef struct _FunctionInfo
+struct _FunctionInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
+  FileInfo      *File;
   const char    *Name;
   const char    *Comment;
   const char    *Class;       /* class name for methods */
@@ -142,7 +155,7 @@ typedef struct _FunctionInfo
   int            IsPublic;    /* legacy */
   int            IsProtected; /* legacy */
 #endif
-} FunctionInfo;
+};
 
 /**
  * EnumInfo is for enums
@@ -152,6 +165,7 @@ typedef struct _EnumInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
+  FileInfo      *File;
   const char    *Name;
   const char    *Comment;
 } EnumInfo;
@@ -163,18 +177,20 @@ typedef struct _UsingInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
+  FileInfo      *File;
   const char    *Name;     /* null for using whole namespace */
   const char    *Comment;
   const char    *Scope;    /* the namespace or class */
 } UsingInfo;
 
 /**
- * ClassInfo is for classes, structs, and unions
+ * ClassInfo is for classes, structs, unions, and namespaces
  */
 typedef struct _ClassInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
+  FileInfo      *File;
   const char    *Name;
   const char    *Comment;
   TemplateInfo  *Template;
@@ -196,6 +212,8 @@ typedef struct _ClassInfo
   ValueInfo    **Typedefs;
   unsigned long  NumberOfUsings;
   UsingInfo    **Usings;
+  unsigned long  NumberOfNamespaces;
+  struct _ClassInfo **Namespaces;
   int            IsAbstract;
   int            HasDelete;
 } ClassInfo;
@@ -203,36 +221,12 @@ typedef struct _ClassInfo
 /**
  * Namespace is for namespaces
  */
-typedef struct _NamespaceInfo
-{
-  parse_item_t   ItemType;
-  parse_access_t Access;
-  const char    *Name;  /* NULL for global namespace */
-  const char    *Comment;
-  unsigned long  NumberOfItems;
-  ItemInfo      *Items;
-  unsigned long  NumberOfClasses;
-  ClassInfo    **Classes;
-  unsigned long  NumberOfFunctions;
-  FunctionInfo **Functions;
-  unsigned long  NumberOfConstants;
-  ValueInfo    **Constants;
-  unsigned long  NumberOfVariables;
-  ValueInfo    **Variables;
-  unsigned long  NumberOfEnums;
-  EnumInfo     **Enums;
-  unsigned long  NumberOfTypedefs;
-  ValueInfo    **Typedefs;
-  unsigned long  NumberOfUsings;
-  UsingInfo    **Usings;
-  unsigned long  NumberOfNamespaces;
-  struct _NamespaceInfo **Namespaces;
-} NamespaceInfo;
+typedef struct _ClassInfo NamespaceInfo;
 
 /**
  * FileInfo is for header files
  */
-typedef struct _FileInfo
+struct _FileInfo
 {
   const char *FileName;
   const char *NameComment;
@@ -244,7 +238,8 @@ typedef struct _FileInfo
   struct _FileInfo **Includes;
   ClassInfo *MainClass;
   NamespaceInfo *Contents;
-} FileInfo;
+  StringCache *Strings;
+};
 
 
 #ifdef __cplusplus

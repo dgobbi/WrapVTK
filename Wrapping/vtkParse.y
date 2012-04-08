@@ -82,7 +82,6 @@ function pointer types, or "method" for method pointer types.
 
 #include "vtkParse.h"
 #include "vtkParsePreprocess.h"
-#include "vtkParseString.h"
 #include "vtkParseData.h"
 #include "vtkType.h"
 
@@ -207,19 +206,13 @@ void outputGetVectorMacro(const char *var, unsigned int paramType,
  *
  * Strings are centrally allocated and are const, and they are not
  * freed until the program exits.  If they need to be freed before
- * then, vtkParse_FreeStrings() can be called.
+ * then, vtkParse_FreeStringCache() can be called.
  */
 
 /* duplicate the first n bytes of a string and terminate */
 static const char *vtkstrndup(const char *in, size_t n)
 {
-  char *res = NULL;
-
-  res = vtkParse_NewString(n);
-  strncpy(res, in, n);
-  res[n] = '\0';
-
-  return res;
+  return vtkParse_CacheString(data->Strings, in, n);
 }
 
 /* duplicate a string */
@@ -227,7 +220,7 @@ static const char *vtkstrdup(const char *in)
 {
   if (in)
     {
-    return vtkstrndup(in, strlen(in));
+    in = vtkParse_CacheString(data->Strings, in, strlen(in));
     }
 
   return in;
@@ -250,7 +243,7 @@ static const char *vtkstrncat(size_t n, const char **str)
       m += j[i];
       }
     }
-  cp = vtkParse_NewString(m);
+  cp = vtkParse_NewString(data->Strings, m);
   m = 0;
   for (i = 0; i < n; i++)
     {
@@ -647,14 +640,14 @@ void checkSigSize(size_t n)
     {
     sigLength = 0;
     sigAllocatedLength = 80 + n;
-    signature = vtkParse_NewString(sigAllocatedLength);
+    signature = vtkParse_NewString(data->Strings, sigAllocatedLength);
     signature[0] = '\0';
     }
   else if (sigLength + n > sigAllocatedLength)
     {
     sigAllocatedLength += sigLength + n;
     ccp = signature;
-    signature = vtkParse_NewString(sigAllocatedLength);
+    signature = vtkParse_NewString(data->Strings, sigAllocatedLength);
     strncpy(signature, ccp, sigLength);
     signature[sigLength] = '\0';
     }
@@ -1006,6 +999,7 @@ void pushFunction()
   functionStack[functionDepth] = currentFunction;
   currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
   vtkParse_InitFunction(currentFunction);
+  currentFunction->File = data;
   if (!functionStack[functionDepth])
     {
     startSig();
@@ -2860,6 +2854,7 @@ void start_class(const char *classname, int is_struct_or_union)
     }
 
   vtkParse_InitFunction(currentFunction);
+  currentFunction->File = data;
   startSig();
   clearComment();
 }
@@ -2881,6 +2876,7 @@ void reject_class(const char *classname, int is_struct_or_union)
     }
 
   vtkParse_InitFunction(currentFunction);
+  currentFunction->File = data;
   startSig();
   clearComment();
 }
@@ -3357,6 +3353,7 @@ void set_return(FunctionInfo *func, unsigned int type,
   ValueInfo *val = (ValueInfo *)malloc(sizeof(ValueInfo));
 
   vtkParse_InitValue(val);
+  val->File = data;
   val->Type = type;
   if (typeclass)
     {
@@ -3426,6 +3423,7 @@ void handle_complex_type(
     func = getFunction();
     func->ReturnValue = (ValueInfo *)malloc(sizeof(ValueInfo));
     vtkParse_InitValue(func->ReturnValue);
+    func->ReturnValue->File = data;
     func->ReturnValue->Type = datatype;
     func->ReturnValue->Class = vtkstrdup(getTypeId());
     if (funcSig) { func->Signature = vtkstrdup(funcSig); }
@@ -3520,6 +3518,7 @@ void handle_function_type(
 
   func = (FunctionInfo *)malloc(sizeof(FunctionInfo));
   vtkParse_InitFunction(func);
+  currentFunction->File = data;
   add_parameter(func, VTK_PARSE_VOID_PTR, "void", 0);
   set_return(func, VTK_PARSE_VOID, "void", 0);
   j = strlen(funcSig);
@@ -3557,6 +3556,7 @@ void add_legacy_parameter(ValueInfo *param)
 void reject_function()
 {
   vtkParse_InitFunction(currentFunction);
+  currentFunction->File = data;
   startSig();
   getMacro();
 }
@@ -3752,6 +3752,7 @@ void output_function()
     }
 
   vtkParse_InitFunction(currentFunction);
+  currentFunction->File = data;
   startSig();
 }
 
@@ -3868,6 +3869,8 @@ FileInfo *vtkParse_ParseFile(
   /* "data" is a global variable used by the parser */
   data = (FileInfo *)malloc(sizeof(FileInfo));
   vtkParse_InitFile(data);
+  data->Strings = (StringCache *)malloc(sizeof(StringCache));
+  vtkParse_InitStringCache(data->Strings);
 
   /* "preprocessor" is a global struct used by the parser */
   preprocessor = (PreprocessInfo *)malloc(sizeof(PreprocessInfo));
@@ -3920,6 +3923,7 @@ FileInfo *vtkParse_ParseFile(
   namespaceDepth = 0;
   currentNamespace = (NamespaceInfo *)malloc(sizeof(NamespaceInfo));
   vtkParse_InitNamespace(currentNamespace);
+  currentNamespace->File = data;
   data->Contents = currentNamespace;
 
   templateDepth = 0;
@@ -3927,6 +3931,7 @@ FileInfo *vtkParse_ParseFile(
 
   currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
   vtkParse_InitFunction(currentFunction);
+  currentFunction->File = data;
   startSig();
 
   parseDebug = 0;
@@ -4066,7 +4071,8 @@ int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
                   vtkParse_AddStringToArray(
                     &func_info->ReturnValue->Dimensions,
                     &func_info->ReturnValue->NumberOfDimensions,
-                    vtkstrdup(text));
+                    vtkParse_CacheString(
+                      file_info->Strings, text, strlen(text)));
 #ifndef VTK_PARSE_LEGACY_REMOVE
                   func_info->HaveHint = 1;
                   func_info->HintSize = h_value;
@@ -4093,7 +4099,9 @@ int vtkParse_ReadHints(FileInfo *file_info, FILE *hfile, FILE *errfile)
 void vtkParse_Free(FileInfo *file_info)
 {
   vtkParse_FreeFile(file_info);
-  vtkParse_FreeStrings();
+  vtkParse_FreeStringCache(file_info->Strings);
+  free(file_info->Strings);
+  free(file_info);
 }
 
 /* Set a property before parsing */

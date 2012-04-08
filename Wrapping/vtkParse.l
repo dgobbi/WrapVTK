@@ -1123,6 +1123,7 @@ void push_include(const char *filename)
     file_info->Contents = (NamespaceInfo *)malloc(sizeof(NamespaceInfo));
     vtkParse_InitNamespace(file_info->Contents);
     vtkParse_AddIncludeToFile(data, file_info);
+    file_info->Strings = data->Strings;
     data = file_info;
     currentNamespace = file_info->Contents;
     }

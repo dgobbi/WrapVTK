@@ -71,6 +71,7 @@ typedef struct _HierarchyInfo
 {
   int             NumberOfEntries;
   HierarchyEntry *Entries;
+  StringCache    *Strings;
 } HierarchyInfo;
 
 #ifdef __cplusplus
