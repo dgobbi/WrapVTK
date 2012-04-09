@@ -39,6 +39,7 @@
 
 typedef struct _wrapxml_state
 {
+  FileInfo *data; /* the data that was parsed */
   FILE *file; /* the file being written to */
   int indentation; /* current indentation level */
   int unclosed; /* true if current tag is not closed */
@@ -1241,13 +1242,12 @@ void vtkWrapXML_ClassProperty(
  * superclasses to "merge"
  */
 void vtkWrapXML_MergeHelper(
-  const NamespaceInfo *data, const HierarchyInfo *hinfo,
+  FileInfo *finfo, const NamespaceInfo *data, const HierarchyInfo *hinfo,
   const char *classname, FILE *hintfile, MergeInfo *info, ClassInfo *merge)
 {
   FILE *fp = NULL;
   ClassInfo *cinfo = NULL;
   ClassInfo *new_cinfo = NULL;
-  FileInfo *finfo = NULL;
   HierarchyEntry *entry = NULL;
   char *new_classname = NULL;
   const char **template_args = NULL;
@@ -1407,7 +1407,7 @@ void vtkWrapXML_MergeHelper(
       new_cinfo = (ClassInfo *)malloc(sizeof(ClassInfo));
       vtkParse_CopyClass(new_cinfo, cinfo);
       vtkParse_InstantiateClassTemplate(
-        new_cinfo, template_arg_count, template_args);
+        new_cinfo, finfo->Strings, template_arg_count, template_args);
       cinfo = new_cinfo;
       }
 
@@ -1415,7 +1415,7 @@ void vtkWrapXML_MergeHelper(
     n = cinfo->NumberOfSuperClasses;
     for (i = 0; i < n; i++)
       {
-      vtkWrapXML_MergeHelper(data, hinfo, cinfo->SuperClasses[i],
+      vtkWrapXML_MergeHelper(finfo, data, hinfo, cinfo->SuperClasses[i],
                              hintfile, info, merge);
       }
     }
@@ -1431,7 +1431,7 @@ void vtkWrapXML_MergeHelper(
  * Merge the methods from the superclasses
  */
 MergeInfo *vtkWrapXML_MergeSuperClasses(
-  NamespaceInfo *data, ClassInfo *classInfo)
+  FileInfo *finfo, NamespaceInfo *data, ClassInfo *classInfo)
 {
   FILE *hintfile = NULL;
   HierarchyInfo *hinfo = NULL;
@@ -1457,7 +1457,7 @@ MergeInfo *vtkWrapXML_MergeSuperClasses(
     n = classInfo->NumberOfSuperClasses;
     for (i = 0; i < n; i++)
       {
-      vtkWrapXML_MergeHelper(data, hinfo,
+      vtkWrapXML_MergeHelper(finfo, data, hinfo,
                              classInfo->SuperClasses[i],
                              hintfile, info, classInfo);
       }
@@ -1596,7 +1596,7 @@ void vtkWrapXML_Class(
   /* merge all the superclass information */
   if (classInfo->NumberOfSuperClasses)
     {
-    merge = vtkWrapXML_MergeSuperClasses(data, classInfo);
+    merge = vtkWrapXML_MergeSuperClasses(w->data, data, classInfo);
     }
 
   if (merge)
@@ -1758,6 +1758,7 @@ int main(int argc, char *argv[])
   data = vtkParse_Main(argc, argv, &fp);
 
   /* a struct to keep track of things */
+  ws.data = data;
   ws.file = fp;
   ws.indentation = 0;
   ws.unclosed = 0;

@@ -336,17 +336,16 @@ static const char *vtkparse_string_replace(
 /* Wherever one of the specified names exists inside a Value or inside
  * a Dimension size, replace it with the corresponding val string. */
 void vtkParse_ExpandValues(
-  ValueInfo *valinfo, unsigned long n, const char *name[], const char *val[])
+  ValueInfo *valinfo, StringCache *cache,
+  unsigned long n, const char *name[], const char *val[])
 {
   unsigned long j, m, dim, count;
   const char *cp;
 
-  assert(valinfo->File != NULL);
-
   if (valinfo->Value)
     {
     valinfo->Value = vtkparse_string_replace(
-      valinfo->File->Strings, valinfo->Value, n, name, val);
+      cache, valinfo->Value, n, name, val);
     }
 
   m = valinfo->NumberOfDimensions;
@@ -358,7 +357,7 @@ void vtkParse_ExpandValues(
       cp = valinfo->Dimensions[j];
       if (cp)
         {
-        cp = vtkparse_string_replace(valinfo->File->Strings, cp, n, name, val);
+        cp = vtkparse_string_replace(cache, cp, n, name, val);
         valinfo->Dimensions[j] = cp;
 
         /* check whether dimension has become an integer literal */
@@ -383,7 +382,8 @@ void vtkParse_ExpandValues(
 }
 
 /* Expand a typedef within a type declaration. */
-void vtkParse_ExpandTypedef(ValueInfo *valinfo, ValueInfo *typedefinfo)
+void vtkParse_ExpandTypedef(
+  ValueInfo *valinfo, ValueInfo *typedefinfo)
 {
   const char *classname;
   unsigned int baseType;
@@ -470,12 +470,11 @@ void vtkParse_ExpandTypedef(ValueInfo *valinfo, ValueInfo *typedefinfo)
 /* Expand any unrecognized types within a variable, parameter, or typedef
  * that match any of the supplied typedefs. The expansion is done in-place. */
 void vtkParse_ExpandTypedefs(
-  ValueInfo *val, unsigned long n, const char *names[], const char *values[],
+  ValueInfo *val, StringCache *cache,
+  unsigned long n, const char *names[], const char *values[],
   ValueInfo *typedefinfo[])
 {
   unsigned long i;
-
-  assert(val->File != NULL);
 
   if (((val->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_OBJECT ||
        (val->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_UNKNOWN) &&
@@ -493,7 +492,7 @@ void vtkParse_ExpandTypedefs(
      {
      /* in case type appears as a template arg of another type */
      val->Class = vtkparse_string_replace(
-       val->File->Strings, val->Class, n, names, values);
+       cache, val->Class, n, names, values);
      }
    }
 }
@@ -824,7 +823,8 @@ size_t vtkParse_BasicTypeFromString(
 }
 
 /* Parse a type description in "text" and generate a typedef named "name" */
-size_t vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
+size_t vtkParse_ValueInfoFromString(
+  ValueInfo *data, StringCache *cache, const char *text)
 {
   const char *cp = text;
   size_t n;
@@ -834,12 +834,10 @@ size_t vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
   unsigned int ref_bits = 0;
   const char *classname = NULL;
 
-  assert(data->File != NULL);
-
   /* get the basic type with qualifiers */
   cp += vtkParse_BasicTypeFromString(cp, &base_bits, &classname, &n);
 
-  data->Class = vtkParse_CacheString(data->File->Strings, classname, n);
+  data->Class = vtkParse_CacheString(cache, classname, n);
 
   if ((base_bits & VTK_PARSE_STATIC) != 0)
     {
@@ -884,7 +882,7 @@ size_t vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
     {
     /* skip all chars that are part of a name */
     n = vtkparse_id_len(cp);
-    data->Name = vtkParse_CacheString(data->File->Strings, cp, n);
+    data->Name = vtkParse_CacheString(cache, cp, n);
     cp += n;
     while (*cp == ' ' || *cp == '\t') { cp++; }
     }
@@ -908,7 +906,7 @@ size_t vtkParse_ValueInfoFromString(ValueInfo *data, const char *text)
     vtkParse_AddStringToArray(
       &data->Dimensions,
       &data->NumberOfDimensions,
-      vtkParse_CacheString(data->File->Strings, cp, n));
+      vtkParse_CacheString(cache, cp, n));
     m = 0;
     if (*cp >= '0' && *cp <= '9' && vtkparse_number_len(cp) == n)
       {
@@ -1064,47 +1062,50 @@ const char *vtkParse_StringReplace(
 
 /* substitute generic types and values with actual types and values */
 static void func_substitution(
-  FunctionInfo *data, unsigned long m, const char *arg_names[],
+  FunctionInfo *data, StringCache *cache,
+  unsigned long m, const char *arg_names[],
   const char *arg_values[], ValueInfo *arg_types[]);
 
 static void value_substitution(
-  ValueInfo *data, unsigned long m, const char *arg_names[],
+  ValueInfo *data, StringCache *cache,
+  unsigned long m, const char *arg_names[],
   const char *arg_values[], ValueInfo *arg_types[])
 {
-  vtkParse_ExpandTypedefs(data, m, arg_names, arg_values, arg_types);
-  vtkParse_ExpandValues(data, m, arg_names, arg_values);
+  vtkParse_ExpandTypedefs(data, cache, m, arg_names, arg_values, arg_types);
+  vtkParse_ExpandValues(data, cache, m, arg_names, arg_values);
 
   if (data->Function)
     {
-    func_substitution(data->Function, m, arg_names, arg_values, arg_types);
+    func_substitution(
+      data->Function, cache, m, arg_names, arg_values, arg_types);
     }
 }
 
 static void func_substitution(
-  FunctionInfo *data, unsigned long m, const char *arg_names[],
+  FunctionInfo *data, StringCache *cache,
+  unsigned long m, const char *arg_names[],
   const char *arg_values[], ValueInfo *arg_types[])
 {
   unsigned long i, n;
-
-  assert(data->File != NULL);
 
   n = data->NumberOfParameters;
   for (i = 0; i < n; i++)
     {
     value_substitution(
-      data->Parameters[i], m, arg_names, arg_values, arg_types);
+      data->Parameters[i], cache, m, arg_names, arg_values, arg_types);
     }
 
   if (data->ReturnValue)
     {
-    value_substitution(data->ReturnValue, m, arg_names, arg_values, arg_types);
+    value_substitution(
+      data->ReturnValue, cache, m, arg_names, arg_values, arg_types);
     }
 
   if (data->Signature)
     {
     data->Signature =
       vtkparse_string_replace(
-        data->File->Strings, data->Signature, m, arg_names, arg_values);
+        cache, data->Signature, m, arg_names, arg_values);
     }
 
   /* legacy information for old wrappers */
@@ -1136,7 +1137,8 @@ static void func_substitution(
 }
 
 static void class_substitution(
-  ClassInfo *data, unsigned long m, const char *arg_names[],
+  ClassInfo *data, StringCache *cache,
+  unsigned long m, const char *arg_names[],
   const char *arg_values[], ValueInfo *arg_types[])
 {
   unsigned long i, n;
@@ -1145,38 +1147,43 @@ static void class_substitution(
   n = data->NumberOfSuperClasses;
   for (i = 0; i < n; i++)
     {
-    data->SuperClasses[i] = vtkparse_string_replace(data->File->Strings,
-      data->SuperClasses[i], m, arg_names, arg_values);
+    data->SuperClasses[i] = vtkparse_string_replace(
+      cache, data->SuperClasses[i], m, arg_names, arg_values);
     }
 
   n = data->NumberOfClasses;
   for (i = 0; i < n; i++)
     {
-    class_substitution(data->Classes[i], m, arg_names, arg_values, arg_types);
+    class_substitution(
+      data->Classes[i], cache, m, arg_names, arg_values, arg_types);
     }
 
   n = data->NumberOfFunctions;
   for (i = 0; i < n; i++)
     {
-    func_substitution(data->Functions[i], m, arg_names, arg_values, arg_types);
+    func_substitution(
+      data->Functions[i], cache, m, arg_names, arg_values, arg_types);
     }
 
   n = data->NumberOfConstants;
   for (i = 0; i < n; i++)
     {
-    value_substitution(data->Constants[i], m, arg_names, arg_values, arg_types);
+    value_substitution(
+      data->Constants[i], cache, m, arg_names, arg_values, arg_types);
     }
 
   n = data->NumberOfVariables;
   for (i = 0; i < n; i++)
     {
-    value_substitution(data->Variables[i], m, arg_names, arg_values, arg_types);
+    value_substitution(
+      data->Variables[i], cache, m, arg_names, arg_values, arg_types);
     }
 
   n = data->NumberOfTypedefs;
   for (i = 0; i < n; i++)
     {
-    value_substitution(data->Typedefs[i], m, arg_names, arg_values, arg_types);
+    value_substitution(
+      data->Typedefs[i], cache, m, arg_names, arg_values, arg_types);
     }
 }
 
@@ -1296,7 +1303,7 @@ void vtkParse_FreeTemplateDecomposition(
 
 /* Instantiate a class template by substituting the provided arguments. */
 void vtkParse_InstantiateClassTemplate(
-  ClassInfo *data, unsigned long n, const char *args[])
+  ClassInfo *data, StringCache *cache, unsigned long n, const char *args[])
 {
   TemplateInfo *t = data->Template;
   const char **new_args = NULL;
@@ -1305,8 +1312,6 @@ void vtkParse_InstantiateClassTemplate(
   unsigned long i, m;
   char *new_name;
   size_t k;
-
-  assert(data->File != NULL);
 
   if (t == NULL)
     {
@@ -1355,8 +1360,7 @@ void vtkParse_InstantiateClassTemplate(
       {
       arg_types[i] = (ValueInfo *)malloc(sizeof(ValueInfo));
       vtkParse_InitValue(arg_types[i]);
-      arg_types[i]->File = data->File;
-      vtkParse_ValueInfoFromString(arg_types[i], args[i]);
+      vtkParse_ValueInfoFromString(arg_types[i], cache, args[i]);
       arg_types[i]->ItemType = VTK_TYPEDEF_INFO;
       arg_types[i]->Name = arg_names[i];
       }
@@ -1396,11 +1400,11 @@ void vtkParse_InstantiateClassTemplate(
   new_name[k++] = '>';
   new_name[k] = '\0';
 
-  data->Name = vtkParse_CacheString(data->File->Strings, new_name, k);
+  data->Name = vtkParse_CacheString(cache, new_name, k);
   free(new_name);
 
   /* do the template arg substitution */
-  class_substitution(data, m, arg_names, args, arg_types);
+  class_substitution(data, cache, m, arg_names, args, arg_types);
 
   /* free all allocated arrays */
   free((char **)new_args);

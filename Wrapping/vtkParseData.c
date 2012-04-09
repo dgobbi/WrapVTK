@@ -66,7 +66,6 @@ void vtkParse_InitTemplate(TemplateInfo *info)
 {
   info->NumberOfParameters = 0;
   info->Parameters = NULL;
-  info->File = NULL;
 }
 
 /* Copy a TemplateInfo struct */
@@ -77,7 +76,6 @@ void vtkParse_CopyTemplate(TemplateInfo *info, const TemplateInfo *orig)
   n = orig->NumberOfParameters;
   info->NumberOfParameters = n;
   info->Parameters = (ValueInfo **)malloc(n*sizeof(ValueInfo *));
-  info->File = orig->File;
 
   for (i = 0; i < n; i++)
     {
@@ -110,7 +108,6 @@ void vtkParse_InitFunction(FunctionInfo *func)
 
   func->ItemType = VTK_FUNCTION_INFO;
   func->Access = VTK_ACCESS_PUBLIC;
-  func->File = NULL;
   func->Name = NULL;
   func->Comment = NULL;
   func->Class = NULL;
@@ -158,7 +155,6 @@ void vtkParse_CopyFunction(FunctionInfo *func, const FunctionInfo *orig)
 
   func->ItemType = orig->ItemType;
   func->Access = orig->Access;
-  func->File = orig->File;
   func->Name = orig->Name;
   func->Comment = orig->Comment;
   func->Class = orig->Class;
@@ -250,7 +246,6 @@ void vtkParse_InitValue(ValueInfo *val)
 {
   val->ItemType = VTK_VARIABLE_INFO;
   val->Access = VTK_ACCESS_PUBLIC;
-  val->File = NULL;
   val->Name = NULL;
   val->Comment = NULL;
   val->Value = NULL;
@@ -273,7 +268,6 @@ void vtkParse_CopyValue(ValueInfo *val, const ValueInfo *orig)
 
   val->ItemType = orig->ItemType;
   val->Access = orig->Access;
-  val->File = orig->File;
   val->Name = orig->Name;
   val->Comment = orig->Comment;
   val->Value = orig->Value;
@@ -336,7 +330,6 @@ void vtkParse_InitEnum(EnumInfo *item)
 {
   item->ItemType = VTK_ENUM_INFO;
   item->Access = VTK_ACCESS_PUBLIC;
-  item->File = NULL;
   item->Name = NULL;
   item->Comment = NULL;
 }
@@ -346,7 +339,6 @@ void vtkParse_CopyEnum(EnumInfo *item, const EnumInfo *orig)
 {
   item->ItemType = orig->ItemType;
   item->Access = orig->Access;
-  item->File = orig->File;
   item->Name = orig->Name;
   item->Comment = orig->Comment;
 }
@@ -373,7 +365,6 @@ void vtkParse_CopyUsing(UsingInfo *item, const UsingInfo *orig)
 {
   item->ItemType = orig->ItemType;
   item->Access = orig->Access;
-  item->File = orig->File;
   item->Name = orig->Name;
   item->Comment = orig->Comment;
   item->Scope = orig->Scope;
@@ -391,7 +382,6 @@ void vtkParse_InitClass(ClassInfo *cls)
 {
   cls->ItemType = VTK_CLASS_INFO;
   cls->Access = VTK_ACCESS_PUBLIC;
-  cls->File = NULL;
   cls->Name = NULL;
   cls->Comment = NULL;
   cls->Template = NULL;
@@ -426,7 +416,6 @@ void vtkParse_CopyClass(ClassInfo *cls, const ClassInfo *orig)
 
   cls->ItemType = orig->ItemType;
   cls->Access = orig->Access;
-  cls->File = orig->File;
   cls->Name = orig->Name;
   cls->Comment = orig->Comment;
   cls->Template = NULL;
@@ -700,7 +689,6 @@ void vtkParse_AddClassToClass(ClassInfo *info, ClassInfo *item)
   info->Classes = (ClassInfo **)array_size_check(
     info->Classes, sizeof(ClassInfo *), info->NumberOfClasses);
   info->Classes[info->NumberOfClasses++] = item;
-  if (!item->File) { item->File = info->File; }
 }
 
 /* Add a FunctionInfo to a ClassInfo */
@@ -711,7 +699,6 @@ void vtkParse_AddFunctionToClass(ClassInfo *info, FunctionInfo *item)
   info->Functions = (FunctionInfo **)array_size_check(
     info->Functions, sizeof(FunctionInfo *), info->NumberOfFunctions);
   info->Functions[info->NumberOfFunctions++] = item;
-  if (!item->File) { item->File = info->File; }
 }
 
 /* Add a EnumInfo to a ClassInfo */
@@ -722,7 +709,6 @@ void vtkParse_AddEnumToClass(ClassInfo *info, EnumInfo *item)
   info->Enums = (EnumInfo **)array_size_check(
     info->Enums, sizeof(EnumInfo *), info->NumberOfEnums);
   info->Enums[info->NumberOfEnums++] = item;
-  if (!item->File) { item->File = info->File; }
 }
 
 /* Add a Constant ValueInfo to a ClassInfo */
@@ -733,7 +719,6 @@ void vtkParse_AddConstantToClass(ClassInfo *info, ValueInfo *item)
   info->Constants = (ValueInfo **)array_size_check(
     info->Constants, sizeof(ValueInfo *), info->NumberOfConstants);
   info->Constants[info->NumberOfConstants++] = item;
-  if (!item->File) { item->File = info->File; }
 }
 
 /* Add a Variable ValueInfo to a ClassInfo */
@@ -744,7 +729,6 @@ void vtkParse_AddVariableToClass(ClassInfo *info, ValueInfo *item)
   info->Variables = (ValueInfo **)array_size_check(
     info->Variables, sizeof(ValueInfo *), info->NumberOfVariables);
   info->Variables[info->NumberOfVariables++] = item;
-  if (!item->File) { item->File = info->File; }
 }
 
 /* Add a Typedef ValueInfo to a ClassInfo */
@@ -755,7 +739,6 @@ void vtkParse_AddTypedefToClass(ClassInfo *info, ValueInfo *item)
   info->Typedefs = (ValueInfo **)array_size_check(
     info->Typedefs, sizeof(ValueInfo *), info->NumberOfTypedefs);
   info->Typedefs[info->NumberOfTypedefs++] = item;
-  if (!item->File) { item->File = info->File; }
 }
 
 /* Add a UsingInfo to a ClassInfo */
@@ -766,7 +749,6 @@ void vtkParse_AddUsingToClass(ClassInfo *info, UsingInfo *item)
   info->Usings = (UsingInfo **)array_size_check(
     info->Usings, sizeof(UsingInfo *), info->NumberOfUsings);
   info->Usings[info->NumberOfUsings++] = item;
-  if (!item->File) { item->File = info->File; }
 }
 
 
@@ -778,7 +760,6 @@ void vtkParse_AddNamespaceToNamespace(NamespaceInfo *info, NamespaceInfo *item)
   info->Namespaces = (NamespaceInfo **)array_size_check(
     info->Namespaces, sizeof(NamespaceInfo *), info->NumberOfNamespaces);
   info->Namespaces[info->NumberOfNamespaces++] = item;
-  if (!item->File) { item->File = info->File; }
 }
 
 /* Add a ClassInfo to a NamespaceInfo */
@@ -830,7 +811,6 @@ void vtkParse_AddParameterToFunction(FunctionInfo *info, ValueInfo *item)
   info->Parameters = (ValueInfo **)array_size_check(
     info->Parameters, sizeof(ValueInfo *), info->NumberOfParameters);
   info->Parameters[info->NumberOfParameters++] = item;
-  if (!item->File) { item->File = info->File; }
 }
 
 
@@ -840,12 +820,11 @@ void vtkParse_AddParameterToTemplate(TemplateInfo *info, ValueInfo *item)
   info->Parameters = (ValueInfo **)array_size_check(
     info->Parameters, sizeof(ValueInfo *), info->NumberOfParameters);
   info->Parameters[info->NumberOfParameters++] = item;
-  if (!item->File) { item->File = info->File; }
 }
 
 
 /* Add default constructors if they do not already exist */
-void vtkParse_AddDefaultConstructors(ClassInfo *cls)
+void vtkParse_AddDefaultConstructors(ClassInfo *cls, StringCache *cache)
 {
   FunctionInfo *func;
   ValueInfo *param;
@@ -890,7 +869,7 @@ void vtkParse_AddDefaultConstructors(ClassInfo *cls)
     func->Class = cls->Name;
     func->Name = cls->Name;
     k = strlen(cls->Name);
-    tname = vtkParse_NewString(cls->File->Strings, k + 2);
+    tname = vtkParse_NewString(cache, k + 2);
     strcpy(tname, cls->Name);
     strcpy(&tname[k], "()");
     func->Signature = tname;
@@ -913,7 +892,7 @@ void vtkParse_AddDefaultConstructors(ClassInfo *cls)
           k += strlen(cls->Template->Parameters[i]->Name) + 2;
           }
         }
-      tname = vtkParse_NewString(cls->File->Strings, k);
+      tname = vtkParse_NewString(cache, k);
       strcpy(tname, cls->Name);
       k = strlen(tname);
       tname[k++] = '<';
@@ -942,7 +921,7 @@ void vtkParse_AddDefaultConstructors(ClassInfo *cls)
     func->Name = cls->Name;
     k = strlen(cls->Name);
     l = strlen(ccname);
-    tname = vtkParse_NewString(cls->File->Strings, k + l + 9);
+    tname = vtkParse_NewString(cache, k + l + 9);
     strcpy(tname, cls->Name);
     strcpy(&tname[k], "(const &");
     strcpy(&tname[k+8], ccname);

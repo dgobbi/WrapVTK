@@ -842,7 +842,8 @@ const char *vtkParseHierarchy_GetProperty(
 /* Expand all unrecognized types in a ValueInfo struct by
  * using the typedefs in the HierarchyInfo struct. */
 int vtkParseHierarchy_ExpandTypedefsInValue(
-  const HierarchyInfo *info, ValueInfo *val, const char *scope)
+  const HierarchyInfo *info, ValueInfo *val, StringCache *cache,
+  const char *scope)
 {
   char text[128];
   char *cp;
@@ -897,7 +898,8 @@ int vtkParseHierarchy_ExpandTypedefsInValue(
               info, entry->SuperClasses[i], NULL);
             scope_needs_free = (scope != entry->SuperClasses[i]);
             /* recurse if more than one superclass */
-            if (vtkParseHierarchy_ExpandTypedefsInValue(info, val, scope))
+            if (vtkParseHierarchy_ExpandTypedefsInValue(
+                  info, val, cache, scope))
               {
               if (scope_needs_free) { free((char *)scope); }
               return 1;
@@ -928,8 +930,7 @@ int vtkParseHierarchy_ExpandTypedefsInValue(
          info, val->Class, scope);
       if (newclass != val->Class)
         {
-        val->Class = vtkParse_CacheString(
-          val->File->Strings, newclass, strlen(newclass));
+        val->Class = vtkParse_CacheString(cache, newclass, strlen(newclass));
         free((char *)newclass);
         }
       result = 1;

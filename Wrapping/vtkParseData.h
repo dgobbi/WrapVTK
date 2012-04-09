@@ -85,7 +85,6 @@ typedef struct _TemplateInfo
 {
   unsigned long  NumberOfParameters;
   ValueInfo    **Parameters;
-  FileInfo      *File;
 } TemplateInfo;
 
 /**
@@ -100,7 +99,6 @@ struct _ValueInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
-  FileInfo      *File;
   const char    *Name;
   const char    *Comment;
   const char    *Value;      /* for vars or default paramter values */
@@ -123,7 +121,6 @@ struct _FunctionInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
-  FileInfo      *File;
   const char    *Name;
   const char    *Comment;
   const char    *Class;       /* class name for methods */
@@ -165,7 +162,6 @@ typedef struct _EnumInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
-  FileInfo      *File;
   const char    *Name;
   const char    *Comment;
 } EnumInfo;
@@ -177,7 +173,6 @@ typedef struct _UsingInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
-  FileInfo      *File;
   const char    *Name;     /* null for using whole namespace */
   const char    *Comment;
   const char    *Scope;    /* the namespace or class */
@@ -190,7 +185,6 @@ typedef struct _ClassInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
-  FileInfo      *File;
   const char    *Name;
   const char    *Comment;
   TemplateInfo  *Template;
@@ -333,7 +327,7 @@ void vtkParse_AddParameterToTemplate(TemplateInfo *info, ValueInfo *item);
 /**
  * Add default constructors to a class if they do not already exist
  */
-void vtkParse_AddDefaultConstructors(ClassInfo *data);
+void vtkParse_AddDefaultConstructors(ClassInfo *data, StringCache *cache);
 
 #ifdef __cplusplus
 } /* extern "C" */

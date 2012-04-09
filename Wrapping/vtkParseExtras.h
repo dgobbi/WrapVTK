@@ -79,7 +79,8 @@ size_t vtkParse_BasicTypeFromString(
  * Only simple text strings are supported, e.g. "const T **".
  * Returns the number of characters consumed.
  */
-size_t vtkParse_ValueInfoFromString(ValueInfo *val, const char *text);
+size_t vtkParse_ValueInfoFromString(
+  ValueInfo *val, StringCache *cache, const char *text);
 
 /**
  * Generate a declaration string from a ValueInfo struct.  If the
@@ -100,7 +101,8 @@ void vtkParse_ExpandTypedef(ValueInfo *valinfo, ValueInfo *typedefinfo);
  * that match any of the supplied typedefs. The expansion is done in-place.
  */
 void vtkParse_ExpandTypedefs(
-  ValueInfo *valinfo, unsigned long n, const char *name[], const char *val[],
+  ValueInfo *valinfo, StringCache *cache,
+  unsigned long n, const char *name[], const char *val[],
   ValueInfo *typedefinfo[]);
 
 /**
@@ -109,11 +111,12 @@ void vtkParse_ExpandTypedefs(
  * This is used to replace constants with their values.
  */
 void vtkParse_ExpandValues(
-  ValueInfo *valinfo, unsigned long n, const char *name[], const char *val[]);
+  ValueInfo *valinfo, StringCache *cache,
+  unsigned long n, const char *name[], const char *val[]);
 
 /**
  * Search and replace, return the initial string if no replacements
- * occurred, otherwise return a new string allocated with malloc. */
+ * occurred, else return a new string allocated with malloc. */
 const char *vtkParse_StringReplace(
   const char *str1, unsigned long n, const char *name[], const char *val[]);
 
@@ -140,7 +143,7 @@ void vtkParse_FreeTemplateDecomposition(
  * be returned.
  */
 void vtkParse_InstantiateClassTemplate(
-  ClassInfo *data, unsigned long n, const char *args[]);
+  ClassInfo *data, StringCache *cache, unsigned long n, const char *args[]);
 
 /**
  * Instantiate a function or class method template by substituting the

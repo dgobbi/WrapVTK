@@ -999,7 +999,6 @@ void pushFunction()
   functionStack[functionDepth] = currentFunction;
   currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
   vtkParse_InitFunction(currentFunction);
-  currentFunction->File = data;
   if (!functionStack[functionDepth])
     {
     startSig();
@@ -2854,7 +2853,6 @@ void start_class(const char *classname, int is_struct_or_union)
     }
 
   vtkParse_InitFunction(currentFunction);
-  currentFunction->File = data;
   startSig();
   clearComment();
 }
@@ -2876,7 +2874,6 @@ void reject_class(const char *classname, int is_struct_or_union)
     }
 
   vtkParse_InitFunction(currentFunction);
-  currentFunction->File = data;
   startSig();
   clearComment();
 }
@@ -2885,7 +2882,7 @@ void reject_class(const char *classname, int is_struct_or_union)
 void end_class()
 {
   /* add default constructors */
-  vtkParse_AddDefaultConstructors(currentClass);
+  vtkParse_AddDefaultConstructors(currentClass, data->Strings);
 
   popClass();
 }
@@ -3353,7 +3350,6 @@ void set_return(FunctionInfo *func, unsigned int type,
   ValueInfo *val = (ValueInfo *)malloc(sizeof(ValueInfo));
 
   vtkParse_InitValue(val);
-  val->File = data;
   val->Type = type;
   if (typeclass)
     {
@@ -3423,7 +3419,6 @@ void handle_complex_type(
     func = getFunction();
     func->ReturnValue = (ValueInfo *)malloc(sizeof(ValueInfo));
     vtkParse_InitValue(func->ReturnValue);
-    func->ReturnValue->File = data;
     func->ReturnValue->Type = datatype;
     func->ReturnValue->Class = vtkstrdup(getTypeId());
     if (funcSig) { func->Signature = vtkstrdup(funcSig); }
@@ -3518,7 +3513,6 @@ void handle_function_type(
 
   func = (FunctionInfo *)malloc(sizeof(FunctionInfo));
   vtkParse_InitFunction(func);
-  currentFunction->File = data;
   add_parameter(func, VTK_PARSE_VOID_PTR, "void", 0);
   set_return(func, VTK_PARSE_VOID, "void", 0);
   j = strlen(funcSig);
@@ -3556,7 +3550,6 @@ void add_legacy_parameter(ValueInfo *param)
 void reject_function()
 {
   vtkParse_InitFunction(currentFunction);
-  currentFunction->File = data;
   startSig();
   getMacro();
 }
@@ -3752,7 +3745,6 @@ void output_function()
     }
 
   vtkParse_InitFunction(currentFunction);
-  currentFunction->File = data;
   startSig();
 }
 
@@ -3923,7 +3915,6 @@ FileInfo *vtkParse_ParseFile(
   namespaceDepth = 0;
   currentNamespace = (NamespaceInfo *)malloc(sizeof(NamespaceInfo));
   vtkParse_InitNamespace(currentNamespace);
-  currentNamespace->File = data;
   data->Contents = currentNamespace;
 
   templateDepth = 0;
@@ -3931,7 +3922,6 @@ FileInfo *vtkParse_ParseFile(
 
   currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
   vtkParse_InitFunction(currentFunction);
-  currentFunction->File = data;
   startSig();
 
   parseDebug = 0;

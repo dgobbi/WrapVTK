@@ -141,7 +141,8 @@ const char *vtkParseHierarchy_TemplatedSuperClass(
  * using the typedefs in the HierarchyInfo struct.
  */
 int vtkParseHierarchy_ExpandTypedefsInValue(
-  const HierarchyInfo *info, ValueInfo *data, const char *scope);
+  const HierarchyInfo *info, ValueInfo *data, StringCache *cache,
+  const char *scope);
 
 /**
  * Expand typedefs found in a name stored as a string.  The value
