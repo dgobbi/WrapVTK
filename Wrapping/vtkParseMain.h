@@ -65,7 +65,7 @@ OptionInfo *vtkParse_GetCommandLineOptions();
 /**
  * The main function, returns the result of the parse and the output file
  */
-FileInfo *vtkParse_Main(int argc, char *argv[], FILE **ofile);
+FileInfo *vtkParse_Main(int argc, char *argv[]);
 
 #ifdef __cplusplus
 } /* extern "C" */

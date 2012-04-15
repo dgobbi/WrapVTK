@@ -32,9 +32,6 @@ the code that parses the header file.
 /* This is the struct that contains the options */
 OptionInfo options;
 
-/* This method provides the back-end for the generators */
-extern void vtkParseOutput(FILE *, FileInfo *);
-
 /* Check the options */
 static int check_options(int argc, char *argv[])
 {
@@ -86,6 +83,15 @@ static int check_options(int argc, char *argv[])
         }
       options.HierarchyFileName = argv[i];
       }
+    else if (strcmp(argv[i], "-o") == 0)
+      {
+      i++;
+      if (i >= argc || argv[i][0] == '-')
+        {
+        return -1;
+        }
+      options.OutputFileName = argv[i];
+      }
     else if (strcmp(argv[i], "-I") == 0)
       {
       i++;
@@ -127,12 +133,11 @@ OptionInfo *vtkParse_GetCommandLineOptions()
   return &options;
 }
 
-FileInfo *vtkParse_Main(int argc, char *argv[], FILE **ofile_p)
+FileInfo *vtkParse_Main(int argc, char *argv[])
 {
   int argi;
   int has_options = 0;
   FILE *ifile;
-  FILE *ofile;
   FILE *hfile = 0;
   const char *cp;
   char *classname;
@@ -140,21 +145,24 @@ FileInfo *vtkParse_Main(int argc, char *argv[], FILE **ofile_p)
   FileInfo *data;
 
   argi = check_options(argc, argv);
-  if (argi > 1 && argc - argi == 2)
+  if (argi > 1 && argc - argi == 1)
     {
     has_options = 1;
     }
   else if (argi < 0 || argc < 3 || argc > 5)
     {
     fprintf(stderr,
-            "Usage: %s [options] input_file output_file\n"
+            "Usage: %s [options] input_file\n"
+            "  -o <file>       the output file\n"
+            "  -I <dir>        add an include directory\n"
+            "  -D <macro>      add a macro definition\n"
+            "  -U <macro>      undefine a macro\n"
             "  --concrete      force concrete class\n"
             "  --abstract      force abstract class\n"
             "  --vtkobject     vtkObjectBase-derived class\n"
             "  --special       non-vtkObjectBase class\n"
             "  --hints <file>  hints file\n"
-            "  --types <file>  type hierarchy file\n"
-            "  -I <dir>        add an include directory\n",
+            "  --types <file>  type hierarchy file\n",
             argv[0]);
     exit(1);
     }
@@ -178,6 +186,7 @@ FileInfo *vtkParse_Main(int argc, char *argv[], FILE **ofile_p)
       options.IsConcrete = atoi(argv[argi++]);
       options.IsAbstract = !options.IsConcrete;
       }
+    options.OutputFileName = argv[argi++];
     }
 
   if (options.HintFileName && options.HintFileName[0] != '\0')
@@ -190,12 +199,9 @@ FileInfo *vtkParse_Main(int argc, char *argv[], FILE **ofile_p)
       }
     }
 
-  options.OutputFileName = argv[argi++];
-  ofile = fopen(options.OutputFileName, "w");
-
-  if (!ofile)
+  if (options.OutputFileName == NULL)
     {
-    fprintf(stderr, "Error opening output file %s\n", options.OutputFileName);
+    fprintf(stderr, "No output file was specified\n");
     fclose(ifile);
     if (hfile)
       {
@@ -227,20 +233,14 @@ FileInfo *vtkParse_Main(int argc, char *argv[], FILE **ofile_p)
 
   data = vtkParse_ParseFile(options.InputFileName, ifile, stderr);
 
-  if (!data)
-    {
-    fclose(ifile);
-    fclose(ofile);
-    if (hfile)
-      {
-      fclose(hfile);
-      }
-    exit(1);
-    }
-
-  if (hfile)
+  if (data && hfile)
     {
     vtkParse_ReadHints(data, hfile, stderr);
+    }
+
+  if (!data)
+    {
+    exit(1);
     }
 
   if (options.IsConcrete && data->MainClass)
@@ -252,6 +252,5 @@ FileInfo *vtkParse_Main(int argc, char *argv[], FILE **ofile_p)
     data->MainClass->IsAbstract = 1;
     }
 
-  *ofile_p = ofile;
   return data;
 }

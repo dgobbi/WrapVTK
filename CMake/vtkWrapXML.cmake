@@ -80,8 +80,8 @@ MACRO(VTK_WRAP_XML TARGET XML_LIST_NAME OUTPUT_DIR SOURCES)
         ${TMP_HINTS}
         "--types" "${quote}${TMP_HIERARCHY}${quote}"
         ${TMP_INCLUDE}
+        "-o" "${quote}${TMP_OUTPUT}${quote}"
         "${quote}${TMP_INPUT}${quote}"
-        "${quote}${TMP_OUTPUT}${quote}"
         COMMENT "XML Wrapping - generating ${TMP_CLASS}.xml"
         ${verbatim}
         )

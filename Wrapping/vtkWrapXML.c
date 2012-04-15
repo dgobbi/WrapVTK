@@ -1749,13 +1749,26 @@ int main(int argc, char *argv[])
 {
   FILE *fp;
   FileInfo *data;
+  OptionInfo *options;
   wrapxml_state_t ws;
 
   /* recurse through included headers (off for now) */
   vtkParse_SetRecursive(0);
 
   /* handle args, parse header, get output file handle */
-  data = vtkParse_Main(argc, argv, &fp);
+  data = vtkParse_Main(argc, argv);
+
+  /* get the command-line options */
+  options = vtkParse_GetCommandLineOptions();
+
+  /* get the output file */
+  fp = fopen(options->OutputFileName, "w");
+
+  if (!fp)
+    {
+    fprintf(stderr, "Error opening output file %s\n", options->OutputFileName);
+    exit(1);
+    }
 
   /* a struct to keep track of things */
   ws.data = data;
