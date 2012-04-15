@@ -8166,7 +8166,7 @@ void outputSetVectorMacro(const char *var, unsigned int paramType,
   unsigned long i, m;
   m = (n > 7 ? 0 : n);
 
-  sprintf(ntext, "%li", n);
+  sprintf(ntext, "%lu", n);
 
   currentFunction->Macro = mnames[m];
   currentFunction->Name = vtkstrcat("Set", var);
