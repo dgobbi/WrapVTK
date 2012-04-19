@@ -2156,13 +2156,21 @@ static int preproc_include_file(
 
   do
     {
-    if (i == n)
+    if (i >= n)
       {
-      /* recycle two lookahead chars to the front of the buffer */
+      /* recycle unused lookahead chars */
       if (r)
         {
-        tbuf[0] = tbuf[tbuflen-2];
-        tbuf[1] = tbuf[tbuflen-1];
+        r = n + 2 - i;
+        if (r == 2)
+          {
+          tbuf[0] = tbuf[tbuflen-2];
+          tbuf[1] = tbuf[tbuflen-1];
+          }
+        else if (r == 1)
+          {
+          tbuf[0] = tbuf[tbuflen-1];
+          }
         }
 
       /* read the next chunk of the file */
@@ -2192,19 +2200,19 @@ static int preproc_include_file(
           clearerr(fp);
           }
 
-        /* check whether to add a lookahead reserve of two chars */
-        if (n == tbuflen)
-          {
-          /* this only occurs if the very first fread fills the buffer */
-          r = 2;
-          n -= r;
-          }
-        else if (n + r < tbuflen)
+        if (n + r < tbuflen)
           {
           /* this only occurs if the final fread does not fill the buffer */
           n += r;
           r = 0;
           }
+        else
+          {
+          /* set a lookahead reserve of two chars */
+          n -= (2 - r);
+          r = 2;
+          }
+
         /* guard against lookahead past last char in file */
         tbuf[n + r] = '\0';
         }
