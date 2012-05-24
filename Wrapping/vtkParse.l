@@ -415,9 +415,11 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
       return(QT_ID);
     }
 
-"__attribute__"  get_macro_arguments();
+"__attribute__"  get_macro_arguments(); /* gcc attributes */
 
-"__declspec"  get_macro_arguments();
+"__declspec"  get_macro_arguments(); /* Windows linkage */
+
+("__cdecl"|"__clrcall"|"__stdcall"|"__fastcall"|"__thiscall") /* Windows */
 
 {ID}  {
       const char *name = vtkstrndup(yytext, yyleng);

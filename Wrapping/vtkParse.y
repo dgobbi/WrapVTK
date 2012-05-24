@@ -170,6 +170,8 @@ void print_parser_error(const char *text, const char *cp, size_t n);
 void start_class(const char *classname, int is_struct_or_union);
 void reject_class(const char *classname, int is_struct_or_union);
 void end_class();
+void add_base_class(ClassInfo *cls, const char *name, int access_lev,
+                    int is_virtual);
 void output_friend_function(void);
 void output_function(void);
 void reject_function(void);
@@ -194,7 +196,7 @@ void handle_complex_type(ValueInfo *val, unsigned int datatype,
                          unsigned int extra, const char *funcSig);
 void handle_function_type(ValueInfo *param, const char *name,
                           const char *funcSig);
-void add_legacy_parameter(ValueInfo *param);
+void add_legacy_parameter(FunctionInfo *func, ValueInfo *param);
 
 void outputSetVectorMacro(const char *var, unsigned int paramType,
                           const char *typeText, unsigned long n);
@@ -1420,7 +1422,12 @@ class_def_body:
       closeComment();
     }
     class_def_item
-  | class_def_body access_specifier ':';
+  | class_def_body class_access ':';
+
+class_access:
+    PUBLIC { access_level = VTK_ACCESS_PUBLIC; }
+  | PRIVATE { access_level = VTK_ACCESS_PRIVATE; }
+  | PROTECTED { access_level = VTK_ACCESS_PROTECTED; };
 
 class_def_item:
     class_forward_decl
@@ -1450,19 +1457,27 @@ base_list:
 
 base_list_item:
     any_id
-  | PRIVATE any_id
-  | PROTECTED any_id
-  | PUBLIC any_id
-    {
-      vtkParse_AddStringToArray(&currentClass->SuperClasses,
-                                &currentClass->NumberOfSuperClasses,
-                                vtkstrdup($<str>2));
-    };
+    { add_base_class(currentClass, $<str>1, access_level, 0); }
+  | base_virtual base_access_opt any_id
+    { add_base_class(currentClass, $<str>3, $<integer>2, $<integer>1); }
+  | base_access base_virtual_opt any_id
+    { add_base_class(currentClass, $<str>3, $<integer>1, $<integer>2); };
 
-access_specifier:
-    PUBLIC { access_level = VTK_ACCESS_PUBLIC; }
-  | PRIVATE { access_level = VTK_ACCESS_PRIVATE; }
-  | PROTECTED { access_level = VTK_ACCESS_PROTECTED; };
+base_virtual:
+    VIRTUAL { $<integer>$ = VTK_PARSE_VIRTUAL; };
+
+base_virtual_opt:
+    { $<integer>$ = 0; }
+  | base_virtual { $<integer>$ = $<integer>1; };
+
+base_access:
+    PUBLIC { $<integer>$ = VTK_ACCESS_PUBLIC; }
+  | PRIVATE { $<integer>$ = VTK_ACCESS_PRIVATE; }
+  | PROTECTED { $<integer>$ = VTK_ACCESS_PROTECTED; };
+
+base_access_opt:
+    { $<integer>$ = access_level; }
+  | base_access { $<integer>$ = $<integer>1; };
 
 /*
  * Enums
@@ -1659,6 +1674,7 @@ typecast_op_func:
     parameter_list ')' { postSig(")"); } func_trailer
     {
       $<integer>$ = $<integer>3;
+      postSig(";");
       closeSig();
       currentFunction->IsOperator = 1;
       currentFunction->Name = "operator typecast";
@@ -1669,6 +1685,7 @@ typecast_op_func:
 op_func:
     op_sig { postSig(")"); } func_trailer
     {
+      postSig(";");
       closeSig();
       currentFunction->Name = vtkstrcat("operator", $<str>1);
       currentFunction->Comment = vtkstrdup(getComment());
@@ -1687,6 +1704,7 @@ op_sig:
 func:
     func_sig func_trailer
     {
+      postSig(";");
       closeSig();
       currentFunction->Name = vtkstrdup($<str>1);
       currentFunction->Comment = vtkstrdup(getComment());
@@ -1737,6 +1755,7 @@ structor:
     structor_sig { closeSig(); }
     maybe_initializers { openSig(); } func_trailer
     {
+      postSig(";");
       closeSig();
       if (getStorageType() & VTK_PARSE_VIRTUAL)
         {
@@ -1783,7 +1802,7 @@ parameter:
       vtkParse_InitValue(param);
 
       handle_complex_type(param, $<integer>2, $<integer>3, copySig());
-      add_legacy_parameter(param);
+      add_legacy_parameter(currentFunction, param);
 
       if (getVarName())
         {
@@ -1812,7 +1831,7 @@ parameter:
       postSig(")(void *) ");
 
       handle_function_type(param, $<str>1, copySig());
-      add_legacy_parameter(param);
+      add_legacy_parameter(currentFunction, param);
 
       vtkParse_AddParameterToFunction(currentFunction, param);
     };
@@ -2887,6 +2906,17 @@ void end_class()
   popClass();
 }
 
+/* add a base class to the specified class */
+void add_base_class(ClassInfo *cls, const char *name, int al, int virt)
+{
+  if (al == VTK_ACCESS_PUBLIC && virt == 0)
+    {
+    vtkParse_AddStringToArray(&cls->SuperClasses,
+                              &cls->NumberOfSuperClasses,
+                              vtkstrdup(name));
+    }
+}
+
 /* add a using declaration or directive */
 void add_using(const char *name, int is_namespace)
 {
@@ -3337,7 +3367,7 @@ void add_parameter(FunctionInfo *func, unsigned int type,
                               vtkstrdup(text));
     }
 
-  add_legacy_parameter(param);
+  add_legacy_parameter(func, param);
 
   vtkParse_AddParameterToFunction(func, param);
 }
@@ -3526,21 +3556,21 @@ void handle_function_type(
 }
 
 /* add a parameter to the legacy part of the FunctionInfo struct */
-void add_legacy_parameter(ValueInfo *param)
+void add_legacy_parameter(FunctionInfo *func, ValueInfo *param)
 {
 #ifndef VTK_PARSE_LEGACY_REMOVE
-  unsigned long i = currentFunction->NumberOfArguments;
+  unsigned long i = func->NumberOfArguments;
 
   if (i < MAX_ARGS)
     {
-    currentFunction->NumberOfArguments = i + 1;
-    currentFunction->ArgTypes[i] = param->Type;
-    currentFunction->ArgClasses[i] = param->Class;
-    currentFunction->ArgCounts[i] = param->Count;
+    func->NumberOfArguments = i + 1;
+    func->ArgTypes[i] = param->Type;
+    func->ArgClasses[i] = param->Class;
+    func->ArgCounts[i] = param->Count;
     }
   else
     {
-    currentFunction->ArrayFailure = 1;
+    func->ArrayFailure = 1;
     }
 #endif
 }

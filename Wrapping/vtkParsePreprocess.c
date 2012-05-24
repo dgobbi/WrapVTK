@@ -2783,7 +2783,7 @@ const char *vtkParsePreprocess_ExpandMacro(
         else
           {
           values = (const char **)malloc(2*n*sizeof(const char **));
-          memcpy(values, stack_values, 8*sizeof(const char **));
+          memcpy((char **)values, stack_values, 8*sizeof(const char **));
           }
         }
 
@@ -3339,7 +3339,7 @@ void vtkParsePreprocess_FreeMacro(MacroInfo *macro)
     {
     free((char *)macro->Parameters[i]);
     }
-  free(macro->Parameters);
+  free((char **)macro->Parameters);
 
   free(macro);
 }
@@ -3399,14 +3399,14 @@ void vtkParsePreprocess_Free(PreprocessInfo *info)
     {
     free((char *)info->IncludeDirectories[i]);
     }
-  free(info->IncludeDirectories);
+  free((char **)info->IncludeDirectories);
 
   n = info->NumberOfIncludeFiles;
   for (i = 0; i < n; i++)
     {
     free((char *)info->IncludeFiles[i]);
     }
-  free(info->IncludeFiles);
+  free((char **)info->IncludeFiles);
 
   free(info);
 }
