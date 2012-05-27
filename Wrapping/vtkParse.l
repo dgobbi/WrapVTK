@@ -147,16 +147,6 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
         }
     }
 
-"void"{PS}"("{PS}"*"{ID}{PS}")"{PS}"("{PS}"void"{PS}"*"{PS}")" {
-      size_t i = 0; size_t j = 0;
-      while (yytext[j] != '*') { i++; j++; }
-      i++; j++;
-      while (yytext[i] != ' ' && yytext[i] != '\t' &&
-             yytext[i] != '\n' && yytext[i] != '\r' && yytext[i] != ')') {i++;}
-      yylval.str = vtkstrndup(&yytext[j], i-j);
-      return(VAR_FUNCTION);
-    }
-
 "long"{WS}"double"                       return(LONG_DOUBLE);
 "double"                                 return(DOUBLE);
 "float"                                  return(FLOAT);
@@ -268,6 +258,7 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
 "union"         return(UNION);
 "virtual"       return(VIRTUAL);
 "const"         return(CONST);
+"volatile"      return(VOLATILE);
 "mutable"       return(MUTABLE);
 "operator"      return(OPERATOR);
 "friend"        return(FRIEND);
@@ -291,7 +282,6 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
 
 "auto"          /* irrelevant to wrappers */
 "register"      /* irrelevant to wrappers */
-"volatile"      /* irrelevant to wrappers */
 
 "and"           return(OP_LOGIC_AND);
 "and_eq"        return(OP_AND_EQ);

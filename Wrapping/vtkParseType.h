@@ -61,16 +61,18 @@
 #define VTK_PARSE_INDIRECT   0x0000FF00
 
 /**
- * Storage qualifiers: just static and const for now
+ * Qualifiers
  */
 #define VTK_PARSE_QUALIFIER   0x00FF0000
 #define VTK_PARSE_CONST       0x00010000
 #define VTK_PARSE_STATIC      0x00020000
 #define VTK_PARSE_VIRTUAL     0x00040000
 #define VTK_PARSE_EXPLICIT    0x00080000
+#define VTK_PARSE_MUTABLE     0x00100000
+#define VTK_PARSE_VOLATILE    0x00200000
 
 /**
- * Mask for removing "const", "static" qualifiers
+ * Mask for removing qualifiers
  */
 #define VTK_PARSE_UNQUALIFIED_TYPE 0x0000FFFF
 
