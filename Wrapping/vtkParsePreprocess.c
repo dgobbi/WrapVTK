@@ -62,7 +62,7 @@
 /** Whitespace types.
  * WS_NO_EOL treats newline as end-of-line, instead of whitespace.
  * WS_ALL treats newlines as regular whitespace.
- * WS_COMMENTS does not treat comments as whitespace, allowing
+ * WS_COMMENT does not treat comments as whitespace, allowing
  * comments blocks to be returned as tokens. */
 typedef enum _preproc_space_t
 {
@@ -273,7 +273,7 @@ static void preproc_skip_whitespace(
         break;
         }
       }
-    else if (cp[0] == '/' && (spacetype & WS_COMMENT) == 0)
+    else if (cp[0] == '/' && (spacetype & WS_COMMENT) != WS_COMMENT)
       {
       if (cp[1] == '/' || cp[1] == '*')
         {
@@ -791,6 +791,9 @@ static int preproc_skip_parentheses(preproc_tokenizer *tokens)
     return VTK_PARSE_OK;
     }
 
+#if PREPROC_DEBUG
+  fprintf(stderr, "syntax error %d\n", __LINE__);
+#endif
   return VTK_PARSE_SYNTAX_ERROR;
 }
 
@@ -1657,6 +1660,9 @@ int preproc_evaluate_conditional(
     {
     if (tokens->tok != 0)
       {
+#if PREPROC_DEBUG
+      fprintf(stderr, "syntax error %d\n", __LINE__);
+#endif
       return VTK_PARSE_SYNTAX_ERROR;
       }
     return (rval == 0 ? VTK_PARSE_SKIP : VTK_PARSE_OK);
