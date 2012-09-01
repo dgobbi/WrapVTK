@@ -2150,7 +2150,19 @@ opt_ptr_operator_seq:
 
 /* for parameters, the declarator_id is optional */
 direct_abstract_declarator:
-    opt_declarator_id opt_array_decorator_seq { $<integer>$ = 0; }
+    { clearVarName(); chopSig(); }
+    opt_array_decorator_seq { $<integer>$ = 0; }
+  | declarator_id opt_array_or_parameters
+    {
+      if ($<integer>2 == VTK_PARSE_FUNCTION)
+        {
+        $<integer>$ = VTK_PARSE_FUNCTION_PTR;
+        }
+      else
+        {
+        $<integer>$ = 0;
+        }
+    }
   | p_or_lp_or_la abstract_declarator ')' { postSig(")"); }
     opt_array_or_parameters
     {
@@ -2224,10 +2236,6 @@ declarator:
     direct_declarator
   | ptr_operator_seq direct_declarator
     { $<integer>$ = add_indirection($<integer>1, $<integer>2); }
-
-opt_declarator_id:
-    { clearVarName(); chopSig(); }
-  | declarator_id
 
 declarator_id:
     simple_id { setVarName($<str>1); }
