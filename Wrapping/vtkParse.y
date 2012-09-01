@@ -3947,7 +3947,7 @@ void add_legacy_parameter(FunctionInfo *func, ValueInfo *param)
           param->Function->ReturnValue->Type == VTK_PARSE_VOID)
         {
         func->ArgTypes[i] = VTK_PARSE_FUNCTION;
-        } 
+        }
       }
     }
   else
@@ -4099,7 +4099,7 @@ void output_function()
           param->Function->ReturnValue->Type != VTK_PARSE_VOID)
         {
         currentFunction->ArrayFailure = 1;
-        } 
+        }
       }
     }
 #endif /* VTK_PARSE_LEGACY_REMOVE */

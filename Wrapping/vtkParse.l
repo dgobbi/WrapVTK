@@ -347,7 +347,7 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
         if (ex)
           {
           ex->IsExcluded = 1;
-          } 
+          }
 
         if (macro->IsFunction)
           {
