@@ -1496,6 +1496,7 @@ template_declaration:
     template_head class_definition
   | template_head function_definition
   | template_head nested_variable_initialization
+  | template_head template_declaration
 
 /*
  * extern section is parsed, but "extern" is ignored
@@ -1593,6 +1594,7 @@ member_declaration:
 template_member_declaration:
     template_head class_definition
   | template_head method_definition
+  | template_head template_member_declaration
 
 friend_declaration:
     FRIEND ignored_class
@@ -1821,12 +1823,13 @@ template_parameter:
     { add_template_parameter(0, $<integer>3, copySig()); }
     opt_template_parameter_initializer
   | { pushTemplate(); markSig(); }
-    template_head direct_abstract_declarator
+    template_head CLASS { postSig("class"); }
+    direct_abstract_declarator
     {
       unsigned long i;
       TemplateInfo *newTemplate = currentTemplate;
       popTemplate();
-      add_template_parameter(0, $<integer>3, copySig());
+      add_template_parameter(0, $<integer>5, copySig());
       i = currentTemplate->NumberOfParameters-1;
       currentTemplate->Parameters[i]->Template = newTemplate;
     }
