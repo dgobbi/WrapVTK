@@ -27,6 +27,7 @@ ADD_EXECUTABLE(${vtkWrapXML_EXE} ${vtkWrapXML_SRCS})
 
 SET(vtkWrapVTKHierarchy_SRCS
   vtkParse.tab.c
+  vtkParseMain.c
   vtkParsePreprocess.c
   vtkParseString.c
   vtkParseData.c
