@@ -32,8 +32,14 @@ MACRO(VTK_WRAP_XML TARGET XML_LIST_NAME OUTPUT_DIR SOURCES)
 
   SET(TMP_INCLUDE)
   FOREACH(INCLUDE_DIR ${VTK_INCLUDE_DIRS})
-    SET(TMP_INCLUDE ${TMP_INCLUDE} -I "${quote}${INCLUDE_DIR}${quote}")
+    SET(TMP_INCLUDE "${TMP_INCLUDE}-I ${quote}${INCLUDE_DIR}${quote}\n")
   ENDFOREACH(INCLUDE_DIR ${VTK_INCLUDE_DIRS})
+
+  # write wrapper-tool arguments to a file
+  STRING(STRIP "${TMP_INCLUDE}" CMAKE_CONFIGURABLE_FILE_CONTENT)
+  SET(RESPONSE_FILE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.args)
+  CONFIGURE_FILE(${CMAKE_ROOT}/Modules/CMakeConfigurableFile.in
+                 ${RESPONSE_FILE} @ONLY)
 
   FOREACH(INPUT_FILE ${SOURCES})
 
@@ -79,7 +85,7 @@ MACRO(VTK_WRAP_XML TARGET XML_LIST_NAME OUTPUT_DIR SOURCES)
         ${TMP_SPECIAL}
         ${TMP_HINTS}
         "--types" "${quote}${TMP_HIERARCHY}${quote}"
-        ${TMP_INCLUDE}
+        "${quote}@${RESPONSE_FILE}${quote}"
         "-o" "${quote}${TMP_OUTPUT}${quote}"
         "${quote}${TMP_INPUT}${quote}"
         COMMENT "XML Wrapping - generating ${TMP_CLASS}.xml"

@@ -25,16 +25,21 @@
  For each class, the output file will have a line in the following
  format:
 
- classname [ : superclass ] ; header.h
+ classname [ : superclass ] ; header.h ; kit [; flags]
 
- For each typedef, the output file will have a line like this:
+ For each enum type,
 
- name = [2][3]* const type ; header.h
+ enumname : enum ; header.h ; kit [; flags]
+
+ For each typedef,
+
+ name = [2][3]* const int ; header.h ; kit [; flags]
 
 */
 
 #include "vtkParse.h"
 #include "vtkParseData.h"
+#include "vtkParseMain.h"
 #include "vtkParsePreprocess.h"
 #include <stdio.h>
 #include <string.h>
@@ -121,26 +126,26 @@ static char *append_scope_to_line(
  * Append template info
  */
 static char *append_template_to_line(
-  char *line, size_t *m, size_t *maxlen, TemplateInfo *template_info)
+  char *line, size_t *m, size_t *maxlen, TemplateInfo *template_args)
 {
-  ValueInfo *param;
-  unsigned long j;
+  ValueInfo *arg;
+  int j;
 
   line = append_to_line(line, "<", m, maxlen);
 
-  for (j = 0; j < template_info->NumberOfParameters; j++)
+  for (j = 0; j < template_args->NumberOfParameters; j++)
     {
-    param = template_info->Parameters[j];
-    if (param->Name)
+    arg = template_args->Parameters[j];
+    if (arg->Name)
       {
-      line = append_to_line(line, param->Name, m, maxlen);
+      line = append_to_line(line, arg->Name, m, maxlen);
       }
-    if (param->Value && param->Value[0] != '\n')
+    if (arg->Value && arg->Value[0] != '\n')
       {
       line = append_to_line(line, "=", m, maxlen);
-      line = append_to_line(line, param->Value, m, maxlen);
+      line = append_to_line(line, arg->Value, m, maxlen);
       }
-    if (j+1 < template_info->NumberOfParameters)
+    if (j+1 < template_args->NumberOfParameters)
       {
       line = append_to_line(line, ",", m, maxlen);
       }
@@ -157,7 +162,7 @@ static char *append_template_to_line(
 static char *append_class_to_line(
   char *line, size_t *m, size_t *maxlen, ClassInfo *class_info)
 {
-  unsigned long j;
+  int j;
 
   line = append_to_line(line, class_info->Name, m, maxlen);
 
@@ -203,10 +208,13 @@ static char *append_enum_to_line(
  */
 static char *append_trailer(
   char *line, size_t *m, size_t *maxlen,
-  const char *header_file, const char *flags)
+  const char *header_file, const char *module_name, const char *flags)
 {
   line = append_to_line(line, "; ", m, maxlen);
   line = append_to_line(line, header_file, m, maxlen);
+
+  line = append_to_line(line, " ; ", m, maxlen);
+  line = append_to_line(line, module_name, m, maxlen);
 
   if (flags && flags[0] != '\0')
     {
@@ -224,8 +232,8 @@ static char *append_typedef_to_line(
   char *line, size_t *m, size_t *maxlen, ValueInfo *typedef_info)
 {
   unsigned int type;
-  unsigned long ndims;
-  unsigned long dim;
+  int ndims;
+  int dim;
 
   line = append_to_line(line, typedef_info->Name, m, maxlen);
   line = append_to_line(line, " = ", m, maxlen);
@@ -299,9 +307,9 @@ static char *append_typedef_to_line(
  */
 static char **append_class_contents(
   char **lines, size_t *np, ClassInfo *data,
-  const char *scope, const char *header_file)
+  const char *scope, const char *header_file, const char *module_name)
 {
-  unsigned long i;
+  int i;
   const char *tmpflags;
   char *new_scope;
   char *line;
@@ -335,7 +343,7 @@ static char **append_class_contents(
     if (data->Template)
       {
       new_scope = append_template_to_line(
-        new_scope, &scope_m, &scope_maxlen, data->Template); 
+        new_scope, &scope_m, &scope_maxlen, data->Template);
       }
     scope = new_scope;
     }
@@ -386,7 +394,8 @@ static char **append_class_contents(
       }
 
     /* append filename and flags */
-    line = append_trailer(line, &m, &maxlen, header_file, tmpflags);
+    line = append_trailer(
+      line, &m, &maxlen, header_file, module_name, tmpflags);
 
     /* append the line to the file */
     lines = append_unique_line(lines, line, np);
@@ -398,7 +407,7 @@ static char **append_class_contents(
       {
       lines = append_class_contents(lines, np,
         data->Classes[data->Items[i].Index],
-        scope, header_file);
+        scope, header_file, module_name);
       }
     }
 
@@ -418,9 +427,10 @@ static char **append_class_contents(
  */
 static char **append_namespace_contents(
   char **lines, size_t *np, NamespaceInfo *data, ClassInfo *main_class,
-  const char *scope, const char *header_file, const char *flags)
+  const char *scope, const char *header_file, const char *module_name,
+  const char *flags)
 {
-  unsigned long i;
+  int i;
   const char *tmpflags;
   char *line;
   char *new_scope;
@@ -505,7 +515,8 @@ static char **append_namespace_contents(
     if (data->Items[i].Type != VTK_NAMESPACE_INFO)
       {
       /* append filename and flags */
-      line = append_trailer(line, &m, &maxlen, header_file, tmpflags);
+      line = append_trailer(
+        line, &m, &maxlen, header_file, module_name, tmpflags);
 
       /* append the line to the file */
       lines = append_unique_line(lines, line, np);
@@ -518,7 +529,7 @@ static char **append_namespace_contents(
       {
       lines = append_class_contents(lines, np,
         data->Classes[data->Items[i].Index],
-        scope, header_file);
+        scope, header_file, module_name);
       }
 
     /* for namespaces, add all types in the namespace */
@@ -527,7 +538,7 @@ static char **append_namespace_contents(
       {
       lines = append_namespace_contents(lines, np,
         data->Namespaces[data->Items[i].Index], 0,
-        scope, header_file, "WRAP_EXCLUDE");
+        scope, header_file, module_name, "WRAP_EXCLUDE");
       }
     }
 
@@ -548,7 +559,8 @@ static char **append_namespace_contents(
  * will be appended to them.
  */
 static char **vtkWrapHierarchy_ParseHeaderFile(
-  FILE *fp, const char *filename, const char *flags, char **lines)
+  FILE *fp, const char *filename, const char *module_name,
+  const char *flags, char **lines)
 {
   FileInfo *data;
   const char *header_file;
@@ -589,7 +601,8 @@ static char **vtkWrapHierarchy_ParseHeaderFile(
 
   /* append the file contents to the output */
   lines = append_namespace_contents(
-    lines, &n, data->Contents, data->MainClass, 0, header_file, flags);
+    lines, &n, data->Contents, data->MainClass, 0,
+    header_file, module_name, flags);
 
   vtkParse_Free(data);
 
@@ -769,7 +782,8 @@ static int vtkWrapHierarchy_WriteHierarchyFile(FILE *fp, char *lines[])
  * Try to parse a header file, print error and exit if fail
  */
 static char **vtkWrapHierarchy_TryParseHeaderFile(
-  const char *file_name, const char *flags, char **lines)
+  const char *file_name, const char *module_name,
+  const char *flags, char **lines)
 {
   FILE *input_file;
 
@@ -783,7 +797,7 @@ static char **vtkWrapHierarchy_TryParseHeaderFile(
     }
 
   lines = vtkWrapHierarchy_ParseHeaderFile(
-                 input_file, file_name, flags, lines);
+                 input_file, file_name, module_name, flags, lines);
 
   if (!lines)
     {
@@ -898,89 +912,51 @@ static int string_compare(const void *vp1, const void *vp2)
 
 int main(int argc, char *argv[])
 {
-  int usage_error = 0;
-  char *output_filename = 0;
-  int i, argi;
+  OptionInfo *options;
+  int i;
   size_t j, n;
   char **lines = 0;
   char **files = 0;
   char *flags;
-  char *option;
-  char *optionarg;
-  const char *optionargval;
+  char *module_name;
 
   /* parse command-line options */
-  for (argi = 1; argi < argc && argv[argi][0] == '-'; argi++)
-    {
-    if (strncmp(argv[argi], "-o", 2) == 0 ||
-        strncmp(argv[argi], "-I", 2) == 0 ||
-        strncmp(argv[argi], "-D", 2) == 0 ||
-        strncmp(argv[argi], "-U", 2) == 0)
-      {
-      option = argv[argi];
-      optionarg = &argv[argi][2];
-      if (argv[argi][2] == '\0')
-        {
-        argi++;
-        if (argi >= argc || argv[argi][0] == '-')
-          {
-          usage_error = 1;
-          break;
-          }
-        optionarg = argv[argi];
-        }
-      if (strncmp(option, "-o", 2) == 0)
-        {
-        output_filename = optionarg;
-        }
-      else if (strncmp(option, "-I", 2) == 0)
-        {
-        vtkParse_IncludeDirectory(optionarg);
-        }
-      else if (strncmp(option, "-D", 2) == 0)
-        {
-        optionargval = "1";
-        j = 0;
-        while (optionarg[j] != '\0' && optionarg[j] != '=') { j++; }
-        if (optionarg[j] == '=')
-          {
-          optionargval = &optionarg[j+1];
-          }
-        vtkParse_DefineMacro(optionarg, optionargval);
-        }
-      else if (strncmp(option, "-U", 2) == 0)
-        {
-        vtkParse_UndefineMacro(optionarg);
-        }
-      }
-    }
+  vtkParse_MainMulti(argc, argv);
+  options = vtkParse_GetCommandLineOptions();
 
-  if (usage_error || !output_filename || argc - argi < 1)
+  /* make sure than an output file was given on the command line */
+  if (options->OutputFileName == NULL)
     {
-    fprintf(stderr,
-            "Usage: %s -o output_file data_file [files_to_merge]\n",
-            argv[0]);
+    fprintf(stderr, "No output file was specified\n");
     exit(1);
     }
 
   /* read the data file */
-  files = vtkWrapHierarchy_TryReadHierarchyFile(argv[argi++], files);
+  files = vtkWrapHierarchy_TryReadHierarchyFile(
+    options->InputFileName, files);
 
   /* read in all the prior files */
-  while (argi < argc)
+  for (i = 1; i < options->NumberOfFiles; i++)
     {
-    lines = vtkWrapHierarchy_TryReadHierarchyFile(argv[argi++], lines);
+    lines = vtkWrapHierarchy_TryReadHierarchyFile(
+      options->Files[i], lines);
     }
 
   /* merge the files listed in the data file */
   for (i = 0; files[i] != NULL; i++)
     {
-    flags = files[i];
+    /* look for semicolon that marks the module name */
+    module_name = files[i];
+    while(*module_name != ';' && *module_name != '\0') { module_name++; };
+    if (*module_name == ';') { *module_name++ = '\0'; }
+
     /* look for semicolon that marks start of flags */
+    flags = module_name;
     while(*flags != ';' && *flags != '\0') { flags++; };
     if (*flags == ';') { *flags++ = '\0'; }
 
-    lines = vtkWrapHierarchy_TryParseHeaderFile(files[i], flags, lines);
+    lines = vtkWrapHierarchy_TryParseHeaderFile(
+      files[i], module_name, flags, lines);
     }
 
   /* sort the lines to ease lookups in the file */
@@ -988,7 +964,7 @@ int main(int argc, char *argv[])
   qsort(lines, n, sizeof(char *), &string_compare);
 
   /* write the file, if it has changed */
-  vtkWrapHierarchy_TryWriteHierarchyFile(output_filename, lines);
+  vtkWrapHierarchy_TryWriteHierarchyFile(options->OutputFileName, lines);
 
   for (j = 0; j < n; j++)
     {
