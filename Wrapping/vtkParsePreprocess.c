@@ -13,7 +13,6 @@
 =========================================================================*/
 
 #include "vtkParsePreprocess.h"
-#include "vtkParseString.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -127,18 +126,6 @@ static int preproc_identical(const char *text1, const char *text2)
   return result;
 }
 
-/** Duplicate the first n bytes of a string. */
-static const char *preproc_strndup(const char *in, size_t n)
-{
-  char *res = NULL;
-
-  res = (char *)malloc(n+1);
-  strncpy(res, in, n);
-  res[n] = '\0';
-
-  return res;
-}
-
 /** Create a new preprocessor macro. */
 static MacroInfo *preproc_new_macro(
   PreprocessInfo *info, const char *name, const char *definition)
@@ -149,7 +136,7 @@ static MacroInfo *preproc_new_macro(
   if (name)
     {
     size_t n = vtkParse_SkipId(name);
-    macro->Name = preproc_strndup(name, n);
+    macro->Name = vtkParse_CacheString(info->Strings, name, n);
     }
 
   if (definition)
@@ -166,7 +153,7 @@ static MacroInfo *preproc_new_macro(
     while (vtkParse_NextToken(&tokens));
 
     n = cp - definition;
-    macro->Definition = preproc_strndup(definition, n);
+    macro->Definition = vtkParse_CacheString(info->Strings, definition, n);
     }
 
   macro->IsExternal = info->IsExternal;
@@ -1408,7 +1395,8 @@ static int preproc_evaluate_define(
         /* add to the arg list */
         params = (const char **)preproc_array_check(
           (char **)params, sizeof(char *), n);
-        params[n++] = preproc_strndup(tokens->text, tokens->len);
+        params[n++] = vtkParse_CacheString(
+          info->Strings, tokens->text, tokens->len);
 
         vtkParse_NextToken(tokens);
         if (tokens->tok == ',')
@@ -1477,7 +1465,6 @@ static int preproc_evaluate_define(
 static int preproc_add_include_file(PreprocessInfo *info, const char *name)
 {
   unsigned long i, n;
-  char *dp;
 
   n = info->NumberOfIncludeFiles;
   for (i = 0; i < n; i++)
@@ -1488,12 +1475,10 @@ static int preproc_add_include_file(PreprocessInfo *info, const char *name)
       }
     }
 
-  dp = (char *)malloc(strlen(name)+1);
-  strcpy(dp, name);
-
   info->IncludeFiles = (const char **)preproc_array_check(
     (char **)info->IncludeFiles, sizeof(char *), info->NumberOfIncludeFiles);
-  info->IncludeFiles[info->NumberOfIncludeFiles++] = dp;
+  info->IncludeFiles[info->NumberOfIncludeFiles++] =
+    vtkParse_CacheString(info->Strings, name, strlen(name));
 
   return 1;
 }
@@ -1647,12 +1632,13 @@ const char *preproc_find_include_file(
         }
       else if (stat(output, &fs) == 0)
         {
+        nn = info->NumberOfIncludeFiles;
         info->IncludeFiles = (const char **)preproc_array_check(
-          (char **)info->IncludeFiles, sizeof(char *),
-          info->NumberOfIncludeFiles);
-        info->IncludeFiles[info->NumberOfIncludeFiles++] = output;
-
-        return output;
+          (char **)info->IncludeFiles, sizeof(char *), nn);
+        info->IncludeFiles[info->NumberOfIncludeFiles++] =
+          vtkParse_CacheString(info->Strings, output, strlen(output));
+        free(output);
+        return info->IncludeFiles[nn];
         }
       }
     }
@@ -2871,7 +2857,7 @@ void vtkParsePreprocess_IncludeDirectory(
     (char **)info->IncludeDirectories, sizeof(char *),
     info->NumberOfIncludeDirectories);
   info->IncludeDirectories[info->NumberOfIncludeDirectories++] =
-    preproc_strndup(name, strlen(name));
+    vtkParse_CacheString(info->Strings, name, strlen(name));
 }
 
 /**
@@ -2914,17 +2900,6 @@ void vtkParsePreprocess_InitMacro(MacroInfo *macro)
  */
 void vtkParsePreprocess_FreeMacro(MacroInfo *macro)
 {
-  unsigned long i, n;
-
-  free((char *)macro->Name);
-  free((char *)macro->Definition);
-  free((char *)macro->Comment);
-
-  n = macro->NumberOfParameters;
-  for (i = 0; i < n; i++)
-    {
-    free((char *)macro->Parameters[i]);
-    }
   free((char **)macro->Parameters);
 
   free(macro);
@@ -2942,13 +2917,16 @@ void vtkParsePreprocess_Init(
   info->IncludeDirectories = NULL;
   info->NumberOfIncludeFiles = 0;
   info->IncludeFiles = NULL;
+  info->Strings = NULL;
   info->IsExternal = 0;
   info->ConditionalDepth = 0;
   info->ConditionalDone = 0;
 
   if (filename)
     {
-    info->FileName = preproc_strndup(filename, strlen(filename));
+    char *cp = (char *)malloc(strlen(filename) + 1);
+    strcpy(cp, filename);
+    info->FileName = cp;
     }
 }
 
@@ -2980,18 +2958,7 @@ void vtkParsePreprocess_Free(PreprocessInfo *info)
     free(info->MacroHashTable);
     }
 
-  n = info->NumberOfIncludeDirectories;
-  for (i = 0; i < n; i++)
-    {
-    free((char *)info->IncludeDirectories[i]);
-    }
   free((char **)info->IncludeDirectories);
-
-  n = info->NumberOfIncludeFiles;
-  for (i = 0; i < n; i++)
-    {
-    free((char *)info->IncludeFiles[i]);
-    }
   free((char **)info->IncludeFiles);
 
   free(info);

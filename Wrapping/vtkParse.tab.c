@@ -9255,6 +9255,7 @@ FileInfo *vtkParse_ParseFile(
   /* "preprocessor" is a global struct used by the parser */
   preprocessor = (PreprocessInfo *)malloc(sizeof(PreprocessInfo));
   vtkParsePreprocess_Init(preprocessor, filename);
+  preprocessor->Strings = data->Strings;
   vtkParsePreprocess_AddStandardMacros(preprocessor, VTK_PARSE_NATIVE);
 
   /* add include files specified on the command line */
