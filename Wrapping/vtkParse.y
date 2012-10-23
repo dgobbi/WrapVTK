@@ -4596,7 +4596,8 @@ void vtkParse_IncludeDirectory(const char *dirname)
 /** Return the full path to a header file.  */
 const char *vtkParse_FindIncludeFile(const char *filename)
 {
-  static PreprocessInfo info = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  static StringCache cache = {0, 0, 0, 0};
+  static PreprocessInfo info = {0, 0, 0, 0, 0, 0, &cache, 0, 0, 0};
   int val;
   unsigned long i;
 

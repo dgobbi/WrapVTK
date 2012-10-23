@@ -74,9 +74,11 @@ typedef struct _ItemInfo
 struct _ValueInfo;
 struct _FunctionInfo;
 struct _FileInfo;
+struct _SearchNode;
 typedef struct _ValueInfo ValueInfo;
 typedef struct _FunctionInfo FunctionInfo;
 typedef struct _FileInfo FileInfo;
+typedef struct _SearchNode SearchNode;
 
 /**
  * TemplateInfo holds template definitions
@@ -99,6 +101,7 @@ struct _ValueInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
+  SearchNode    *Context;
   const char    *Name;
   const char    *Comment;
   const char    *Value;      /* for vars or default paramter values */
@@ -121,6 +124,7 @@ struct _FunctionInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
+  SearchNode    *Context;
   const char    *Name;
   const char    *Comment;
   const char    *Class;       /* class name for methods */
@@ -162,6 +166,7 @@ typedef struct _EnumInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
+  SearchNode    *Context;
   const char    *Name;
   const char    *Comment;
 } EnumInfo;
@@ -173,6 +178,7 @@ typedef struct _UsingInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
+  SearchNode    *Context;
   const char    *Name;     /* null for using whole namespace */
   const char    *Comment;
   const char    *Scope;    /* the namespace or class */
@@ -185,6 +191,7 @@ typedef struct _ClassInfo
 {
   parse_item_t   ItemType;
   parse_access_t Access;
+  SearchNode    *Context;
   const char    *Name;
   const char    *Comment;
   TemplateInfo  *Template;
@@ -232,6 +239,7 @@ struct _FileInfo
   struct _FileInfo **Includes;
   ClassInfo *MainClass;
   NamespaceInfo *Contents;
+  SearchNode *Root;
   StringCache *Strings;
 };
 
