@@ -41,8 +41,10 @@ IF(VTK_WRAP_HINTS)
   SET(WrapVTK_HINTS "${VTK_WRAP_HINTS}")
 ELSE(VTK_WRAP_HINTS)
   # This is for compatibility with VTK 5.4.2 and earlier
-  FIND_FILE(WrapVTK_HINTS hints "${VTK_SOURCE_DIR}/Wrapping"
- 	  NO_CMAKE_FIND_ROOT_PATH)
+  FIND_FILE(WrapVTK_HINTS hints
+     PATHS "${VTK_SOURCE_DIR}/Wrapping"
+           "${VTK_CMAKE_DIR}/../Wrapping/Tools"
+     NO_CMAKE_FIND_ROOT_PATH)
   MARK_AS_ADVANCED(WrapVTK_HINTS)
 ENDIF(VTK_WRAP_HINTS)
 
