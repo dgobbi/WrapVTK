@@ -130,20 +130,28 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
 
 {ID}"_EXPORT"  /* ignore EXPORT macros */
 
-{ID}"NotUsed"([ \t]*"("[^)]*")")? {
+("itk"|"vtk")"NotUsed" {
       size_t i; size_t j = 0;
-      yylval.str = "";
-      if (yytext[yyleng-1] == ')')
+      const char *args = NULL;
+      const char *cp;
+      size_t l = 0;
+      args = get_macro_arguments();
+      if (args)
         {
-        while (yytext[j]!='(') { j++; }
-        while (yytext[j]==' ' || yytext[j]=='\t') { j++; }
-        j++; i = j;
-        while (yytext[j] != ')' && yytext[j] != ' ' && yytext[j] != '\t')
+        cp = args;
+        if (*cp == '(') { cp++; }
+        while (*cp == ' ' || *cp == '\t') { cp++; }
+        while ((cp[l] >= 'a' && cp[l] <= 'z') ||
+               (cp[l] >= 'A' && cp[l] <= 'Z') ||
+               (cp[l] >= '0' && cp[l] <= '9') ||
+               cp[l] == '_') { l++; }
+        if (l)
           {
-          j++;
+          yylval.str = vtkstrndup(cp, l);
+          free((char *)args);
+          return(ID);
           }
-        yylval.str = vtkstrndup(&yytext[i], j-i);
-        return(ID);
+        free((char *)args);
         }
     }
 
@@ -344,6 +352,11 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
         /* make sure that vtkNotUsed is never expanded */
         MacroInfo *ex;
         ex = vtkParsePreprocess_GetMacro(preprocessor, "vtkNotUsed");
+        if (ex)
+          {
+          ex->IsExcluded = 1;
+          }
+        ex = vtkParsePreprocess_GetMacro(preprocessor, "itkNotUsed");
         if (ex)
           {
           ex->IsExcluded = 1;
