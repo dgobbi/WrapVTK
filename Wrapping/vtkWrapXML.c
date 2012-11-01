@@ -1740,6 +1740,7 @@ void vtkWrapXML_Namespace(wrapxml_state_t *w, NamespaceInfo *data)
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
   vtkWrapXML_Name(w, data->Name);
+  vtkWrapXML_ElementBody(w);
   vtkWrapXML_Body(w, data);
   fprintf(w->file, "\n");
   vtkWrapXML_ElementEnd(w, elementName);
