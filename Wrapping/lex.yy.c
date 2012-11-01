@@ -4176,26 +4176,29 @@ int skip_trailing_comment(const char *text, size_t l)
  */
 int skip_to_next_directive()
 {
+  /* state == 0 at the start of a line */
   int state = 0;
   int c;
 
-  do
-    {
-    c = input();
-    if (c == 0)
-      {
-      break;
-      }
+  c = input();
 
-    /* newline changes state */
-    if (c == '\n')
+  while (c != 0)
+    {
+    /* whitespace */
+    if (c == ' ' || c == '\t')
+      {
+      c = input();
+      }
+    /* newline renews the start-of-line state */
+    else if (c == '\n')
       {
       state = 0;
       c = input();
       }
     /* skip comments */
-    if (c == '/')
+    else if (c == '/')
       {
+      state = 1;
       if ( (c = input()) == '*')
         {
         if (skip_comment() == 0)
@@ -4205,30 +4208,33 @@ int skip_to_next_directive()
         c = input();
         }
       }
-    /* skip escaped newlines */
-    if (c == '\\')
+    /* skip escaped characters */
+    else if (c == '\\')
       {
+      state = 1;
       if ( (c = input()) == '\r')
         {
-        c = input();
+        if ( (c = input()) == '\n')
+          {
+          c = input();
+          }
         }
-      if (c == '\n')
+      else if (c != 0)
         {
         c = input();
         }
       }
-    /* skip allowed whitespace */
-    while (c == ' ' || c == '\t')
+    /* any other chars except '#' at start of line */
+    else if (c != '#' || state != 0)
       {
+      state = 1;
       c = input();
       }
-    /* look for the directive */
-    if (state == 0 && c == '#')
+    else
       {
       break;
       }
     }
-  while (c != 0);
 
   return c;
 }
@@ -4725,4 +4731,3 @@ void preprocessor_directive(const char *text, size_t l)
       }
     }
 }
-
