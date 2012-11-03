@@ -1586,10 +1586,10 @@ void vtkWrapXML_Class(
   n = classInfo->NumberOfSuperClasses;
   for (i = 0; i < n; i++)
     {
-    vtkWrapXML_ElementStart(w, "superclass");
+    vtkWrapXML_ElementStart(w, "base");
     vtkWrapXML_Name(w, classInfo->SuperClasses[i]);
     vtkWrapXML_Attribute(w, "access", "public");
-    vtkWrapXML_ElementEnd(w, "superclass");
+    vtkWrapXML_ElementEnd(w, "base");
     }
 
   /* merge all the superclass information */
