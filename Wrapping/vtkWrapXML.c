@@ -553,13 +553,8 @@ void vtkWrapXML_FileDoc(wrapxml_state_t *w, FileInfo *data)
 void vtkWrapXML_ClassInheritance(
   wrapxml_state_t *w, MergeInfo *merge)
 {
-#ifdef WRAPXML_ELEMENTS_ONLY
   const char *elementName = "inheritance";
-  const char *subElementName = "classname";
-#else
-  const char *elementName = "mro";
   const char *subElementName = "context";
-#endif
   unsigned long i, n;
 
   /* show the geneology */
@@ -567,7 +562,7 @@ void vtkWrapXML_ClassInheritance(
 
   vtkWrapXML_ElementStart(w, elementName);
   vtkWrapXML_ElementBody(w);
-  for (i = 0; i < n; i++)
+  for (i = 1; i < n; i++)
     {
     vtkWrapXML_ElementStart(w, subElementName);
 #ifdef WRAPXML_ELEMENTS_ONLY
@@ -1097,7 +1092,7 @@ void vtkWrapXML_ClassMethod(
     vtkWrapXML_Name(w, name);
     }
 
-  if (classname)
+  if (classname && strcmp(classname, data->Name) != 0)
     {
     vtkWrapXML_Attribute(w, "context", classname);
     }
@@ -1507,6 +1502,10 @@ void vtkWrapXML_MethodHelper(
     if (merge && merge->NumberOfOverrides[i])
       {
       classname = merge->ClassNames[merge->OverrideClasses[i][0]];
+      if (strcmp(classname, classInfo->Name) == 0)
+        {
+        classname = 0;
+        }
       }
     if (properties && properties->MethodHasProperty[i])
       {
@@ -1599,7 +1598,7 @@ void vtkWrapXML_Class(
     merge = vtkWrapXML_MergeSuperClasses(w->data, data, classInfo);
     }
 
-  if (merge)
+  if (merge && merge->NumberOfClasses > 1)
     {
     fprintf(w->file, "\n");
     vtkWrapXML_ClassInheritance(w, merge);
