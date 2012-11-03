@@ -131,7 +131,6 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
 {ID}"_EXPORT"  /* ignore EXPORT macros */
 
 ("itk"|"vtk")"NotUsed" {
-      size_t i; size_t j = 0;
       const char *args = NULL;
       const char *cp;
       size_t l = 0;
@@ -141,10 +140,7 @@ ID [a-zA-Z_][0-9a-zA-Z_]*
         cp = args;
         if (*cp == '(') { cp++; }
         while (*cp == ' ' || *cp == '\t') { cp++; }
-        while ((cp[l] >= 'a' && cp[l] <= 'z') ||
-               (cp[l] >= 'A' && cp[l] <= 'Z') ||
-               (cp[l] >= '0' && cp[l] <= '9') ||
-               cp[l] == '_') { l++; }
+        l = vtkidlen(cp);
         if (l)
           {
           yylval.str = vtkstrndup(cp, l);
