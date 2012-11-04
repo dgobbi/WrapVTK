@@ -43,19 +43,25 @@ MACRO(VTK_WRAP_XML TARGET XML_LIST_NAME OUTPUT_DIR SOURCES)
 
   FOREACH(INPUT_FILE ${SOURCES})
 
-    # In case we were given a path with the class name
+    # in case we were given a path with the class name
     GET_FILENAME_COMPONENT(TMP_CLASS ${INPUT_FILE} NAME_WE)
     GET_FILENAME_COMPONENT(TMP_DIR ${INPUT_FILE} PATH)
+
+    # forcefully reject some troublesome files
+    IF(NOT "${TMP_CLASS}" STREQUAL "vtkgl" AND
+       NOT "${TMP_CLASS}" STREQUAL "vtkOpenGLState")
+    IF(NOT "${KIT_NAME}" STREQUAL "Filtering" OR
+       NOT "${TMP_CLASS}" STREQUAL "vtkInformation")
 
     # compute the input filename
     IF (TMP_DIR)
       SET(TMP_INPUT "${TMP_DIR}/${TMP_CLASS}.h")
     ELSE (TMP_DIR)
-      IF (H_${TMP_FILENAME})
+      IF (H_${TMP_CLASS})
         IF (NOT EXISTS "${H_${TMP_CLASS}}")
           SET(H_${TMP_CLASS} "H_${TMP_CLASS}-NOTFOUND")
         ENDIF (NOT EXISTS "${H_${TMP_CLASS}}")
-      ENDIF (H_${TMP_FILENAME})
+      ENDIF (H_${TMP_CLASS})
       FIND_FILE(H_${TMP_CLASS} "${TMP_CLASS}.h" PATHS ${KIT_HEADER_DIR})
       MARK_AS_ADVANCED(H_${TMP_CLASS})
       SET (TMP_INPUT ${H_${TMP_CLASS}})
@@ -64,8 +70,6 @@ MACRO(VTK_WRAP_XML TARGET XML_LIST_NAME OUTPUT_DIR SOURCES)
     IF(IGNORE_WRAP_EXCLUDE OR
       VTK_CLASS_WRAP_SPECIAL_${TMP_CLASS} OR
       NOT VTK_CLASS_WRAP_EXCLUDE_${TMP_CLASS})
-    IF(NOT "${KIT_NAME}" STREQUAL "Filtering" OR
-      NOT "${TMP_CLASS}" STREQUAL "vtkInformation")
 
       IF(VTK_CLASS_ABSTRACT_${TMP_CLASS})
         SET(TMP_CONCRETE "--abstract")
@@ -102,11 +106,14 @@ MACRO(VTK_WRAP_XML TARGET XML_LIST_NAME OUTPUT_DIR SOURCES)
       # add the output to the list
       SET(${XML_LIST_NAME} ${${XML_LIST_NAME}} ${TMP_OUTPUT})
 
-    ENDIF(NOT "${KIT_NAME}" STREQUAL "Filtering" OR
-      NOT "${TMP_CLASS}" STREQUAL "vtkInformation")
     ENDIF(IGNORE_WRAP_EXCLUDE OR
       VTK_CLASS_WRAP_SPECIAL_${TMP_CLASS} OR
       NOT VTK_CLASS_WRAP_EXCLUDE_${TMP_CLASS})
+
+    ENDIF(NOT "${KIT_NAME}" STREQUAL "Filtering" OR
+          NOT "${TMP_CLASS}" STREQUAL "vtkInformation")
+    ENDIF(NOT "${TMP_CLASS}" STREQUAL "vtkgl" AND
+          NOT "${TMP_CLASS}" STREQUAL "vtkOpenGLState")
 
   ENDFOREACH(INPUT_FILE ${SOURCES})
 
