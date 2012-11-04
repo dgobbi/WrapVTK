@@ -129,7 +129,7 @@ static char *append_template_to_line(
   char *line, size_t *m, size_t *maxlen, TemplateInfo *template_args)
 {
   ValueInfo *arg;
-  int j;
+  unsigned long j;
 
   line = append_to_line(line, "<", m, maxlen);
 
@@ -162,7 +162,7 @@ static char *append_template_to_line(
 static char *append_class_to_line(
   char *line, size_t *m, size_t *maxlen, ClassInfo *class_info)
 {
-  int j;
+  unsigned long j;
 
   line = append_to_line(line, class_info->Name, m, maxlen);
 
@@ -309,7 +309,7 @@ static char **append_class_contents(
   char **lines, size_t *np, ClassInfo *data,
   const char *scope, const char *header_file, const char *module_name)
 {
-  int i;
+  unsigned long i;
   const char *tmpflags;
   char *new_scope;
   char *line;
@@ -430,7 +430,7 @@ static char **append_namespace_contents(
   const char *scope, const char *header_file, const char *module_name,
   const char *flags)
 {
-  int i;
+  unsigned long i;
   const char *tmpflags;
   char *line;
   char *new_scope;
