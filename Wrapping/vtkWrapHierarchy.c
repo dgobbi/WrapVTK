@@ -296,7 +296,7 @@ static char *append_typedef_to_line(
     line = append_to_line(line, "const ", m, maxlen);
     }
 
-  line = append_to_line(line, typedef_info->Class, m, maxlen);
+  line = append_to_line(line, typedef_info->TypeName, m, maxlen);
   line = append_to_line(line, " ", m, maxlen);
 
   return line;

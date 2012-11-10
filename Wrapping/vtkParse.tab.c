@@ -1508,7 +1508,7 @@ unsigned int add_indirection_to_array(unsigned int type)
 typedef union YYSTYPE
 {
 
-/* Line 214 of yacc.c  */
+/* Line 222 of yacc.c  */
 #line 1306 "vtkParse.y"
 
   const char   *str;
@@ -1516,7 +1516,7 @@ typedef union YYSTYPE
 
 
 
-/* Line 214 of yacc.c  */
+/* Line 222 of yacc.c  */
 #line 1641 "vtkParse.tab.c"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
@@ -4975,7 +4975,7 @@ yyreduce:
         item->Name = getVarName();
         }
 
-      if (item->Class == NULL)
+      if (item->TypeName == NULL)
         {
         vtkParse_FreeValue(item);
         }
@@ -8567,7 +8567,7 @@ void add_constant(const char *name, const char *value,
   con->Name = name;
   con->Value = value;
   con->Type = type;
-  con->Class = type_class(type, typeclass);
+  con->TypeName = type_class(type, typeclass);
 
   if (flag == 2)
     {
@@ -8727,7 +8727,7 @@ void add_parameter(FunctionInfo *func, unsigned int type,
   vtkParse_InitValue(param);
 
   param->Type = type;
-  param->Class = type_class(type, typeclass);
+  param->TypeName = type_class(type, typeclass);
 
   if (count)
     {
@@ -8751,7 +8751,7 @@ void set_return(FunctionInfo *func, unsigned int type,
 
   vtkParse_InitValue(val);
   val->Type = type;
-  val->Class = type_class(type, typeclass);
+  val->TypeName = type_class(type, typeclass);
 
   if (count)
     {
@@ -8765,7 +8765,7 @@ void set_return(FunctionInfo *func, unsigned int type,
 
 #ifndef VTK_PARSE_LEGACY_REMOVE
   func->ReturnType = val->Type;
-  func->ReturnClass = val->Class;
+  func->ReturnClass = val->TypeName;
   func->HaveHint = (count > 0);
   func->HintSize = count;
 #endif
@@ -8820,13 +8820,13 @@ void handle_complex_type(
     func->ReturnValue = (ValueInfo *)malloc(sizeof(ValueInfo));
     vtkParse_InitValue(func->ReturnValue);
     func->ReturnValue->Type = datatype;
-    func->ReturnValue->Class = type_class(datatype, getTypeId());
+    func->ReturnValue->TypeName = type_class(datatype, getTypeId());
     if (funcSig) { func->Signature = vtkstrdup(funcSig); }
     val->Function = func;
 
 #ifndef VTK_PARSE_LEGACY_REMOVE
     func->ReturnType = func->ReturnValue->Type;
-    func->ReturnClass = func->ReturnValue->Class;
+    func->ReturnClass = func->ReturnValue->TypeName;
 #endif
 
     /* the val type is whatever was inside the parentheses */
@@ -8885,7 +8885,7 @@ void handle_complex_type(
 
   /* get the data type */
   val->Type = datatype;
-  val->Class = type_class(datatype, getTypeId());
+  val->TypeName = type_class(datatype, getTypeId());
 
   /* copy contents of all brackets to the ArgDimensions */
   val->NumberOfDimensions = getArrayNDims();
@@ -8906,7 +8906,7 @@ void add_legacy_parameter(FunctionInfo *func, ValueInfo *param)
     {
     func->NumberOfArguments = i + 1;
     func->ArgTypes[i] = param->Type;
-    func->ArgClasses[i] = param->Class;
+    func->ArgClasses[i] = param->TypeName;
     func->ArgCounts[i] = param->Count;
 
     /* legacy wrappers need VTK_PARSE_FUNCTION without POINTER */
@@ -9108,8 +9108,8 @@ void output_function()
                 currentFunction->Parameters[j]->Type)
               {
               if (currentFunction->Parameters[j]->Type == VTK_PARSE_OBJECT &&
-                  strcmp(currentNamespace->Functions[i]->Parameters[j]->Class,
-                         currentFunction->Parameters[j]->Class) == 0)
+                  strcmp(currentNamespace->Functions[i]->Parameters[j]->TypeName,
+                         currentFunction->Parameters[j]->TypeName) == 0)
                 {
                 break;
                 }

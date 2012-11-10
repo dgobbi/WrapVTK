@@ -393,7 +393,7 @@ void vtkParse_ExpandTypedef(
   unsigned int tmp1, tmp2;
   unsigned long i;
 
-  classname = typedefinfo->Class;
+  classname = typedefinfo->TypeName;
   baseType = (typedefinfo->Type & VTK_PARSE_BASE_TYPE);
   pointers = (typedefinfo->Type & VTK_PARSE_POINTER_MASK);
   refbit = (valinfo->Type & VTK_PARSE_REF);
@@ -462,7 +462,7 @@ void vtkParse_ExpandTypedef(
 
   /* put everything together */
   valinfo->Type = (baseType | pointers | refbit | qualifiers);
-  valinfo->Class = classname;
+  valinfo->TypeName = classname;
   valinfo->Function = typedefinfo->Function;
   valinfo->Count *= typedefinfo->Count;
 }
@@ -478,11 +478,11 @@ void vtkParse_ExpandTypedefs(
 
   if (((val->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_OBJECT ||
        (val->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_UNKNOWN) &&
-      val->Class != 0)
+      val->TypeName != 0)
    {
    for (i = 0; i < n; i++)
      {
-     if (typedefinfo[i] && strcmp(val->Class, typedefinfo[i]->Name) == 0)
+     if (typedefinfo[i] && strcmp(val->TypeName, typedefinfo[i]->Name) == 0)
        {
        vtkParse_ExpandTypedef(val, typedefinfo[i]);
        break;
@@ -491,8 +491,8 @@ void vtkParse_ExpandTypedefs(
    if (i == n)
      {
      /* in case type appears as a template arg of another type */
-     val->Class = vtkparse_string_replace(
-       cache, val->Class, n, names, values);
+     val->TypeName = vtkparse_string_replace(
+       cache, val->TypeName, n, names, values);
      }
    }
 }
@@ -850,7 +850,7 @@ size_t vtkParse_ValueInfoFromString(
   /* get the basic type with qualifiers */
   cp += vtkParse_BasicTypeFromString(cp, &base_bits, &classname, &n);
 
-  data->Class = vtkParse_CacheString(cache, classname, n);
+  data->TypeName = vtkParse_CacheString(cache, classname, n);
 
   if ((base_bits & VTK_PARSE_STATIC) != 0)
     {
@@ -960,7 +960,7 @@ const char *vtkParse_ValueInfoToString(
   unsigned int qualifier_bits = (data->Type & VTK_PARSE_CONST);
   unsigned int reverse_bits = 0;
   unsigned int pointer_type = 0;
-  const char *classname = data->Class;
+  const char *classname = data->TypeName;
   const char *name = data->Name;
   char *text = NULL;
   size_t i = 0;
@@ -1127,7 +1127,7 @@ static void func_substitution(
   for (i = 0; i < n; i++)
     {
     data->ArgTypes[i] = data->Parameters[i]->Type;
-    data->ArgClasses[i] = data->Parameters[i]->Class;
+    data->ArgClasses[i] = data->Parameters[i]->TypeName;
     if (data->Parameters[i]->NumberOfDimensions == 1 &&
         data->Parameters[i]->Count > 0)
       {
@@ -1138,7 +1138,7 @@ static void func_substitution(
   if (data->ReturnValue)
     {
     data->ReturnType = data->ReturnValue->Type;
-    data->ReturnClass = data->ReturnValue->Class;
+    data->ReturnClass = data->ReturnValue->TypeName;
     if (data->ReturnValue->NumberOfDimensions == 1 &&
         data->ReturnValue->Count > 0)
       {

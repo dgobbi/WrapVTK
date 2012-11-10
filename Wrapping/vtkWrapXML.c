@@ -593,15 +593,15 @@ void vtkWrapXML_TypeAttributes(wrapxml_state_t *w, ValueInfo *val)
     {
     vtkWrapXML_Flag(w, "const", 1);
     }
-  vtkWrapXML_Attribute(w, "type", val->Class);
+  vtkWrapXML_Attribute(w, "type", val->TypeName);
 #else
   if ((type & VTK_PARSE_CONST) != 0)
     {
-    vtkWrapXML_AttributeWithPrefix(w, "type", "const ", val->Class);
+    vtkWrapXML_AttributeWithPrefix(w, "type", "const ", val->TypeName);
     }
   else
     {
-    vtkWrapXML_Attribute(w, "type", val->Class);
+    vtkWrapXML_Attribute(w, "type", val->TypeName);
     }
 #endif
 
@@ -656,7 +656,7 @@ void vtkWrapXML_TypeSimple(
   if (classname)
     {
     strcpy(temp2, classname);
-    val.Class = temp2;
+    val.TypeName = temp2;
     }
 
   sizes[0] = 0;
@@ -700,7 +700,7 @@ void vtkWrapXML_Template(
       }
     else if (param->Type)
       {
-      vtkWrapXML_Attribute(w, "type", param->Class);
+      vtkWrapXML_Attribute(w, "type", param->TypeName);
       }
     else
       {
@@ -787,7 +787,7 @@ void vtkWrapXML_Constant(
     {
     vtkWrapXML_Flag(w, "enum", 1);
     }
-  if (con->Type && con->Class && con->Class[0] != '\0')
+  if (con->Type && con->TypeName && con->TypeName[0] != '\0')
     {
     vtkWrapXML_TypeAttributes(w, con);
     }

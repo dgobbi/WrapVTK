@@ -273,8 +273,8 @@ unsigned long vtkParseMerge_Merge(
                 for (k = 0; k < f2->NumberOfParameters; k++)
                   {
                   if (f2->Parameters[k]->Type != func->Parameters[k]->Type &&
-                      strcmp(f2->Parameters[k]->Class,
-                             func->Parameters[k]->Class) == 0)
+                      strcmp(f2->Parameters[k]->TypeName,
+                             func->Parameters[k]->TypeName) == 0)
                     {
                     break;
                     }

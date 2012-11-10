@@ -103,7 +103,7 @@ struct _ValueInfo
   const char    *Comment;
   const char    *Value;      /* for vars or default paramter values */
   unsigned int   Type;       /* as defined in vtkParseType.h   */
-  const char    *Class;      /* classname for type */
+  const char    *TypeName;   /* classname for type */
   unsigned long  Count;      /* total number of values, if known */
   const char    *CountHint;  /* hint about how to get the count */
   unsigned long  NumberOfDimensions; /* dimensionality for arrays */

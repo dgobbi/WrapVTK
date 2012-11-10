@@ -460,7 +460,7 @@ HierarchyInfo *vtkParseHierarchy_ReadFile(const char *filename)
       /* read the base type (and const) */
       bits = 0;
       i += vtkParse_BasicTypeFromString(&line[i], &bits, &ccp, &n);
-      entry->Typedef->Class = vtkParse_CacheString(info->Strings, ccp, n);
+      entry->Typedef->TypeName = vtkParse_CacheString(info->Strings, ccp, n);
       entry->Typedef->Type |= bits;
       }
 
@@ -671,9 +671,9 @@ int vtkParseHierarchy_IsTypeOfTemplated(
         tmph = vtkParseHierarchy_FindEntry(info, supername);
         while (tmph && tmph->IsTypedef)
           {
-          if (tmph->Typedef->Class)
+          if (tmph->Typedef->TypeName)
             {
-            tmph = vtkParseHierarchy_FindEntry(info, tmph->Typedef->Class);
+            tmph = vtkParseHierarchy_FindEntry(info, tmph->Typedef->TypeName);
             continue;
             }
           break;
@@ -856,7 +856,7 @@ int vtkParseHierarchy_ExpandTypedefsInValue(
 
   while (((val->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_OBJECT ||
           (val->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_UNKNOWN) &&
-         val->Class != 0)
+         val->TypeName != 0)
     {
     entry = 0;
 
@@ -865,7 +865,7 @@ int vtkParseHierarchy_ExpandTypedefsInValue(
       {
       cp = text;
       n = strlen(scope);
-      m = strlen(val->Class);
+      m = strlen(val->TypeName);
       /* only malloc if more than 128 chars needed */
       if (n + m + 2 >= 128)
         {
@@ -876,7 +876,7 @@ int vtkParseHierarchy_ExpandTypedefsInValue(
       strncpy(cp, scope, n);
       cp[n++] = ':';
       cp[n++] = ':';
-      strncpy(&cp[n], val->Class, m);
+      strncpy(&cp[n], val->TypeName, m);
       cp[n+m] = '\0';
 
       entry = vtkParseHierarchy_FindEntry(info, cp);
@@ -917,7 +917,7 @@ int vtkParseHierarchy_ExpandTypedefsInValue(
     /* if not found, try again with no scope */
     if (entry == 0)
       {
-      entry = vtkParseHierarchy_FindEntry(info, val->Class);
+      entry = vtkParseHierarchy_FindEntry(info, val->TypeName);
       }
 
     if (entry && entry->IsTypedef)
@@ -927,10 +927,10 @@ int vtkParseHierarchy_ExpandTypedefsInValue(
     else if (entry)
       {
       newclass = vtkParseHierarchy_ExpandTypedefsInName(
-         info, val->Class, scope);
-      if (newclass != val->Class)
+         info, val->TypeName, scope);
+      if (newclass != val->TypeName)
         {
-        val->Class = vtkParse_CacheString(cache, newclass, strlen(newclass));
+        val->TypeName = vtkParse_CacheString(cache, newclass, strlen(newclass));
         free((char *)newclass);
         }
       result = 1;
@@ -999,9 +999,9 @@ const char *vtkParseHierarchy_ExpandTypedefsInName(
     }
 
   newname = NULL;
-  if (entry && entry->IsTypedef && entry->Typedef->Class)
+  if (entry && entry->IsTypedef && entry->Typedef->TypeName)
     {
-    newname = entry->Typedef->Class;
+    newname = entry->Typedef->TypeName;
     }
   if (newname)
     {

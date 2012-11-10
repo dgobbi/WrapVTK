@@ -250,7 +250,7 @@ void vtkParse_InitValue(ValueInfo *val)
   val->Comment = NULL;
   val->Value = NULL;
   val->Type = 0;
-  val->Class = NULL;
+  val->TypeName = NULL;
   val->Count = 0;
   val->CountHint = NULL;
   val->NumberOfDimensions = 0;
@@ -272,7 +272,7 @@ void vtkParse_CopyValue(ValueInfo *val, const ValueInfo *orig)
   val->Comment = orig->Comment;
   val->Value = orig->Value;
   val->Type = orig->Type;
-  val->Class = orig->Class;
+  val->TypeName = orig->TypeName;
   val->Count = orig->Count;
   val->CountHint = orig->CountHint;
 
@@ -851,8 +851,8 @@ void vtkParse_AddDefaultConstructors(ClassInfo *cls, StringCache *cache)
       if (func->NumberOfParameters == 1)
         {
         param = func->Parameters[0];
-        if (param->Class &&
-            strcmp(param->Class, cls->Name) == 0 &&
+        if (param->TypeName &&
+            strcmp(param->TypeName, cls->Name) == 0 &&
             (param->Type & VTK_PARSE_POINTER_MASK) == 0)
           {
           copy_constructor = 0;
@@ -931,6 +931,6 @@ void vtkParse_AddDefaultConstructors(ClassInfo *cls, StringCache *cache)
     vtkParse_InitValue(param);
     vtkParse_AddParameterToFunction(func, param);
     param->Type = (VTK_PARSE_OBJECT_REF | VTK_PARSE_CONST);
-    param->Class = ccname;
+    param->TypeName = ccname;
     }
 }
