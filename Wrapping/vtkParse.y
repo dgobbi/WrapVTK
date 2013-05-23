@@ -2935,6 +2935,7 @@ keyword:
   | INLINE { $<str>$ = "inline"; }
   | VIRTUAL { $<str>$ = "virtual"; }
   | EXTERN { $<str>$ = "extern"; }
+  | USING { $<str>$ = "using"; }
   | NAMESPACE { $<str>$ = "namespace"; }
   | OPERATOR { $<str>$ = "operator"; }
   | ENUM { $<str>$ = "enum"; }
