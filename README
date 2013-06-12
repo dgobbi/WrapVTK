@@ -1,7 +1,8 @@
-This is WrapVTK, a wrapper generator for VTK.
+This is WrapVTK, an XML wrapper generator for VTK.
 
-Copyright (c) 2010, David Gobbi
+Copyright (c) 2010-2013, David Gobbi
 All right reserved.
+See Copyright.txt for more information.
 
 =================
 INTRODUCTION
@@ -20,3 +21,29 @@ class.
 
 See http://www.cognitive-antics.net/mw/index.php?title=VTK/vtkWrapXML
 for a description of the XML format that it produces.
+
+=================
+CONTENTS
+=================
+
+CMake/           # CMake modules
+Doc/             # Copyright notices
+Wrapping/        # The source code
+CMakeLists.txt   # The CMake file for this package
+README           # This file
+
+CMake/
+vtkIncludeAllKits.cmake   # Imports all VTK modules
+vtkWrapHierarchy.cmake    # CMake macro to generate class hierarchy info
+vtkWrapXML.cmake          # CMake macro to convert header file to XML
+
+Doc/
+Copyright-Kitware.txt     # Copyright for code imported from VTK
+Copyright-Queens.txt      # Copyright for code written at Queen's University
+Copyright.txt             # Copyright for all other code in package
+
+Wrapping/
+lex.yy.c                  # Tokenizer (part of the C++ parser)
+vtkParse*                 # Code for parsing C++ header files
+vtkWrapHierarchy.c        # Program to generate class hierarchy info
+vtkWrapXML.c              # Program to convert C++ headers to XML
