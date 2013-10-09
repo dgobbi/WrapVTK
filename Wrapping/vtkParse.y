@@ -1986,17 +1986,12 @@ function_body:
   | ';'
 
 function_sig:
-    function_name '('
+    unqualified_id '('
     {
       postSig("(");
       set_return(currentFunction, getType(), getTypeId(), 0);
     }
     parameter_declaration_clause ')' { postSig(")"); }
-
-function_name:
-    simple_id
-  | template_id
-
 
 /*
  * Constructors and destructors are handled by the same rule
@@ -2022,7 +2017,7 @@ structor_declaration:
     }
 
 structor_sig:
-    function_name '(' { pushType(); postSig("("); }
+    unqualified_id '(' { pushType(); postSig("("); }
     parameter_declaration_clause ')' { popType(); postSig(")"); }
 
 opt_ctor_initializer:
@@ -2320,6 +2315,13 @@ scope_operator_sig:
 
 template_id:
     identifier '<' { markSig(); postSig($<str>1); postSig("<"); }
+    angle_bracket_contents '>'
+    {
+      chopSig(); if (getSig()[getSigLength()-1] == '>') { postSig(" "); }
+      postSig(">"); $<str>$ = copySig(); clearTypeId();
+    }
+  | '~' identifier '<'
+    { markSig(); postSig("~"); postSig($<str>2); postSig("<"); }
     angle_bracket_contents '>'
     {
       chopSig(); if (getSig()[getSigLength()-1] == '>') { postSig(" "); }
