@@ -2,10 +2,10 @@
 # following variables for each kit (using "Common" as an example)
 # VTK_COMMON_NAME  (e.g. set to "Common")
 # VTK_COMMON_HEADER_DIR (directory where header files are)
-# VTK_COMMON_CLASSES (list of all classes)
-# VTK_COMMON_CLASSES_ABSTRACT (list of abstract classes)
-# VTK_COMMON_CLASSES_WRAP_EXCLUDE (list of classes not to wrap)
-# VTK_COMMON_CLASSES_WRAP_SPECIAL (list of classes for special wrapping)
+# VTK_COMMON_HEADERS (list of all headers)
+# VTK_COMMON_HEADERS_ABSTRACT (list of abstract headers)
+# VTK_COMMON_HEADERS_WRAP_EXCLUDE (list of headers not to wrap)
+# VTK_COMMON_HEADERS_WRAP_SPECIAL (list of headers for special wrapping)
 # VTK_COMMON_WRAP_HEADERS (list of headers to wrap)
 
 # Find all the kits that are part of the VTK build
@@ -19,19 +19,22 @@ IF(VTK_MODULES_DIR)
   foreach(mod ${VTK_MODULES_ENABLED})
     include("${VTK_MODULES_DIR}/${mod}.cmake")
     if(NOT ${mod}_EXCLUDE_FROM_WRAPPING)
-      include("${VTK_MODULES_DIR}/${mod}-Classes.cmake")
+      include("${VTK_MODULES_DIR}/${mod}-Headers.cmake")
 
       string(REGEX REPLACE "vtk(.*)" "\\1" TMP_NAME "${mod}")
       string(TOUPPER "${TMP_NAME}" KIT_NAME)
 
       set(VTK_${KIT_NAME}_NAME ${mod})
       set(VTK_${KIT_NAME}_HEADER_DIR ${${mod}_INCLUDE_DIRS})
-      set(VTK_${KIT_NAME}_CLASSES ${${mod}_CLASSES})
+      set(VTK_${KIT_NAME}_HEADERS ${${mod}_HEADERS})
       set(VTK_${KIT_NAME}_WRAP_HEADERS)
 
       list(APPEND VTK_KITS ${KIT_NAME})
     endif()
   endforeach()
+
+  # do not set KIT_PREFIX since the kits will start with "vtk"
+  set(KIT_PREFIX)
 
 ELSE(VTK_MODULES_DIR)
   FILE(GLOB KIT_CMAKE_FILES RELATIVE "${VTK_KITS_DIR}"
@@ -67,6 +70,10 @@ ELSE(VTK_MODULES_DIR)
     # Get important variables from the kit's cmake file
     IF(KIT_NAME)
       INCLUDE("${VTK_KITS_DIR}/${KIT_CMAKE_FILE}")
+      SET(VTK_${VTK_KIT}_HEADERS ${VTK_${VTK_KIT}_CLASSES})
+      SET(VTK_${VTK_KIT}_HEADERS_ABSTRACT ${VTK_${VTK_KIT}_CLASSES_ABSTRACT})
+      SET(VTK_${VTK_KIT}_HEADERS_WRAP_EXCLUDE ${VTK_${VTK_KIT}_CLASSES_WRAP_EXCLUDE})
+      SET(VTK_${VTK_KIT}_HEADERS_WRAP_SPECIAL ${VTK_${VTK_KIT}_CLASSES_WRAP_SPECIAL})
       SET(VTK_KITS ${VTK_KITS} ${VTK_KIT})
     ELSE(KIT_NAME)
       SET(KITS_EXCLUDE ${KITS_EXCLUDE} ${KIT_NAME})
@@ -76,5 +83,8 @@ ELSE(VTK_MODULES_DIR)
     SET(VTK_${VTK_KIT}_NAME "${KIT_NAME}")
 
   ENDFOREACH(VTK_KIT ${TMP_VTK_KITS})
+
+  # prefix the kit names with "vtk" when making targets
+  SET(KIT_PREFIX vtk)
 
 ENDIF(VTK_MODULES_DIR)
