@@ -2884,6 +2884,7 @@ operator_id:
   | ',' { $<str>$ = ","; }
   | '=' { $<str>$ = "="; }
   | OP_RSHIFT_A '>' { $<str>$ = ">>"; }
+  | OP_RSHIFT_A OP_RSHIFT_A { $<str>$ = ">>"; }
   | operator_id_no_delim
 
 operator_id_no_delim:
