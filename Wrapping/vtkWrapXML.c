@@ -605,7 +605,11 @@ void vtkWrapXML_TypeAttributes(wrapxml_state_t *w, ValueInfo *val)
     }
 #endif
 
-  if ((type & VTK_PARSE_REF) != 0)
+  if ((type & VTK_PARSE_RVALUE) != 0)
+    {
+    vtkWrapXML_Flag(w, "rvalue_reference", 1);
+    }
+  else if ((type & VTK_PARSE_REF) != 0)
     {
     vtkWrapXML_Flag(w, "reference", 1);
     }
@@ -718,6 +722,11 @@ void vtkWrapXML_Template(
       val.NumberOfDimensions = param->NumberOfDimensions;
       val.Dimensions = param->Dimensions;
       vtkWrapXML_Size(w, &val);
+      }
+
+    if (param->IsPack)
+      {
+      vtkWrapXML_Flag(w, "pack", 1);
       }
 
     if (param->Template)
@@ -975,6 +984,12 @@ void vtkWrapXML_FunctionCommon(
       }
 
     vtkWrapXML_TypeAttributes(w, arg);
+
+    if (arg->IsPack)
+      {
+      vtkWrapXML_Flag(w, "pack", 1);
+      }
+
     vtkWrapXML_TypeElements(w, arg);
     vtkWrapXML_ElementEnd(w, "param");
     }
@@ -1074,6 +1089,11 @@ void vtkWrapXML_ClassMethod(
   const char *name = func->Name;
   int isCtrOrDtr = 0;
 
+  if (func->IsDeleted)
+    {
+    return;
+    }
+
   if (data && strcmp(data->Name, func->Name) == 0)
     {
     elementName = "constructor";
@@ -1142,6 +1162,11 @@ void vtkWrapXML_ClassMethod(
   if (func->IsPureVirtual)
     {
     vtkWrapXML_Flag(w, "pure", 1);
+    }
+
+  if (func->IsFinal)
+    {
+    vtkWrapXML_Flag(w, "final", 1);
     }
 
   if (func->IsExplicit)
@@ -1587,6 +1612,11 @@ void vtkWrapXML_Class(
   if (classInfo->IsAbstract)
     {
     vtkWrapXML_Flag(w, "abstract", 1);
+    }
+
+  if (classInfo->IsFinal)
+    {
+    vtkWrapXML_Flag(w, "final", 1);
     }
 
   if (classInfo->Template)
