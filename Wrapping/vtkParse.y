@@ -878,8 +878,8 @@ void setTypeMod(unsigned int mod)
 /* modify the indirection (pointers, refs) in the storage type */
 void setTypePtr(unsigned int ind)
 {
-  storedType &= ~(unsigned int)(VTK_PARSE_INDIRECT);
-  ind &= VTK_PARSE_INDIRECT;
+  storedType &= ~(unsigned int)(VTK_PARSE_INDIRECT | VTK_PARSE_RVALUE);
+  ind &= (VTK_PARSE_INDIRECT | VTK_PARSE_RVALUE);
   storedType |= ind;
 }
 
@@ -1256,6 +1256,12 @@ unsigned int add_indirection(unsigned int type1, unsigned int type2)
    * we don't know which one. */
   result = ((type1 & ~VTK_PARSE_POINTER_MASK) |
             (type2 & ~VTK_PARSE_POINTER_MASK));
+
+  /* if there are two ampersands, it is an rvalue reference */ 
+  if ((type1 & type2 & VTK_PARSE_REF) != 0)
+    {
+    result |= VTK_PARSE_RVALUE;
+    }
 
   while (ptr2)
     {
@@ -2531,11 +2537,16 @@ primitive_type:
 
 ptr_operator_seq:
     reference
+  | rvalue_reference
   | pointer_seq
   | pointer_seq reference { $<integer>$ = ($<integer>1 | $<integer>2); }
 
 reference:
     '&' { postSig("&"); $<integer>$ = VTK_PARSE_REF; }
+
+rvalue_reference:
+    OP_LOGIC_AND
+    { postSig("&&"); $<integer>$ = (VTK_PARSE_RVALUE | VTK_PARSE_REF); }
 
 pointer:
     '*' { postSig("*"); } ptr_cv_qualifier_seq { $<integer>$ = $<integer>3; }
@@ -3856,7 +3867,7 @@ void handle_complex_type(
     /* the val type is whatever was inside the parentheses */
     clearTypeId();
     setTypeId(func->Class ? "method" : "function");
-    datatype = (extra & VTK_PARSE_UNQUALIFIED_TYPE);
+    datatype = (extra & (VTK_PARSE_UNQUALIFIED_TYPE | VTK_PARSE_RVALUE));
     }
   else if ((extra & VTK_PARSE_INDIRECT) == VTK_PARSE_BAD_INDIRECT)
     {
@@ -3864,12 +3875,12 @@ void handle_complex_type(
     }
   else if ((extra & VTK_PARSE_INDIRECT) != 0)
     {
-    extra = (extra & VTK_PARSE_INDIRECT);
+    extra = (extra & (VTK_PARSE_INDIRECT | VTK_PARSE_RVALUE));
 
     if ((extra & VTK_PARSE_REF) != 0)
       {
-      datatype = (datatype | VTK_PARSE_REF);
-      extra = (extra & ~VTK_PARSE_REF);
+      datatype = (datatype | (extra & (VTK_PARSE_REF | VTK_PARSE_RVALUE)));
+      extra = (extra & ~(VTK_PARSE_REF | VTK_PARSE_RVALUE));
       }
 
     if (extra != 0 && getArrayNDims() > 0)
