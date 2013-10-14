@@ -1425,6 +1425,7 @@ unsigned int add_indirection_to_array(unsigned int type)
 %token OTHER
 
 /* types */
+%token AUTO
 %token VOID
 %token BOOL
 %token FLOAT
@@ -2524,7 +2525,8 @@ type_name:
   | FloatType { typeSig("double"); $<integer>$ = VTK_PARSE_DOUBLE; }
 
 primitive_type:
-    VOID   { postSig("void "); $<integer>$ = VTK_PARSE_VOID; }
+    AUTO   { postSig("auto "); $<integer>$ = 0; }
+  | VOID   { postSig("void "); $<integer>$ = VTK_PARSE_VOID; }
   | BOOL { postSig("bool "); $<integer>$ = VTK_PARSE_BOOL; }
   | FLOAT  { postSig("float "); $<integer>$ = VTK_PARSE_FLOAT; }
   | DOUBLE { postSig("double "); $<integer>$ = VTK_PARSE_DOUBLE; }
@@ -3178,6 +3180,9 @@ const char *type_class(unsigned int type, const char *classname)
       {
       switch ((type & VTK_PARSE_BASE_TYPE))
         {
+        case 0:
+          classname = "auto";
+          break;
         case VTK_PARSE_VOID:
           classname = "void";
           break;
