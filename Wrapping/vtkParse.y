@@ -1382,6 +1382,7 @@ unsigned int add_indirection_to_array(unsigned int type)
 %token THROW
 %token TRY
 %token CATCH
+%token DECLTYPE
 %token TYPENAME
 %token TYPEDEF
 %token NAMESPACE
@@ -2294,6 +2295,7 @@ id_expression:
 unqualified_id:
     simple_id
   | template_id
+  | decltype_specifier
 
 qualified_id:
     nested_name_specifier unqualified_id
@@ -2308,9 +2310,13 @@ nested_name_specifier:
     { $<str>$ = vtkstrcat($<str>1, $<str>2); }
   | template_id scope_operator_sig
     { $<str>$ = vtkstrcat($<str>1, $<str>2); }
+  | decltype_specifier scope_operator_sig
+    { $<str>$ = vtkstrcat($<str>1, $<str>2); }
   | nested_name_specifier identifier_sig scope_operator_sig
     { $<str>$ = vtkstrcat3($<str>1, $<str>2, $<str>3); }
   | nested_name_specifier template_id scope_operator_sig
+    { $<str>$ = vtkstrcat3($<str>1, $<str>2, $<str>3); }
+  | nested_name_specifier decltype_specifier scope_operator_sig
     { $<str>$ = vtkstrcat3($<str>1, $<str>2, $<str>3); }
   | nested_name_specifier TEMPLATE { postSig("template "); }
     template_id scope_operator_sig
@@ -2336,6 +2342,12 @@ template_id:
       chopSig(); if (getSig()[getSigLength()-1] == '>') { postSig(" "); }
       postSig(">"); $<str>$ = copySig(); clearTypeId();
     }
+
+decltype_specifier:
+    DECLTYPE { markSig(); postSig("decltype"); } parentheses_sig
+    { chopSig(); $<str>$ = copySig(); clearTypeId(); }
+  | '~' DECLTYPE { markSig(); postSig("~decltype"); } parentheses_sig
+    { chopSig(); $<str>$ = copySig(); clearTypeId(); }
 
 /*
  * simple_id evaluates to string and sigs itself, note that '~' is
@@ -2447,6 +2459,8 @@ store_type_specifier:
 
 type_specifier:
     simple_type_specifier
+  | decltype_specifier
+    { postSig(" "); setTypeId($<str>1); $<integer>$ = 0; }
   | TYPENAME { postSig("typename "); } id_expression
     { postSig(" "); setTypeId($<str>3); $<integer>$ = guess_id_type($<str>3); }
   | template_id
@@ -2469,6 +2483,8 @@ tparam_type_specifier2:
 
 tparam_type_specifier:
     simple_type_specifier
+  | decltype_specifier
+    { postSig(" "); setTypeId($<str>1); $<integer>$ = 0; }
   | template_id
     { postSig(" "); setTypeId($<str>1); $<integer>$ = guess_id_type($<str>1); }
   | qualified_id
@@ -2956,6 +2972,7 @@ keyword:
   | INLINE { $<str>$ = "inline"; }
   | VIRTUAL { $<str>$ = "virtual"; }
   | EXPLICIT { $<str>$ = "explicit"; }
+  | DECLTYPE { $<str>$ = "decltype"; }
   | EXTERN { $<str>$ = "extern"; }
   | USING { $<str>$ = "using"; }
   | NAMESPACE { $<str>$ = "namespace"; }
