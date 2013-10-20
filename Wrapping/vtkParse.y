@@ -2156,9 +2156,7 @@ opt_ptr_operator_seq:
 
 /* for parameters, the declarator_id is optional */
 direct_abstract_declarator:
-    { clearVarName(); chopSig(); }
-    opt_array_decorator_seq { $<integer>$ = 0; }
-  | declarator_id opt_array_or_parameters
+    opt_declarator_id opt_array_or_parameters
     {
       if ($<integer>2 == VTK_PARSE_FUNCTION)
         {
@@ -2169,7 +2167,7 @@ direct_abstract_declarator:
         $<integer>$ = 0;
         }
     }
-  | p_or_lp_or_la abstract_declarator ')' { postSig(")"); }
+  | lp_or_la abstract_declarator ')' { postSig(")"); }
     opt_array_or_parameters
     {
       const char *scope = getScope();
@@ -2185,6 +2183,10 @@ direct_abstract_declarator:
         $<integer>$ = add_indirection_to_array(parens);
         }
     }
+
+opt_declarator_id:
+    { clearVarName(); chopSig(); }
+  | declarator_id
 
 /* for variables, the declarator_id is mandatory */
 direct_declarator:
@@ -2205,10 +2207,6 @@ direct_declarator:
         $<integer>$ = add_indirection_to_array(parens);
         }
     }
-
-p_or_lp_or_la:
-    '(' { postSig("("); scopeSig(""); $<integer>$ = 0; }
-  | lp_or_la { $<integer>$ = $<integer>1; }
 
 lp_or_la:
     LP { postSig("("); scopeSig($<str>1); postSig("*"); }
