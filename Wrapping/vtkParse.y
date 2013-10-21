@@ -1388,6 +1388,7 @@ unsigned int add_indirection_to_array(unsigned int type)
 %token THROW
 %token TRY
 %token CATCH
+%token NOEXCEPT
 %token DECLTYPE
 %token TYPENAME
 %token TYPEDEF
@@ -1995,6 +1996,11 @@ function_trailer:
       postSig(" "); postSig($<str>1);
       if (strcmp($<str>1, "final") == 0) { currentFunction->IsFinal = 1; }
     }
+  | noexcept_sig parentheses_sig { chopSig(); }
+  | noexcept_sig
+
+noexcept_sig:
+    NOEXCEPT { postSig(" noexcept"); }
 
 opt_trailing_return_type:
   | trailing_return_type
@@ -2267,6 +2273,8 @@ function_qualifiers:
   | function_qualifiers MUTABLE
   | function_qualifiers CONST { currentFunction->IsConst = 1; }
   | function_qualifiers THROW ignored_parentheses
+  | function_qualifiers NOEXCEPT ignored_parentheses
+  | function_qualifiers NOEXCEPT
 
 abstract_declarator:
     direct_abstract_declarator
@@ -3015,6 +3023,7 @@ keyword:
   | OPERATOR { $<str>$ = "operator"; }
   | ENUM { $<str>$ = "enum"; }
   | THROW { $<str>$ = "throw"; }
+  | NOEXCEPT { $<str>$ = "noexcept"; }
   | CONST_CAST { $<str>$ = "const_cast"; }
   | DYNAMIC_CAST { $<str>$ = "dynamic_cast"; }
   | STATIC_CAST { $<str>$ = "static_cast"; }
