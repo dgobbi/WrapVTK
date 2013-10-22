@@ -1485,6 +1485,10 @@ unsigned int add_indirection_to_array(unsigned int type)
 /* VTK special tokens */
 %token VTK_BYTE_SWAP_DECL
 
+/* Expect five shift-reduce conflicts from opt_final */
+%expect 5
+%glr-parser
+
 %%
 /*
  * Here is the start of the grammar
@@ -1556,6 +1560,7 @@ forward_declaration:
 
 simple_forward_declaration:
     class_key class_head_name ';'
+  | class_key ';'
   | decl_specifier_seq class_key class_head_name ';'
 
 class_definition:
@@ -1577,10 +1582,19 @@ class_specifier:
     }
 
 class_head:
-    class_key class_head_name { start_class($<str>2, $<integer>1); }
-    opt_base_clause
+    class_key class_head_name opt_final ':'
+    {
+      start_class($<str>2, $<integer>1);
+      currentClass->IsFinal = $<integer>3;
+    }
+    base_specifier_list
+  | class_key class_head_name opt_final
+    {
+      start_class($<str>2, $<integer>1);
+      currentClass->IsFinal = $<integer>3;
+    }
+  | class_key ':' { start_class(NULL, $<integer>1); } base_specifier_list
   | class_key { start_class(NULL, $<integer>1); }
-    opt_base_clause
 
 class_key:
     CLASS { $<integer>$ = 0; }
@@ -1597,6 +1611,10 @@ class_head_name:
 class_name:
     simple_id
   | template_id
+
+opt_final:
+  { $<integer>$ = 0; }
+  | ID { $<integer>$ = (strcmp($<str>1, "final") == 0); }
 
 member_specification:
   | member_specification
@@ -1641,12 +1659,6 @@ friend_declaration:
   | FRIEND template_head ignored_class
   | FRIEND forward_declaration
   | FRIEND method_declaration function_body { output_friend_function(); }
-
-opt_base_clause:
-  | base_clause
-
-base_clause:
-    ':' base_specifier_list
 
 base_specifier_list:
     base_specifier
@@ -1720,8 +1732,8 @@ nested_variable_initialization:
     store_type nested_name_specifier simple_id '=' ignored_expression ';'
 
 ignored_class:
-    class_key class_head_name ignored_class_body
-  | decl_specifier_seq class_key class_head_name ignored_class_body
+    class_key class_head_name opt_final ignored_class_body
+  | decl_specifier_seq class_key class_head_name opt_final ignored_class_body
   | class_key ignored_class_body
   | decl_specifier_seq class_key ignored_class_body
 
@@ -2425,7 +2437,6 @@ identifier:
   | OSTREAM
   | StdString
   | UnicodeString
-
 
 /*
  * Declaration specifiers

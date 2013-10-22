@@ -210,6 +210,7 @@ typedef struct _ClassInfo
   unsigned long  NumberOfNamespaces;
   struct _ClassInfo **Namespaces;
   int            IsAbstract;
+  int            IsFinal;
   int            HasDelete;
 } ClassInfo;
 
