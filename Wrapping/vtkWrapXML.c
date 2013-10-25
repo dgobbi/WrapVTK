@@ -747,12 +747,17 @@ void vtkWrapXML_Template(
     }
 }
 
+/* Declare prototype for use in vtkWrapXML_Enum() */
+void vtkWrapXML_Constant(
+  wrapxml_state_t *w, ValueInfo *con, int inClass);
+
 /**
  * Print an enum
  */
 void vtkWrapXML_Enum(
   wrapxml_state_t *w, EnumInfo *item, int inClass)
 {
+  int i;
   const char *elementName = "enum";
 
   fprintf(w->file, "\n");
@@ -764,6 +769,15 @@ void vtkWrapXML_Enum(
     }
 
   vtkWrapXML_Name(w, item->Name);
+
+  vtkWrapXML_Comment(w, item->Comment);
+
+  /* print all members of the class */
+  for (i = 0; i < item->NumberOfConstants; i++)
+    {
+    vtkWrapXML_Constant(w, item->Constants[i], 2);
+    }
+
   vtkWrapXML_ElementEnd(w, elementName);
 }
 
@@ -775,9 +789,14 @@ void vtkWrapXML_Constant(
 {
   const char *elementName = "constant";
 
-  fprintf(w->file, "\n");
+  /* inClass will be 2 for enum class */
+  if (inClass < 2)
+    {
+    fprintf(w->file, "\n");
+    }
+
   vtkWrapXML_ElementStart(w, elementName);
-  
+
   if (inClass)
     {
     vtkWrapXML_Access(w, con->Access);
