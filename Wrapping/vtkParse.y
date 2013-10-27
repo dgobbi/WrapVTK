@@ -2048,6 +2048,8 @@ parameter_list:
     parameter_declaration
   | parameter_list ',' ELLIPSIS
     { currentFunction->IsVariadic = 1; postSig(", ..."); }
+  | ELLIPSIS
+    { currentFunction->IsVariadic = 1; postSig("..."); }
 
 parameter_declaration:
     { markSig(); }
