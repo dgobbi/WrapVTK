@@ -1354,11 +1354,14 @@ static int preproc_evaluate_define(
   MacroInfo **macro_p;
   MacroInfo *macro;
   int is_function;
+  int is_variadic;
   const char *name;
   size_t namelen;
   const char *definition = 0;
   unsigned long n = 0;
   const char **params = NULL;
+  const char *param;
+  size_t l;
 
   if (tokens->hash == HASH_DEFINE)
     {
@@ -1377,6 +1380,7 @@ static int preproc_evaluate_define(
     vtkParse_NextToken(tokens);
 
     is_function = 0;
+    is_variadic = 0;
     if (name[namelen] == '(')
       {
       is_function = 1;
@@ -1392,11 +1396,20 @@ static int preproc_evaluate_define(
           return VTK_PARSE_SYNTAX_ERROR;
           }
 
+        param = tokens->text;
+        l = tokens->len;
+
+        if (tokens->tok == TOK_ELLIPSIS)
+          {
+          is_variadic = 1;
+          param = "__VA_ARGS__";
+          l = 11;
+          }
+
         /* add to the arg list */
         params = (const char **)preproc_array_check(
           (char **)params, sizeof(char *), n);
-        params[n++] = vtkParse_CacheString(
-          info->Strings, tokens->text, tokens->len);
+        params[n++] = vtkParse_CacheString(info->Strings, param, l);
 
         vtkParse_NextToken(tokens);
         if (tokens->tok == ',')
@@ -1436,6 +1449,7 @@ static int preproc_evaluate_define(
 
     macro = preproc_new_macro(info, name, definition);
     macro->IsFunction = is_function;
+    macro->IsVariadic = is_variadic;
     macro->NumberOfParameters = n;
     macro->Parameters = params;
     *macro_p = macro;
@@ -2383,7 +2397,8 @@ const char *vtkParsePreprocess_ExpandMacro(
         }
       }
 
-    if (n != macro->NumberOfParameters)
+    if (n < macro->NumberOfParameters ||
+        (n > macro->NumberOfParameters && !macro->IsVariadic))
       {
       if (values != stack_values) { free((char **)values); }
 #if PREPROC_DEBUG
@@ -2482,7 +2497,7 @@ const char *vtkParsePreprocess_ExpandMacro(
     cp += l;
     if (l > 0)
       {
-      for (j = 0; j < n; j++)
+      for (j = 0; j < macro->NumberOfParameters; j++)
         {
         /* check whether the name matches a parameter */
         if (strncmp(pp, macro->Parameters[j], l) == 0 &&
@@ -2490,6 +2505,11 @@ const char *vtkParsePreprocess_ExpandMacro(
           {
           /* substitute the argument value */
           l = values[j+1] - values[j] - 1;
+          /* if variadic arg, use all remaining args */
+          if (macro->IsVariadic && j == macro->NumberOfParameters-1)
+            {
+            l = values[n] - values[j] - 1;
+            }
           pp = values[j];
           /* remove leading whitespace from argument */
           c = *pp;
@@ -2891,6 +2911,7 @@ void vtkParsePreprocess_InitMacro(MacroInfo *macro)
   macro->NumberOfParameters = 0;
   macro->Parameters = NULL;
   macro->IsFunction = 0;
+  macro->IsVariadic = 0;
   macro->IsExternal = 0;
   macro->IsExcluded = 0;
 }
