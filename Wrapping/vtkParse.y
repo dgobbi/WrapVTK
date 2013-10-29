@@ -3239,6 +3239,7 @@ common_bracket_item:
         resetSig(l);
         postSig(cp);
         }
+      postSig(" ");
     }
 
 any_bracket_contents:
