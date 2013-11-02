@@ -730,7 +730,7 @@ int skip_comment()
    int c1 = 0, c2 = input();
    for (;;)
      {
-     if (c2 == 0)
+     if (c2 == 0 || c2 == EOF)
        {
        print_preprocessor_error(VTK_PARSE_SYNTAX_ERROR,
          "Cannot find end of comment.", 27);
@@ -821,7 +821,7 @@ int skip_to_next_directive()
 
   c = input();
 
-  while (c != 0)
+  while (c != 0 && c != EOF)
     {
     /* whitespace */
     if (c == ' ' || c == '\t')
@@ -858,7 +858,7 @@ int skip_to_next_directive()
           c = input();
           }
         }
-      else if (c != 0)
+      else if (c != 0 && c != EOF)
         {
         c = input();
         }
@@ -905,7 +905,7 @@ int skip_conditional_block()
       {
       c = input();
       }
-    if (c == 0)
+    if (c == 0 || c == EOF)
       {
       return 0;
       }
@@ -913,7 +913,7 @@ int skip_conditional_block()
     /* eat the whole line */
     i = 0;
     linebuf[i++] = '#';
-    while (c != 0 && c != '\n')
+    while (c != 0 && c != EOF && c != '\n')
       {
       if (i >= linemaxlen-5)
         {
@@ -957,7 +957,7 @@ int skip_conditional_block()
 int skip_ahead_multi(const char *strings[])
 {
   char textbuf[SKIP_MATCH_MAXLEN+1];
-  char c = 0;
+  int c = 0;
   size_t i;
 
   for (i = 0; i < (SKIP_MATCH_MAXLEN+1); i++)
@@ -972,7 +972,8 @@ int skip_ahead_multi(const char *strings[])
       textbuf[i] = textbuf[i+1];
       }
 
-    if ((c = (char)input()) == '\0')
+    c = input();
+    if (c == 0 || c == EOF)
       {
       print_preprocessor_error(VTK_PARSE_SYNTAX_ERROR, NULL, 0);
       return 0;
@@ -994,9 +995,9 @@ int skip_ahead_multi(const char *strings[])
       }
     }
 
-  while (c != '\0' && c != '\n')
+  while (c != 0 && c != EOF && c != '\n')
     {
-    c = (char)input();
+    c = input();
     }
 
   return 1;
