@@ -96,7 +96,7 @@ to the more usual form y x; without parentheses.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define yyerror(a) fprintf(stderr,"%s\n",a)
+#define yyerror(a) print_parser_error(a, NULL, 0)
 #define yywrap() 1
 
 /* Make sure yacc-generated code knows we have included stdlib.h.  */
@@ -195,6 +195,7 @@ const char   **Definitions;
 /* options that can be set by the programs that use the parser */
 int            IgnoreBTX = 0;
 int            Recursive = 0;
+const char    *CommandName = NULL;
 
 /* various state variables */
 NamespaceInfo *currentNamespace = NULL;
@@ -4515,6 +4516,12 @@ void vtkParse_SetRecursive(int option)
     }
 }
 
+/* Set the global variable that stores the current executable */
+void vtkParse_SetCommandName(const char *name)
+{
+  CommandName = name;
+}
+
 /* Parse a header file and return a FileInfo struct */
 FileInfo *vtkParse_ParseFile(
   const char *filename, FILE *ifile, FILE *errfile)
@@ -4603,7 +4610,6 @@ FileInfo *vtkParse_ParseFile(
 
   if (ret)
     {
-    print_parser_error("syntax error", NULL, 0);
     return NULL;
     }
 

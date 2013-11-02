@@ -60,6 +60,11 @@ void vtkParse_SetRecursive(int option);
 void vtkParse_SetIgnoreBTX(int option);
 
 /**
+ * Set the command name, for error reporting and diagnostics.
+ */
+void vtkParse_SetCommandName(const char *name);
+
+/**
  * Parse a header file and return a FileInfo struct
  */
 FileInfo *vtkParse_ParseFile(
