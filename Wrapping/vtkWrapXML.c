@@ -227,14 +227,7 @@ void vtkWrapXML_ElementEnd(wrapxml_state_t *w, const char *name)
 void vtkWrapXML_Attribute(
   wrapxml_state_t *w, const char *name, const char *value)
 {
-#ifdef WRAPXML_ELEMENTS_ONLY
-  vtkWrapXML_ElementBody(w);
-  fprintf(w->file, "%s<%c%s>%s</%c%s>", indent(w->indentation),
-          toupper(name[0]), &name[1], vtkWrapXML_Quote(value, 500),
-          toupper(name[0]), &name[1]);
-#else
   fprintf(w->file, " %s=\"%s\"", name, vtkWrapXML_Quote(value, 500));
-#endif
 }
 
 /**
@@ -243,13 +236,7 @@ void vtkWrapXML_Attribute(
 void vtkWrapXML_AttributeWithPrefix(
   wrapxml_state_t *w, const char *name, const char *prefix, const char *value)
 {
-#ifdef WRAPXML_ELEMENTS_ONLY
-  vtkWrapXML_ElementBody(w);
-  fprintf(w->file, "%s<%s>%s%s<%s>", indent(w->indentation),
-          name, prefix, vtkWrapXML_Quote(value, 500), name);
-#else
   fprintf(w->file, " %s=\"%s%s\"", name, prefix, vtkWrapXML_Quote(value, 500));
-#endif
 }
 
 /**
@@ -262,24 +249,14 @@ void vtkWrapXML_Size(wrapxml_state_t *w, ValueInfo *val)
 
   if (ndims > 0)
     {
-#ifndef WRAPXML_ELEMENTS_ONLY
     fprintf(w->file, " size=\"%s", ((ndims > 1) ? "{" : ""));
-#endif
     for (j = 0; j < ndims; j++)
       {
-#ifdef WRAPXML_ELEMENTS_ONLY
-      vtkWrapXML_ElementBody(w);
-      fprintf(w->file, "%s<size>%s</size>\n", indent(w->indentation),
-              val->Dimensions[j]);
-#else
       fprintf(w->file, "%s%s",
         ((j > 0) ? "," : ""),
         ((val->Dimensions[j][0] == '\0') ? ":" : val->Dimensions[j]));
-#endif
       }
-#ifndef WRAPXML_ELEMENTS_ONLY
     fprintf(w->file, "%s\"", ((ndims > 1) ? "}" : ""));
-#endif
     }
 }
 
@@ -378,11 +355,7 @@ void vtkWrapXML_Flag(wrapxml_state_t *w, const char *name, int value)
 {
   if (value)
     {
-#ifdef WRAPXML_ELEMENTS_ONLY
-    vtkWrapXML_Attribute(w, "flag", name);
-#else
     fprintf(w->file, " %s=\"1\"", name);
-#endif
     }
 }
 
@@ -565,13 +538,8 @@ void vtkWrapXML_ClassInheritance(
   for (i = 1; i < n; i++)
     {
     vtkWrapXML_ElementStart(w, subElementName);
-#ifdef WRAPXML_ELEMENTS_ONLY
-    vtkWrapXML_ElementBody(w);
-    fprintf(w->file, "%s", vtkWrapXML_Quote(merge->ClassNames[i], 500));
-#else
     vtkWrapXML_Name(w, merge->ClassNames[i]);
     vtkWrapXML_Attribute(w, "access", "public");
-#endif
     vtkWrapXML_ElementEnd(w, subElementName);
     }
   vtkWrapXML_ElementEnd(w, elementName);
@@ -588,13 +556,6 @@ void vtkWrapXML_TypeAttributes(wrapxml_state_t *w, ValueInfo *val)
 {
   unsigned int type = val->Type;
 
-#ifdef WRAPXML_ELEMENTS_ONLY
-  if ((type & VTK_PARSE_CONST) != 0)
-    {
-    vtkWrapXML_Flag(w, "const", 1);
-    }
-  vtkWrapXML_Attribute(w, "type", val->TypeName);
-#else
   if ((type & VTK_PARSE_CONST) != 0)
     {
     vtkWrapXML_AttributeWithPrefix(w, "type", "const ", val->TypeName);
@@ -603,7 +564,6 @@ void vtkWrapXML_TypeAttributes(wrapxml_state_t *w, ValueInfo *val)
     {
     vtkWrapXML_Attribute(w, "type", val->TypeName);
     }
-#endif
 
   if ((type & VTK_PARSE_RVALUE) != 0)
     {
