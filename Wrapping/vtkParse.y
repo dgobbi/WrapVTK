@@ -3139,16 +3139,20 @@ literal:
 
 constant_expression:
     constant_expression_item
-  | constant_expression constant_expression_item;
+  | constant_expression constant_expression_item
 
 constant_expression_item:
     common_bracket_item
   | angle_brackets_sig
   | '<' { postSig("< "); }
-  | '>' { postSig("> "); }
+  | '>' { postSig("> "); } common_bracket_item_no_scope_operator
   | OP_RSHIFT_A { postSig(">"); }
 
 common_bracket_item:
+    common_bracket_item_no_scope_operator
+  | DOUBLE_COLON { chopSig(); postSig("::"); }
+
+common_bracket_item_no_scope_operator:
     brackets_sig
   | parentheses_sig
   | braces_sig
@@ -3183,7 +3187,6 @@ common_bracket_item:
         }
     }
   | ':' { postSig(":"); postSig(" "); } | '.' { postSig("."); }
-  | DOUBLE_COLON { chopSig(); postSig("::"); }
   | keyword { postSig($<str>1); postSig(" "); }
   | literal { postSig($<str>1); postSig(" "); }
   | primitive_type
