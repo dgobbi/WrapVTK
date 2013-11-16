@@ -1921,7 +1921,7 @@ template_parameter:
     { add_template_parameter(0, $<integer>3, copySig()); }
     opt_template_parameter_initializer
   | { pushTemplate(); markSig(); }
-    template_head CLASS { postSig("class"); }
+    template_head CLASS { postSig("class "); }
     direct_abstract_declarator
     {
       unsigned long i;

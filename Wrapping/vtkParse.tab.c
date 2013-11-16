@@ -6668,7 +6668,7 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
 
 /* Line 936 of glr.c  */
 #line 1924 "vtkParse.y"
-    { postSig("class"); }
+    { postSig("class "); }
     break;
 
   case 173:
