@@ -24,6 +24,10 @@
 
 /* end standard C headers. */
 
+#ifndef __cplusplus
+extern int isatty(int);
+#endif /* __cplusplus */
+
 /* flex integer type definitions */
 
 #ifndef FLEXINT_H
