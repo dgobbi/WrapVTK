@@ -4237,8 +4237,28 @@ void output_function()
   if (currentFunction->ReturnValue &&
       currentFunction->ReturnValue->Type & VTK_PARSE_TYPEDEF)
     {
-    /* for now, reject it instead of turning a method into a typedef */
+    ValueInfo *item = (ValueInfo *)malloc(sizeof(ValueInfo));
+    vtkParse_InitValue(item);
+    item->ItemType = VTK_TYPEDEF_INFO;
+    item->Access = access_level;
+    item->Type = VTK_PARSE_FUNCTION;
+    item->TypeName = "function";
+    item->Function = currentFunction;
+    item->Name = currentFunction->Name;
+
     currentFunction->ReturnValue->Type ^= VTK_PARSE_TYPEDEF;
+    currentFunction->Class = NULL;
+
+    if (currentClass)
+      {
+      vtkParse_AddTypedefToClass(currentClass, item);
+      }
+    else
+      {
+      vtkParse_AddTypedefToNamespace(currentNamespace, item);
+      }
+
+    currentFunction = (FunctionInfo *)malloc(sizeof(FunctionInfo));
     reject_function();
     return;
     }
