@@ -371,9 +371,6 @@ FileInfo *vtkParse_Main(int argc, char *argv[])
   int expected_files;
   FILE *ifile;
   FILE *hfile = 0;
-  const char *cp;
-  char *classname;
-  size_t i;
   FileInfo *data;
   StringCache strings;
   int argn;
