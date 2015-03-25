@@ -37,6 +37,7 @@ void vtkParse_InitFile(FileInfo *file_info)
   file_info->Includes = NULL;
   file_info->MainClass = NULL;
   file_info->Contents = NULL;
+  file_info->Root = NULL;
 
   file_info->Strings = NULL;
 }
@@ -108,6 +109,7 @@ void vtkParse_InitFunction(FunctionInfo *func)
 
   func->ItemType = VTK_FUNCTION_INFO;
   func->Access = VTK_ACCESS_PUBLIC;
+  func->Context = NULL;
   func->Name = NULL;
   func->Comment = NULL;
   func->Class = NULL;
@@ -250,6 +252,7 @@ void vtkParse_InitValue(ValueInfo *val)
 {
   val->ItemType = VTK_VARIABLE_INFO;
   val->Access = VTK_ACCESS_PUBLIC;
+  val->Context = NULL;
   val->Name = NULL;
   val->Comment = NULL;
   val->Value = NULL;
@@ -383,6 +386,7 @@ void vtkParse_InitClass(ClassInfo *cls)
 {
   cls->ItemType = VTK_CLASS_INFO;
   cls->Access = VTK_ACCESS_PUBLIC;
+  cls->Context = NULL;
   cls->Name = NULL;
   cls->Comment = NULL;
   cls->Template = NULL;

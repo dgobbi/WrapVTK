@@ -13,6 +13,7 @@ SET(vtkWrapXML_SRCS
   vtkParseExtras.c
   vtkParseMain.c
   vtkParseData.c
+ # vtkParseSearch.c
   vtkParseString.c
   vtkParseProperties.c
   vtkParseHierarchy.c
