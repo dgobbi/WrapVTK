@@ -211,7 +211,7 @@ static void merge_function(FunctionInfo *merge, const FunctionInfo *func)
     }
 }
 
-/* try to resolve "Using" directives with the given class. */
+/* try to resolve "Using" declarations with the given class. */
 void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
   const ClassInfo *super, unsigned long depth)
 {
@@ -318,7 +318,7 @@ void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
       }
     }
 
-  /* remove any using directives that were satisfied */
+  /* remove any using declarations that were satisfied */
   for (i = 0; i < merge->NumberOfUsings; i++)
     {
     u = merge->Usings[i];
