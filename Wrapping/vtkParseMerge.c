@@ -211,6 +211,143 @@ static void merge_function(FunctionInfo *merge, const FunctionInfo *func)
     }
 }
 
+/* try to resolve "Using" directives with the given class. */
+void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
+  const ClassInfo *super, unsigned long depth)
+{
+  unsigned long i, j, k, ii, n, m;
+  int match;
+  UsingInfo *u;
+  UsingInfo *v;
+  FunctionInfo *func;
+  FunctionInfo *f2;
+
+  /* if scope matches, rename scope to "Superclass", */
+  /* this will cause any inherited scopes to match */
+  match = 0;
+  for (ii = 0; ii < merge->NumberOfUsings; ii++)
+    {
+    u = merge->Usings[ii];
+    if (u)
+      {
+      match = 1;
+      if (strcmp(u->Scope, super->Name) == 0)
+        {
+        u->Scope = "Superclass";
+        }
+      }
+    }
+  if (!match)
+    {
+    /* nothing to do! */
+    return;
+    }
+
+  m = merge->NumberOfFunctions;
+  n = super->NumberOfFunctions;
+  for (i = 0; i < n; i++)
+    {
+    func = super->Functions[i];
+
+    if (!func || !func->Name)
+      {
+      continue;
+      }
+
+    /* constructors and destructors cannot be used */
+    if ((strcmp(func->Name, super->Name) == 0) ||
+        (func->Name[0] == '~' &&
+         strcmp(&func->Name[1], super->Name) == 0))
+      {
+      continue;
+      }
+
+    /* check that the function is being "used" */
+    match = 0;
+    for (ii = 0; ii < merge->NumberOfUsings; ii++)
+      {
+      u = merge->Usings[ii];
+      if (u && strcmp(u->Scope, "Superclass") == 0)
+        {
+        if (u->Name && strcmp(u->Name, func->Name) == 0)
+          {
+          match = 1;
+          break;
+          }
+        }
+      }
+    if (!match)
+      {
+      continue;
+      }
+
+    /* look for override of this signature */
+    match = 0;
+    for (j = 0; j < m; j++)
+      {
+      f2 = merge->Functions[j];
+      if (f2->Name && strcmp(f2->Name, func->Name) == 0)
+        {
+        if (f2->NumberOfParameters == func->NumberOfParameters)
+          {
+          for (k = 0; k < f2->NumberOfParameters; k++)
+            {
+            if (f2->Parameters[k]->Type != func->Parameters[k]->Type &&
+                strcmp(f2->Parameters[k]->TypeName,
+                       func->Parameters[k]->TypeName) == 0)
+              {
+              break;
+              }
+            }
+          /* if all args match, this signature is overridden */
+          if (k == f2->NumberOfParameters)
+            {
+            match = 1;
+            break;
+            }
+          }
+        }
+      }
+    if (!match)
+      {
+      /* copy into the merge */
+      f2 = (FunctionInfo *)malloc(sizeof(FunctionInfo));
+      vtkParse_CopyFunction(f2, func);
+      vtkParse_AddFunctionToClass(merge, f2);
+      vtkParseMerge_PushFunction(info, depth);
+      }
+    }
+
+  /* remove any using directives that were satisfied */
+  for (i = 0; i < merge->NumberOfUsings; i++)
+    {
+    u = merge->Usings[i];
+    if (u && strcmp(u->Scope, "Superclass") == 0)
+      {
+      match = 0;
+      for (j = 0; j < super->NumberOfUsings && !match; j++)
+        {
+        v = super->Usings[j];
+        if (v && v->Name && u->Name && strcmp(u->Name, v->Name) == 0)
+          {
+          vtkParse_CopyUsing(u, v);
+          match = 1;
+          }
+        }
+      for (j = 0; j < super->NumberOfFunctions && !match; j++)
+        {
+        func = super->Functions[j];
+        if (u->Name && func && func->Name && strcmp(func->Name, u->Name) == 0)
+          {
+          vtkParse_FreeUsing(u);
+          merge->Usings[i] = 0;
+          match = 1;
+          }
+        }
+      }
+    }
+}
+
 /* add "super" methods to the merge */
 unsigned long vtkParseMerge_Merge(
   MergeInfo *info, ClassInfo *merge, ClassInfo *super)
@@ -222,6 +359,8 @@ unsigned long vtkParseMerge_Merge(
   FunctionInfo *f2;
 
   depth = vtkParseMerge_PushClass(info, super->Name);
+
+  vtkWrapXML_MergeUsing(info, merge, super, depth);
 
   m = merge->NumberOfFunctions;
   n = super->NumberOfFunctions;

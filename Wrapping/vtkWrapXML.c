@@ -726,7 +726,7 @@ void vtkWrapXML_Constant(
 void vtkWrapXML_Enum(
   wrapxml_state_t *w, EnumInfo *item, int inClass)
 {
-  int i;
+  unsigned long i;
   const char *elementName = "enum";
 
   fprintf(w->file, "\n");
@@ -869,17 +869,20 @@ void vtkWrapXML_Using(
   const char *elementName = "using";
   const char *name = "namespace";
 
-  if (data->Name)
+  if (data)
     {
-    name = data->Name;
-    }
+    if (data->Name)
+      {
+      name = data->Name;
+      }
 
-  fprintf(w->file, "\n");
-  vtkWrapXML_ElementStart(w, elementName);
-  vtkWrapXML_Name(w, name);
-  vtkWrapXML_Attribute(w, "context", data->Scope);
-  vtkWrapXML_Comment(w, data->Comment);
-  vtkWrapXML_ElementEnd(w, elementName);
+    fprintf(w->file, "\n");
+    vtkWrapXML_ElementStart(w, elementName);
+    vtkWrapXML_Name(w, name);
+    vtkWrapXML_Attribute(w, "context", data->Scope);
+    vtkWrapXML_Comment(w, data->Comment);
+    vtkWrapXML_ElementEnd(w, elementName);
+    }
 }
 
 /**
