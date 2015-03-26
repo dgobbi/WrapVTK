@@ -348,6 +348,7 @@ void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
           f2->Class = merge->Name;
           f2->Comment = func->Comment;
           f2->Signature = func->Signature;
+          f2->IsExplicit = func->IsExplicit;
           for (k = 0; k < j; k++)
             {
             param = (ValueInfo *)malloc(sizeof(ValueInfo));
