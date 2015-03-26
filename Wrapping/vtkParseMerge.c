@@ -17,6 +17,7 @@
 #include "vtkParseHierarchy.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <ctype.h>
 
 /* add a class to the MergeInfo */
@@ -307,9 +308,9 @@ void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
           {
           for (k = 0; k < f2->NumberOfParameters; k++)
             {
-            if (f2->Parameters[k]->Type != func->Parameters[k]->Type &&
+            if (f2->Parameters[k]->Type != func->Parameters[k]->Type ||
                 strcmp(f2->Parameters[k]->TypeName,
-                       func->Parameters[k]->TypeName) == 0)
+                       func->Parameters[k]->TypeName) != 0)
               {
               break;
               }
@@ -330,10 +331,10 @@ void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
         {
         /* constructors require special default argument handling, there
          * is a different used constructor for each arg with a default */
-        for (j = func->NumberOfParameters; j > 1; j--)
+        for (j = func->NumberOfParameters; j > 0; j--)
           {
           param = func->Parameters[0];
-          if (k == 1 && param->TypeName &&
+          if (j == 1 && param->TypeName &&
               strcmp(param->TypeName, super->Name) == 0 &&
               (param->Type & VTK_PARSE_POINTER_MASK) == 0)
             {
@@ -347,14 +348,16 @@ void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
           f2->Class = merge->Name;
           f2->Comment = func->Comment;
           f2->Signature = func->Signature;
-          for (i = 0; i < j; i++)
+          for (k = 0; k < j; k++)
             {
             param = (ValueInfo *)malloc(sizeof(ValueInfo));
-            vtkParse_CopyValue(param, func->Parameters[i]);
+            vtkParse_CopyValue(param, func->Parameters[k]);
             lastval = param->Value;
             param->Value = NULL; /* clear default parameter value */
             vtkParse_AddParameterToFunction(f2, param);
             }
+          vtkParse_AddFunctionToClass(merge, f2);
+          vtkParseMerge_PushFunction(info, depth);
           if (lastval == NULL)
             {
             /* continue if last parameter had a default value */
@@ -469,9 +472,9 @@ unsigned long vtkParseMerge_Merge(
                 {
                 for (k = 0; k < f2->NumberOfParameters; k++)
                   {
-                  if (f2->Parameters[k]->Type != func->Parameters[k]->Type &&
+                  if (f2->Parameters[k]->Type != func->Parameters[k]->Type ||
                       strcmp(f2->Parameters[k]->TypeName,
-                             func->Parameters[k]->TypeName) == 0)
+                             func->Parameters[k]->TypeName) != 0)
                     {
                     break;
                     }
