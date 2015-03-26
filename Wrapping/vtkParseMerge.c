@@ -313,6 +313,7 @@ void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
       /* copy into the merge */
       f2 = (FunctionInfo *)malloc(sizeof(FunctionInfo));
       vtkParse_CopyFunction(f2, func);
+      f2->Access = u->Access;
       vtkParse_AddFunctionToClass(merge, f2);
       vtkParseMerge_PushFunction(info, depth);
       }
@@ -330,7 +331,8 @@ void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
         v = super->Usings[j];
         if (v && v->Name && u->Name && strcmp(u->Name, v->Name) == 0)
           {
-          vtkParse_CopyUsing(u, v);
+          /* get the new scope so that recursion will occur */
+          u->Scope = v->Scope;
           match = 1;
           }
         }
