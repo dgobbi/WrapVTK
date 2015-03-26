@@ -221,6 +221,9 @@ void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
   UsingInfo *v;
   FunctionInfo *func;
   FunctionInfo *f2;
+  ValueInfo *param;
+  const char *lastval;
+  int is_constructor;
 
   /* if scope matches, rename scope to "Superclass", */
   /* this will cause any inherited scopes to match */
@@ -254,12 +257,22 @@ void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
       continue;
       }
 
-    /* constructors and destructors cannot be used */
-    if ((strcmp(func->Name, super->Name) == 0) ||
-        (func->Name[0] == '~' &&
-         strcmp(&func->Name[1], super->Name) == 0))
+    /* destructors cannot be used */
+    if (func->Name[0] == '~' && strcmp(&func->Name[1], super->Name) == 0)
       {
       continue;
+      }
+
+    /* constructors can be used, with limitations */
+    is_constructor = 0;
+    if (strcmp(func->Name, super->Name) == 0)
+      {
+      is_constructor = 1;
+      if (func->Template)
+        {
+        /* templated constructors cannot be "used" */
+        continue;
+        }
       }
 
     /* check that the function is being "used" */
@@ -286,7 +299,9 @@ void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
     for (j = 0; j < m; j++)
       {
       f2 = merge->Functions[j];
-      if (f2->Name && strcmp(f2->Name, func->Name) == 0)
+      if (f2->Name &&
+          ((is_constructor && strcmp(f2->Name, merge->Name) == 0) ||
+           (!is_constructor && strcmp(f2->Name, func->Name) == 0)))
         {
         if (f2->NumberOfParameters == func->NumberOfParameters)
           {
@@ -311,11 +326,52 @@ void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
     if (!match)
       {
       /* copy into the merge */
-      f2 = (FunctionInfo *)malloc(sizeof(FunctionInfo));
-      vtkParse_CopyFunction(f2, func);
-      f2->Access = u->Access;
-      vtkParse_AddFunctionToClass(merge, f2);
-      vtkParseMerge_PushFunction(info, depth);
+      if (is_constructor)
+        {
+        /* constructors require special default argument handling, there
+         * is a different used constructor for each arg with a default */
+        for (j = func->NumberOfParameters; j > 1; j--)
+          {
+          param = func->Parameters[0];
+          if (k == 1 && param->TypeName &&
+              strcmp(param->TypeName, super->Name) == 0 &&
+              (param->Type & VTK_PARSE_POINTER_MASK) == 0)
+            {
+            /* it is a copy constructor, it will not be "used" */
+            continue;
+            }
+          f2 = (FunctionInfo *)malloc(sizeof(FunctionInfo));
+          vtkParse_InitFunction(f2);
+          f2->Access = u->Access;
+          f2->Name = merge->Name;
+          f2->Class = merge->Name;
+          f2->Comment = func->Comment;
+          f2->Signature = func->Signature;
+          for (i = 0; i < j; i++)
+            {
+            param = (ValueInfo *)malloc(sizeof(ValueInfo));
+            vtkParse_CopyValue(param, func->Parameters[i]);
+            lastval = param->Value;
+            param->Value = NULL; /* clear default parameter value */
+            vtkParse_AddParameterToFunction(f2, param);
+            }
+          if (lastval == NULL)
+            {
+            /* continue if last parameter had a default value */
+            break;
+            }
+          }
+        }
+      else
+        {
+        /* non-constructor methods are simple */
+        f2 = (FunctionInfo *)malloc(sizeof(FunctionInfo));
+        vtkParse_CopyFunction(f2, func);
+        f2->Access = u->Access;
+        f2->Class = merge->Name;
+        vtkParse_AddFunctionToClass(merge, f2);
+        vtkParseMerge_PushFunction(info, depth);
+        }
       }
     }
 
