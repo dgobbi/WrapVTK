@@ -8942,7 +8942,7 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
 
    currentFunction->Macro = "vtkTypeMacro";
    currentFunction->Name = "IsA";
-   currentFunction->Signature = "int IsA(const char *name);";
+   currentFunction->Signature = "virtual int IsA(const char *name);";
    currentFunction->Comment = vtkstrdup(getComment());
    add_parameter(currentFunction, (VTK_PARSE_CONST | VTK_PARSE_CHAR_PTR),
                 "char", 0);
@@ -8959,7 +8959,7 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
    currentFunction->Macro = "vtkTypeMacro";
    currentFunction->Name = "SafeDownCast";
    currentFunction->Signature =
-     vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (7))].yystate.yysemantics.yysval.str), " *SafeDownCast(vtkObject* o);");
+     vtkstrcat3("static ", (((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (7))].yystate.yysemantics.yysval.str), " *SafeDownCast(vtkObject *o);");
    currentFunction->Comment = vtkstrdup(getComment());
    add_parameter(currentFunction, VTK_PARSE_OBJECT_PTR, "vtkObject", 0);
    set_return(currentFunction, (VTK_PARSE_STATIC | VTK_PARSE_OBJECT_PTR),
