@@ -1315,6 +1315,7 @@ int vtkParse_CompareFunctionSignature(
 {
   ValueInfo *p1;
   ValueInfo *p2;
+  unsigned long j;
   unsigned long k;
   int match = 0;
 
@@ -1340,6 +1341,20 @@ int vtkParse_CompareFunctionSignature(
         if (vtkParse_CompareFunctionSignature(p1->Function, p2->Function) < 7)
           {
           break;
+          }
+        }
+      if (p1->NumberOfDimensions > 1 || p2->NumberOfDimensions > 1)
+        {
+        if (p1->NumberOfDimensions != p2->NumberOfDimensions)
+          {
+          break;
+          }
+        for (j = 1; j < p1->NumberOfDimensions; j++)
+          {
+          if (strcmp(p1->Dimensions[j], p2->Dimensions[j]) != 0)
+            {
+            break;
+            }
           }
         }
       }
