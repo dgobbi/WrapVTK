@@ -14,6 +14,7 @@
 
 #include "vtkParseMerge.h"
 #include "vtkParseData.h"
+#include "vtkParseExtras.h"
 #include "vtkParseHierarchy.h"
 #include <string.h>
 #include <stdlib.h>
@@ -304,23 +305,10 @@ void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
           ((is_constructor && strcmp(f2->Name, merge->Name) == 0) ||
            (!is_constructor && strcmp(f2->Name, func->Name) == 0)))
         {
-        if (f2->NumberOfParameters == func->NumberOfParameters)
+        if (vtkParse_CompareFunctionSignature(func, f2) != 0)
           {
-          for (k = 0; k < f2->NumberOfParameters; k++)
-            {
-            if (f2->Parameters[k]->Type != func->Parameters[k]->Type ||
-                strcmp(f2->Parameters[k]->TypeName,
-                       func->Parameters[k]->TypeName) != 0)
-              {
-              break;
-              }
-            }
-          /* if all args match, this signature is overridden */
-          if (k == f2->NumberOfParameters)
-            {
-            match = 1;
-            break;
-            }
+          match = 1;
+          break;
           }
         }
       }
@@ -414,7 +402,7 @@ void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
 unsigned long vtkParseMerge_Merge(
   MergeInfo *info, ClassInfo *merge, ClassInfo *super)
 {
-  unsigned long i, j, k, ii, n, m, depth;
+  unsigned long i, j, ii, n, m, depth;
   int match;
   FunctionInfo *func;
   FunctionInfo *f1;
@@ -469,23 +457,10 @@ unsigned long vtkParseMerge_Merge(
             f2 = merge->Functions[j];
             if (f2->Name && strcmp(f2->Name, f1->Name) == 0)
               {
-              if (f2->NumberOfParameters == func->NumberOfParameters)
+              if (vtkParse_CompareFunctionSignature(f1, f2) != 0)
                 {
-                for (k = 0; k < f2->NumberOfParameters; k++)
-                  {
-                  if (f2->Parameters[k]->Type != func->Parameters[k]->Type ||
-                      strcmp(f2->Parameters[k]->TypeName,
-                             func->Parameters[k]->TypeName) != 0)
-                    {
-                    break;
-                    }
-                  }
-                /* if all args match, then merge the comments */
-                if (k == f2->NumberOfParameters)
-                  {
-                  merge_function(f2, func);
-                  vtkParseMerge_PushOverride(info, j, depth);
-                  }
+                merge_function(f2, func);
+                vtkParseMerge_PushOverride(info, j, depth);
                 }
               }
             }

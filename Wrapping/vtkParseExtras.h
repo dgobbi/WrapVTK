@@ -131,6 +131,19 @@ size_t vtkParse_TemplateInfoToString(
   TemplateInfo *func, char *text, unsigned int flags);
 
 /**
+ * Compare two C++ functions to see if they have the same signature.
+ *
+ * The following are the possible return values.  Any non-zero return value
+ * means that the parameters match.  If the 2nd bit is also set, then the
+ * function return value also matches.  If the 3rd bit is set, then the
+ * parameters match and both methods are members of the same class, and
+ * the constness of the functions match.  This means that the signatures
+ * are not identical unless the return value is 7 or higher (.
+ */
+int vtkParse_CompareFunctionSignature(
+  const FunctionInfo *func1, const FunctionInfo *func2);
+
+/**
  * Expand a typedef within a variable, parameter, or typedef declaration.
  * The expansion is done in-place.
  */

@@ -1309,6 +1309,80 @@ size_t vtkParse_FunctionInfoToString(
   return k;
 }
 
+/* Compare two functions */
+int vtkParse_CompareFunctionSignature(
+  const FunctionInfo *func1, const FunctionInfo *func2)
+{
+  ValueInfo *p1;
+  ValueInfo *p2;
+  unsigned long k;
+  int match = 0;
+
+  /* uninstantiated templates cannot be compared */
+  if (func1->Template || func2->Template)
+    {
+    return 0;
+    }
+
+  /* check the parameters */
+  if (func2->NumberOfParameters == func1->NumberOfParameters)
+    {
+    for (k = 0; k < func2->NumberOfParameters; k++)
+      {
+      p1 = func1->Parameters[k];
+      p2 = func2->Parameters[k];
+      if (p2->Type != p1->Type || strcmp(p2->TypeName, p1->TypeName) != 0)
+        {
+        break;
+        }
+      if (p1->Function && p2->Function)
+        {
+        if (vtkParse_CompareFunctionSignature(p1->Function, p2->Function) < 7)
+          {
+          break;
+          }
+        }
+      }
+    if (k == func2->NumberOfParameters)
+      {
+      match = 1;
+      }
+    }
+
+  /* check the return value */
+  if (match && func1->ReturnValue && func2->ReturnValue)
+    {
+    p1 = func1->ReturnValue;
+    p2 = func2->ReturnValue;
+    if (p2->Type == p1->Type && strcmp(p2->TypeName, p1->TypeName) == 0)
+      {
+      if (p1->Function && p2->Function)
+        {
+        if (vtkParse_CompareFunctionSignature(p1->Function, p2->Function) < 7)
+          {
+          match |= 2;
+          }
+        }
+      else
+        {
+        match |= 2;
+        }
+      }
+    }
+
+  /* check the class */
+  if (match &&
+      func1->Class && func2->Class && strcmp(func1->Class, func2->Class) == 0)
+    {
+    if (func1->IsConst == func2->IsConst)
+      {
+      match |= 4;
+      }
+    }
+
+  return match;
+}
+
 /* Search and replace, return the initial string if no replacements
  * occurred, otherwise return a new string allocated with malloc. */
 const char *vtkParse_StringReplace(
