@@ -894,7 +894,8 @@ void vtkWrapXML_FunctionCommon(
   ValueInfo *arg;
   unsigned long i, n;
   char temp[500];
-  const char *cp;
+  char *cp = 0;
+  size_t l;
 
   if (func->IsStatic)
     {
@@ -916,15 +917,18 @@ void vtkWrapXML_FunctionCommon(
     vtkWrapXML_ElementStart(w, "signature");
     vtkWrapXML_ElementBody(w);
 
-    cp = func->Signature;
-    for (i = 0; i < 400 && cp && cp[i] != '\0' && cp[i] != ';'; i++)
+    l = vtkParse_FunctionInfoToString(func, NULL, VTK_PARSE_EVERYTHING);
+    cp = temp;
+    if (l+1 > sizeof(temp))
       {
-      temp[i] = cp[i];
+      cp = (char *)malloc(l+1);
       }
-    temp[i] = '\0';
-
-    fprintf(w->file, "%s %s\n", indent(w->indentation), vtkWrapXML_Quote(temp, 500));
-
+    vtkParse_FunctionInfoToString(func, cp, VTK_PARSE_EVERYTHING);
+    fprintf(w->file, "%s %s\n", indent(w->indentation), vtkWrapXML_Quote(cp, 500));
+    if (cp != temp)
+      {
+      free(cp);
+      }
     vtkWrapXML_ElementEnd(w, "signature");
     }
 
