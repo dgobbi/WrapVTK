@@ -928,7 +928,7 @@ void vtkParse_AddDefaultConstructors(ClassInfo *cls, StringCache *cache)
     strcpy(tname, cls->Name);
     strcpy(&tname[k], "(const ");
     strcpy(&tname[k+7], ccname);
-    strcpy(&tname[k+7+l], "&)");
+    strcpy(&tname[k+7+l], " &)");
     func->Signature = tname;
     param = (ValueInfo *)malloc(sizeof(ValueInfo));
     vtkParse_InitValue(param);
