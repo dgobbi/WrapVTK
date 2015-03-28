@@ -348,7 +348,10 @@ void vtkParseMerge_MergeUsing(MergeInfo *info, ClassInfo *merge,
             vtkParse_AddParameterToFunction(f2, param);
             }
           vtkParse_AddFunctionToClass(merge, f2);
-          vtkParseMerge_PushFunction(info, depth);
+          if (info)
+            {
+            vtkParseMerge_PushFunction(info, depth);
+            }
           if (lastval == NULL)
             {
             /* continue if last parameter had a default value */
@@ -364,7 +367,10 @@ void vtkParseMerge_MergeUsing(MergeInfo *info, ClassInfo *merge,
         f2->Access = u->Access;
         f2->Class = merge->Name;
         vtkParse_AddFunctionToClass(merge, f2);
-        vtkParseMerge_PushFunction(info, depth);
+        if (info)
+          {
+          vtkParseMerge_PushFunction(info, depth);
+          }
         }
       }
     }
@@ -511,6 +517,7 @@ void vtkParseMerge_MergeHelper(
   const char *header;
   const char *filename;
   unsigned long i, j, n, m;
+  int recurse;
 
   /* Note: this method does not deal with scoping yet.
    * "classname" might be a scoped name, in which case the
@@ -663,12 +670,33 @@ void vtkParseMerge_MergeHelper(
       cinfo = new_cinfo;
       }
 
-    vtkParseMerge_Merge(info, merge, cinfo);
-    n = cinfo->NumberOfSuperClasses;
-    for (i = 0; i < n; i++)
+    recurse = 0;
+    if (info)
       {
-      vtkParseMerge_MergeHelper(finfo, data, hinfo, cinfo->SuperClasses[i],
-                                hintfile, info, merge);
+      vtkParseMerge_Merge(info, merge, cinfo);
+      recurse = 1;
+      }
+    else
+      {
+      vtkParseMerge_MergeUsing(info, merge, cinfo, 0);
+      n = merge->NumberOfUsings;
+      for (i = 0; i < n; i++)
+        {
+        if (merge->Usings[i] && merge->Usings[i]->Name)
+          {
+          recurse = 1;
+          break;
+          }
+        }
+      }
+    if (recurse)
+      {
+      n = cinfo->NumberOfSuperClasses;
+      for (i = 0; i < n; i++)
+        {
+        vtkParseMerge_MergeHelper(finfo, data, hinfo, cinfo->SuperClasses[i],
+                                  hintfile, info, merge);
+        }
       }
     }
 
@@ -724,4 +752,60 @@ MergeInfo *vtkParseMerge_MergeSuperClasses(
     }
 
   return info;
+}
+
+/* Merge superclass methods according to using declarations */
+void vtkParseMerge_ApplyUsingDeclarations(
+  FileInfo *finfo, NamespaceInfo *data, ClassInfo *classInfo)
+{
+  FILE *hintfile = NULL;
+  HierarchyInfo *hinfo = NULL;
+  OptionInfo *oinfo = NULL;
+  const char *classname;
+  unsigned long i, n;
+
+  /* first, check if there are any declarations to apply */
+  n = classInfo->NumberOfUsings;
+  for (i = 0; i < n; i++)
+    {
+    if (classInfo->Usings[i] && classInfo->Usings[i]->Name)
+      {
+      break;
+      }
+    }
+  if (i == n)
+    {
+    return;
+    }
+
+  classname = classInfo->Name;
+  oinfo = vtkParse_GetCommandLineOptions();
+
+  if (oinfo->HierarchyFileName)
+    {
+    hinfo = vtkParseHierarchy_ReadFile(oinfo->HierarchyFileName);
+
+    if (oinfo->HintFileName)
+      {
+      hintfile = fopen(oinfo->HintFileName, "r");
+      }
+
+    n = classInfo->NumberOfSuperClasses;
+    for (i = 0; i < n; i++)
+      {
+      vtkParseMerge_MergeHelper(finfo, data, hinfo,
+                                classInfo->SuperClasses[i],
+                                hintfile, NULL, classInfo);
+      }
+
+    if (hintfile)
+      {
+      fclose(hintfile);
+      }
+    }
+
+  if (hinfo)
+    {
+    vtkParseHierarchy_Free(hinfo);
+    }
 }

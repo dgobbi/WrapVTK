@@ -40,26 +40,6 @@ extern "C" {
 #endif
 
 /**
- * Return an initialized MergeInfo
- */
-MergeInfo *vtkParseMerge_CreateMergeInfo(ClassInfo *classInfo);
-
-/**
- * Free the MergeInfo
- */
-void vtkParseMerge_FreeMergeInfo(MergeInfo *info);
-
-/**
- * Add newclass methods to the merge.  They are removed from newclass
- * if they are added to merge, so that both structs can be freed without
- * freeing the elements twice.
- */
-unsigned long vtkParseMerge_Merge(
-  MergeInfo *info,
-  ClassInfo *merge,
-  ClassInfo *newclass);
-
-/**
  * Merge all inherited methods into the ClassInfo.
  * This will find and parse the header files for all the superclasses,
  * and recursively add all inherited superclass methods into one ClassInfo.
@@ -67,6 +47,20 @@ unsigned long vtkParseMerge_Merge(
  * each inherited method was inherited from.
  */
 MergeInfo *vtkParseMerge_MergeSuperClasses(
+  FileInfo *finfo, NamespaceInfo *data, ClassInfo *classInfo);
+
+/**
+ * Free the MergeInfo object.
+ */
+void vtkParseMerge_FreeMergeInfo(MergeInfo *info);
+
+/**
+ * Apply any using declarations that appear in the class.
+ * If any using declarations appear in the class that refer to superclass
+ * methods, the superclass header file will be parsed and the used methods
+ * will be brought into the class.
+ */
+void vtkParseMerge_ApplyUsingDeclarations(
   FileInfo *finfo, NamespaceInfo *data, ClassInfo *classInfo);
 
 #ifdef __cplusplus
