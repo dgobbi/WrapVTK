@@ -216,10 +216,13 @@ static void merge_function(FunctionInfo *merge, const FunctionInfo *func)
 }
 
 /* try to resolve "Using" declarations with the given class. */
-void vtkParseMerge_MergeUsing(MergeInfo *info, ClassInfo *merge,
+void vtkParseMerge_MergeUsing(
+  FileInfo *finfo, MergeInfo *info, ClassInfo *merge,
   const ClassInfo *super, unsigned long depth)
 {
   unsigned long i, j, k, ii, n, m;
+  char *cp;
+  size_t l;
   int match;
   UsingInfo *u;
   UsingInfo *v;
@@ -337,8 +340,11 @@ void vtkParseMerge_MergeUsing(MergeInfo *info, ClassInfo *merge,
           f2->Name = merge->Name;
           f2->Class = merge->Name;
           f2->Comment = func->Comment;
-          f2->Signature = func->Signature;
           f2->IsExplicit = func->IsExplicit;
+          l = vtkParse_FunctionInfoToString(f2, NULL, VTK_PARSE_EVERYTHING);
+          cp = vtkParse_NewString(finfo->Strings, l);
+          vtkParse_FunctionInfoToString(f2, cp, VTK_PARSE_EVERYTHING);
+          f2->Signature = cp;
           for (k = 0; k < j; k++)
             {
             param = (ValueInfo *)malloc(sizeof(ValueInfo));
@@ -408,7 +414,7 @@ void vtkParseMerge_MergeUsing(MergeInfo *info, ClassInfo *merge,
 
 /* add "super" methods to the merge */
 unsigned long vtkParseMerge_Merge(
-  MergeInfo *info, ClassInfo *merge, ClassInfo *super)
+  FileInfo *finfo, MergeInfo *info, ClassInfo *merge, ClassInfo *super)
 {
   unsigned long i, j, ii, n, m, depth;
   int match;
@@ -418,7 +424,7 @@ unsigned long vtkParseMerge_Merge(
 
   depth = vtkParseMerge_PushClass(info, super->Name);
 
-  vtkParseMerge_MergeUsing(info, merge, super, depth);
+  vtkParseMerge_MergeUsing(finfo, info, merge, super, depth);
 
   m = merge->NumberOfFunctions;
   n = super->NumberOfFunctions;
@@ -673,12 +679,12 @@ void vtkParseMerge_MergeHelper(
     recurse = 0;
     if (info)
       {
-      vtkParseMerge_Merge(info, merge, cinfo);
+      vtkParseMerge_Merge(finfo, info, merge, cinfo);
       recurse = 1;
       }
     else
       {
-      vtkParseMerge_MergeUsing(info, merge, cinfo, 0);
+      vtkParseMerge_MergeUsing(finfo, info, merge, cinfo, 0);
       n = merge->NumberOfUsings;
       for (i = 0; i < n; i++)
         {
