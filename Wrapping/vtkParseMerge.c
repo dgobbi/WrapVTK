@@ -12,6 +12,8 @@
 
 =========================================================================*/
 
+#include "vtkParse.h"
+#include "vtkParseMain.h"
 #include "vtkParseMerge.h"
 #include "vtkParseData.h"
 #include "vtkParseExtras.h"
@@ -214,7 +216,7 @@ static void merge_function(FunctionInfo *merge, const FunctionInfo *func)
 }
 
 /* try to resolve "Using" declarations with the given class. */
-void vtkWrapXML_MergeUsing(MergeInfo *info, ClassInfo *merge,
+void vtkParseMerge_MergeUsing(MergeInfo *info, ClassInfo *merge,
   const ClassInfo *super, unsigned long depth)
 {
   unsigned long i, j, k, ii, n, m;
@@ -410,7 +412,7 @@ unsigned long vtkParseMerge_Merge(
 
   depth = vtkParseMerge_PushClass(info, super->Name);
 
-  vtkWrapXML_MergeUsing(info, merge, super, depth);
+  vtkParseMerge_MergeUsing(info, merge, super, depth);
 
   m = merge->NumberOfFunctions;
   n = super->NumberOfFunctions;
@@ -490,4 +492,236 @@ unsigned long vtkParseMerge_Merge(
   super->NumberOfFunctions = j;
 
   return depth;
+}
+
+/* Recursive suproutine to add the methods of "classname" and all its
+ * superclasses to "merge" */
+void vtkParseMerge_MergeHelper(
+  FileInfo *finfo, const NamespaceInfo *data, const HierarchyInfo *hinfo,
+  const char *classname, FILE *hintfile, MergeInfo *info, ClassInfo *merge)
+{
+  FILE *fp = NULL;
+  ClassInfo *cinfo = NULL;
+  ClassInfo *new_cinfo = NULL;
+  HierarchyEntry *entry = NULL;
+  char *new_classname = NULL;
+  const char **template_args = NULL;
+  unsigned long template_arg_count = 0;
+  const char *nspacename = NULL;
+  const char *header;
+  const char *filename;
+  unsigned long i, j, n, m;
+
+  /* Note: this method does not deal with scoping yet.
+   * "classname" might be a scoped name, in which case the
+   * part before the colon indicates the class or namespace
+   * (or combination thereof) where the class resides.
+   * Each containing namespace or class for the "merge"
+   * must be searched, taking the "using" directives that
+   * have been applied into account. */
+
+  /* get extra class info from the hierarchy file */
+  nspacename = data->Name;
+  if (nspacename && classname[0] != ':')
+    {
+    size_t l1 = strlen(nspacename);
+    size_t l2 = strlen(classname);
+    char *ncp = (char *)malloc(l1 + l2 + 3);
+    strcpy(ncp, data->Name);
+    ncp[l1] = ':';
+    ncp[l1 + 1] = ':';
+    strcpy(&ncp[l1+2], classname);
+    entry = vtkParseHierarchy_FindEntry(hinfo, ncp);
+    free(ncp);
+    }
+  if (!entry && classname[0] == ':' && classname[1] == ':')
+    {
+    entry = vtkParseHierarchy_FindEntry(hinfo, &classname[2]);
+    }
+  if (!entry)
+    {
+    entry = vtkParseHierarchy_FindEntry(hinfo, classname);
+    }
+
+  if (entry && entry->NumberOfTemplateParameters > 0)
+    {
+    /* extract the template arguments */
+    template_arg_count = (unsigned long)entry->NumberOfTemplateParameters;
+    vtkParse_DecomposeTemplatedType(
+      classname, &classname, template_arg_count, &template_args,
+      entry->TemplateDefaults);
+    }
+
+  /* find out if "classname" is in the current namespace */
+  n = data->NumberOfClasses;
+  for (i = 0; i < n; i++)
+    {
+    if (strcmp(data->Classes[i]->Name, classname) == 0)
+      {
+      cinfo = data->Classes[i];
+      break;
+      }
+    }
+
+  if (n > 0 && !cinfo)
+    {
+    if (!entry)
+      {
+      if (new_classname)
+        {
+        free(new_classname);
+        }
+      return;
+      }
+    header = entry->HeaderFile;
+    if (!header)
+      {
+      if (hintfile) { fclose(hintfile); }
+      fprintf(stderr, "Null header file for class %s!\n", classname);
+      exit(1);
+      }
+
+    filename = vtkParse_FindIncludeFile(header);
+    if (!filename)
+      {
+      if (hintfile) { fclose(hintfile); }
+      fprintf(stderr, "Couldn't locate header file %s\n", header);
+      exit(1);
+      }
+
+    fp = fopen(filename, "r");
+    if (!fp)
+      {
+      if (hintfile) { fclose(hintfile); }
+      fprintf(stderr, "Couldn't open header file %s\n", header);
+      exit(1);
+      }
+
+    finfo = vtkParse_ParseFile(filename, fp, stderr);
+    fclose(fp);
+
+    if (!finfo)
+      {
+      if (hintfile) { fclose(hintfile); }
+      exit(1);
+      }
+
+    if (hintfile)
+      {
+      rewind(hintfile);
+      vtkParse_ReadHints(finfo, hintfile, stderr);
+      }
+
+    data = finfo->Contents;
+    if (nspacename)
+      {
+      m = data->NumberOfNamespaces;
+      for (j = 0; j < m; j++)
+        {
+        NamespaceInfo *ni = data->Namespaces[j];
+        if (ni->Name && strcmp(ni->Name, nspacename) == 0)
+          {
+          n = ni->NumberOfClasses;
+          for (i = 0; i < n; i++)
+            {
+            if (strcmp(ni->Classes[i]->Name, classname) == 0)
+              {
+              cinfo = ni->Classes[i];
+              data = ni;
+              break;
+              }
+            }
+          if (i < n)
+            {
+            break;
+            }
+          }
+        }
+      }
+    else
+      {
+      n = data->NumberOfClasses;
+      for (i = 0; i < n; i++)
+        {
+        if (strcmp(data->Classes[i]->Name, classname) == 0)
+          {
+          cinfo = data->Classes[i];
+          break;
+          }
+        }
+      }
+    }
+
+  if (cinfo)
+    {
+    if (template_args)
+      {
+      new_cinfo = (ClassInfo *)malloc(sizeof(ClassInfo));
+      vtkParse_CopyClass(new_cinfo, cinfo);
+      vtkParse_InstantiateClassTemplate(
+        new_cinfo, finfo->Strings, template_arg_count, template_args);
+      cinfo = new_cinfo;
+      }
+
+    vtkParseMerge_Merge(info, merge, cinfo);
+    n = cinfo->NumberOfSuperClasses;
+    for (i = 0; i < n; i++)
+      {
+      vtkParseMerge_MergeHelper(finfo, data, hinfo, cinfo->SuperClasses[i],
+                                hintfile, info, merge);
+      }
+    }
+
+  if (template_arg_count > 0)
+    {
+    vtkParse_FreeTemplateDecomposition(
+      classname, template_arg_count, template_args);
+    }
+}
+
+/* Merge the methods from the superclasses */
+MergeInfo *vtkParseMerge_MergeSuperClasses(
+  FileInfo *finfo, NamespaceInfo *data, ClassInfo *classInfo)
+{
+  FILE *hintfile = NULL;
+  HierarchyInfo *hinfo = NULL;
+  MergeInfo *info = NULL;
+  OptionInfo *oinfo = NULL;
+  const char *classname;
+  unsigned long i, n;
+
+  classname = classInfo->Name;
+  oinfo = vtkParse_GetCommandLineOptions();
+
+  if (oinfo->HierarchyFileName)
+    {
+    hinfo = vtkParseHierarchy_ReadFile(oinfo->HierarchyFileName);
+
+    if (oinfo->HintFileName)
+      {
+      hintfile = fopen(oinfo->HintFileName, "r");
+      }
+
+    info = vtkParseMerge_CreateMergeInfo(classInfo);
+
+    n = classInfo->NumberOfSuperClasses;
+    for (i = 0; i < n; i++)
+      {
+      vtkParseMerge_MergeHelper(finfo, data, hinfo,
+                                classInfo->SuperClasses[i],
+                                hintfile, info, classInfo);
+      }
+
+    if (hintfile)
+      {
+      fclose(hintfile);
+      }
+    }
+
+  if (hinfo)
+    {
+    vtkParseHierarchy_Free(hinfo);
+    }
+
+  return info;
 }

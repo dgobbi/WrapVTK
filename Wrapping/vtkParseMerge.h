@@ -59,6 +59,16 @@ unsigned long vtkParseMerge_Merge(
   ClassInfo *merge,
   ClassInfo *newclass);
 
+/**
+ * Merge all inherited methods into the ClassInfo.
+ * This will find and parse the header files for all the superclasses,
+ * and recursively add all inherited superclass methods into one ClassInfo.
+ * The returned MergeInfo object provides information about which class
+ * each inherited method was inherited from.
+ */
+MergeInfo *vtkParseMerge_MergeSuperClasses(
+  FileInfo *finfo, NamespaceInfo *data, ClassInfo *classInfo);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
