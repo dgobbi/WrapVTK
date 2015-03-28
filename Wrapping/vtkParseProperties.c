@@ -728,8 +728,6 @@ static int methodMatchesProperty(
 {
   unsigned long n;
   int propertyType, methType;
-  const char *propertyClass;
-  const char *methClass;
   const char *propertyName;
   const char *name;
   const char *methSuffix;
@@ -812,9 +810,7 @@ static int methodMatchesProperty(
 
   /* check for type match */
   methType = meth->Type;
-  methClass = meth->ClassName;
   propertyType = property->Type;
-  propertyClass = property->ClassName;
 
   /* remove "const" and "static" */
   methType = (methType & VTK_PARSE_UNQUALIFIED_TYPE);
@@ -884,7 +880,6 @@ static int methodMatchesProperty(
          (meth->IsBoolean && propertyType == VTK_PARSE_BOOL)))
       {
       methType = propertyType;
-      methClass = propertyClass;
       }
     }
 

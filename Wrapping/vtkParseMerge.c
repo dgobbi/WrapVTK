@@ -721,10 +721,8 @@ MergeInfo *vtkParseMerge_MergeSuperClasses(
   HierarchyInfo *hinfo = NULL;
   MergeInfo *info = NULL;
   OptionInfo *oinfo = NULL;
-  const char *classname;
   unsigned long i, n;
 
-  classname = classInfo->Name;
   oinfo = vtkParse_GetCommandLineOptions();
 
   if (oinfo->HierarchyFileName)
@@ -767,7 +765,6 @@ void vtkParseMerge_ApplyUsingDeclarations(
   FILE *hintfile = NULL;
   HierarchyInfo *hinfo = NULL;
   OptionInfo *oinfo = NULL;
-  const char *classname;
   unsigned long i, n;
 
   /* first, check if there are any declarations to apply */
@@ -784,7 +781,6 @@ void vtkParseMerge_ApplyUsingDeclarations(
     return;
     }
 
-  classname = classInfo->Name;
   oinfo = vtkParse_GetCommandLineOptions();
 
   if (oinfo->HierarchyFileName)
