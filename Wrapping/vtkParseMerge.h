@@ -3,7 +3,7 @@
   Program:   Visualization Toolkit
   Module:    vtkParseMerge.h
 
-  Copyright (c) 2010 David Gobbi
+  Copyright (c) 2010,2015 David Gobbi
   All rights reserved.
 
      This software is distributed WITHOUT ANY WARRANTY; without even
