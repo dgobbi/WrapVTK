@@ -1368,7 +1368,8 @@ void vtkWrapXML_Class(
   /* merge all the superclass information */
   if (classInfo->NumberOfSuperClasses)
     {
-    merge = vtkParseMerge_MergeSuperClasses(w->data, data, classInfo);
+    //merge = vtkParseMerge_MergeSuperClasses(w->data, data, classInfo);
+    vtkParseMerge_ApplyUsingDeclarations(w->data, data, classInfo);
     }
 
   if (merge && merge->NumberOfClasses > 1)

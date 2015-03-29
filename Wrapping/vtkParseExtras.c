@@ -1088,7 +1088,7 @@ size_t vtkParse_ValueInfoToString(
   return i;
 }
 
-/* Generate a parameter declaration from a ValueInfo struct */
+/* Generate a template declaration string */
 size_t vtkParse_TemplateInfoToString(
   TemplateInfo *data, char *text, unsigned int flags)
 {
