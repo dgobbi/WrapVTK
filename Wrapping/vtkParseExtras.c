@@ -814,34 +814,34 @@ size_t vtkParse_ValueInfoFromString(
   if (*cp == '[')
     {
     count = 1;
-    }
 
-  while (*cp == '[')
-    {
-    n = vtkparse_bracket_len(cp);
-    if (n > 1)
+    while (*cp == '[')
       {
-      cp++;
-      n -= 2;
-      }
-    while (vtkParse_CharType(*cp, CPRE_HSPACE)) { cp++; n--; }
-    while (n > 0 && vtkParse_CharType(cp[n-1], CPRE_HSPACE)) { n--; }
-    vtkParse_AddStringToArray(
-      &data->Dimensions,
-      &data->NumberOfDimensions,
-      vtkParse_CacheString(cache, cp, n));
-    m = 0;
-    if (vtkParse_CharType(*cp, CPRE_DIGIT) &&
-        vtkParse_SkipNumber(cp) == n)
-      {
-      m = (unsigned long)strtol(cp, NULL, 0);
-      }
-    count *= m;
+      n = vtkparse_bracket_len(cp);
+      if (n > 1)
+        {
+        cp++;
+        n -= 2;
+        }
+      while (vtkParse_CharType(*cp, CPRE_HSPACE)) { cp++; n--; }
+      while (n > 0 && vtkParse_CharType(cp[n-1], CPRE_HSPACE)) { n--; }
+      vtkParse_AddStringToArray(
+        &data->Dimensions,
+        &data->NumberOfDimensions,
+        vtkParse_CacheString(cache, cp, n));
+      m = 0;
+      if (vtkParse_CharType(*cp, CPRE_DIGIT) &&
+          vtkParse_SkipNumber(cp) == n)
+        {
+        m = (unsigned long)strtol(cp, NULL, 0);
+        }
+      count *= m;
 
-    cp += n;
-    while (vtkParse_CharType(*cp, CPRE_HSPACE)) { cp++; }
-    if (*cp == ']') { cp++; }
-    while (vtkParse_CharType(*cp, CPRE_HSPACE)) { cp++; }
+      cp += n;
+      while (vtkParse_CharType(*cp, CPRE_HSPACE)) { cp++; }
+      if (*cp == ']') { cp++; }
+      while (vtkParse_CharType(*cp, CPRE_HSPACE)) { cp++; }
+      }
     }
 
   /* add pointer indirection to correspond to first array dimension */
