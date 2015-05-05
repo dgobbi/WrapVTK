@@ -869,7 +869,7 @@ void vtkWrapXML_Using(
   const char *elementName = "using";
   const char *name = "namespace";
 
-  if (data)
+  if (data && data->Scope)
     {
     if (data->Name)
       {
