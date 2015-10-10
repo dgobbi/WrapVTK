@@ -386,6 +386,10 @@ ID [a-zA-Z_\x80-\xff][0-9a-zA-Z_\x80-\xff]*
 
 ("__cdecl"|"__clrcall"|"__stdcall"|"__fastcall"|"__thiscall") /* Windows */
 
+"__restrict" /* MSVC extension */
+
+"__restrict__" /* gcc/clang/other extension */
+
 "nullptr" {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(NULLPTR);
