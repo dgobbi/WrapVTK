@@ -1,3 +1,4 @@
+
 /* A Bison parser, made by GNU Bison 2.4.1.  */
 
 /* Skeleton implementation for Bison GLR parsers in C
@@ -1544,7 +1545,7 @@ static YYSTYPE yyval_default;
 #endif
 
 /* Suppress unused-variable warnings by "using" E.  */
-#define YYUSE(e) ((void) (e))
+# define YYUSE(e) ((void) (e))
 
 /* Identity function, used to suppress warnings about constant conditions.  */
 #ifndef lint
@@ -1991,50 +1992,50 @@ static const unsigned short int yyrline[] =
     2110,  2111,  2115,  2114,  2126,  2127,  2126,  2146,  2146,  2150,
     2151,  2154,  2155,  2158,  2164,  2165,  2165,  2168,  2169,  2169,
     2171,  2173,  2177,  2179,  2177,  2203,  2204,  2207,  2207,  2209,
-    2209,  2218,  2221,  2280,  2281,  2283,  2284,  2284,  2287,  2290,
-    2291,  2295,  2306,  2306,  2324,  2325,  2329,  2331,  2331,  2349,
-    2349,  2351,  2355,  2356,  2357,  2356,  2362,  2364,  2365,  2366,
-    2367,  2368,  2369,  2372,  2373,  2377,  2378,  2382,  2383,  2387,
-    2388,  2389,  2392,  2393,  2396,  2396,  2399,  2400,  2403,  2403,
-    2407,  2408,  2408,  2415,  2416,  2419,  2420,  2421,  2422,  2423,
-    2426,  2428,  2430,  2434,  2436,  2438,  2440,  2442,  2444,  2446,
-    2446,  2451,  2454,  2457,  2460,  2460,  2468,  2468,  2476,  2477,
-    2478,  2479,  2480,  2481,  2482,  2483,  2484,  2485,  2486,  2487,
-    2488,  2489,  2490,  2491,  2492,  2493,  2494,  2495,  2496,  2497,
-    2504,  2505,  2506,  2507,  2508,  2509,  2510,  2516,  2517,  2520,
-    2521,  2523,  2524,  2527,  2528,  2531,  2532,  2533,  2534,  2537,
-    2538,  2539,  2540,  2541,  2545,  2546,  2547,  2550,  2551,  2554,
-    2555,  2563,  2566,  2566,  2568,  2568,  2572,  2573,  2575,  2579,
-    2580,  2582,  2582,  2584,  2586,  2590,  2593,  2593,  2595,  2595,
-    2599,  2602,  2602,  2604,  2604,  2608,  2609,  2611,  2613,  2615,
-    2617,  2619,  2623,  2624,  2627,  2628,  2629,  2630,  2631,  2632,
-    2633,  2634,  2635,  2636,  2637,  2638,  2639,  2640,  2641,  2642,
-    2643,  2644,  2645,  2646,  2647,  2648,  2651,  2652,  2653,  2654,
-    2655,  2656,  2657,  2658,  2659,  2660,  2661,  2662,  2663,  2664,
-    2665,  2685,  2686,  2687,  2688,  2691,  2695,  2699,  2699,  2703,
-    2704,  2719,  2720,  2736,  2737,  2740,  2740,  2740,  2747,  2747,
-    2757,  2758,  2758,  2757,  2767,  2767,  2777,  2777,  2786,  2786,
-    2786,  2819,  2818,  2829,  2830,  2830,  2829,  2839,  2857,  2857,
-    2862,  2862,  2867,  2867,  2872,  2872,  2877,  2877,  2882,  2882,
-    2887,  2887,  2892,  2892,  2897,  2897,  2914,  2914,  2928,  2965,
-    3003,  3040,  3041,  3048,  3049,  3050,  3051,  3052,  3053,  3054,
-    3055,  3056,  3057,  3058,  3059,  3062,  3063,  3064,  3065,  3066,
-    3067,  3068,  3069,  3070,  3071,  3072,  3073,  3074,  3075,  3076,
-    3077,  3078,  3079,  3080,  3081,  3082,  3083,  3084,  3085,  3086,
-    3087,  3088,  3089,  3090,  3091,  3092,  3093,  3094,  3095,  3098,
-    3099,  3100,  3101,  3102,  3103,  3104,  3105,  3106,  3107,  3108,
-    3109,  3110,  3111,  3112,  3113,  3114,  3115,  3116,  3117,  3118,
-    3119,  3120,  3121,  3122,  3123,  3124,  3125,  3126,  3129,  3130,
-    3131,  3132,  3133,  3134,  3135,  3136,  3143,  3144,  3147,  3148,
-    3149,  3150,  3150,  3151,  3154,  3155,  3158,  3159,  3160,  3161,
-    3191,  3191,  3192,  3193,  3194,  3195,  3218,  3219,  3222,  3223,
-    3224,  3225,  3228,  3229,  3230,  3233,  3234,  3236,  3237,  3239,
-    3240,  3243,  3244,  3247,  3248,  3249,  3253,  3252,  3266,  3267,
-    3270,  3270,  3272,  3272,  3276,  3276,  3278,  3278,  3280,  3280,
-    3284,  3284,  3289,  3290,  3292,  3293,  3296,  3297,  3300,  3301,
-    3304,  3305,  3306,  3307,  3308,  3309,  3310,  3311,  3311,  3311,
-    3311,  3311,  3312,  3313,  3314,  3315,  3316,  3319,  3322,  3323,
-    3326,  3329,  3329,  3329
+    2209,  2218,  2221,  2284,  2285,  2287,  2288,  2288,  2291,  2294,
+    2295,  2299,  2310,  2310,  2328,  2329,  2333,  2335,  2335,  2353,
+    2353,  2355,  2359,  2360,  2361,  2360,  2366,  2368,  2369,  2370,
+    2371,  2372,  2373,  2376,  2377,  2381,  2382,  2386,  2387,  2391,
+    2392,  2393,  2396,  2397,  2400,  2400,  2403,  2404,  2407,  2407,
+    2411,  2412,  2412,  2419,  2420,  2423,  2424,  2425,  2426,  2427,
+    2430,  2432,  2434,  2438,  2440,  2442,  2444,  2446,  2448,  2450,
+    2450,  2455,  2458,  2461,  2464,  2464,  2472,  2472,  2480,  2481,
+    2482,  2483,  2484,  2485,  2486,  2487,  2488,  2489,  2490,  2491,
+    2492,  2493,  2494,  2495,  2496,  2497,  2498,  2499,  2500,  2501,
+    2508,  2509,  2510,  2511,  2512,  2513,  2514,  2520,  2521,  2524,
+    2525,  2527,  2528,  2531,  2532,  2535,  2536,  2537,  2538,  2541,
+    2542,  2543,  2544,  2545,  2549,  2550,  2551,  2554,  2555,  2558,
+    2559,  2567,  2570,  2570,  2572,  2572,  2576,  2577,  2579,  2583,
+    2584,  2586,  2586,  2588,  2590,  2594,  2597,  2597,  2599,  2599,
+    2603,  2606,  2606,  2608,  2608,  2612,  2613,  2615,  2617,  2619,
+    2621,  2623,  2627,  2628,  2631,  2632,  2633,  2634,  2635,  2636,
+    2637,  2638,  2639,  2640,  2641,  2642,  2643,  2644,  2645,  2646,
+    2647,  2648,  2649,  2650,  2651,  2652,  2655,  2656,  2657,  2658,
+    2659,  2660,  2661,  2662,  2663,  2664,  2665,  2666,  2667,  2668,
+    2669,  2689,  2690,  2691,  2692,  2695,  2699,  2703,  2703,  2707,
+    2708,  2723,  2724,  2740,  2741,  2744,  2744,  2744,  2751,  2751,
+    2761,  2762,  2762,  2761,  2771,  2771,  2781,  2781,  2790,  2790,
+    2790,  2823,  2822,  2833,  2834,  2834,  2833,  2843,  2861,  2861,
+    2866,  2866,  2871,  2871,  2876,  2876,  2881,  2881,  2886,  2886,
+    2891,  2891,  2896,  2896,  2901,  2901,  2918,  2918,  2932,  2969,
+    3007,  3044,  3045,  3052,  3053,  3054,  3055,  3056,  3057,  3058,
+    3059,  3060,  3061,  3062,  3063,  3066,  3067,  3068,  3069,  3070,
+    3071,  3072,  3073,  3074,  3075,  3076,  3077,  3078,  3079,  3080,
+    3081,  3082,  3083,  3084,  3085,  3086,  3087,  3088,  3089,  3090,
+    3091,  3092,  3093,  3094,  3095,  3096,  3097,  3098,  3099,  3102,
+    3103,  3104,  3105,  3106,  3107,  3108,  3109,  3110,  3111,  3112,
+    3113,  3114,  3115,  3116,  3117,  3118,  3119,  3120,  3121,  3122,
+    3123,  3124,  3125,  3126,  3127,  3128,  3129,  3130,  3133,  3134,
+    3135,  3136,  3137,  3138,  3139,  3140,  3147,  3148,  3151,  3152,
+    3153,  3154,  3154,  3155,  3158,  3159,  3162,  3163,  3164,  3165,
+    3195,  3195,  3196,  3197,  3198,  3199,  3222,  3223,  3226,  3227,
+    3228,  3229,  3232,  3233,  3234,  3237,  3238,  3240,  3241,  3243,
+    3244,  3247,  3248,  3251,  3252,  3253,  3257,  3256,  3270,  3271,
+    3274,  3274,  3276,  3276,  3280,  3280,  3282,  3282,  3284,  3284,
+    3288,  3288,  3293,  3294,  3296,  3297,  3300,  3301,  3304,  3305,
+    3308,  3309,  3310,  3311,  3312,  3313,  3314,  3315,  3315,  3315,
+    3315,  3315,  3316,  3317,  3318,  3319,  3320,  3323,  3326,  3327,
+    3330,  3333,  3333,  3333
 };
 #endif
 
@@ -5758,7 +5759,7 @@ int yyparse (void);
 
 
 #ifndef YYLLOC_DEFAULT
-# define YYLLOC_DEFAULT(Current, Rhs, N) ((void)Rhs)
+# define YYLLOC_DEFAULT(Current, Rhs, N) ((void) Rhs)
 #endif
 
 
@@ -7226,7 +7227,11 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
       if ((type & VTK_PARSE_TYPEDEF) != 0)
         {
         var->ItemType = VTK_TYPEDEF_INFO;
-        if (currentClass)
+        if (var->TypeName == NULL)
+          {
+          vtkParse_FreeValue(var);
+          }
+        else if (currentClass)
           {
           vtkParse_AddTypedefToClass(currentClass, var);
           }
@@ -7268,28 +7273,28 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 276:
 
 /* Line 936 of glr.c  */
-#line 2284 "vtkParse.y"
+#line 2288 "vtkParse.y"
     { postSig(", "); }
     break;
 
   case 279:
 
 /* Line 936 of glr.c  */
-#line 2290 "vtkParse.y"
+#line 2294 "vtkParse.y"
     { setTypePtr(0); }
     break;
 
   case 280:
 
 /* Line 936 of glr.c  */
-#line 2291 "vtkParse.y"
+#line 2295 "vtkParse.y"
     { setTypePtr((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 281:
 
 /* Line 936 of glr.c  */
-#line 2296 "vtkParse.y"
+#line 2300 "vtkParse.y"
     {
       if ((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (3))].yystate.yysemantics.yysval.integer) == VTK_PARSE_FUNCTION)
         {
@@ -7305,14 +7310,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 282:
 
 /* Line 936 of glr.c  */
-#line 2306 "vtkParse.y"
+#line 2310 "vtkParse.y"
     { postSig(")"); }
     break;
 
   case 283:
 
 /* Line 936 of glr.c  */
-#line 2308 "vtkParse.y"
+#line 2312 "vtkParse.y"
     {
       const char *scope = getScope();
       unsigned int parens = add_indirection((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (6))].yystate.yysemantics.yysval.integer), (((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (6))].yystate.yysemantics.yysval.integer));
@@ -7332,28 +7337,28 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 284:
 
 /* Line 936 of glr.c  */
-#line 2324 "vtkParse.y"
+#line 2328 "vtkParse.y"
     { clearVarName(); chopSig(); }
     break;
 
   case 286:
 
 /* Line 936 of glr.c  */
-#line 2330 "vtkParse.y"
+#line 2334 "vtkParse.y"
     { ((*yyvalp).integer) = (((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (3))].yystate.yysemantics.yysval.integer); }
     break;
 
   case 287:
 
 /* Line 936 of glr.c  */
-#line 2331 "vtkParse.y"
+#line 2335 "vtkParse.y"
     { postSig(")"); }
     break;
 
   case 288:
 
 /* Line 936 of glr.c  */
-#line 2333 "vtkParse.y"
+#line 2337 "vtkParse.y"
     {
       const char *scope = getScope();
       unsigned int parens = add_indirection((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (5))].yystate.yysemantics.yysval.integer), (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (5))].yystate.yysemantics.yysval.integer));
@@ -7373,21 +7378,21 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 289:
 
 /* Line 936 of glr.c  */
-#line 2349 "vtkParse.y"
+#line 2353 "vtkParse.y"
     { postSig("("); scopeSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); postSig("*"); }
     break;
 
   case 290:
 
 /* Line 936 of glr.c  */
-#line 2350 "vtkParse.y"
+#line 2354 "vtkParse.y"
     { ((*yyvalp).integer) = (((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (3))].yystate.yysemantics.yysval.integer); }
     break;
 
   case 291:
 
 /* Line 936 of glr.c  */
-#line 2351 "vtkParse.y"
+#line 2355 "vtkParse.y"
     { postSig("("); scopeSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); postSig("&");
          ((*yyvalp).integer) = VTK_PARSE_REF; }
     break;
@@ -7395,28 +7400,28 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 292:
 
 /* Line 936 of glr.c  */
-#line 2355 "vtkParse.y"
+#line 2359 "vtkParse.y"
     { ((*yyvalp).integer) = 0; }
     break;
 
   case 293:
 
 /* Line 936 of glr.c  */
-#line 2356 "vtkParse.y"
+#line 2360 "vtkParse.y"
     { pushFunction(); postSig("("); }
     break;
 
   case 294:
 
 /* Line 936 of glr.c  */
-#line 2357 "vtkParse.y"
+#line 2361 "vtkParse.y"
     { postSig(")"); }
     break;
 
   case 295:
 
 /* Line 936 of glr.c  */
-#line 2358 "vtkParse.y"
+#line 2362 "vtkParse.y"
     {
       ((*yyvalp).integer) = VTK_PARSE_FUNCTION;
       popFunction();
@@ -7426,217 +7431,217 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 296:
 
 /* Line 936 of glr.c  */
-#line 2362 "vtkParse.y"
+#line 2366 "vtkParse.y"
     { ((*yyvalp).integer) = VTK_PARSE_ARRAY; }
     break;
 
   case 299:
 
 /* Line 936 of glr.c  */
-#line 2366 "vtkParse.y"
+#line 2370 "vtkParse.y"
     { currentFunction->IsConst = 1; }
     break;
 
   case 304:
 
 /* Line 936 of glr.c  */
-#line 2374 "vtkParse.y"
+#line 2378 "vtkParse.y"
     { ((*yyvalp).integer) = add_indirection((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.integer), (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 306:
 
 /* Line 936 of glr.c  */
-#line 2379 "vtkParse.y"
+#line 2383 "vtkParse.y"
     { ((*yyvalp).integer) = add_indirection((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.integer), (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 307:
 
 /* Line 936 of glr.c  */
-#line 2382 "vtkParse.y"
+#line 2386 "vtkParse.y"
     { setVarName((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 308:
 
 /* Line 936 of glr.c  */
-#line 2384 "vtkParse.y"
+#line 2388 "vtkParse.y"
     { setVarName((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (4))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 312:
 
 /* Line 936 of glr.c  */
-#line 2392 "vtkParse.y"
+#line 2396 "vtkParse.y"
     { clearArray(); }
     break;
 
   case 314:
 
 /* Line 936 of glr.c  */
-#line 2396 "vtkParse.y"
+#line 2400 "vtkParse.y"
     { clearArray(); }
     break;
 
   case 318:
 
 /* Line 936 of glr.c  */
-#line 2403 "vtkParse.y"
+#line 2407 "vtkParse.y"
     { postSig("["); }
     break;
 
   case 319:
 
 /* Line 936 of glr.c  */
-#line 2404 "vtkParse.y"
+#line 2408 "vtkParse.y"
     { postSig("]"); }
     break;
 
   case 320:
 
 /* Line 936 of glr.c  */
-#line 2407 "vtkParse.y"
+#line 2411 "vtkParse.y"
     { pushArraySize(""); }
     break;
 
   case 321:
 
 /* Line 936 of glr.c  */
-#line 2408 "vtkParse.y"
+#line 2412 "vtkParse.y"
     { markSig(); }
     break;
 
   case 322:
 
 /* Line 936 of glr.c  */
-#line 2408 "vtkParse.y"
+#line 2412 "vtkParse.y"
     { chopSig(); pushArraySize(copySig()); }
     break;
 
   case 328:
 
 /* Line 936 of glr.c  */
-#line 2422 "vtkParse.y"
+#line 2426 "vtkParse.y"
     { ((*yyvalp).str) = vtkstrcat("~", (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 329:
 
 /* Line 936 of glr.c  */
-#line 2423 "vtkParse.y"
+#line 2427 "vtkParse.y"
     { ((*yyvalp).str) = vtkstrcat("~", (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 330:
 
 /* Line 936 of glr.c  */
-#line 2427 "vtkParse.y"
+#line 2431 "vtkParse.y"
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 331:
 
 /* Line 936 of glr.c  */
-#line 2429 "vtkParse.y"
+#line 2433 "vtkParse.y"
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 332:
 
 /* Line 936 of glr.c  */
-#line 2431 "vtkParse.y"
+#line 2435 "vtkParse.y"
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 333:
 
 /* Line 936 of glr.c  */
-#line 2435 "vtkParse.y"
+#line 2439 "vtkParse.y"
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 334:
 
 /* Line 936 of glr.c  */
-#line 2437 "vtkParse.y"
+#line 2441 "vtkParse.y"
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 335:
 
 /* Line 936 of glr.c  */
-#line 2439 "vtkParse.y"
+#line 2443 "vtkParse.y"
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 336:
 
 /* Line 936 of glr.c  */
-#line 2441 "vtkParse.y"
+#line 2445 "vtkParse.y"
     { ((*yyvalp).str) = vtkstrcat3((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (3))].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (3))].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (3))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 337:
 
 /* Line 936 of glr.c  */
-#line 2443 "vtkParse.y"
+#line 2447 "vtkParse.y"
     { ((*yyvalp).str) = vtkstrcat3((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (3))].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (3))].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (3))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 338:
 
 /* Line 936 of glr.c  */
-#line 2445 "vtkParse.y"
+#line 2449 "vtkParse.y"
     { ((*yyvalp).str) = vtkstrcat3((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (3))].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (3))].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (3))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 339:
 
 /* Line 936 of glr.c  */
-#line 2446 "vtkParse.y"
+#line 2450 "vtkParse.y"
     { postSig("template "); }
     break;
 
   case 340:
 
 /* Line 936 of glr.c  */
-#line 2448 "vtkParse.y"
+#line 2452 "vtkParse.y"
     { ((*yyvalp).str) = vtkstrcat4((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (5))].yystate.yysemantics.yysval.str), "template ", (((yyGLRStackItem const *)yyvsp)[YYFILL ((4) - (5))].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL ((5) - (5))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 341:
 
 /* Line 936 of glr.c  */
-#line 2451 "vtkParse.y"
+#line 2455 "vtkParse.y"
     { postSig("~"); }
     break;
 
   case 342:
 
 /* Line 936 of glr.c  */
-#line 2454 "vtkParse.y"
+#line 2458 "vtkParse.y"
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 343:
 
 /* Line 936 of glr.c  */
-#line 2457 "vtkParse.y"
+#line 2461 "vtkParse.y"
     { ((*yyvalp).str) = "::"; postSig(((*yyvalp).str)); }
     break;
 
   case 344:
 
 /* Line 936 of glr.c  */
-#line 2460 "vtkParse.y"
+#line 2464 "vtkParse.y"
     { markSig(); postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.str)); postSig("<"); }
     break;
 
   case 345:
 
 /* Line 936 of glr.c  */
-#line 2462 "vtkParse.y"
+#line 2466 "vtkParse.y"
     {
       chopSig(); if (getSig()[getSigLength()-1] == '>') { postSig(" "); }
       postSig(">"); ((*yyvalp).str) = copySig(); clearTypeId();
@@ -7646,742 +7651,742 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 346:
 
 /* Line 936 of glr.c  */
-#line 2468 "vtkParse.y"
+#line 2472 "vtkParse.y"
     { markSig(); postSig("decltype"); }
     break;
 
   case 347:
 
 /* Line 936 of glr.c  */
-#line 2469 "vtkParse.y"
+#line 2473 "vtkParse.y"
     { chopSig(); ((*yyvalp).str) = copySig(); clearTypeId(); }
     break;
 
   case 348:
 
 /* Line 936 of glr.c  */
-#line 2476 "vtkParse.y"
+#line 2480 "vtkParse.y"
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 349:
 
 /* Line 936 of glr.c  */
-#line 2477 "vtkParse.y"
+#line 2481 "vtkParse.y"
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 350:
 
 /* Line 936 of glr.c  */
-#line 2478 "vtkParse.y"
+#line 2482 "vtkParse.y"
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 351:
 
 /* Line 936 of glr.c  */
-#line 2479 "vtkParse.y"
+#line 2483 "vtkParse.y"
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 352:
 
 /* Line 936 of glr.c  */
-#line 2480 "vtkParse.y"
+#line 2484 "vtkParse.y"
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 353:
 
 /* Line 936 of glr.c  */
-#line 2481 "vtkParse.y"
+#line 2485 "vtkParse.y"
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 354:
 
 /* Line 936 of glr.c  */
-#line 2482 "vtkParse.y"
+#line 2486 "vtkParse.y"
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 355:
 
 /* Line 936 of glr.c  */
-#line 2483 "vtkParse.y"
+#line 2487 "vtkParse.y"
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 356:
 
 /* Line 936 of glr.c  */
-#line 2484 "vtkParse.y"
+#line 2488 "vtkParse.y"
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 357:
 
 /* Line 936 of glr.c  */
-#line 2485 "vtkParse.y"
+#line 2489 "vtkParse.y"
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 358:
 
 /* Line 936 of glr.c  */
-#line 2486 "vtkParse.y"
+#line 2490 "vtkParse.y"
     { ((*yyvalp).str) = "vtkTypeInt8"; postSig(((*yyvalp).str)); }
     break;
 
   case 359:
 
 /* Line 936 of glr.c  */
-#line 2487 "vtkParse.y"
+#line 2491 "vtkParse.y"
     { ((*yyvalp).str) = "vtkTypeUInt8"; postSig(((*yyvalp).str)); }
     break;
 
   case 360:
 
 /* Line 936 of glr.c  */
-#line 2488 "vtkParse.y"
+#line 2492 "vtkParse.y"
     { ((*yyvalp).str) = "vtkTypeInt16"; postSig(((*yyvalp).str)); }
     break;
 
   case 361:
 
 /* Line 936 of glr.c  */
-#line 2489 "vtkParse.y"
+#line 2493 "vtkParse.y"
     { ((*yyvalp).str) = "vtkTypeUInt16"; postSig(((*yyvalp).str)); }
     break;
 
   case 362:
 
 /* Line 936 of glr.c  */
-#line 2490 "vtkParse.y"
+#line 2494 "vtkParse.y"
     { ((*yyvalp).str) = "vtkTypeInt32"; postSig(((*yyvalp).str)); }
     break;
 
   case 363:
 
 /* Line 936 of glr.c  */
-#line 2491 "vtkParse.y"
+#line 2495 "vtkParse.y"
     { ((*yyvalp).str) = "vtkTypeUInt32"; postSig(((*yyvalp).str)); }
     break;
 
   case 364:
 
 /* Line 936 of glr.c  */
-#line 2492 "vtkParse.y"
+#line 2496 "vtkParse.y"
     { ((*yyvalp).str) = "vtkTypeInt64"; postSig(((*yyvalp).str)); }
     break;
 
   case 365:
 
 /* Line 936 of glr.c  */
-#line 2493 "vtkParse.y"
+#line 2497 "vtkParse.y"
     { ((*yyvalp).str) = "vtkTypeUInt64"; postSig(((*yyvalp).str)); }
     break;
 
   case 366:
 
 /* Line 936 of glr.c  */
-#line 2494 "vtkParse.y"
+#line 2498 "vtkParse.y"
     { ((*yyvalp).str) = "vtkTypeFloat32"; postSig(((*yyvalp).str)); }
     break;
 
   case 367:
 
 /* Line 936 of glr.c  */
-#line 2495 "vtkParse.y"
+#line 2499 "vtkParse.y"
     { ((*yyvalp).str) = "vtkTypeFloat64"; postSig(((*yyvalp).str)); }
     break;
 
   case 368:
 
 /* Line 936 of glr.c  */
-#line 2496 "vtkParse.y"
+#line 2500 "vtkParse.y"
     { ((*yyvalp).str) = "vtkIdType"; postSig(((*yyvalp).str)); }
     break;
 
   case 369:
 
 /* Line 936 of glr.c  */
-#line 2497 "vtkParse.y"
+#line 2501 "vtkParse.y"
     { ((*yyvalp).str) = "vtkFloatingPointType"; postSig(((*yyvalp).str)); }
     break;
 
   case 380:
 
 /* Line 936 of glr.c  */
-#line 2522 "vtkParse.y"
+#line 2526 "vtkParse.y"
     { setTypeBase(buildTypeBase(getType(), (((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.integer))); }
     break;
 
   case 381:
 
 /* Line 936 of glr.c  */
-#line 2523 "vtkParse.y"
+#line 2527 "vtkParse.y"
     { setTypeMod(VTK_PARSE_TYPEDEF); }
     break;
 
   case 382:
 
 /* Line 936 of glr.c  */
-#line 2524 "vtkParse.y"
+#line 2528 "vtkParse.y"
     { setTypeMod(VTK_PARSE_FRIEND); }
     break;
 
   case 385:
 
 /* Line 936 of glr.c  */
-#line 2531 "vtkParse.y"
+#line 2535 "vtkParse.y"
     { setTypeMod((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 386:
 
 /* Line 936 of glr.c  */
-#line 2532 "vtkParse.y"
+#line 2536 "vtkParse.y"
     { setTypeMod((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 387:
 
 /* Line 936 of glr.c  */
-#line 2533 "vtkParse.y"
+#line 2537 "vtkParse.y"
     { setTypeMod((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 388:
 
 /* Line 936 of glr.c  */
-#line 2534 "vtkParse.y"
+#line 2538 "vtkParse.y"
     { postSig("constexpr "); ((*yyvalp).integer) = 0; }
     break;
 
   case 389:
 
 /* Line 936 of glr.c  */
-#line 2537 "vtkParse.y"
+#line 2541 "vtkParse.y"
     { postSig("mutable "); ((*yyvalp).integer) = VTK_PARSE_MUTABLE; }
     break;
 
   case 390:
 
 /* Line 936 of glr.c  */
-#line 2538 "vtkParse.y"
+#line 2542 "vtkParse.y"
     { ((*yyvalp).integer) = 0; }
     break;
 
   case 391:
 
 /* Line 936 of glr.c  */
-#line 2539 "vtkParse.y"
+#line 2543 "vtkParse.y"
     { ((*yyvalp).integer) = 0; }
     break;
 
   case 392:
 
 /* Line 936 of glr.c  */
-#line 2540 "vtkParse.y"
+#line 2544 "vtkParse.y"
     { postSig("static "); ((*yyvalp).integer) = VTK_PARSE_STATIC; }
     break;
 
   case 393:
 
 /* Line 936 of glr.c  */
-#line 2542 "vtkParse.y"
+#line 2546 "vtkParse.y"
     { postSig("thread_local "); ((*yyvalp).integer) = VTK_PARSE_THREAD_LOCAL; }
     break;
 
   case 394:
 
 /* Line 936 of glr.c  */
-#line 2545 "vtkParse.y"
+#line 2549 "vtkParse.y"
     { ((*yyvalp).integer) = 0; }
     break;
 
   case 395:
 
 /* Line 936 of glr.c  */
-#line 2546 "vtkParse.y"
+#line 2550 "vtkParse.y"
     { postSig("virtual "); ((*yyvalp).integer) = VTK_PARSE_VIRTUAL; }
     break;
 
   case 396:
 
 /* Line 936 of glr.c  */
-#line 2547 "vtkParse.y"
+#line 2551 "vtkParse.y"
     { postSig("explicit "); ((*yyvalp).integer) = VTK_PARSE_EXPLICIT; }
     break;
 
   case 397:
 
 /* Line 936 of glr.c  */
-#line 2550 "vtkParse.y"
+#line 2554 "vtkParse.y"
     { postSig("const "); ((*yyvalp).integer) = VTK_PARSE_CONST; }
     break;
 
   case 398:
 
 /* Line 936 of glr.c  */
-#line 2551 "vtkParse.y"
+#line 2555 "vtkParse.y"
     { postSig("volatile "); ((*yyvalp).integer) = VTK_PARSE_VOLATILE; }
     break;
 
   case 400:
 
 /* Line 936 of glr.c  */
-#line 2556 "vtkParse.y"
+#line 2560 "vtkParse.y"
     { ((*yyvalp).integer) = ((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.integer) | (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 402:
 
 /* Line 936 of glr.c  */
-#line 2566 "vtkParse.y"
+#line 2570 "vtkParse.y"
     { setTypeBase((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 404:
 
 /* Line 936 of glr.c  */
-#line 2568 "vtkParse.y"
+#line 2572 "vtkParse.y"
     { setTypeBase((((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 407:
 
 /* Line 936 of glr.c  */
-#line 2574 "vtkParse.y"
+#line 2578 "vtkParse.y"
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (3))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (3))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 408:
 
 /* Line 936 of glr.c  */
-#line 2576 "vtkParse.y"
+#line 2580 "vtkParse.y"
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (4))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (4))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 410:
 
 /* Line 936 of glr.c  */
-#line 2581 "vtkParse.y"
+#line 2585 "vtkParse.y"
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = 0; }
     break;
 
   case 411:
 
 /* Line 936 of glr.c  */
-#line 2582 "vtkParse.y"
+#line 2586 "vtkParse.y"
     { postSig("typename "); }
     break;
 
   case 412:
 
 /* Line 936 of glr.c  */
-#line 2583 "vtkParse.y"
+#line 2587 "vtkParse.y"
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (4))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (4))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 413:
 
 /* Line 936 of glr.c  */
-#line 2585 "vtkParse.y"
+#line 2589 "vtkParse.y"
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 414:
 
 /* Line 936 of glr.c  */
-#line 2587 "vtkParse.y"
+#line 2591 "vtkParse.y"
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 416:
 
 /* Line 936 of glr.c  */
-#line 2593 "vtkParse.y"
+#line 2597 "vtkParse.y"
     { setTypeBase((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 418:
 
 /* Line 936 of glr.c  */
-#line 2595 "vtkParse.y"
+#line 2599 "vtkParse.y"
     { setTypeBase((((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 421:
 
 /* Line 936 of glr.c  */
-#line 2602 "vtkParse.y"
+#line 2606 "vtkParse.y"
     { setTypeBase((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 423:
 
 /* Line 936 of glr.c  */
-#line 2604 "vtkParse.y"
+#line 2608 "vtkParse.y"
     { setTypeBase((((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 426:
 
 /* Line 936 of glr.c  */
-#line 2610 "vtkParse.y"
+#line 2614 "vtkParse.y"
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = 0; }
     break;
 
   case 427:
 
 /* Line 936 of glr.c  */
-#line 2612 "vtkParse.y"
+#line 2616 "vtkParse.y"
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 428:
 
 /* Line 936 of glr.c  */
-#line 2614 "vtkParse.y"
+#line 2618 "vtkParse.y"
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 429:
 
 /* Line 936 of glr.c  */
-#line 2616 "vtkParse.y"
+#line 2620 "vtkParse.y"
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 430:
 
 /* Line 936 of glr.c  */
-#line 2618 "vtkParse.y"
+#line 2622 "vtkParse.y"
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 431:
 
 /* Line 936 of glr.c  */
-#line 2620 "vtkParse.y"
+#line 2624 "vtkParse.y"
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 432:
 
 /* Line 936 of glr.c  */
-#line 2623 "vtkParse.y"
+#line 2627 "vtkParse.y"
     { setTypeId(""); }
     break;
 
   case 434:
 
 /* Line 936 of glr.c  */
-#line 2627 "vtkParse.y"
+#line 2631 "vtkParse.y"
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_STRING; }
     break;
 
   case 435:
 
 /* Line 936 of glr.c  */
-#line 2628 "vtkParse.y"
+#line 2632 "vtkParse.y"
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_UNICODE_STRING;}
     break;
 
   case 436:
 
 /* Line 936 of glr.c  */
-#line 2629 "vtkParse.y"
+#line 2633 "vtkParse.y"
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_OSTREAM; }
     break;
 
   case 437:
 
 /* Line 936 of glr.c  */
-#line 2630 "vtkParse.y"
+#line 2634 "vtkParse.y"
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_ISTREAM; }
     break;
 
   case 438:
 
 /* Line 936 of glr.c  */
-#line 2631 "vtkParse.y"
+#line 2635 "vtkParse.y"
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_UNKNOWN; }
     break;
 
   case 439:
 
 /* Line 936 of glr.c  */
-#line 2632 "vtkParse.y"
+#line 2636 "vtkParse.y"
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_OBJECT; }
     break;
 
   case 440:
 
 /* Line 936 of glr.c  */
-#line 2633 "vtkParse.y"
+#line 2637 "vtkParse.y"
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_QOBJECT; }
     break;
 
   case 441:
 
 /* Line 936 of glr.c  */
-#line 2634 "vtkParse.y"
+#line 2638 "vtkParse.y"
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_NULLPTR_T; }
     break;
 
   case 442:
 
 /* Line 936 of glr.c  */
-#line 2635 "vtkParse.y"
+#line 2639 "vtkParse.y"
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_SSIZE_T; }
     break;
 
   case 443:
 
 /* Line 936 of glr.c  */
-#line 2636 "vtkParse.y"
+#line 2640 "vtkParse.y"
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_SIZE_T; }
     break;
 
   case 444:
 
 /* Line 936 of glr.c  */
-#line 2637 "vtkParse.y"
+#line 2641 "vtkParse.y"
     { typeSig("vtkTypeInt8"); ((*yyvalp).integer) = VTK_PARSE_INT8; }
     break;
 
   case 445:
 
 /* Line 936 of glr.c  */
-#line 2638 "vtkParse.y"
+#line 2642 "vtkParse.y"
     { typeSig("vtkTypeUInt8"); ((*yyvalp).integer) = VTK_PARSE_UINT8; }
     break;
 
   case 446:
 
 /* Line 936 of glr.c  */
-#line 2639 "vtkParse.y"
+#line 2643 "vtkParse.y"
     { typeSig("vtkTypeInt16"); ((*yyvalp).integer) = VTK_PARSE_INT16; }
     break;
 
   case 447:
 
 /* Line 936 of glr.c  */
-#line 2640 "vtkParse.y"
+#line 2644 "vtkParse.y"
     { typeSig("vtkTypeUInt16"); ((*yyvalp).integer) = VTK_PARSE_UINT16; }
     break;
 
   case 448:
 
 /* Line 936 of glr.c  */
-#line 2641 "vtkParse.y"
+#line 2645 "vtkParse.y"
     { typeSig("vtkTypeInt32"); ((*yyvalp).integer) = VTK_PARSE_INT32; }
     break;
 
   case 449:
 
 /* Line 936 of glr.c  */
-#line 2642 "vtkParse.y"
+#line 2646 "vtkParse.y"
     { typeSig("vtkTypeUInt32"); ((*yyvalp).integer) = VTK_PARSE_UINT32; }
     break;
 
   case 450:
 
 /* Line 936 of glr.c  */
-#line 2643 "vtkParse.y"
+#line 2647 "vtkParse.y"
     { typeSig("vtkTypeInt64"); ((*yyvalp).integer) = VTK_PARSE_INT64; }
     break;
 
   case 451:
 
 /* Line 936 of glr.c  */
-#line 2644 "vtkParse.y"
+#line 2648 "vtkParse.y"
     { typeSig("vtkTypeUInt64"); ((*yyvalp).integer) = VTK_PARSE_UINT64; }
     break;
 
   case 452:
 
 /* Line 936 of glr.c  */
-#line 2645 "vtkParse.y"
+#line 2649 "vtkParse.y"
     { typeSig("vtkTypeFloat32"); ((*yyvalp).integer) = VTK_PARSE_FLOAT32; }
     break;
 
   case 453:
 
 /* Line 936 of glr.c  */
-#line 2646 "vtkParse.y"
+#line 2650 "vtkParse.y"
     { typeSig("vtkTypeFloat64"); ((*yyvalp).integer) = VTK_PARSE_FLOAT64; }
     break;
 
   case 454:
 
 /* Line 936 of glr.c  */
-#line 2647 "vtkParse.y"
+#line 2651 "vtkParse.y"
     { typeSig("vtkIdType"); ((*yyvalp).integer) = VTK_PARSE_ID_TYPE; }
     break;
 
   case 455:
 
 /* Line 936 of glr.c  */
-#line 2648 "vtkParse.y"
+#line 2652 "vtkParse.y"
     { typeSig("double"); ((*yyvalp).integer) = VTK_PARSE_DOUBLE; }
     break;
 
   case 456:
 
 /* Line 936 of glr.c  */
-#line 2651 "vtkParse.y"
+#line 2655 "vtkParse.y"
     { postSig("auto "); ((*yyvalp).integer) = 0; }
     break;
 
   case 457:
 
 /* Line 936 of glr.c  */
-#line 2652 "vtkParse.y"
+#line 2656 "vtkParse.y"
     { postSig("void "); ((*yyvalp).integer) = VTK_PARSE_VOID; }
     break;
 
   case 458:
 
 /* Line 936 of glr.c  */
-#line 2653 "vtkParse.y"
+#line 2657 "vtkParse.y"
     { postSig("bool "); ((*yyvalp).integer) = VTK_PARSE_BOOL; }
     break;
 
   case 459:
 
 /* Line 936 of glr.c  */
-#line 2654 "vtkParse.y"
+#line 2658 "vtkParse.y"
     { postSig("float "); ((*yyvalp).integer) = VTK_PARSE_FLOAT; }
     break;
 
   case 460:
 
 /* Line 936 of glr.c  */
-#line 2655 "vtkParse.y"
+#line 2659 "vtkParse.y"
     { postSig("double "); ((*yyvalp).integer) = VTK_PARSE_DOUBLE; }
     break;
 
   case 461:
 
 /* Line 936 of glr.c  */
-#line 2656 "vtkParse.y"
+#line 2660 "vtkParse.y"
     { postSig("char "); ((*yyvalp).integer) = VTK_PARSE_CHAR; }
     break;
 
   case 462:
 
 /* Line 936 of glr.c  */
-#line 2657 "vtkParse.y"
+#line 2661 "vtkParse.y"
     { postSig("char16_t "); ((*yyvalp).integer) = VTK_PARSE_CHAR16_T; }
     break;
 
   case 463:
 
 /* Line 936 of glr.c  */
-#line 2658 "vtkParse.y"
+#line 2662 "vtkParse.y"
     { postSig("char32_t "); ((*yyvalp).integer) = VTK_PARSE_CHAR32_T; }
     break;
 
   case 464:
 
 /* Line 936 of glr.c  */
-#line 2659 "vtkParse.y"
+#line 2663 "vtkParse.y"
     { postSig("wchar_t "); ((*yyvalp).integer) = VTK_PARSE_WCHAR_T; }
     break;
 
   case 465:
 
 /* Line 936 of glr.c  */
-#line 2660 "vtkParse.y"
+#line 2664 "vtkParse.y"
     { postSig("int "); ((*yyvalp).integer) = VTK_PARSE_INT; }
     break;
 
   case 466:
 
 /* Line 936 of glr.c  */
-#line 2661 "vtkParse.y"
+#line 2665 "vtkParse.y"
     { postSig("short "); ((*yyvalp).integer) = VTK_PARSE_SHORT; }
     break;
 
   case 467:
 
 /* Line 936 of glr.c  */
-#line 2662 "vtkParse.y"
+#line 2666 "vtkParse.y"
     { postSig("long "); ((*yyvalp).integer) = VTK_PARSE_LONG; }
     break;
 
   case 468:
 
 /* Line 936 of glr.c  */
-#line 2663 "vtkParse.y"
+#line 2667 "vtkParse.y"
     { postSig("__int64 "); ((*yyvalp).integer) = VTK_PARSE___INT64; }
     break;
 
   case 469:
 
 /* Line 936 of glr.c  */
-#line 2664 "vtkParse.y"
+#line 2668 "vtkParse.y"
     { postSig("signed "); ((*yyvalp).integer) = VTK_PARSE_INT; }
     break;
 
   case 470:
 
 /* Line 936 of glr.c  */
-#line 2665 "vtkParse.y"
+#line 2669 "vtkParse.y"
     { postSig("unsigned "); ((*yyvalp).integer) = VTK_PARSE_UNSIGNED_INT; }
     break;
 
   case 474:
 
 /* Line 936 of glr.c  */
-#line 2688 "vtkParse.y"
+#line 2692 "vtkParse.y"
     { ((*yyvalp).integer) = ((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.integer) | (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.integer)); }
     break;
 
   case 475:
 
 /* Line 936 of glr.c  */
-#line 2692 "vtkParse.y"
+#line 2696 "vtkParse.y"
     { postSig("&"); ((*yyvalp).integer) = VTK_PARSE_REF; }
     break;
 
   case 476:
 
 /* Line 936 of glr.c  */
-#line 2696 "vtkParse.y"
+#line 2700 "vtkParse.y"
     { postSig("&&"); ((*yyvalp).integer) = (VTK_PARSE_RVALUE | VTK_PARSE_REF); }
     break;
 
   case 477:
 
 /* Line 936 of glr.c  */
-#line 2699 "vtkParse.y"
+#line 2703 "vtkParse.y"
     { postSig("*"); }
     break;
 
   case 478:
 
 /* Line 936 of glr.c  */
-#line 2700 "vtkParse.y"
+#line 2704 "vtkParse.y"
     { ((*yyvalp).integer) = (((yyGLRStackItem const *)yyvsp)[YYFILL ((4) - (4))].yystate.yysemantics.yysval.integer); }
     break;
 
   case 479:
 
 /* Line 936 of glr.c  */
-#line 2703 "vtkParse.y"
+#line 2707 "vtkParse.y"
     { ((*yyvalp).integer) = VTK_PARSE_POINTER; }
     break;
 
   case 480:
 
 /* Line 936 of glr.c  */
-#line 2705 "vtkParse.y"
+#line 2709 "vtkParse.y"
     {
       if (((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.integer) & VTK_PARSE_CONST) != 0)
         {
@@ -8397,7 +8402,7 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 482:
 
 /* Line 936 of glr.c  */
-#line 2721 "vtkParse.y"
+#line 2725 "vtkParse.y"
     {
       unsigned int n;
       n = (((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (2))].yystate.yysemantics.yysval.integer) << 2) | (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.integer));
@@ -8412,28 +8417,28 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 485:
 
 /* Line 936 of glr.c  */
-#line 2740 "vtkParse.y"
+#line 2744 "vtkParse.y"
     { closeSig(); }
     break;
 
   case 486:
 
 /* Line 936 of glr.c  */
-#line 2740 "vtkParse.y"
+#line 2744 "vtkParse.y"
     { openSig(); }
     break;
 
   case 488:
 
 /* Line 936 of glr.c  */
-#line 2747 "vtkParse.y"
+#line 2751 "vtkParse.y"
     {preSig("void Set"); postSig("(");}
     break;
 
   case 489:
 
 /* Line 936 of glr.c  */
-#line 2748 "vtkParse.y"
+#line 2752 "vtkParse.y"
     {
    postSig("a);");
    currentFunction->Macro = "vtkSetMacro";
@@ -8448,28 +8453,28 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 490:
 
 /* Line 936 of glr.c  */
-#line 2757 "vtkParse.y"
+#line 2761 "vtkParse.y"
     {postSig("Get");}
     break;
 
   case 491:
 
 /* Line 936 of glr.c  */
-#line 2758 "vtkParse.y"
+#line 2762 "vtkParse.y"
     {markSig();}
     break;
 
   case 492:
 
 /* Line 936 of glr.c  */
-#line 2758 "vtkParse.y"
+#line 2762 "vtkParse.y"
     {swapSig();}
     break;
 
   case 493:
 
 /* Line 936 of glr.c  */
-#line 2759 "vtkParse.y"
+#line 2763 "vtkParse.y"
     {
    postSig("();");
    currentFunction->Macro = "vtkGetMacro";
@@ -8483,14 +8488,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 494:
 
 /* Line 936 of glr.c  */
-#line 2767 "vtkParse.y"
+#line 2771 "vtkParse.y"
     {preSig("void Set");}
     break;
 
   case 495:
 
 /* Line 936 of glr.c  */
-#line 2768 "vtkParse.y"
+#line 2772 "vtkParse.y"
     {
    postSig("(char *);");
    currentFunction->Macro = "vtkSetStringMacro";
@@ -8505,14 +8510,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 496:
 
 /* Line 936 of glr.c  */
-#line 2777 "vtkParse.y"
+#line 2781 "vtkParse.y"
     {preSig("char *Get");}
     break;
 
   case 497:
 
 /* Line 936 of glr.c  */
-#line 2778 "vtkParse.y"
+#line 2782 "vtkParse.y"
     {
    postSig("();");
    currentFunction->Macro = "vtkGetStringMacro";
@@ -8526,21 +8531,21 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 498:
 
 /* Line 936 of glr.c  */
-#line 2786 "vtkParse.y"
+#line 2790 "vtkParse.y"
     {startSig(); markSig();}
     break;
 
   case 499:
 
 /* Line 936 of glr.c  */
-#line 2786 "vtkParse.y"
+#line 2790 "vtkParse.y"
     {closeSig();}
     break;
 
   case 500:
 
 /* Line 936 of glr.c  */
-#line 2788 "vtkParse.y"
+#line 2792 "vtkParse.y"
     {
    const char *typeText;
    chopSig();
@@ -8576,14 +8581,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 501:
 
 /* Line 936 of glr.c  */
-#line 2819 "vtkParse.y"
+#line 2823 "vtkParse.y"
     {preSig("void Set"); postSig("("); }
     break;
 
   case 502:
 
 /* Line 936 of glr.c  */
-#line 2820 "vtkParse.y"
+#line 2824 "vtkParse.y"
     {
    postSig("*);");
    currentFunction->Macro = "vtkSetObjectMacro";
@@ -8598,28 +8603,28 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 503:
 
 /* Line 936 of glr.c  */
-#line 2829 "vtkParse.y"
+#line 2833 "vtkParse.y"
     {postSig("*Get");}
     break;
 
   case 504:
 
 /* Line 936 of glr.c  */
-#line 2830 "vtkParse.y"
+#line 2834 "vtkParse.y"
     {markSig();}
     break;
 
   case 505:
 
 /* Line 936 of glr.c  */
-#line 2830 "vtkParse.y"
+#line 2834 "vtkParse.y"
     {swapSig();}
     break;
 
   case 506:
 
 /* Line 936 of glr.c  */
-#line 2831 "vtkParse.y"
+#line 2835 "vtkParse.y"
     {
    postSig("();");
    currentFunction->Macro = "vtkGetObjectMacro";
@@ -8633,7 +8638,7 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 507:
 
 /* Line 936 of glr.c  */
-#line 2840 "vtkParse.y"
+#line 2844 "vtkParse.y"
     {
    currentFunction->Macro = "vtkBooleanMacro";
    currentFunction->Name = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (6))].yystate.yysemantics.yysval.str), "On");
@@ -8656,14 +8661,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 508:
 
 /* Line 936 of glr.c  */
-#line 2857 "vtkParse.y"
+#line 2861 "vtkParse.y"
     {startSig(); markSig();}
     break;
 
   case 509:
 
 /* Line 936 of glr.c  */
-#line 2858 "vtkParse.y"
+#line 2862 "vtkParse.y"
     {
    chopSig();
    outputSetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (7))].yystate.yysemantics.yysval.str), getType(), copySig(), 2);
@@ -8673,14 +8678,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 510:
 
 /* Line 936 of glr.c  */
-#line 2862 "vtkParse.y"
+#line 2866 "vtkParse.y"
     {startSig(); markSig();}
     break;
 
   case 511:
 
 /* Line 936 of glr.c  */
-#line 2863 "vtkParse.y"
+#line 2867 "vtkParse.y"
     {
    chopSig();
    outputGetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (7))].yystate.yysemantics.yysval.str), getType(), copySig(), 2);
@@ -8690,14 +8695,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 512:
 
 /* Line 936 of glr.c  */
-#line 2867 "vtkParse.y"
+#line 2871 "vtkParse.y"
     {startSig(); markSig();}
     break;
 
   case 513:
 
 /* Line 936 of glr.c  */
-#line 2868 "vtkParse.y"
+#line 2872 "vtkParse.y"
     {
    chopSig();
    outputSetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (7))].yystate.yysemantics.yysval.str), getType(), copySig(), 3);
@@ -8707,14 +8712,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 514:
 
 /* Line 936 of glr.c  */
-#line 2872 "vtkParse.y"
+#line 2876 "vtkParse.y"
     {startSig(); markSig();}
     break;
 
   case 515:
 
 /* Line 936 of glr.c  */
-#line 2873 "vtkParse.y"
+#line 2877 "vtkParse.y"
     {
    chopSig();
    outputGetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (7))].yystate.yysemantics.yysval.str), getType(), copySig(), 3);
@@ -8724,14 +8729,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 516:
 
 /* Line 936 of glr.c  */
-#line 2877 "vtkParse.y"
+#line 2881 "vtkParse.y"
     {startSig(); markSig();}
     break;
 
   case 517:
 
 /* Line 936 of glr.c  */
-#line 2878 "vtkParse.y"
+#line 2882 "vtkParse.y"
     {
    chopSig();
    outputSetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (7))].yystate.yysemantics.yysval.str), getType(), copySig(), 4);
@@ -8741,14 +8746,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 518:
 
 /* Line 936 of glr.c  */
-#line 2882 "vtkParse.y"
+#line 2886 "vtkParse.y"
     {startSig(); markSig();}
     break;
 
   case 519:
 
 /* Line 936 of glr.c  */
-#line 2883 "vtkParse.y"
+#line 2887 "vtkParse.y"
     {
    chopSig();
    outputGetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (7))].yystate.yysemantics.yysval.str), getType(), copySig(), 4);
@@ -8758,14 +8763,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 520:
 
 /* Line 936 of glr.c  */
-#line 2887 "vtkParse.y"
+#line 2891 "vtkParse.y"
     {startSig(); markSig();}
     break;
 
   case 521:
 
 /* Line 936 of glr.c  */
-#line 2888 "vtkParse.y"
+#line 2892 "vtkParse.y"
     {
    chopSig();
    outputSetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (7))].yystate.yysemantics.yysval.str), getType(), copySig(), 6);
@@ -8775,14 +8780,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 522:
 
 /* Line 936 of glr.c  */
-#line 2892 "vtkParse.y"
+#line 2896 "vtkParse.y"
     {startSig(); markSig();}
     break;
 
   case 523:
 
 /* Line 936 of glr.c  */
-#line 2893 "vtkParse.y"
+#line 2897 "vtkParse.y"
     {
    chopSig();
    outputGetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (7))].yystate.yysemantics.yysval.str), getType(), copySig(), 6);
@@ -8792,14 +8797,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 524:
 
 /* Line 936 of glr.c  */
-#line 2897 "vtkParse.y"
+#line 2901 "vtkParse.y"
     {startSig(); markSig();}
     break;
 
   case 525:
 
 /* Line 936 of glr.c  */
-#line 2899 "vtkParse.y"
+#line 2903 "vtkParse.y"
     {
    const char *typeText;
    chopSig();
@@ -8820,14 +8825,14 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 526:
 
 /* Line 936 of glr.c  */
-#line 2914 "vtkParse.y"
+#line 2918 "vtkParse.y"
     {startSig();}
     break;
 
   case 527:
 
 /* Line 936 of glr.c  */
-#line 2916 "vtkParse.y"
+#line 2920 "vtkParse.y"
     {
    chopSig();
    currentFunction->Macro = "vtkGetVectorMacro";
@@ -8845,7 +8850,7 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 528:
 
 /* Line 936 of glr.c  */
-#line 2929 "vtkParse.y"
+#line 2933 "vtkParse.y"
     {
      currentFunction->Macro = "vtkViewportCoordinateMacro";
      currentFunction->Name = vtkstrcat3("Get", (((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (4))].yystate.yysemantics.yysval.str), "Coordinate");
@@ -8887,7 +8892,7 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 529:
 
 /* Line 936 of glr.c  */
-#line 2966 "vtkParse.y"
+#line 2970 "vtkParse.y"
     {
      currentFunction->Macro = "vtkWorldCoordinateMacro";
      currentFunction->Name = vtkstrcat3("Get", (((yyGLRStackItem const *)yyvsp)[YYFILL ((3) - (4))].yystate.yysemantics.yysval.str), "Coordinate");
@@ -8930,7 +8935,7 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 530:
 
 /* Line 936 of glr.c  */
-#line 3004 "vtkParse.y"
+#line 3008 "vtkParse.y"
     {
    currentFunction->Macro = "vtkTypeMacro";
    currentFunction->Name = "GetClassName";
@@ -8971,553 +8976,553 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 533:
 
 /* Line 936 of glr.c  */
-#line 3048 "vtkParse.y"
+#line 3052 "vtkParse.y"
     { ((*yyvalp).str) = "()"; }
     break;
 
   case 534:
 
 /* Line 936 of glr.c  */
-#line 3049 "vtkParse.y"
+#line 3053 "vtkParse.y"
     { ((*yyvalp).str) = "[]"; }
     break;
 
   case 535:
 
 /* Line 936 of glr.c  */
-#line 3050 "vtkParse.y"
+#line 3054 "vtkParse.y"
     { ((*yyvalp).str) = " new[]"; }
     break;
 
   case 536:
 
 /* Line 936 of glr.c  */
-#line 3051 "vtkParse.y"
+#line 3055 "vtkParse.y"
     { ((*yyvalp).str) = " delete[]"; }
     break;
 
   case 537:
 
 /* Line 936 of glr.c  */
-#line 3052 "vtkParse.y"
+#line 3056 "vtkParse.y"
     { ((*yyvalp).str) = "<"; }
     break;
 
   case 538:
 
 /* Line 936 of glr.c  */
-#line 3053 "vtkParse.y"
+#line 3057 "vtkParse.y"
     { ((*yyvalp).str) = ">"; }
     break;
 
   case 539:
 
 /* Line 936 of glr.c  */
-#line 3054 "vtkParse.y"
+#line 3058 "vtkParse.y"
     { ((*yyvalp).str) = ","; }
     break;
 
   case 540:
 
 /* Line 936 of glr.c  */
-#line 3055 "vtkParse.y"
+#line 3059 "vtkParse.y"
     { ((*yyvalp).str) = "="; }
     break;
 
   case 541:
 
 /* Line 936 of glr.c  */
-#line 3056 "vtkParse.y"
+#line 3060 "vtkParse.y"
     { ((*yyvalp).str) = ">>"; }
     break;
 
   case 542:
 
 /* Line 936 of glr.c  */
-#line 3057 "vtkParse.y"
+#line 3061 "vtkParse.y"
     { ((*yyvalp).str) = ">>"; }
     break;
 
   case 543:
 
 /* Line 936 of glr.c  */
-#line 3058 "vtkParse.y"
+#line 3062 "vtkParse.y"
     { ((*yyvalp).str) = vtkstrcat("\"\" ", (((yyGLRStackItem const *)yyvsp)[YYFILL ((2) - (2))].yystate.yysemantics.yysval.str)); }
     break;
 
   case 545:
 
 /* Line 936 of glr.c  */
-#line 3062 "vtkParse.y"
+#line 3066 "vtkParse.y"
     { ((*yyvalp).str) = "%"; }
     break;
 
   case 546:
 
 /* Line 936 of glr.c  */
-#line 3063 "vtkParse.y"
+#line 3067 "vtkParse.y"
     { ((*yyvalp).str) = "*"; }
     break;
 
   case 547:
 
 /* Line 936 of glr.c  */
-#line 3064 "vtkParse.y"
+#line 3068 "vtkParse.y"
     { ((*yyvalp).str) = "/"; }
     break;
 
   case 548:
 
 /* Line 936 of glr.c  */
-#line 3065 "vtkParse.y"
+#line 3069 "vtkParse.y"
     { ((*yyvalp).str) = "-"; }
     break;
 
   case 549:
 
 /* Line 936 of glr.c  */
-#line 3066 "vtkParse.y"
+#line 3070 "vtkParse.y"
     { ((*yyvalp).str) = "+"; }
     break;
 
   case 550:
 
 /* Line 936 of glr.c  */
-#line 3067 "vtkParse.y"
+#line 3071 "vtkParse.y"
     { ((*yyvalp).str) = "!"; }
     break;
 
   case 551:
 
 /* Line 936 of glr.c  */
-#line 3068 "vtkParse.y"
+#line 3072 "vtkParse.y"
     { ((*yyvalp).str) = "~"; }
     break;
 
   case 552:
 
 /* Line 936 of glr.c  */
-#line 3069 "vtkParse.y"
+#line 3073 "vtkParse.y"
     { ((*yyvalp).str) = "&"; }
     break;
 
   case 553:
 
 /* Line 936 of glr.c  */
-#line 3070 "vtkParse.y"
+#line 3074 "vtkParse.y"
     { ((*yyvalp).str) = "|"; }
     break;
 
   case 554:
 
 /* Line 936 of glr.c  */
-#line 3071 "vtkParse.y"
+#line 3075 "vtkParse.y"
     { ((*yyvalp).str) = "^"; }
     break;
 
   case 555:
 
 /* Line 936 of glr.c  */
-#line 3072 "vtkParse.y"
+#line 3076 "vtkParse.y"
     { ((*yyvalp).str) = " new"; }
     break;
 
   case 556:
 
 /* Line 936 of glr.c  */
-#line 3073 "vtkParse.y"
+#line 3077 "vtkParse.y"
     { ((*yyvalp).str) = " delete"; }
     break;
 
   case 557:
 
 /* Line 936 of glr.c  */
-#line 3074 "vtkParse.y"
+#line 3078 "vtkParse.y"
     { ((*yyvalp).str) = "<<="; }
     break;
 
   case 558:
 
 /* Line 936 of glr.c  */
-#line 3075 "vtkParse.y"
+#line 3079 "vtkParse.y"
     { ((*yyvalp).str) = ">>="; }
     break;
 
   case 559:
 
 /* Line 936 of glr.c  */
-#line 3076 "vtkParse.y"
+#line 3080 "vtkParse.y"
     { ((*yyvalp).str) = "<<"; }
     break;
 
   case 560:
 
 /* Line 936 of glr.c  */
-#line 3077 "vtkParse.y"
+#line 3081 "vtkParse.y"
     { ((*yyvalp).str) = ".*"; }
     break;
 
   case 561:
 
 /* Line 936 of glr.c  */
-#line 3078 "vtkParse.y"
+#line 3082 "vtkParse.y"
     { ((*yyvalp).str) = "->*"; }
     break;
 
   case 562:
 
 /* Line 936 of glr.c  */
-#line 3079 "vtkParse.y"
+#line 3083 "vtkParse.y"
     { ((*yyvalp).str) = "->"; }
     break;
 
   case 563:
 
 /* Line 936 of glr.c  */
-#line 3080 "vtkParse.y"
+#line 3084 "vtkParse.y"
     { ((*yyvalp).str) = "+="; }
     break;
 
   case 564:
 
 /* Line 936 of glr.c  */
-#line 3081 "vtkParse.y"
+#line 3085 "vtkParse.y"
     { ((*yyvalp).str) = "-="; }
     break;
 
   case 565:
 
 /* Line 936 of glr.c  */
-#line 3082 "vtkParse.y"
+#line 3086 "vtkParse.y"
     { ((*yyvalp).str) = "*="; }
     break;
 
   case 566:
 
 /* Line 936 of glr.c  */
-#line 3083 "vtkParse.y"
+#line 3087 "vtkParse.y"
     { ((*yyvalp).str) = "/="; }
     break;
 
   case 567:
 
 /* Line 936 of glr.c  */
-#line 3084 "vtkParse.y"
+#line 3088 "vtkParse.y"
     { ((*yyvalp).str) = "%="; }
     break;
 
   case 568:
 
 /* Line 936 of glr.c  */
-#line 3085 "vtkParse.y"
+#line 3089 "vtkParse.y"
     { ((*yyvalp).str) = "++"; }
     break;
 
   case 569:
 
 /* Line 936 of glr.c  */
-#line 3086 "vtkParse.y"
+#line 3090 "vtkParse.y"
     { ((*yyvalp).str) = "--"; }
     break;
 
   case 570:
 
 /* Line 936 of glr.c  */
-#line 3087 "vtkParse.y"
+#line 3091 "vtkParse.y"
     { ((*yyvalp).str) = "&="; }
     break;
 
   case 571:
 
 /* Line 936 of glr.c  */
-#line 3088 "vtkParse.y"
+#line 3092 "vtkParse.y"
     { ((*yyvalp).str) = "|="; }
     break;
 
   case 572:
 
 /* Line 936 of glr.c  */
-#line 3089 "vtkParse.y"
+#line 3093 "vtkParse.y"
     { ((*yyvalp).str) = "^="; }
     break;
 
   case 573:
 
 /* Line 936 of glr.c  */
-#line 3090 "vtkParse.y"
+#line 3094 "vtkParse.y"
     { ((*yyvalp).str) = "&&"; }
     break;
 
   case 574:
 
 /* Line 936 of glr.c  */
-#line 3091 "vtkParse.y"
+#line 3095 "vtkParse.y"
     { ((*yyvalp).str) = "||"; }
     break;
 
   case 575:
 
 /* Line 936 of glr.c  */
-#line 3092 "vtkParse.y"
+#line 3096 "vtkParse.y"
     { ((*yyvalp).str) = "=="; }
     break;
 
   case 576:
 
 /* Line 936 of glr.c  */
-#line 3093 "vtkParse.y"
+#line 3097 "vtkParse.y"
     { ((*yyvalp).str) = "!="; }
     break;
 
   case 577:
 
 /* Line 936 of glr.c  */
-#line 3094 "vtkParse.y"
+#line 3098 "vtkParse.y"
     { ((*yyvalp).str) = "<="; }
     break;
 
   case 578:
 
 /* Line 936 of glr.c  */
-#line 3095 "vtkParse.y"
+#line 3099 "vtkParse.y"
     { ((*yyvalp).str) = ">="; }
     break;
 
   case 579:
 
 /* Line 936 of glr.c  */
-#line 3098 "vtkParse.y"
+#line 3102 "vtkParse.y"
     { ((*yyvalp).str) = "typedef"; }
     break;
 
   case 580:
 
 /* Line 936 of glr.c  */
-#line 3099 "vtkParse.y"
+#line 3103 "vtkParse.y"
     { ((*yyvalp).str) = "typename"; }
     break;
 
   case 581:
 
 /* Line 936 of glr.c  */
-#line 3100 "vtkParse.y"
+#line 3104 "vtkParse.y"
     { ((*yyvalp).str) = "class"; }
     break;
 
   case 582:
 
 /* Line 936 of glr.c  */
-#line 3101 "vtkParse.y"
+#line 3105 "vtkParse.y"
     { ((*yyvalp).str) = "struct"; }
     break;
 
   case 583:
 
 /* Line 936 of glr.c  */
-#line 3102 "vtkParse.y"
+#line 3106 "vtkParse.y"
     { ((*yyvalp).str) = "union"; }
     break;
 
   case 584:
 
 /* Line 936 of glr.c  */
-#line 3103 "vtkParse.y"
+#line 3107 "vtkParse.y"
     { ((*yyvalp).str) = "template"; }
     break;
 
   case 585:
 
 /* Line 936 of glr.c  */
-#line 3104 "vtkParse.y"
+#line 3108 "vtkParse.y"
     { ((*yyvalp).str) = "public"; }
     break;
 
   case 586:
 
 /* Line 936 of glr.c  */
-#line 3105 "vtkParse.y"
+#line 3109 "vtkParse.y"
     { ((*yyvalp).str) = "protected"; }
     break;
 
   case 587:
 
 /* Line 936 of glr.c  */
-#line 3106 "vtkParse.y"
+#line 3110 "vtkParse.y"
     { ((*yyvalp).str) = "private"; }
     break;
 
   case 588:
 
 /* Line 936 of glr.c  */
-#line 3107 "vtkParse.y"
+#line 3111 "vtkParse.y"
     { ((*yyvalp).str) = "const"; }
     break;
 
   case 589:
 
 /* Line 936 of glr.c  */
-#line 3108 "vtkParse.y"
+#line 3112 "vtkParse.y"
     { ((*yyvalp).str) = "static"; }
     break;
 
   case 590:
 
 /* Line 936 of glr.c  */
-#line 3109 "vtkParse.y"
+#line 3113 "vtkParse.y"
     { ((*yyvalp).str) = "thread_local"; }
     break;
 
   case 591:
 
 /* Line 936 of glr.c  */
-#line 3110 "vtkParse.y"
+#line 3114 "vtkParse.y"
     { ((*yyvalp).str) = "constexpr"; }
     break;
 
   case 592:
 
 /* Line 936 of glr.c  */
-#line 3111 "vtkParse.y"
+#line 3115 "vtkParse.y"
     { ((*yyvalp).str) = "inline"; }
     break;
 
   case 593:
 
 /* Line 936 of glr.c  */
-#line 3112 "vtkParse.y"
+#line 3116 "vtkParse.y"
     { ((*yyvalp).str) = "virtual"; }
     break;
 
   case 594:
 
 /* Line 936 of glr.c  */
-#line 3113 "vtkParse.y"
+#line 3117 "vtkParse.y"
     { ((*yyvalp).str) = "explicit"; }
     break;
 
   case 595:
 
 /* Line 936 of glr.c  */
-#line 3114 "vtkParse.y"
+#line 3118 "vtkParse.y"
     { ((*yyvalp).str) = "decltype"; }
     break;
 
   case 596:
 
 /* Line 936 of glr.c  */
-#line 3115 "vtkParse.y"
+#line 3119 "vtkParse.y"
     { ((*yyvalp).str) = "default"; }
     break;
 
   case 597:
 
 /* Line 936 of glr.c  */
-#line 3116 "vtkParse.y"
+#line 3120 "vtkParse.y"
     { ((*yyvalp).str) = "extern"; }
     break;
 
   case 598:
 
 /* Line 936 of glr.c  */
-#line 3117 "vtkParse.y"
+#line 3121 "vtkParse.y"
     { ((*yyvalp).str) = "using"; }
     break;
 
   case 599:
 
 /* Line 936 of glr.c  */
-#line 3118 "vtkParse.y"
+#line 3122 "vtkParse.y"
     { ((*yyvalp).str) = "namespace"; }
     break;
 
   case 600:
 
 /* Line 936 of glr.c  */
-#line 3119 "vtkParse.y"
+#line 3123 "vtkParse.y"
     { ((*yyvalp).str) = "operator"; }
     break;
 
   case 601:
 
 /* Line 936 of glr.c  */
-#line 3120 "vtkParse.y"
+#line 3124 "vtkParse.y"
     { ((*yyvalp).str) = "enum"; }
     break;
 
   case 602:
 
 /* Line 936 of glr.c  */
-#line 3121 "vtkParse.y"
+#line 3125 "vtkParse.y"
     { ((*yyvalp).str) = "throw"; }
     break;
 
   case 603:
 
 /* Line 936 of glr.c  */
-#line 3122 "vtkParse.y"
+#line 3126 "vtkParse.y"
     { ((*yyvalp).str) = "noexcept"; }
     break;
 
   case 604:
 
 /* Line 936 of glr.c  */
-#line 3123 "vtkParse.y"
+#line 3127 "vtkParse.y"
     { ((*yyvalp).str) = "const_cast"; }
     break;
 
   case 605:
 
 /* Line 936 of glr.c  */
-#line 3124 "vtkParse.y"
+#line 3128 "vtkParse.y"
     { ((*yyvalp).str) = "dynamic_cast"; }
     break;
 
   case 606:
 
 /* Line 936 of glr.c  */
-#line 3125 "vtkParse.y"
+#line 3129 "vtkParse.y"
     { ((*yyvalp).str) = "static_cast"; }
     break;
 
   case 607:
 
 /* Line 936 of glr.c  */
-#line 3126 "vtkParse.y"
+#line 3130 "vtkParse.y"
     { ((*yyvalp).str) = "reinterpret_cast"; }
     break;
 
   case 620:
 
 /* Line 936 of glr.c  */
-#line 3149 "vtkParse.y"
+#line 3153 "vtkParse.y"
     { postSig("< "); }
     break;
 
   case 621:
 
 /* Line 936 of glr.c  */
-#line 3150 "vtkParse.y"
+#line 3154 "vtkParse.y"
     { postSig("> "); }
     break;
 
   case 623:
 
 /* Line 936 of glr.c  */
-#line 3151 "vtkParse.y"
+#line 3155 "vtkParse.y"
     { postSig(">"); }
     break;
 
   case 625:
 
 /* Line 936 of glr.c  */
-#line 3155 "vtkParse.y"
+#line 3159 "vtkParse.y"
     { chopSig(); postSig("::"); }
     break;
 
   case 629:
 
 /* Line 936 of glr.c  */
-#line 3162 "vtkParse.y"
+#line 3166 "vtkParse.y"
     {
       if ((((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str))[0] == '+' || ((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str))[0] == '-' ||
            ((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str))[0] == '*' || ((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str))[0] == '&') &&
@@ -9552,35 +9557,35 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 630:
 
 /* Line 936 of glr.c  */
-#line 3191 "vtkParse.y"
+#line 3195 "vtkParse.y"
     { postSig(":"); postSig(" "); }
     break;
 
   case 631:
 
 /* Line 936 of glr.c  */
-#line 3191 "vtkParse.y"
+#line 3195 "vtkParse.y"
     { postSig("."); }
     break;
 
   case 632:
 
 /* Line 936 of glr.c  */
-#line 3192 "vtkParse.y"
+#line 3196 "vtkParse.y"
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); postSig(" "); }
     break;
 
   case 633:
 
 /* Line 936 of glr.c  */
-#line 3193 "vtkParse.y"
+#line 3197 "vtkParse.y"
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); postSig(" "); }
     break;
 
   case 635:
 
 /* Line 936 of glr.c  */
-#line 3196 "vtkParse.y"
+#line 3200 "vtkParse.y"
     {
       int c1 = 0;
       size_t l;
@@ -9607,63 +9612,63 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 639:
 
 /* Line 936 of glr.c  */
-#line 3223 "vtkParse.y"
+#line 3227 "vtkParse.y"
     { postSig("< "); }
     break;
 
   case 640:
 
 /* Line 936 of glr.c  */
-#line 3224 "vtkParse.y"
+#line 3228 "vtkParse.y"
     { postSig("> "); }
     break;
 
   case 641:
 
 /* Line 936 of glr.c  */
-#line 3225 "vtkParse.y"
+#line 3229 "vtkParse.y"
     { postSig(">"); }
     break;
 
   case 643:
 
 /* Line 936 of glr.c  */
-#line 3229 "vtkParse.y"
+#line 3233 "vtkParse.y"
     { postSig("= "); }
     break;
 
   case 644:
 
 /* Line 936 of glr.c  */
-#line 3230 "vtkParse.y"
+#line 3234 "vtkParse.y"
     { chopSig(); postSig(", "); }
     break;
 
   case 646:
 
 /* Line 936 of glr.c  */
-#line 3234 "vtkParse.y"
+#line 3238 "vtkParse.y"
     { chopSig(); postSig(";"); }
     break;
 
   case 654:
 
 /* Line 936 of glr.c  */
-#line 3248 "vtkParse.y"
+#line 3252 "vtkParse.y"
     { postSig("= "); }
     break;
 
   case 655:
 
 /* Line 936 of glr.c  */
-#line 3249 "vtkParse.y"
+#line 3253 "vtkParse.y"
     { chopSig(); postSig(", "); }
     break;
 
   case 656:
 
 /* Line 936 of glr.c  */
-#line 3253 "vtkParse.y"
+#line 3257 "vtkParse.y"
     {
       chopSig();
       if (getSig()[getSigLength()-1] == '<') { postSig(" "); }
@@ -9674,7 +9679,7 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 657:
 
 /* Line 936 of glr.c  */
-#line 3259 "vtkParse.y"
+#line 3263 "vtkParse.y"
     {
       chopSig();
       if (getSig()[getSigLength()-1] == '>') { postSig(" "); }
@@ -9685,91 +9690,91 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
   case 660:
 
 /* Line 936 of glr.c  */
-#line 3270 "vtkParse.y"
+#line 3274 "vtkParse.y"
     { postSig("["); }
     break;
 
   case 661:
 
 /* Line 936 of glr.c  */
-#line 3271 "vtkParse.y"
+#line 3275 "vtkParse.y"
     { chopSig(); postSig("] "); }
     break;
 
   case 662:
 
 /* Line 936 of glr.c  */
-#line 3272 "vtkParse.y"
+#line 3276 "vtkParse.y"
     { postSig("[["); }
     break;
 
   case 663:
 
 /* Line 936 of glr.c  */
-#line 3273 "vtkParse.y"
+#line 3277 "vtkParse.y"
     { chopSig(); postSig("]] "); }
     break;
 
   case 664:
 
 /* Line 936 of glr.c  */
-#line 3276 "vtkParse.y"
+#line 3280 "vtkParse.y"
     { postSig("("); }
     break;
 
   case 665:
 
 /* Line 936 of glr.c  */
-#line 3277 "vtkParse.y"
+#line 3281 "vtkParse.y"
     { chopSig(); postSig(") "); }
     break;
 
   case 666:
 
 /* Line 936 of glr.c  */
-#line 3278 "vtkParse.y"
+#line 3282 "vtkParse.y"
     { postSig("("); postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); postSig("*"); }
     break;
 
   case 667:
 
 /* Line 936 of glr.c  */
-#line 3279 "vtkParse.y"
+#line 3283 "vtkParse.y"
     { chopSig(); postSig(") "); }
     break;
 
   case 668:
 
 /* Line 936 of glr.c  */
-#line 3280 "vtkParse.y"
+#line 3284 "vtkParse.y"
     { postSig("("); postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str)); postSig("&"); }
     break;
 
   case 669:
 
 /* Line 936 of glr.c  */
-#line 3281 "vtkParse.y"
+#line 3285 "vtkParse.y"
     { chopSig(); postSig(") "); }
     break;
 
   case 670:
 
 /* Line 936 of glr.c  */
-#line 3284 "vtkParse.y"
+#line 3288 "vtkParse.y"
     { postSig("{ "); }
     break;
 
   case 671:
 
 /* Line 936 of glr.c  */
-#line 3284 "vtkParse.y"
+#line 3288 "vtkParse.y"
     { postSig("} "); }
     break;
 
 
 
 /* Line 936 of glr.c  */
-#line 9778 "vtkParse.tab.c"
+#line 9782 "vtkParse.tab.c"
       default: break;
     }
 
@@ -11456,7 +11461,7 @@ yypdumpstack (yyGLRStack* yystackp)
 
 
 /* Line 2634 of glr.c  */
-#line 3331 "vtkParse.y"
+#line 3335 "vtkParse.y"
 
 #include <string.h>
 #include "lex.yy.c"
