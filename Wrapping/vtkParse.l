@@ -13,7 +13,7 @@ Modify lex.yy.c:
   - convert tabs to spaces (8 spaces per tab)
   - remove extra space from end of lines
   - remove blank lines from end of file
-  - replace "int yyl" with "yy_size_t yyl"
+  - replace "int yyl;" with "yy_size_t yyl;"
   - compile with gcc and "-Wsign-compare", there should be no warnings
 
 */
@@ -504,6 +504,11 @@ ID [a-zA-Z_\x80-\xff][0-9a-zA-Z_\x80-\xff]*
 "0"[xX][0-9a-fA-F]+{ID}?  {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(HEX_LITERAL);
+    }
+
+"0"[bB][0-9]+{ID}?  {
+      yylval.str = vtkstrndup(yytext, yyleng);
+      return(BIN_LITERAL);
     }
 
 "0"[0-9]+{ID}? {

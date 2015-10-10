@@ -438,6 +438,17 @@ static int preproc_evaluate_integer(
       ep++;
       }
     }
+  else if (cp[0] == '0' && (cp[1] == 'b' || cp[1] == 'B'))
+    {
+    cp += 2;
+    base = 2;
+    *is_unsigned = 1;
+    ep = cp;
+    while (*ep >= '0' && *ep <= '1')
+      {
+      ep++;
+      }
+    }
   else if (cp[0] == '0' && vtkParse_CharType(cp[1], CPRE_DIGIT))
     {
     cp += 1;

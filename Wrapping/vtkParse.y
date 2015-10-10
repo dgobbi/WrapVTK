@@ -1286,7 +1286,7 @@ unsigned int add_indirection_to_array(unsigned int type)
 
 /* Expect 121 reduce/reduce conflicts, these can be cleared by removing
    either '<' or angle_brackets_sig from constant_expression_item. */
-%expect-rr 121
+%expect-rr 122
 
 /* The parser will shift/reduce values <str> or <integer>, where
    <str> is for IDs and <integer> is for types, modifiers, etc. */
@@ -1321,6 +1321,7 @@ unsigned int add_indirection_to_array(unsigned int type)
 %token <str> STRING_LITERAL
 %token <str> INT_LITERAL
 %token <str> HEX_LITERAL
+%token <str> BIN_LITERAL
 %token <str> OCT_LITERAL
 %token <str> FLOAT_LITERAL
 %token <str> CHAR_LITERAL
@@ -2391,6 +2392,7 @@ bitfield_size:
     OCT_LITERAL
   | INT_LITERAL
   | HEX_LITERAL
+  | BIN_LITERAL
 
 opt_array_decorator_seq:
     { clearArray(); }
@@ -3133,6 +3135,7 @@ literal:
     OCT_LITERAL
   | INT_LITERAL
   | HEX_LITERAL
+  | BIN_LITERAL
   | FLOAT_LITERAL
   | CHAR_LITERAL
   | STRING_LITERAL
