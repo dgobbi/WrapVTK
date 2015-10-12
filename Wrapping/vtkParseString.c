@@ -246,7 +246,77 @@ unsigned int vtkParse_HashId(const char *cp)
   return h;
 }
 
-/** Skip a string or */
+/** Decode a single unicode character from utf8, but if utf8 decoding
+ *  fails, assume assume ISO-8859 and return the first octet. */
+unsigned int vtkParse_DecodeUtf8(const char **cpp, int *error_flag)
+{
+  const unsigned char *cp = (const unsigned char *)(*cpp);
+  unsigned int code = *cp++;
+  unsigned int s = 0;
+  int good = 1;
+
+  if ((code & 0x80) != 0)
+    {
+    good = 0;
+    if ((code & 0xE0) == 0xC0)
+      {
+      code &= 0x1F;
+      code <<= 6;
+      s = *cp;
+      good = ((s & 0xC0) == 0x80);
+      cp += good;
+      code |= (s & 0x3F);
+      }
+    else if ((code & 0xF0) == 0xE0)
+      {
+      code &= 0x0F;
+      code <<= 6;
+      s = *cp;
+      good = ((s & 0xC0) == 0x80);
+      cp += good;
+      code |= (s & 0x3F);
+      code <<= 6;
+      s = *cp;
+      good = ((s & 0xC0) == 0x80);
+      cp += good;
+      code |= (s & 0x3F);
+      }
+    else if ((code & 0xF8) == 0xF0)
+      {
+      code &= 0x07;
+      code <<= 6;
+      s = *cp;
+      good = ((s & 0xC0) == 0x80);
+      cp += good;
+      code |= (s & 0x3F);
+      code <<= 6;
+      s = *cp;
+      good = ((s & 0xC0) == 0x80);
+      cp += good;
+      code |= (s & 0x3F);
+      code <<= 6;
+      s = *cp;
+      good = ((s & 0xC0) == 0x80);
+      cp += good;
+      code |= (s & 0x3F);
+      }
+
+    if (!good)
+      {
+      cp = (const unsigned char *)(*cpp);
+      code = *cp++;
+      }
+    }
+
+  if (error_flag)
+    {
+    *error_flag = !good;
+    }
+  *cpp = (const char *)(cp);
+  return code;
+}
+
+/** Skip a string or char literal */
 size_t parse_skip_quotes_with_suffix(const char *cp)
 {
   size_t l = vtkParse_SkipQuotes(cp);

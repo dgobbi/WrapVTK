@@ -194,6 +194,12 @@ size_t vtkParse_SkipId(const char *cp);
  */
 unsigned int vtkParse_HashId(const char *cp);
 
+/**
+ * Decode a single unicode character from utf8, or set error flag to 1.
+ * The character pointer will be advanced by one if an error occurred,
+ * and the return value will be the value of the first octet.
+ */
+unsigned int vtkParse_DecodeUtf8(const char **cpp, int *error_flag);
 
 /**
  * StringCache provides a simple way of allocating strings centrally.

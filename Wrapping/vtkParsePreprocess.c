@@ -364,32 +364,33 @@ static int preproc_skip_parentheses(StringTokenizer *tokens)
   return VTK_PARSE_SYNTAX_ERROR;
 }
 
-
 /** Evaluate a char literal to an integer value. */
 static int preproc_evaluate_char(
   const char *cp, preproc_int_t *val, int *is_unsigned)
 {
+  size_t i = 0;
+
   if (cp[0] == '\'')
     {
     cp++;
     if (*cp != '\\')
       {
-      *val = *cp;
+      *val = (int)vtkParse_DecodeUtf8(&cp, NULL);
       }
     else if (*cp != '\'' && *cp != '\n' && *cp != '\0')
       {
       cp++;
-      if (*cp == 'a') { *val = '\a'; }
-      else if (*cp == 'b') { *val = '\b'; }
-      else if (*cp == 'f') { *val = '\f'; }
-      else if (*cp == 'n') { *val = '\n'; }
-      else if (*cp == 'r') { *val = '\r'; }
-      else if (*cp == 't') { *val = '\t'; }
-      else if (*cp == 'v') { *val = '\v'; }
-      else if (*cp == '\'') { *val = '\''; }
-      else if (*cp == '\"') { *val = '\"'; }
-      else if (*cp == '\\') { *val = '\\'; }
-      else if (*cp == '\?') { *val = '\?'; }
+      if (*cp == 'a') { *val = '\a'; cp++; }
+      else if (*cp == 'b') { *val = '\b'; cp++; }
+      else if (*cp == 'f') { *val = '\f'; cp++; }
+      else if (*cp == 'n') { *val = '\n'; cp++; }
+      else if (*cp == 'r') { *val = '\r'; cp++; }
+      else if (*cp == 't') { *val = '\t'; cp++; }
+      else if (*cp == 'v') { *val = '\v'; cp++; }
+      else if (*cp == '\'') { *val = '\''; cp++; }
+      else if (*cp == '\"') { *val = '\"'; cp++; }
+      else if (*cp == '\\') { *val = '\\'; cp++; }
+      else if (*cp == '\?') { *val = '\?'; cp++; }
       else if (*cp == '0')
         {
         *val = string_to_preproc_int(cp, 8);
@@ -399,6 +400,18 @@ static int preproc_evaluate_char(
         {
         *val = string_to_preproc_int(cp+1, 16);
         do { cp++; } while (vtkParse_CharType(*cp, CPRE_HEX));
+        }
+      else if (*cp == 'u')
+        {
+        *val = string_to_preproc_int(cp+1, 16);
+        do { cp++; i++; } while (vtkParse_CharType(*cp, CPRE_HEX));
+        if (i != 5) { cp -= i; }
+        }
+      else if (*cp == 'U')
+        {
+        *val = string_to_preproc_int(cp+1, 16);
+        do { cp++; i++; } while (vtkParse_CharType(*cp, CPRE_HEX));
+        if (i != 9) { cp -= i; }
         }
       }
     if (*cp != '\'')
