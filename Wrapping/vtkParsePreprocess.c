@@ -423,7 +423,10 @@ static int preproc_evaluate_char(
 static int preproc_evaluate_integer(
   const char *cp, preproc_int_t *val, int *is_unsigned)
 {
+  char temp[72];
   const char *ep;
+  size_t apos = 0;
+  size_t i = 0;
   int base = 0;
   ep = cp;
 
@@ -436,6 +439,11 @@ static int preproc_evaluate_integer(
     while (vtkParse_CharType(*ep, CPRE_HEX))
       {
       ep++;
+      if (*ep == '\'' && vtkParse_CharType(ep[1], CPRE_HEX))
+        {
+        apos++;
+        ep += 2;
+        }
       }
     }
   else if (cp[0] == '0' && (cp[1] == 'b' || cp[1] == 'B'))
@@ -447,6 +455,11 @@ static int preproc_evaluate_integer(
     while (*ep >= '0' && *ep <= '1')
       {
       ep++;
+      if (*ep == '\'' && ep[1] >= '0' && ep[1] <= '1')
+        {
+        apos++;
+        ep += 2;
+        }
       }
     }
   else if (cp[0] == '0' && vtkParse_CharType(cp[1], CPRE_DIGIT))
@@ -458,6 +471,11 @@ static int preproc_evaluate_integer(
     while (*ep >= '0' && *ep <= '7')
       {
       ep++;
+      if (*ep == '\'' && ep[1] >= '0' && ep[1] <= '7')
+        {
+        apos++;
+        ep += 2;
+        }
       }
     }
   else
@@ -467,7 +485,35 @@ static int preproc_evaluate_integer(
     while (vtkParse_CharType(*ep, CPRE_DIGIT))
       {
       ep++;
+      if (*ep == '\'' && vtkParse_CharType(ep[1], CPRE_DIGIT))
+        {
+        apos++;
+        ep += 2;
+        }
       }
+    }
+
+  if (*ep == '.' ||
+      ((ep[0] == 'e' || ep[0] == 'E') &&
+       (vtkParse_CharType(ep[1], CPRE_SIGN) ||
+        vtkParse_CharType(ep[1], CPRE_DIGIT))))
+    {
+    *val = 0;
+    return VTK_PARSE_PREPROC_DOUBLE;
+    }
+
+  if (apos > 0 && ep-cp-apos < sizeof(temp))
+    {
+    while (cp != ep)
+      {
+      if (*cp != '\'')
+        {
+        temp[i++] = *cp;
+        }
+      ++cp;
+      }
+    temp[i++] = '\0';
+    cp = temp;
     }
 
   for (;;)
@@ -485,11 +531,6 @@ static int preproc_evaluate_integer(
   else
     {
     *val = string_to_preproc_int(cp, base);
-    }
-
-  if (*ep == '.' || *ep == 'e' || *ep == 'E')
-    {
-    return VTK_PARSE_PREPROC_DOUBLE;
     }
 
   return VTK_PARSE_OK;
