@@ -1208,7 +1208,7 @@ void prepend_scope(char *cp, const char *arg)
   n = strlen(arg);
   i = m;
   while (i > 0 &&
-         (vtkParse_CharType(cp[i-1], CPRE_IDGIT) ||
+         (vtkParse_CharType(cp[i-1], CPRE_XID) ||
           cp[i-1] == ':' || cp[i-1] == '>'))
     {
     i--;
@@ -9489,7 +9489,7 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
           postSig(" ");
           }
         postSig((((yyGLRStackItem const *)yyvsp)[YYFILL ((1) - (1))].yystate.yysemantics.yysval.str));
-        if (vtkParse_CharType(c1, (CPRE_IDGIT|CPRE_QUOTE)) ||
+        if (vtkParse_CharType(c1, (CPRE_XID|CPRE_QUOTE)) ||
             c1 == ')' || c1 == ']')
           {
           postSig(" ");
@@ -9543,7 +9543,7 @@ yyuserAction (yyRuleNum yyn, int yyrhslen, yyGLRStackItem* yyvsp,
       cp = getSig();
       l = getSigLength();
       if (l != 0) { c1 = cp[l-1]; }
-      while (vtkParse_CharType(c1, CPRE_IDGIT) && l != 0)
+      while (vtkParse_CharType(c1, CPRE_XID) && l != 0)
         {
         --l;
         c1 = cp[l-1];

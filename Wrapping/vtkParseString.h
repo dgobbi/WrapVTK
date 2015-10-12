@@ -47,11 +47,13 @@ extern "C" {
  */
 typedef enum _parse_char_type
 {
-  CPRE_ID       = 0x01,  /* A-Z a-z and _ */
+  CPRE_NONDIGIT = 0x01,  /* A-Z a-z and _ */
   CPRE_DIGIT    = 0x02,  /* 0-9 */
-  CPRE_IDGIT    = 0x03,  /* 0-9 A-Z a-z and _ */
-  CPRE_HEX      = 0x04,  /* 0-9A-Fa-f */
-  CPRE_EXP      = 0x08,  /* EPep (exponents for floats) */
+  CPRE_XDIGIT   = 0x03,  /* 0-9 A-Z a-z and _ */
+  CPRE_EXTEND   = 0x04,  /* non-ascii character */
+  CPRE_ID       = 0x05,  /* starting char for identifier */
+  CPRE_XID      = 0x07,  /* continuing char for identifier */   
+  CPRE_HEX      = 0x08,  /* 0-9 A-F a-f hexadecimal digits */
   CPRE_SIGN     = 0x10,  /* +- (sign for floats) */
   CPRE_QUOTE    = 0x20,  /* " and ' */
   CPRE_HSPACE   = 0x40,  /* space, tab, carriage return */

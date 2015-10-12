@@ -1551,7 +1551,7 @@ const char *preproc_find_include_file(
 
   /* check for absolute path of form DRIVE: or /path/to/file */
   j = 0;
-  while (vtkParse_CharType(filename[j], CPRE_IDGIT)) { j++; }
+  while (vtkParse_CharType(filename[j], CPRE_XID)) { j++; }
 
   if (filename[j] == ':' || filename[0] == '/' || filename[0] == '\\')
     {
@@ -2026,13 +2026,13 @@ static int preproc_include_file(
             ((j > 2 &&
               (line[j-3] == 'u' || line[j-2] == '8') &&
               (j == 3 ||
-               !vtkParse_CharType(line[j-4], CPRE_IDGIT|CPRE_QUOTE))) ||
+               !vtkParse_CharType(line[j-4], CPRE_XID|CPRE_QUOTE))) ||
              (j > 1 &&
               (line[j-2] == 'u' || line[j-2] == 'U' || line[j-2] == 'L') &&
               (j == 2 ||
-               !vtkParse_CharType(line[j-3], CPRE_IDGIT|CPRE_QUOTE))) ||
+               !vtkParse_CharType(line[j-3], CPRE_XID|CPRE_QUOTE))) ||
              (j == 1 ||
-              !vtkParse_CharType(line[j-2], CPRE_IDGIT|CPRE_QUOTE))))
+              !vtkParse_CharType(line[j-2], CPRE_XID|CPRE_QUOTE))))
           {
           state = '(';
           d = j + 1;

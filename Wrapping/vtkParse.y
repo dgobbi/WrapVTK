@@ -1165,7 +1165,7 @@ void prepend_scope(char *cp, const char *arg)
   n = strlen(arg);
   i = m;
   while (i > 0 &&
-         (vtkParse_CharType(cp[i-1], CPRE_IDGIT) ||
+         (vtkParse_CharType(cp[i-1], CPRE_XID) ||
           cp[i-1] == ':' || cp[i-1] == '>'))
     {
     i--;
@@ -3183,7 +3183,7 @@ common_bracket_item_no_scope_operator:
           postSig(" ");
           }
         postSig($<str>1);
-        if (vtkParse_CharType(c1, (CPRE_IDGIT|CPRE_QUOTE)) ||
+        if (vtkParse_CharType(c1, (CPRE_XID|CPRE_QUOTE)) ||
             c1 == ')' || c1 == ']')
           {
           postSig(" ");
@@ -3208,7 +3208,7 @@ common_bracket_item_no_scope_operator:
       cp = getSig();
       l = getSigLength();
       if (l != 0) { c1 = cp[l-1]; }
-      while (vtkParse_CharType(c1, CPRE_IDGIT) && l != 0)
+      while (vtkParse_CharType(c1, CPRE_XID) && l != 0)
         {
         --l;
         c1 = cp[l-1];
