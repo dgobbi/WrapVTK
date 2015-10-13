@@ -369,47 +369,59 @@ static int preproc_evaluate_char(
   const char *cp, preproc_int_t *val, int *is_unsigned)
 {
   size_t i = 0;
+  unsigned int code = 0;
+  int typecode = 0;
 
-  if (cp[0] == '\'')
+  if (cp[0] == 'u' && cp[1] == '8')
+    {
+    cp += 2;
+    }
+  else if (cp[0] == 'u' || cp[0] == 'U' || cp[0] == 'L')
+    {
+    typecode = cp[0];
+    cp++;
+    }
+
+  if (*cp == '\'')
     {
     cp++;
     if (*cp != '\\')
       {
-      *val = (int)vtkParse_DecodeUtf8(&cp, NULL);
+      code = vtkParse_DecodeUtf8(&cp, NULL);
       }
     else if (*cp != '\'' && *cp != '\n' && *cp != '\0')
       {
       cp++;
-      if (*cp == 'a') { *val = '\a'; cp++; }
-      else if (*cp == 'b') { *val = '\b'; cp++; }
-      else if (*cp == 'f') { *val = '\f'; cp++; }
-      else if (*cp == 'n') { *val = '\n'; cp++; }
-      else if (*cp == 'r') { *val = '\r'; cp++; }
-      else if (*cp == 't') { *val = '\t'; cp++; }
-      else if (*cp == 'v') { *val = '\v'; cp++; }
-      else if (*cp == '\'') { *val = '\''; cp++; }
-      else if (*cp == '\"') { *val = '\"'; cp++; }
-      else if (*cp == '\\') { *val = '\\'; cp++; }
-      else if (*cp == '\?') { *val = '\?'; cp++; }
+      if (*cp == 'a') { code = '\a'; cp++; }
+      else if (*cp == 'b') { code = '\b'; cp++; }
+      else if (*cp == 'f') { code = '\f'; cp++; }
+      else if (*cp == 'n') { code = '\n'; cp++; }
+      else if (*cp == 'r') { code = '\r'; cp++; }
+      else if (*cp == 't') { code = '\t'; cp++; }
+      else if (*cp == 'v') { code = '\v'; cp++; }
+      else if (*cp == '\'') { code = '\''; cp++; }
+      else if (*cp == '\"') { code = '\"'; cp++; }
+      else if (*cp == '\\') { code = '\\'; cp++; }
+      else if (*cp == '\?') { code = '\?'; cp++; }
       else if (*cp == '0')
         {
-        *val = string_to_preproc_int(cp, 8);
+        code = string_to_preproc_int(cp, 8);
         do { cp++; } while (*cp >= '0' && *cp <= '7');
         }
       else if (*cp == 'x')
         {
-        *val = string_to_preproc_int(cp+1, 16);
+        code = string_to_preproc_int(cp+1, 16);
         do { cp++; } while (vtkParse_CharType(*cp, CPRE_HEX));
         }
       else if (*cp == 'u')
         {
-        *val = string_to_preproc_int(cp+1, 16);
+        code = string_to_preproc_int(cp+1, 16);
         do { cp++; i++; } while (vtkParse_CharType(*cp, CPRE_HEX));
         if (i != 5) { cp -= i; }
         }
       else if (*cp == 'U')
         {
-        *val = string_to_preproc_int(cp+1, 16);
+        code = string_to_preproc_int(cp+1, 16);
         do { cp++; i++; } while (vtkParse_CharType(*cp, CPRE_HEX));
         if (i != 9) { cp -= i; }
         }
@@ -421,7 +433,18 @@ static int preproc_evaluate_char(
 #endif
       return VTK_PARSE_SYNTAX_ERROR;
       }
-    cp++;
+    if (typecode == 0)
+      {
+      *val = (char)code;
+      }
+    else if (typecode == 'L')
+      {
+      *val = (wchar_t)code;
+      }
+    else
+      {
+      *val = code;
+      }
     *is_unsigned = 0;
     return VTK_PARSE_OK;
     }
