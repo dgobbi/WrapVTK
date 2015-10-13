@@ -406,7 +406,7 @@ static int preproc_evaluate_char(
       else if (*cp == '0')
         {
         code = string_to_preproc_int(cp, 8);
-        do { cp++; } while (*cp >= '0' && *cp <= '7');
+        do { cp++; i++; } while (i < 4 && *cp >= '0' && *cp <= '7');
         }
       else if (*cp == 'x')
         {
@@ -416,13 +416,13 @@ static int preproc_evaluate_char(
       else if (*cp == 'u')
         {
         code = string_to_preproc_int(cp+1, 16);
-        do { cp++; i++; } while (vtkParse_CharType(*cp, CPRE_HEX));
+        do { cp++; i++; } while (i < 5 && vtkParse_CharType(*cp, CPRE_HEX));
         if (i != 5) { cp -= i; }
         }
       else if (*cp == 'U')
         {
         code = string_to_preproc_int(cp+1, 16);
-        do { cp++; i++; } while (vtkParse_CharType(*cp, CPRE_HEX));
+        do { cp++; i++; } while (i < 9 && vtkParse_CharType(*cp, CPRE_HEX));
         if (i != 9) { cp -= i; }
         }
       }
