@@ -358,11 +358,9 @@ int vtkParse_NextToken(StringTokenizer *tokens)
 
     /* check if this is a prefixed string */
     if (parse_chartype(*ep, CPRE_QUOTE) &&
-        ((*ep == '\'' && tokens->len == 1 &&
-          (*cp == 'u' || *cp == 'U' || *cp == 'L')) ||
-         (*ep == '\"' && tokens->len == 1 &&
-          (*cp == 'U' || *cp == 'u' || *cp == 'L')) ||
-         (*ep == '\"' && tokens->len == 2 && cp[0] == 'u' && cp[1] == '8')))
+        ((*ep == '\'' || *ep == '\"') &&
+         ((tokens->len == 1 && (*cp == 'U' || *cp == 'u' || *cp == 'L')) ||
+          (tokens->len == 2 && cp[0] == 'u' && cp[1] == '8'))))
       {
       tokens->tok = (*ep == '\"' ? TOK_STRING : TOK_CHAR);
       tokens->hash = 0;

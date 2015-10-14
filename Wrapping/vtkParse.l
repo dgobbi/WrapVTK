@@ -125,7 +125,7 @@ ID [a-zA-Z_\x80-\xff][0-9a-zA-Z_\x80-\xff]*
       return(STRING_LITERAL);
     }
 
-[uUL]?\'([^\']|\\\')+\'(_{ID})?  {
+("u8"|"u"|"U"|"L")?\'([^\']|\\\')+\'(_{ID})?  {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(CHAR_LITERAL);
     }
