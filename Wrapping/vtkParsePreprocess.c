@@ -369,7 +369,7 @@ static int preproc_evaluate_char(
   const char *cp, preproc_int_t *val, int *is_unsigned)
 {
   size_t i = 0;
-  unsigned int code = 0;
+  preproc_int_t code = 0;
   int typecode = 0;
 
   if (cp[0] == 'u' && cp[1] == '8')
