@@ -1506,6 +1506,7 @@ template_declaration:
   | template_head nested_variable_initialization
   | template_head template_declaration
   | template_head alias_declaration
+  | template_head variable_declaration
 
 explicit_instantiation:
     EXTERN TEMPLATE ignored_item_no_angle ignored_expression ';'
@@ -1644,6 +1645,7 @@ template_member_declaration:
   | template_head method_definition
   | template_head template_member_declaration
   | template_head alias_declaration
+  | template_head variable_declaration
 
 friend_declaration:
     FRIEND ignored_class
@@ -1815,6 +1817,12 @@ typedef_declarator_id:
 
       handle_complex_type(item, getType(), $<integer>1, getSig());
 
+      if (currentTemplate)
+        {
+        item->Template = currentTemplate;
+        currentTemplate = NULL;
+        }
+
       if (getVarName())
         {
         item->Name = getVarName();
@@ -1924,13 +1932,13 @@ template_parameter:
     { add_template_parameter(0, $<integer>3, copySig()); }
     opt_template_parameter_initializer
   | { pushTemplate(); markSig(); }
-    template_head CLASS { postSig("class "); }
+    template_head class_or_typename
     direct_abstract_declarator
     {
       unsigned long i;
       TemplateInfo *newTemplate = currentTemplate;
       popTemplate();
-      add_template_parameter(0, $<integer>5, copySig());
+      add_template_parameter(0, $<integer>4, copySig());
       i = currentTemplate->NumberOfParameters-1;
       currentTemplate->Parameters[i]->Template = newTemplate;
     }
@@ -2228,6 +2236,12 @@ init_declarator_id:
       var->Access = access_level;
 
       handle_complex_type(var, type, $<integer>1, getSig());
+
+      if (currentTemplate)
+        {
+        var->Template = currentTemplate;
+        currentTemplate = NULL;
+        }
 
       var->Name = getVarName();
 
