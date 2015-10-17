@@ -822,6 +822,12 @@ void vtkWrapXML_Variable(
     vtkWrapXML_Value(w, var->Value);
     }
 
+  if (var->Template)
+    {
+    vtkWrapXML_Flag(w, "template", 1);
+    vtkWrapXML_Template(w, var->Template);
+    }
+
   vtkWrapXML_Comment(w, var->Comment);
   vtkWrapXML_TypeElements(w, var);
   vtkWrapXML_ElementEnd(w, elementName);
@@ -849,6 +855,12 @@ void vtkWrapXML_Typedef(
   if (type->Type)
     {
     vtkWrapXML_TypeAttributes(w, type);
+    }
+
+  if (type->Template)
+    {
+    vtkWrapXML_Flag(w, "template", 1);
+    vtkWrapXML_Template(w, type->Template);
     }
 
   vtkWrapXML_Comment(w, type->Comment);
