@@ -1546,7 +1546,7 @@ static YYSTYPE yyval_default;
 #endif
 
 /* Suppress unused-variable warnings by "using" E.  */
-#if ! defined lint || defined __GNUC__
+#if 1
 # define YYUSE(e) ((void) (e))
 #else
 # define YYUSE(e) /* empty */
