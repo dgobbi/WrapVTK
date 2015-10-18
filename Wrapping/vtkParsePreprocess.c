@@ -403,7 +403,7 @@ static int preproc_evaluate_char(
       else if (*cp == '\"') { code = '\"'; cp++; }
       else if (*cp == '\\') { code = '\\'; cp++; }
       else if (*cp == '\?') { code = '\?'; cp++; }
-      else if (*cp == '0')
+      else if (*cp >= '0' && *cp <= 7)
         {
         code = string_to_preproc_int(cp, 8);
         do { cp++; i++; } while (i < 4 && *cp >= '0' && *cp <= '7');
