@@ -54,6 +54,18 @@ static int skip_ahead_until(const char *text);
 static int skip_to_next_directive();
 static int skip_conditional_block();
 
+static void doxygen_comment();
+static void doxygen_trailing();
+static void doxygen_cpp_comment();
+static void doxygen_cpp_trailing();
+static void doxygen_group_start();
+static void doxygen_group_end();
+static void vtk_comment();
+static void vtk_name_comment();
+static void vtk_section_comment();
+static void cpp_comment_line();
+static void blank_line();
+
 static const char *raw_string(const char *begin);
 
 static void preprocessor_directive(const char *text, size_t l);
@@ -78,6 +90,10 @@ ID [a-zA-Z_\x80-\xff][0-9a-zA-Z_\x80-\xff]*
 
 %%
 
+"/*"[*!]"<" { doxygen_trailing(); }
+
+^[\t ]*"/*"[*!] { doxygen_comment(); }
+
 "/*" { skip_comment(); }
 
 ^[\t ]*"//BTX".* {
@@ -92,28 +108,21 @@ ID [a-zA-Z_\x80-\xff][0-9a-zA-Z_\x80-\xff]*
       skip_ahead_until("@end");
     }
 
-^[\t ]*"// .NAME".* {
-      size_t pos = 1;
-      while (yytext[pos-1] != 'M' || yytext[pos] != 'E')
-        {
-        pos++;
-        }
-      data->NameComment = vtkstrndup(&yytext[pos + 1], yyleng - pos - 1);
-    }
+"//"[/!]"<".* { doxygen_cpp_trailing(); } 
 
-^[\t ]*"// Description:".*         { setCommentState(1); }
-^[\t ]*"// .SECTION Description".* { setCommentState(2); }
-^[\t ]*"// .SECTION See Also".*    { setCommentState(3); }
-^[\t ]*"// .SECTION see also".*    { setCommentState(3); }
-^[\t ]*"// .SECTION Caveats".*     { setCommentState(4); }
-^[\t ]*[\r\n]                      { closeOrClearComment(); }
-^[\t ]*"//".*  {
-      size_t pos = 2;
-      while (yytext[pos-2] != '/' || yytext[pos-1] != '/') pos++;
-      addCommentLine(&yytext[pos], yyleng - pos);
-    }
+^[\t ]*"//"[/!].* { doxygen_cpp_comment(); }
+^[\t ]*"//@{".* { doxygen_group_start(); }
+^[\t ]*"//@}".* { doxygen_group_end(); }
 
-"//".*  /* eat C++ comments */
+^[\t ]*"// Description:".* { vtk_comment(); }
+^[\t ]*"// .NAME ".* { vtk_name_comment(); }
+^[\t ]*"// .SECTION ".* { vtk_section_comment(); }
+
+^[\t ]*"//".* { cpp_comment_line(); }
+
+^[\t ]*[\r\n] { blank_line(); }
+
+"//".*  /* eat trailing C++ comments */
 
 ^[\t ]*"#"(\\\n|\\\r\n|[^\n])*  {
       skip_trailing_comment(yytext, yyleng);
@@ -1032,6 +1041,204 @@ int skip_ahead_until(const char *text)
 
   return skip_ahead_multi(strings);
 }
+
+
+/*
+ * Called for / + ** and / + *! doxygen comments (handles entire comment)
+ */
+void doxygen_comment()
+{
+  char linetext[256];
+  int savelineno = yylineno;
+  int c1 = 0, c2 = input();
+  int isfirstline = 1;
+  size_t l = 0, i = 0, base = yyleng+1;
+  for (l = 0; l < yyleng; l++)
+    {
+    linetext[l] = yytext[l];
+    }
+  for (;;)
+    {
+    if (c2 == 0 || c2 == EOF)
+      {
+      yylineno = savelineno;
+      print_preprocessor_error(VTK_PARSE_SYNTAX_ERROR,
+        "Cannot find end of comment.", 27);
+      exit(1);
+      }
+    if (l < 256)
+      {
+      linetext[l++] = c2;
+      }
+    if (c2 == '\n' || (c1 == '*' && c2 == '/'))
+      {
+      if (l >= 2 &&
+          linetext[l-2] == '*' &&
+          linetext[l-1] == '/')
+        {
+        l -= 2;
+        }
+      while (l > 0 &&
+             (linetext[l-1] == '\n' ||
+              linetext[l-1] == '\r' ||
+              linetext[l-1] == '\t' ||
+              linetext[l-1] == ' '))
+        {
+        l--;
+        }
+      if (!isfirstline)
+        {
+        /* reduce the base indentation if chars occur before */
+        for (i = yyleng-3; i < base; i++)
+          {
+          if (linetext[i] != ' ' && linetext[i] != '*')
+            {
+            base = i;
+            break;
+            }
+          }
+        }
+      if (l > base)
+        {
+        i = base;
+        l -= base;
+        /*fprintf(stdout, "-> %*.*s\n", (int)l, (int)l, &linetext[i]);*/
+        }
+      else if (!isfirstline && (c1 != '*' || c2 != '/'))
+        {
+        /*fprintf(stdout, "-> \n");*/
+        }
+      isfirstline = 0;
+      l = 0;
+      if (c1 == '*' && c2 == '/')
+        {
+        break;
+        }
+      }
+    c1 = c2; c2 = input();
+    }
+}
+
+/*
+ * Called for / + **< and / + *!< doxygen trailing comments
+ */
+void doxygen_trailing()
+{
+  /* add a comment to the previous entity */
+  skip_comment();
+}
+
+/*
+ * Called for //! and /// doxygen comments (handles just one line)
+ */
+void doxygen_cpp_comment()
+{
+  size_t pos = 1;
+  while (yytext[pos-1] != '/' || yytext[pos] != '/') pos++;
+  while (pos < yyleng && yytext[pos-1] == '/' && yytext[pos] == '/') pos++;
+  if (pos < yyleng && yytext[pos] == '!') pos++;
+  if (pos < yyleng && yytext[pos] == ' ') pos++;
+  /* Set the state that indicates doxygen comment */
+  /*fprintf(stdout, "=> %*.*s\n", (int)(yyleng-pos), (int)(yyleng-pos), &yytext[pos]);*/
+  /* addCommentLine(&yytext[pos], yyleng - pos); */
+}
+
+/*
+ * Called for / + **< and / + *!< doxygen trailing comments
+ */
+void doxygen_cpp_trailing()
+{
+  /* add a comment to the previous entity */
+}
+
+/*
+ * Called for // + *{
+ */
+void doxygen_group_start()
+{
+  /* Set the "ingroup" marker */
+}
+
+/*
+ * Called for // + *}
+ */
+void doxygen_group_end()
+{
+  /* Clear the "ingroup" marker */
+}
+
+/*
+ * Called for // Description:
+ */
+void vtk_comment()
+{
+  setCommentState(1);
+}
+
+/*
+ * Called for // .NAME
+ */
+void vtk_name_comment()
+{
+  size_t pos = 1;
+  while (yytext[pos-1] != 'M' || yytext[pos] != 'E')
+    {
+    pos++;
+    }
+  pos++;
+  data->NameComment = vtkstrndup(&yytext[pos], yyleng - pos);
+}
+
+/*
+ * Called for // .SECTION
+ */
+void vtk_section_comment()
+{
+  size_t pos = 1;
+  while (yytext[pos-1] != 'O' || yytext[pos] != 'N')
+    {
+    pos++;
+    }
+  pos++;
+
+  if (yyleng - pos >= 11 &&
+      strncmp(&yytext[pos], "Description", 11) == 0)
+    {
+    setCommentState(2);
+    }
+  else if (yyleng - pos >= 8 &&
+           (strncmp(&yytext[pos], "See Also", 8) == 0 ||
+            strncmp(&yytext[pos], "see also", 8) == 0))
+    {
+    setCommentState(3);
+    }
+  else if (yyleng - pos >= 7 &&
+           strncmp(&yytext[pos], "Caveats", 7) == 0)
+    {
+    setCommentState(4);
+    }
+}
+
+/*
+ * Called for each line that has a C++ comment but no code, unless the
+ * comment is recognized as beginning a VTK or doxygen comment.
+ */
+void cpp_comment_line()
+{
+  size_t pos = 1;
+  while (yytext[pos-1] != '/' || yytext[pos] != '/') pos++;
+  if (pos < yyleng && yytext[pos] == ' ') pos++;
+  addCommentLine(&yytext[pos], yyleng - pos);
+}
+
+/*
+ * Called whenever a blank line is encountered.
+ */
+void blank_line()
+{
+  closeOrClearComment();
+}
+
 
 /*
  * Convert a raw string into a non-raw string.
