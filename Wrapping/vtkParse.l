@@ -1091,8 +1091,17 @@ void doxygen_comment()
         /* reduce the base indentation if chars occur before base */
         for (i = yyleng-3; i < base; i++)
           {
-          if (linetext[i] != ' ' && linetext[i] != '*')
+          if (linetext[i] == '*')
             {
+            base = i + 1;
+            break;
+            }
+          else if (linetext[i] != ' ')
+            {
+            if (i > yyleng-3 && linetext[i-1] == ' ')
+              {
+              i--;
+              }
             base = i;
             break;
             }
