@@ -1052,7 +1052,7 @@ void doxygen_comment()
   int savelineno = yylineno;
   int c1 = 0, c2 = input();
   int isfirstline = 1;
-  size_t l = 0, i = 0, base = yyleng+1;
+  size_t l = 0, i = 0, base = yyleng;
   for (l = 0; l < yyleng; l++)
     {
     linetext[l] = yytext[l];
@@ -1088,7 +1088,7 @@ void doxygen_comment()
         }
       if (!isfirstline)
         {
-        /* reduce the base indentation if chars occur before */
+        /* reduce the base indentation if chars occur before base */
         for (i = yyleng-3; i < base; i++)
           {
           if (linetext[i] != ' ' && linetext[i] != '*')
@@ -1102,11 +1102,11 @@ void doxygen_comment()
         {
         i = base;
         l -= base;
-        /*fprintf(stdout, "-> %*.*s\n", (int)l, (int)l, &linetext[i]);*/
+        addCommentLine(&linetext[i], l, DoxygenComment);
         }
       else if (!isfirstline && (c1 != '*' || c2 != '/'))
         {
-        /*fprintf(stdout, "-> \n");*/
+        addCommentLine("", 0, DoxygenComment);
         }
       isfirstline = 0;
       l = 0;
@@ -1133,14 +1133,11 @@ void doxygen_trailing()
  */
 void doxygen_cpp_comment()
 {
-  size_t pos = 1;
-  while (yytext[pos-1] != '/' || yytext[pos] != '/') pos++;
+  size_t pos = 2;
+  while (yytext[pos-2] != '/' || yytext[pos-1] != '/') pos++;
   while (pos < yyleng && yytext[pos-1] == '/' && yytext[pos] == '/') pos++;
   if (pos < yyleng && yytext[pos] == '!') pos++;
-  if (pos < yyleng && yytext[pos] == ' ') pos++;
-  /* Set the state that indicates doxygen comment */
-  /*fprintf(stdout, "=> %*.*s\n", (int)(yyleng-pos), (int)(yyleng-pos), &yytext[pos]);*/
-  /* addCommentLine(&yytext[pos], yyleng - pos); */
+  addCommentLine(&yytext[pos], yyleng - pos, DoxygenComment);
 }
 
 /*
@@ -1157,6 +1154,7 @@ void doxygen_cpp_trailing()
 void doxygen_group_start()
 {
   /* Set the "ingroup" marker */
+  setCommentGroup(1);
 }
 
 /*
@@ -1165,6 +1163,7 @@ void doxygen_group_start()
 void doxygen_group_end()
 {
   /* Clear the "ingroup" marker */
+  setCommentGroup(0);
 }
 
 /*
@@ -1172,7 +1171,7 @@ void doxygen_group_end()
  */
 void vtk_comment()
 {
-  setCommentState(1);
+  setCommentState(NormalComment);
 }
 
 /*
@@ -1204,18 +1203,18 @@ void vtk_section_comment()
   if (yyleng - pos >= 11 &&
       strncmp(&yytext[pos], "Description", 11) == 0)
     {
-    setCommentState(2);
+    setCommentState(DescriptionComment);
     }
   else if (yyleng - pos >= 8 &&
            (strncmp(&yytext[pos], "See Also", 8) == 0 ||
             strncmp(&yytext[pos], "see also", 8) == 0))
     {
-    setCommentState(3);
+    setCommentState(SeeAlsoComment);
     }
   else if (yyleng - pos >= 7 &&
            strncmp(&yytext[pos], "Caveats", 7) == 0)
     {
-    setCommentState(4);
+    setCommentState(CaveatsComment);
     }
 }
 
@@ -1225,10 +1224,9 @@ void vtk_section_comment()
  */
 void cpp_comment_line()
 {
-  size_t pos = 1;
-  while (yytext[pos-1] != '/' || yytext[pos] != '/') pos++;
-  if (pos < yyleng && yytext[pos] == ' ') pos++;
-  addCommentLine(&yytext[pos], yyleng - pos);
+  size_t pos = 2;
+  while (yytext[pos-2] != '/' || yytext[pos-1] != '/') pos++;
+  addCommentLine(&yytext[pos], yyleng - pos, NormalComment);
 }
 
 /*
@@ -1236,7 +1234,7 @@ void cpp_comment_line()
  */
 void blank_line()
 {
-  closeOrClearComment();
+  commentBreak();
 }
 
 

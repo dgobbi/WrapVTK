@@ -416,21 +416,28 @@ static const char *vtkstrcat7(const char *str1, const char *str2,
  * Comments
  */
 
+enum comment_enum
+{
+  ClosedComment = -2,
+  StickyComment = -1,
+  NoComment = 0,
+  NormalComment = 1,
+  DescriptionComment = 2,
+  SeeAlsoComment = 3,
+  CaveatsComment = 4,
+  DoxygenComment = 5
+};
+
 /* "private" variables */
 char          *commentText = NULL;
 size_t         commentLength = 0;
 size_t         commentAllocatedLength = 0;
 int            commentState = 0;
+int            commentGroup = 0;
 
-const char *getComment()
-{
-  if (commentState != 0)
-    {
-    return commentText;
-    }
-  return NULL;
-}
+void closeComment();
 
+/* Clear the comment buffer */
 void clearComment()
 {
   commentLength = 0;
@@ -441,9 +448,51 @@ void clearComment()
   commentState = 0;
 }
 
-void addCommentLine(const char *line, size_t n)
+/* This is called when entering or leaving a comment block */
+void setCommentState(int state)
 {
-  if (commentState <= 0)
+  switch (state)
+    {
+    case 0:
+      closeComment();
+      break;
+    default:
+      closeComment();
+      clearComment();
+      break;
+    }
+
+  commentState = state;
+}
+
+/* Get the text from the comment buffer */
+const char *getComment()
+{
+  if (commentState != 0)
+    {
+    return commentText;
+    }
+
+  return NULL;
+}
+
+/* This is called whenever a comment line is encountered */
+void addCommentLine(const char *line, size_t n, int type)
+{
+  if (type == DoxygenComment || commentState == DoxygenComment)
+    {
+    if (commentState == DoxygenComment && type != DoxygenComment)
+      {
+      return;
+      }
+    if (commentState != type)
+      {
+      setCommentState(type);
+      }
+    }
+  else if (commentState == 0 ||
+           commentState == StickyComment ||
+           commentState == ClosedComment)
     {
     clearComment();
     return;
@@ -471,57 +520,57 @@ void addCommentLine(const char *line, size_t n)
   commentText[commentLength] = '\0';
 }
 
+/* This is called when a comment block ends */
 void closeComment()
 {
   switch (commentState)
     {
-    case 1:
-      /* Make comment persist until a new comment starts */
-      commentState = -1;
+    case ClosedComment:
+      clearComment();
       break;
-    case 2:
+    case NormalComment:
+      /* Make comment persist until a new comment starts */
+      commentState = StickyComment;
+      break;
+    case DescriptionComment:
       data->Description = vtkstrdup(getComment());
       clearComment();
       break;
-    case 3:
+    case SeeAlsoComment:
       data->SeeAlso = vtkstrdup(getComment());
       clearComment();
       break;
-    case 4:
+    case CaveatsComment:
       data->Caveats = vtkstrdup(getComment());
       clearComment();
+      break;
+    case DoxygenComment:
+      /* Comment can only be used once */
+      commentState = (commentGroup ? StickyComment : ClosedComment);
       break;
     }
 }
 
-void closeOrClearComment()
+/* This is called when a blank line occurs in the header file */
+void commentBreak()
 {
-  if (commentState < 0)
+  if (!commentGroup && commentState == StickyComment)
     {
     clearComment();
     }
-  else
+  else if (commentState != DoxygenComment)
     {
+    /* blank lines mark the end of VTK comments */
     closeComment();
     }
 }
 
-void setCommentState(int state)
+/* This is called when doxygen @{ or @} are encountered */
+void setCommentGroup(int g)
 {
-  switch (state)
-    {
-    case 0:
-      closeComment();
-      break;
-    default:
-      closeComment();
-      clearComment();
-      break;
-    }
-
-  commentState = state;
+  commentGroup = g;
+  clearComment();
 }
-
 
 /*----------------------------------------------------------------
  * Macros
