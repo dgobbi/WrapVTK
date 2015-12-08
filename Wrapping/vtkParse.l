@@ -1199,6 +1199,10 @@ void vtk_section_comment()
     pos++;
     }
   pos++;
+  if (pos < yyleng && yytext[pos] == ' ')
+    {
+    pos++;
+    }
 
   if (yyleng - pos >= 11 &&
       strncmp(&yytext[pos], "Description", 11) == 0)
@@ -1215,6 +1219,10 @@ void vtk_section_comment()
            strncmp(&yytext[pos], "Caveats", 7) == 0)
     {
     setCommentState(CaveatsComment);
+    }
+  else
+    {
+    cpp_comment_line();
     }
 }
 
