@@ -425,9 +425,33 @@ void setCommentState(int state)
 /* Get the text from the comment buffer */
 const char *getComment()
 {
-  if (commentState != 0)
+  const char *text = commentText;
+  const char *cp = commentText;
+  size_t l = commentLength;
+
+  if (commentText != NULL && commentState != 0)
     {
-    return commentText;
+    /* strip trailing blank lines */
+    while (l > 0 && (cp[l-1] == ' ' || cp[l-1] == '\t' ||
+                     cp[l-1] == '\r' || cp[l-1] == '\n'))
+      {
+      if (cp[l-1] == '\n')
+        {
+        commentLength = l;
+        }
+      l--;
+      }
+    commentText[commentLength] = '\0';
+    /* strip leading blank lines */
+    while (*cp == ' ' || *cp == '\t' || *cp == '\r' || *cp == '\n')
+      {
+      if (*cp == '\n')
+        {
+        text = cp + 1;
+        }
+      cp++;
+      }
+    return text;
     }
 
   return NULL;
