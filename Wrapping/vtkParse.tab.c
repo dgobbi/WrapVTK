@@ -425,7 +425,8 @@ enum comment_enum
   DescriptionComment = 2,
   SeeAlsoComment = 3,
   CaveatsComment = 4,
-  DoxygenComment = 5
+  DoxygenComment = 5,
+  UnwantedComment = 6
 };
 
 /* "private" variables */
@@ -434,6 +435,36 @@ size_t         commentLength = 0;
 size_t         commentAllocatedLength = 0;
 int            commentState = 0;
 int            commentGroup = 0;
+
+/* Struct for recognizing certain doxygen commands */
+struct DoxygenCommandInfo
+{
+  const char *name;
+  size_t length;
+  int type;
+};
+
+/* List of doxygen commands (for now, just list ones to skip) */
+struct DoxygenCommandInfo doxygenCommands[] = {
+  { "def", 3, 0 },
+  { "defgroup", 8, 0 },
+  { "example", 7, 0 },
+  { "file", 4, 0 },
+  { "internal", 8, 0 },
+  { "mainpage", 8, 0 },
+  { "name", 4, 0 },
+  { "page", 4, 0 },
+  { "privatesection", 14, 0 },
+  { "protectedsection", 16, 0 },
+  { "publicsection", 13, 0 },
+  { "subpage", 7, 0 },
+  { "tableofcontents", 15, 0 },
+  { "section", 7, 0 },
+  { "subsection", 10, 0 },
+  { "subsubsection", 13, 0 },
+  { "paragraph", 9, 0 },
+  { NULL, 0, 0 }
+};
 
 void closeComment();
 
@@ -500,23 +531,61 @@ const char *getComment()
   return NULL;
 }
 
+/* Check for doxygen commands that mark unwanted comments */
+int checkDoxygenCommand(const char *text, size_t n)
+{
+  struct DoxygenCommandInfo *info;
+  for (info = doxygenCommands; info->name; info++)
+    {
+    if (info->length == n && strncmp(text, info->name, n) == 0)
+      {
+      return info->type;
+      }
+    }
+  return 1;
+}
+
 /* This is called whenever a comment line is encountered */
 void addCommentLine(const char *line, size_t n, int type)
 {
+  size_t i, j;
+
   if (type == DoxygenComment || commentState == DoxygenComment)
     {
-    if (commentState == DoxygenComment && type != DoxygenComment)
+    if (type == DoxygenComment)
+      {
+      /* search for '@' and backslash */
+      for (i = 0; i+1 < n; i++)
+        {
+        if (line[i] == '@' || line[i] == '\\')
+          {
+          j = ++i;
+          while (i < n && line[i] >= 'a' && line[i] <= 'z')
+            {
+            i++;
+            }
+          if (checkDoxygenCommand(&line[j], i-j) == 0 ||
+              (line[i-1] == '@' && (line[i] == '{' || line[i] == '}')))
+            {
+            /* skip this comment block */
+            commentState = UnwantedComment;
+            }
+          }
+        }
+      }
+    else if (commentState == DoxygenComment)
       {
       return;
       }
-    if (commentState != type)
+    if (commentState != type && commentState != UnwantedComment)
       {
       setCommentState(type);
       }
     }
   else if (commentState == 0 ||
            commentState == StickyComment ||
-           commentState == ClosedComment)
+           commentState == ClosedComment ||
+           commentState == UnwantedComment)
     {
     clearComment();
     return;
@@ -572,6 +641,9 @@ void closeComment()
       /* Comment can only be used once */
       commentState = (commentGroup ? StickyComment : ClosedComment);
       break;
+    case UnwantedComment:
+      clearComment();
+      break;
     }
 }
 
@@ -582,9 +654,13 @@ void commentBreak()
     {
     clearComment();
     }
+  else if (commentState == UnwantedComment)
+    {
+    clearComment();
+    }
   else if (commentState != DoxygenComment)
     {
-    /* blank lines mark the end of VTK comments */
+    /* blank lines end of VTK comments, buy not doxygen comments */
     closeComment();
     }
 }
