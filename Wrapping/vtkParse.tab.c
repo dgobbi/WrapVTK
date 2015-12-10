@@ -602,6 +602,11 @@ void addCommentLine(const char *line, size_t n, int type)
     {
     commentAllocatedLength = commentAllocatedLength + commentLength + n + 2;
     commentText = (char *)realloc(commentText, commentAllocatedLength);
+    if (!commentText)
+      {
+      fprintf(stderr, "Wrapping: out of memory\n");
+      exit(1);
+      }
     }
 
   if (n > 0)
