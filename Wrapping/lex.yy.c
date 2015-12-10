@@ -5087,9 +5087,9 @@ void doxygen_comment()
 {
   char linetext[256];
   int savelineno = yylineno;
-  int c1 = 0, c2 = input();
-  int isfirstline = 1;
+  int asterisk, isfirstline = 1;
   size_t l = 0, i = 0, base = yyleng;
+  int c1 = 0, c2 = input();
   for (l = 0; l < yyleng; l++)
     {
     linetext[l] = yytext[l];
@@ -5126,12 +5126,12 @@ void doxygen_comment()
       if (!isfirstline)
         {
         /* reduce the base indentation if chars occur before base */
-        for (i = yyleng-3; i < base; i++)
+        asterisk = 0;
+        for (i = yyleng-3; i < base && i < l; i++)
           {
-          if (linetext[i] == '*')
+          if (linetext[i] == '*' && asterisk == 0)
             {
-            base = i + 1;
-            break;
+            asterisk = 1;
             }
           else if (linetext[i] != ' ')
             {
