@@ -1159,21 +1159,21 @@ void doxygen_cpp_trailing()
 }
 
 /*
- * Called for // + *{
+ * Called for //@{
  */
 void doxygen_group_start()
 {
   /* Set the "ingroup" marker */
-  setCommentGroup(1);
+  setCommentMemberGroup(1);
 }
 
 /*
- * Called for // + *}
+ * Called for //@}
  */
 void doxygen_group_end()
 {
   /* Clear the "ingroup" marker */
-  setCommentGroup(0);
+  setCommentMemberGroup(0);
 }
 
 /*

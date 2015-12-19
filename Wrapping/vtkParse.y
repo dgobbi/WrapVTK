@@ -382,8 +382,7 @@ enum comment_enum
   DescriptionComment = 2,
   SeeAlsoComment = 3,
   CaveatsComment = 4,
-  DoxygenComment = 5,
-  UnwantedComment = 6
+  DoxygenComment = 5
 };
 
 /* "private" variables */
@@ -391,36 +390,50 @@ char          *commentText = NULL;
 size_t         commentLength = 0;
 size_t         commentAllocatedLength = 0;
 int            commentState = 0;
-int            commentGroup = 0;
+int            commentMemberGroup = 0;
+int            commentGroupDepth = 0;
+parse_dox_t    commentType = DOX_COMMAND_OTHER;
+const char    *commentTarget = NULL;
 
 /* Struct for recognizing certain doxygen commands */
 struct DoxygenCommandInfo
 {
   const char *name;
   size_t length;
-  int type;
+  parse_dox_t type;
 };
 
 /* List of doxygen commands (for now, just list ones to skip) */
 struct DoxygenCommandInfo doxygenCommands[] = {
-  { "def", 3, 0 },
-  { "defgroup", 8, 0 },
-  { "example", 7, 0 },
-  { "file", 4, 0 },
-  { "internal", 8, 0 },
-  { "mainpage", 8, 0 },
-  { "name", 4, 0 },
-  { "page", 4, 0 },
-  { "privatesection", 14, 0 },
-  { "protectedsection", 16, 0 },
-  { "publicsection", 13, 0 },
-  { "subpage", 7, 0 },
-  { "tableofcontents", 15, 0 },
-  { "section", 7, 0 },
-  { "subsection", 10, 0 },
-  { "subsubsection", 13, 0 },
-  { "paragraph", 9, 0 },
-  { NULL, 0, 0 }
+  { "def", 3, DOX_COMMAND_DEF },
+  { "category", 8, DOX_COMMAND_CATEGORY },
+  { "interface", 9, DOX_COMMAND_INTERFACE },
+  { "protocol", 8, DOX_COMMAND_PROTOCOL },
+  { "class", 5, DOX_COMMAND_CLASS },
+  { "enum", 4, DOX_COMMAND_ENUM },
+  { "struct", 6, DOX_COMMAND_STRUCT },
+  { "union", 5, DOX_COMMAND_UNION },
+  { "namespace", 9, DOX_COMMAND_NAMESPACE },
+  { "typedef", 7, DOX_COMMAND_TYPEDEF },
+  { "fn", 2, DOX_COMMAND_FN },
+  { "property", 8, DOX_COMMAND_PROPERTY },
+  { "var", 3, DOX_COMMAND_VAR },
+  { "name", 4, DOX_COMMAND_NAME },
+  { "defgroup", 8, DOX_COMMAND_DEFGROUP },
+  { "addtogroup", 10, DOX_COMMAND_ADDTOGROUP },
+  { "weakgroup", 9, DOX_COMMAND_WEAKGROUP },
+  { "example", 7, DOX_COMMAND_EXAMPLE },
+  { "file", 4, DOX_COMMAND_FILE },
+  { "dir", 3, DOX_COMMAND_DIR },
+  { "mainpage", 8, DOX_COMMAND_MAINPAGE },
+  { "page", 4, DOX_COMMAND_PAGE },
+  { "subpage", 7, DOX_COMMAND_SUBPAGE },
+  { "internal", 8, DOX_COMMAND_INTERNAL },
+  { "package", 7, DOX_COMMAND_PACKAGE },
+  { "privatesection", 14, DOX_COMMAND_PRIVATESECTION },
+  { "protectedsection", 16, DOX_COMMAND_PROTECTEDSECTION },
+  { "publicsection", 13, DOX_COMMAND_PUBLICSECTION },
+  { NULL, 0, DOX_COMMAND_OTHER }
 };
 
 void closeComment();
@@ -434,6 +447,7 @@ void clearComment()
     commentText[commentLength] = '\0';
     }
   commentState = 0;
+  commentType = DOX_COMMAND_OTHER;
 }
 
 /* This is called when entering or leaving a comment block */
@@ -489,7 +503,7 @@ const char *getComment()
 }
 
 /* Check for doxygen commands that mark unwanted comments */
-int checkDoxygenCommand(const char *text, size_t n)
+parse_dox_t checkDoxygenCommand(const char *text, size_t n)
 {
   struct DoxygenCommandInfo *info;
   for (info = doxygenCommands; info->name; info++)
@@ -499,13 +513,14 @@ int checkDoxygenCommand(const char *text, size_t n)
       return info->type;
       }
     }
-  return 1;
+  return DOX_COMMAND_OTHER;
 }
 
 /* This is called whenever a comment line is encountered */
 void addCommentLine(const char *line, size_t n, int type)
 {
   size_t i, j;
+  parse_dox_t t = DOX_COMMAND_OTHER;
 
   if (type == DoxygenComment || commentState == DoxygenComment)
     {
@@ -521,11 +536,35 @@ void addCommentLine(const char *line, size_t n, int type)
             {
             i++;
             }
-          if (checkDoxygenCommand(&line[j], i-j) == 0 ||
-              (line[i-1] == '@' && (line[i] == '{' || line[i] == '}')))
+          if (line[i-1] == '@' && (line[i] == '{' || line[i] == '}'))
             {
-            /* skip this comment block */
-            commentState = UnwantedComment;
+            if (line[i] == '{')
+              {
+              commentGroupDepth++;
+              }
+            else
+              {
+              --commentGroupDepth;
+              }
+            return;
+            }
+          else
+            {
+            /* record the type of this comment */
+            t = checkDoxygenCommand(&line[j], i-j);
+            if (t != DOX_COMMAND_OTHER)
+              {
+              while (i < n && line[i] == ' ')
+                {
+                i++;
+                }
+              j = i;
+              while (i < n && vtkParse_CharType(line[i], CPRE_XID))
+                {
+                i++;
+                }
+              commentTarget = vtkstrndup(&line[j], i-j);
+              }
             }
           }
         }
@@ -534,15 +573,18 @@ void addCommentLine(const char *line, size_t n, int type)
       {
       return;
       }
-    if (commentState != type && commentState != UnwantedComment)
+    if (commentState != type)
       {
       setCommentState(type);
+      }
+    if (t != DOX_COMMAND_OTHER)
+      {
+      commentType = t;
       }
     }
   else if (commentState == 0 ||
            commentState == StickyComment ||
-           commentState == ClosedComment ||
-           commentState == UnwantedComment)
+           commentState == ClosedComment)
     {
     clearComment();
     return;
@@ -575,6 +617,34 @@ void addCommentLine(const char *line, size_t n, int type)
   commentText[commentLength] = '\0';
 }
 
+/* Store a doxygen comment */
+void storeComment()
+{
+  CommentInfo *info = (CommentInfo *)malloc(sizeof(CommentInfo));
+  vtkParse_InitComment(info);
+  info->Type = commentType;
+  info->Name = commentTarget;
+  info->Comment = vtkstrdup(getComment());
+
+  if (commentType >= DOX_COMMAND_DEFGROUP)
+    {
+    /* comment has no scope, it is global to the project */
+    vtkParse_AddCommentToNamespace(data->Contents, info);
+    }
+  else
+    {
+    /* comment is scoped to current namespace */
+    if (currentClass)
+      {
+      vtkParse_AddCommentToClass(currentClass, info);
+      }
+    else
+      {
+      vtkParse_AddCommentToNamespace(currentNamespace, info);
+      }
+    }
+}
+
 /* This is called when a comment block ends */
 void closeComment()
 {
@@ -600,11 +670,17 @@ void closeComment()
       clearComment();
       break;
     case DoxygenComment:
-      /* Comment can only be used once */
-      commentState = (commentGroup ? StickyComment : ClosedComment);
-      break;
-    case UnwantedComment:
-      clearComment();
+      if (commentType == DOX_COMMAND_OTHER)
+        {
+        /* Apply only to next item unless within a member group */
+        commentState = (commentMemberGroup ? StickyComment : ClosedComment);
+        }
+      else
+        {
+        /* Comment might not apply to next item, so store it */
+        storeComment();
+        clearComment();
+        }
       break;
     }
 }
@@ -612,11 +688,7 @@ void closeComment()
 /* This is called when a blank line occurs in the header file */
 void commentBreak()
 {
-  if (!commentGroup && commentState == StickyComment)
-    {
-    clearComment();
-    }
-  else if (commentState == UnwantedComment)
+  if (!commentMemberGroup && commentState == StickyComment)
     {
     clearComment();
     }
@@ -628,10 +700,128 @@ void commentBreak()
 }
 
 /* This is called when doxygen @{ or @} are encountered */
-void setCommentGroup(int g)
+void setCommentMemberGroup(int g)
 {
-  commentGroup = g;
+  commentMemberGroup = g;
   clearComment();
+}
+
+/* Assign comments to the items that they apply to */
+void assignComments(ClassInfo *cls)
+{
+  unsigned long i, j;
+  int t;
+  const char *name;
+  const char *comment;
+
+  for (i = 0; i < cls->NumberOfComments; i++)
+    {
+    t = cls->Comments[i]->Type;
+    name = cls->Comments[i]->Name;
+    comment = cls->Comments[i]->Comment;
+    /* find the item the comment applies to */
+    if (t == DOX_COMMAND_CLASS ||
+        t == DOX_COMMAND_STRUCT ||
+        t == DOX_COMMAND_UNION)
+      {
+      for (j = 0; j < cls->NumberOfClasses; j++)
+        {
+        if (cls->Classes[j]->Name && name &&
+            strcmp(cls->Classes[j]->Name, name) == 0)
+          {
+          cls->Classes[j]->Comment = comment;
+          break;
+          }
+        }
+      }
+    else if (t == DOX_COMMAND_ENUM)
+      {
+      for (j = 0; j < cls->NumberOfEnums; j++)
+        {
+        if (cls->Enums[j]->Name && name &&
+            strcmp(cls->Enums[j]->Name, name) == 0)
+          {
+          cls->Enums[j]->Comment = comment;
+          break;
+          }
+        }
+      }
+    else if (t == DOX_COMMAND_TYPEDEF)
+      {
+      for (j = 0; j < cls->NumberOfTypedefs; j++)
+        {
+        if (cls->Typedefs[j]->Name && name &&
+            strcmp(cls->Typedefs[j]->Name, name) == 0)
+          {
+          cls->Typedefs[j]->Comment = comment;
+          break;
+          }
+        }
+      }
+    else if (t == DOX_COMMAND_FN)
+      {
+      for (j = 0; j < cls->NumberOfFunctions; j++)
+        {
+        if (cls->Functions[j]->Name && name &&
+            strcmp(cls->Functions[j]->Name, name) == 0)
+          {
+          cls->Functions[j]->Comment = comment;
+          break;
+          }
+        }
+      }
+    else if (t == DOX_COMMAND_VAR)
+      {
+      for (j = 0; j < cls->NumberOfVariables; j++)
+        {
+        if (cls->Variables[j]->Name && name &&
+            strcmp(cls->Variables[j]->Name, name) == 0)
+          {
+          cls->Variables[j]->Comment = comment;
+          break;
+          }
+        }
+      for (j = 0; j < cls->NumberOfConstants; j++)
+        {
+        if (cls->Constants[j]->Name && name &&
+            strcmp(cls->Constants[j]->Name, name) == 0)
+          {
+          cls->Constants[j]->Comment = comment;
+          break;
+          }
+        }
+      }
+    else if (t == DOX_COMMAND_NAMESPACE)
+      {
+      for (j = 0; j < cls->NumberOfNamespaces; j++)
+        {
+        if (cls->Namespaces[j]->Name && name &&
+            strcmp(cls->Namespaces[j]->Name, name) == 0)
+          {
+          cls->Namespaces[j]->Comment = comment;
+          break;
+          }
+        }
+      }
+    }
+
+  /* recurse into child classes */
+  for (i = 0; i < cls->NumberOfClasses; i++)
+    {
+    if (cls->Classes[i])
+      {
+      assignComments(cls->Classes[i]);
+      }
+    }
+
+  /* recurse into child namespaces */
+  for (i = 0; i < cls->NumberOfNamespaces; i++)
+    {
+    if (cls->Namespaces[i])
+      {
+      assignComments(cls->Namespaces[i]);
+      }
+    }
 }
 
 /*----------------------------------------------------------------
