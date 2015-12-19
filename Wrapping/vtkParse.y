@@ -382,7 +382,8 @@ enum comment_enum
   DescriptionComment = 2,
   SeeAlsoComment = 3,
   CaveatsComment = 4,
-  DoxygenComment = 5
+  DoxygenComment = 5,
+  TrailingComment = 6
 };
 
 /* "private" variables */
@@ -582,6 +583,13 @@ void addCommentLine(const char *line, size_t n, int type)
       commentType = t;
       }
     }
+  else if (type == TrailingComment)
+    {
+    if (commentState != type)
+      {
+      setCommentState(type);
+      }
+    }
   else if (commentState == 0 ||
            commentState == StickyComment ||
            commentState == ClosedComment)
@@ -645,6 +653,54 @@ void storeComment()
     }
 }
 
+/* Apply a doxygen trailing comment to the previous item */
+void applyComment(ClassInfo *cls)
+{
+  unsigned long i;
+  ItemInfo *item;
+  const char *comment = vtkstrdup(getComment());
+
+  i = cls->NumberOfItems;
+  if (i > 0)
+    {
+    item = &cls->Items[--i];
+    if (item->Type == VTK_NAMESPACE_INFO)
+      {
+      cls->Namespaces[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_CLASS_INFO ||
+             item->Type == VTK_STRUCT_INFO ||
+             item->Type == VTK_UNION_INFO)
+      {
+      cls->Classes[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_ENUM_INFO)
+      {
+      cls->Enums[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_FUNCTION_INFO)
+      {
+      cls->Functions[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_VARIABLE_INFO)
+      {
+      cls->Variables[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_CONSTANT_INFO)
+      {
+      cls->Constants[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_TYPEDEF_INFO)
+      {
+      cls->Typedefs[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_USING_INFO)
+      {
+      cls->Usings[item->Index]->Comment = comment;
+      }
+    }
+}
+
 /* This is called when a comment block ends */
 void closeComment()
 {
@@ -681,6 +737,17 @@ void closeComment()
         storeComment();
         clearComment();
         }
+      break;
+    case TrailingComment:
+      if (currentClass)
+        {
+        applyComment(currentClass);
+        }
+      else
+        {
+        applyComment(currentNamespace);
+        }
+      clearComment();
       break;
     }
 }
@@ -2085,8 +2152,8 @@ enumerator_list:
   | enumerator_list ',' enumerator_definition
 
 enumerator_definition:
-  | simple_id { add_enum($<str>1, NULL); }
-  | simple_id '=' { postSig("="); markSig(); }
+  | simple_id { closeComment(); add_enum($<str>1, NULL); }
+  | simple_id '=' { postSig("="); markSig(); closeComment(); }
     constant_expression { chopSig(); add_enum($<str>1, copySig()); }
 
 /*

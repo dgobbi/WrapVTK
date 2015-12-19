@@ -2001,9 +2001,7 @@ static int skip_to_next_directive();
 static int skip_conditional_block();
 
 static void doxygen_comment();
-static void doxygen_trailing();
 static void doxygen_cpp_comment();
-static void doxygen_cpp_trailing();
 static void doxygen_group_start();
 static void doxygen_group_end();
 static void vtk_comment();
@@ -2313,7 +2311,7 @@ do_action:        /* This label is used only to access EOF actions. */
 case 1:
 YY_RULE_SETUP
 #line 93 "vtkParse.l"
-{ doxygen_trailing(); }
+{ doxygen_comment(); }
         YY_BREAK
 case 2:
 YY_RULE_SETUP
@@ -2349,7 +2347,7 @@ YY_RULE_SETUP
 case 7:
 YY_RULE_SETUP
 #line 111 "vtkParse.l"
-{ doxygen_cpp_trailing(); }
+{ doxygen_cpp_comment(); }
         YY_BREAK
 case 8:
 YY_RULE_SETUP
@@ -5081,18 +5079,23 @@ int skip_ahead_until(const char *text)
 
 
 /*
- * Called for / + ** and / + *! doxygen comments (handles entire comment)
+ * Called for doxygen C-style comments
  */
 void doxygen_comment()
 {
   char linetext[256];
   int savelineno = yylineno;
   int asterisk, isfirstline = 1;
+  int type = DoxygenComment;
   size_t l = 0, i = 0, base = yyleng;
   int c1 = 0, c2 = input();
   for (l = 0; l < yyleng; l++)
     {
     linetext[l] = yytext[l];
+    }
+  if (l > 0 && yytext[l-1] == '<')
+    {
+    type = TrailingComment;
     }
   for (;;)
     {
@@ -5149,13 +5152,17 @@ void doxygen_comment()
         {
         i = base;
         l -= base;
-        addCommentLine(&linetext[i], l, DoxygenComment);
+        addCommentLine(&linetext[i], l, type);
         }
       else if (!isfirstline && (c1 != '*' || c2 != '/'))
         {
-        addCommentLine("", 0, DoxygenComment);
+        addCommentLine("", 0, type);
         }
-      isfirstline = 0;
+      if (isfirstline)
+        {
+        isfirstline = 0;
+        base = 256;
+        }
       l = 0;
       if (c1 == '*' && c2 == '/')
         {
@@ -5167,32 +5174,21 @@ void doxygen_comment()
 }
 
 /*
- * Called for / + **< and / + *!< doxygen trailing comments
- */
-void doxygen_trailing()
-{
-  /* add a comment to the previous entity */
-  skip_comment();
-}
-
-/*
  * Called for //! and /// doxygen comments (handles just one line)
  */
 void doxygen_cpp_comment()
 {
+  int type = DoxygenComment;
   size_t pos = 2;
   while (yytext[pos-2] != '/' || yytext[pos-1] != '/') pos++;
   while (pos < yyleng && yytext[pos-1] == '/' && yytext[pos] == '/') pos++;
   if (pos < yyleng && yytext[pos] == '!') pos++;
-  addCommentLine(&yytext[pos], yyleng - pos, DoxygenComment);
-}
-
-/*
- * Called for / + **< and / + *!< doxygen trailing comments
- */
-void doxygen_cpp_trailing()
-{
-  /* add a comment to the previous entity */
+  if (pos < yyleng && yytext[pos] == '<')
+    {
+    pos++;
+    type = TrailingComment;
+    }
+  addCommentLine(&yytext[pos], yyleng - pos, type);
 }
 
 /*

@@ -421,7 +421,8 @@ enum comment_enum
   DescriptionComment = 2,
   SeeAlsoComment = 3,
   CaveatsComment = 4,
-  DoxygenComment = 5
+  DoxygenComment = 5,
+  TrailingComment = 6
 };
 
 /* "private" variables */
@@ -621,6 +622,13 @@ void addCommentLine(const char *line, size_t n, int type)
       commentType = t;
       }
     }
+  else if (type == TrailingComment)
+    {
+    if (commentState != type)
+      {
+      setCommentState(type);
+      }
+    }
   else if (commentState == 0 ||
            commentState == StickyComment ||
            commentState == ClosedComment)
@@ -684,6 +692,54 @@ void storeComment()
     }
 }
 
+/* Apply a doxygen trailing comment to the previous item */
+void applyComment(ClassInfo *cls)
+{
+  unsigned long i;
+  ItemInfo *item;
+  const char *comment = vtkstrdup(getComment());
+
+  i = cls->NumberOfItems;
+  if (i > 0)
+    {
+    item = &cls->Items[--i];
+    if (item->Type == VTK_NAMESPACE_INFO)
+      {
+      cls->Namespaces[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_CLASS_INFO ||
+             item->Type == VTK_STRUCT_INFO ||
+             item->Type == VTK_UNION_INFO)
+      {
+      cls->Classes[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_ENUM_INFO)
+      {
+      cls->Enums[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_FUNCTION_INFO)
+      {
+      cls->Functions[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_VARIABLE_INFO)
+      {
+      cls->Variables[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_CONSTANT_INFO)
+      {
+      cls->Constants[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_TYPEDEF_INFO)
+      {
+      cls->Typedefs[item->Index]->Comment = comment;
+      }
+    else if (item->Type == VTK_USING_INFO)
+      {
+      cls->Usings[item->Index]->Comment = comment;
+      }
+    }
+}
+
 /* This is called when a comment block ends */
 void closeComment()
 {
@@ -720,6 +776,17 @@ void closeComment()
         storeComment();
         clearComment();
         }
+      break;
+    case TrailingComment:
+      if (currentClass)
+        {
+        applyComment(currentClass);
+        }
+      else
+        {
+        applyComment(currentNamespace);
+        }
+      clearComment();
       break;
     }
 }
@@ -1657,7 +1724,7 @@ unsigned int add_indirection_to_array(unsigned int type)
 }
 
 
-#line 1661 "vtkParse.tab.c" /* glr.c:207  */
+#line 1728 "vtkParse.tab.c" /* glr.c:207  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -1821,12 +1888,12 @@ extern int yydebug;
 typedef union YYSTYPE YYSTYPE;
 union YYSTYPE
 {
-#line 1638 "vtkParse.y" /* glr.c:212  */
+#line 1705 "vtkParse.y" /* glr.c:212  */
 
   const char   *str;
   unsigned int  integer;
 
-#line 1830 "vtkParse.tab.c" /* glr.c:212  */
+#line 1897 "vtkParse.tab.c" /* glr.c:212  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
@@ -1854,7 +1921,7 @@ static YYSTYPE yyval_default;
 
 /* Copy the second part of user declarations.  */
 
-#line 1858 "vtkParse.tab.c" /* glr.c:230  */
+#line 1925 "vtkParse.tab.c" /* glr.c:230  */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -2033,77 +2100,77 @@ static const unsigned char yytranslate[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const unsigned short int yyrline[] =
 {
-       0,  1814,  1814,  1816,  1818,  1817,  1828,  1829,  1830,  1831,
-    1832,  1833,  1834,  1835,  1836,  1837,  1838,  1839,  1840,  1841,
-    1842,  1843,  1844,  1845,  1848,  1849,  1850,  1851,  1852,  1853,
-    1856,  1857,  1864,  1871,  1872,  1872,  1876,  1883,  1884,  1887,
-    1888,  1889,  1892,  1893,  1896,  1896,  1911,  1910,  1916,  1922,
-    1921,  1926,  1932,  1933,  1934,  1937,  1939,  1941,  1944,  1945,
-    1948,  1949,  1951,  1953,  1952,  1961,  1965,  1966,  1967,  1970,
-    1971,  1972,  1973,  1974,  1975,  1976,  1977,  1978,  1979,  1980,
-    1981,  1982,  1983,  1984,  1985,  1988,  1989,  1990,  1991,  1992,
-    1995,  1996,  1997,  1998,  2001,  2002,  2005,  2007,  2010,  2015,
-    2016,  2019,  2020,  2023,  2024,  2025,  2036,  2037,  2038,  2042,
-    2043,  2047,  2047,  2060,  2066,  2074,  2075,  2076,  2079,  2080,
-    2080,  2084,  2085,  2087,  2088,  2089,  2089,  2097,  2101,  2102,
-    2105,  2107,  2109,  2110,  2113,  2114,  2122,  2123,  2126,  2127,
-    2129,  2131,  2133,  2137,  2139,  2140,  2143,  2146,  2147,  2150,
-    2151,  2150,  2155,  2195,  2198,  2199,  2200,  2202,  2204,  2206,
-    2210,  2213,  2213,  2244,  2247,  2246,  2264,  2266,  2265,  2270,
-    2272,  2270,  2274,  2276,  2274,  2278,  2281,  2278,  2292,  2293,
-    2296,  2297,  2299,  2300,  2303,  2303,  2313,  2314,  2322,  2323,
-    2324,  2325,  2328,  2331,  2332,  2333,  2336,  2337,  2338,  2341,
-    2342,  2343,  2347,  2348,  2349,  2350,  2353,  2354,  2355,  2359,
-    2364,  2358,  2376,  2380,  2380,  2392,  2391,  2400,  2404,  2407,
-    2416,  2417,  2420,  2420,  2421,  2422,  2428,  2433,  2434,  2435,
-    2438,  2441,  2442,  2444,  2445,  2448,  2448,  2456,  2457,  2458,
-    2461,  2463,  2464,  2468,  2467,  2479,  2480,  2479,  2499,  2499,
-    2503,  2504,  2507,  2508,  2511,  2517,  2518,  2518,  2521,  2522,
-    2522,  2524,  2526,  2530,  2532,  2530,  2556,  2557,  2560,  2560,
-    2562,  2562,  2571,  2574,  2643,  2644,  2646,  2647,  2647,  2650,
-    2653,  2654,  2658,  2669,  2669,  2687,  2688,  2692,  2694,  2694,
-    2712,  2712,  2714,  2718,  2719,  2720,  2719,  2725,  2727,  2728,
-    2729,  2730,  2731,  2732,  2735,  2736,  2740,  2741,  2745,  2746,
-    2750,  2751,  2752,  2753,  2756,  2757,  2760,  2760,  2763,  2764,
-    2767,  2767,  2771,  2772,  2772,  2779,  2780,  2783,  2784,  2785,
-    2786,  2787,  2790,  2792,  2794,  2798,  2800,  2802,  2804,  2806,
-    2808,  2810,  2810,  2815,  2818,  2821,  2824,  2824,  2832,  2832,
-    2840,  2841,  2842,  2843,  2844,  2845,  2846,  2847,  2848,  2849,
-    2850,  2851,  2852,  2853,  2854,  2855,  2856,  2857,  2858,  2859,
-    2860,  2861,  2868,  2869,  2870,  2871,  2872,  2873,  2874,  2880,
-    2881,  2884,  2885,  2887,  2888,  2891,  2892,  2895,  2896,  2897,
-    2898,  2901,  2902,  2903,  2904,  2905,  2909,  2910,  2911,  2914,
-    2915,  2918,  2919,  2927,  2930,  2930,  2932,  2932,  2936,  2937,
-    2939,  2943,  2944,  2946,  2946,  2948,  2950,  2954,  2957,  2957,
-    2959,  2959,  2963,  2966,  2966,  2968,  2968,  2972,  2973,  2975,
-    2977,  2979,  2981,  2983,  2987,  2988,  2991,  2992,  2993,  2994,
-    2995,  2996,  2997,  2998,  2999,  3000,  3001,  3002,  3003,  3004,
-    3005,  3006,  3007,  3008,  3009,  3010,  3011,  3012,  3015,  3016,
-    3017,  3018,  3019,  3020,  3021,  3022,  3023,  3024,  3025,  3026,
-    3027,  3028,  3029,  3049,  3050,  3051,  3052,  3055,  3059,  3063,
-    3063,  3067,  3068,  3083,  3084,  3100,  3101,  3104,  3104,  3104,
-    3111,  3111,  3121,  3122,  3122,  3121,  3131,  3131,  3141,  3141,
-    3150,  3150,  3150,  3183,  3182,  3193,  3194,  3194,  3193,  3203,
-    3221,  3221,  3226,  3226,  3231,  3231,  3236,  3236,  3241,  3241,
-    3246,  3246,  3251,  3251,  3256,  3256,  3261,  3261,  3278,  3278,
-    3292,  3329,  3367,  3404,  3405,  3412,  3413,  3414,  3415,  3416,
-    3417,  3418,  3419,  3420,  3421,  3422,  3423,  3426,  3427,  3428,
-    3429,  3430,  3431,  3432,  3433,  3434,  3435,  3436,  3437,  3438,
-    3439,  3440,  3441,  3442,  3443,  3444,  3445,  3446,  3447,  3448,
-    3449,  3450,  3451,  3452,  3453,  3454,  3455,  3456,  3457,  3458,
-    3459,  3462,  3463,  3464,  3465,  3466,  3467,  3468,  3469,  3470,
-    3471,  3472,  3473,  3474,  3475,  3476,  3477,  3478,  3479,  3480,
-    3481,  3482,  3483,  3484,  3485,  3486,  3487,  3488,  3489,  3490,
-    3493,  3494,  3495,  3496,  3497,  3498,  3499,  3500,  3501,  3508,
-    3509,  3512,  3513,  3514,  3515,  3515,  3516,  3519,  3520,  3523,
-    3524,  3525,  3526,  3556,  3556,  3557,  3558,  3559,  3560,  3583,
-    3584,  3587,  3588,  3589,  3590,  3593,  3594,  3595,  3598,  3599,
-    3601,  3602,  3604,  3605,  3608,  3609,  3612,  3613,  3614,  3618,
-    3617,  3631,  3632,  3635,  3635,  3637,  3637,  3641,  3641,  3643,
-    3643,  3645,  3645,  3649,  3649,  3654,  3655,  3657,  3658,  3661,
-    3662,  3665,  3666,  3669,  3670,  3671,  3672,  3673,  3674,  3675,
-    3676,  3676,  3676,  3676,  3676,  3677,  3678,  3679,  3680,  3681,
-    3684,  3687,  3688,  3691,  3694,  3694,  3694
+       0,  1881,  1881,  1883,  1885,  1884,  1895,  1896,  1897,  1898,
+    1899,  1900,  1901,  1902,  1903,  1904,  1905,  1906,  1907,  1908,
+    1909,  1910,  1911,  1912,  1915,  1916,  1917,  1918,  1919,  1920,
+    1923,  1924,  1931,  1938,  1939,  1939,  1943,  1950,  1951,  1954,
+    1955,  1956,  1959,  1960,  1963,  1963,  1978,  1977,  1983,  1989,
+    1988,  1993,  1999,  2000,  2001,  2004,  2006,  2008,  2011,  2012,
+    2015,  2016,  2018,  2020,  2019,  2028,  2032,  2033,  2034,  2037,
+    2038,  2039,  2040,  2041,  2042,  2043,  2044,  2045,  2046,  2047,
+    2048,  2049,  2050,  2051,  2052,  2055,  2056,  2057,  2058,  2059,
+    2062,  2063,  2064,  2065,  2068,  2069,  2072,  2074,  2077,  2082,
+    2083,  2086,  2087,  2090,  2091,  2092,  2103,  2104,  2105,  2109,
+    2110,  2114,  2114,  2127,  2133,  2141,  2142,  2143,  2146,  2147,
+    2147,  2151,  2152,  2154,  2155,  2156,  2156,  2164,  2168,  2169,
+    2172,  2174,  2176,  2177,  2180,  2181,  2189,  2190,  2193,  2194,
+    2196,  2198,  2200,  2204,  2206,  2207,  2210,  2213,  2214,  2217,
+    2218,  2217,  2222,  2262,  2265,  2266,  2267,  2269,  2271,  2273,
+    2277,  2280,  2280,  2311,  2314,  2313,  2331,  2333,  2332,  2337,
+    2339,  2337,  2341,  2343,  2341,  2345,  2348,  2345,  2359,  2360,
+    2363,  2364,  2366,  2367,  2370,  2370,  2380,  2381,  2389,  2390,
+    2391,  2392,  2395,  2398,  2399,  2400,  2403,  2404,  2405,  2408,
+    2409,  2410,  2414,  2415,  2416,  2417,  2420,  2421,  2422,  2426,
+    2431,  2425,  2443,  2447,  2447,  2459,  2458,  2467,  2471,  2474,
+    2483,  2484,  2487,  2487,  2488,  2489,  2495,  2500,  2501,  2502,
+    2505,  2508,  2509,  2511,  2512,  2515,  2515,  2523,  2524,  2525,
+    2528,  2530,  2531,  2535,  2534,  2546,  2547,  2546,  2566,  2566,
+    2570,  2571,  2574,  2575,  2578,  2584,  2585,  2585,  2588,  2589,
+    2589,  2591,  2593,  2597,  2599,  2597,  2623,  2624,  2627,  2627,
+    2629,  2629,  2638,  2641,  2710,  2711,  2713,  2714,  2714,  2717,
+    2720,  2721,  2725,  2736,  2736,  2754,  2755,  2759,  2761,  2761,
+    2779,  2779,  2781,  2785,  2786,  2787,  2786,  2792,  2794,  2795,
+    2796,  2797,  2798,  2799,  2802,  2803,  2807,  2808,  2812,  2813,
+    2817,  2818,  2819,  2820,  2823,  2824,  2827,  2827,  2830,  2831,
+    2834,  2834,  2838,  2839,  2839,  2846,  2847,  2850,  2851,  2852,
+    2853,  2854,  2857,  2859,  2861,  2865,  2867,  2869,  2871,  2873,
+    2875,  2877,  2877,  2882,  2885,  2888,  2891,  2891,  2899,  2899,
+    2907,  2908,  2909,  2910,  2911,  2912,  2913,  2914,  2915,  2916,
+    2917,  2918,  2919,  2920,  2921,  2922,  2923,  2924,  2925,  2926,
+    2927,  2928,  2935,  2936,  2937,  2938,  2939,  2940,  2941,  2947,
+    2948,  2951,  2952,  2954,  2955,  2958,  2959,  2962,  2963,  2964,
+    2965,  2968,  2969,  2970,  2971,  2972,  2976,  2977,  2978,  2981,
+    2982,  2985,  2986,  2994,  2997,  2997,  2999,  2999,  3003,  3004,
+    3006,  3010,  3011,  3013,  3013,  3015,  3017,  3021,  3024,  3024,
+    3026,  3026,  3030,  3033,  3033,  3035,  3035,  3039,  3040,  3042,
+    3044,  3046,  3048,  3050,  3054,  3055,  3058,  3059,  3060,  3061,
+    3062,  3063,  3064,  3065,  3066,  3067,  3068,  3069,  3070,  3071,
+    3072,  3073,  3074,  3075,  3076,  3077,  3078,  3079,  3082,  3083,
+    3084,  3085,  3086,  3087,  3088,  3089,  3090,  3091,  3092,  3093,
+    3094,  3095,  3096,  3116,  3117,  3118,  3119,  3122,  3126,  3130,
+    3130,  3134,  3135,  3150,  3151,  3167,  3168,  3171,  3171,  3171,
+    3178,  3178,  3188,  3189,  3189,  3188,  3198,  3198,  3208,  3208,
+    3217,  3217,  3217,  3250,  3249,  3260,  3261,  3261,  3260,  3270,
+    3288,  3288,  3293,  3293,  3298,  3298,  3303,  3303,  3308,  3308,
+    3313,  3313,  3318,  3318,  3323,  3323,  3328,  3328,  3345,  3345,
+    3359,  3396,  3434,  3471,  3472,  3479,  3480,  3481,  3482,  3483,
+    3484,  3485,  3486,  3487,  3488,  3489,  3490,  3493,  3494,  3495,
+    3496,  3497,  3498,  3499,  3500,  3501,  3502,  3503,  3504,  3505,
+    3506,  3507,  3508,  3509,  3510,  3511,  3512,  3513,  3514,  3515,
+    3516,  3517,  3518,  3519,  3520,  3521,  3522,  3523,  3524,  3525,
+    3526,  3529,  3530,  3531,  3532,  3533,  3534,  3535,  3536,  3537,
+    3538,  3539,  3540,  3541,  3542,  3543,  3544,  3545,  3546,  3547,
+    3548,  3549,  3550,  3551,  3552,  3553,  3554,  3555,  3556,  3557,
+    3560,  3561,  3562,  3563,  3564,  3565,  3566,  3567,  3568,  3575,
+    3576,  3579,  3580,  3581,  3582,  3582,  3583,  3586,  3587,  3590,
+    3591,  3592,  3593,  3623,  3623,  3624,  3625,  3626,  3627,  3650,
+    3651,  3654,  3655,  3656,  3657,  3660,  3661,  3662,  3665,  3666,
+    3668,  3669,  3671,  3672,  3675,  3676,  3679,  3680,  3681,  3685,
+    3684,  3698,  3699,  3702,  3702,  3704,  3704,  3708,  3708,  3710,
+    3710,  3712,  3712,  3716,  3716,  3721,  3722,  3724,  3725,  3728,
+    3729,  3732,  3733,  3736,  3737,  3738,  3739,  3740,  3741,  3742,
+    3743,  3743,  3743,  3743,  3743,  3744,  3745,  3746,  3747,  3748,
+    3751,  3754,  3755,  3758,  3761,  3761,  3761
 };
 #endif
 
@@ -6129,7 +6196,7 @@ yyMemoryExhausted (yyGLRStack* yystackp)
 
 #if YYDEBUG || YYERROR_VERBOSE
 /** A printable representation of TOKEN.  */
-static inline const char*
+static const char*
 yytokenName (yySymbol yytoken)
 {
   if (yytoken == YYEMPTY)
@@ -6167,9 +6234,9 @@ yyfillin (yyGLRStackItem *yyvsp, int yylow0, int yylow1)
 /* Do nothing if YYNORMAL or if *YYLOW <= YYLOW1.  Otherwise, fill in
  * YYVSP[YYLOW1 .. *YYLOW-1] as in yyfillin and set *YYLOW = YYLOW1.
  * For convenience, always return YYLOW1.  */
-static inline int yyfill (yyGLRStackItem *, int *, int, yybool)
+static int yyfill (yyGLRStackItem *, int *, int, yybool)
      YY_ATTRIBUTE_UNUSED;
-static inline int
+static int
 yyfill (yyGLRStackItem *yyvsp, int *yylow, int yylow1, yybool yynormal)
 {
   if (!yynormal && yylow1 < *yylow)
@@ -6221,7 +6288,7 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
   switch (yyn)
     {
         case 4:
-#line 1818 "vtkParse.y" /* glr.c:783  */
+#line 1885 "vtkParse.y" /* glr.c:783  */
     {
       startSig();
       clearType();
@@ -6229,29 +6296,29 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
       clearTemplate();
       closeComment();
     }
-#line 6233 "vtkParse.tab.c" /* glr.c:783  */
+#line 6300 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 34:
-#line 1872 "vtkParse.y" /* glr.c:783  */
+#line 1939 "vtkParse.y" /* glr.c:783  */
     { pushNamespace((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 6239 "vtkParse.tab.c" /* glr.c:783  */
+#line 6306 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 35:
-#line 1873 "vtkParse.y" /* glr.c:783  */
+#line 1940 "vtkParse.y" /* glr.c:783  */
     { popNamespace(); }
-#line 6245 "vtkParse.tab.c" /* glr.c:783  */
+#line 6312 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 44:
-#line 1896 "vtkParse.y" /* glr.c:783  */
+#line 1963 "vtkParse.y" /* glr.c:783  */
     { pushType(); }
-#line 6251 "vtkParse.tab.c" /* glr.c:783  */
+#line 6318 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 45:
-#line 1897 "vtkParse.y" /* glr.c:783  */
+#line 1964 "vtkParse.y" /* glr.c:783  */
     {
       const char *name = (currentClass ? currentClass->Name : NULL);
       popType();
@@ -6263,87 +6330,87 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
         }
       end_class();
     }
-#line 6267 "vtkParse.tab.c" /* glr.c:783  */
+#line 6334 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 46:
-#line 1911 "vtkParse.y" /* glr.c:783  */
+#line 1978 "vtkParse.y" /* glr.c:783  */
     {
       start_class((((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (-4)].yystate.yysemantics.yysval.integer));
       currentClass->IsFinal = (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.integer);
     }
-#line 6276 "vtkParse.tab.c" /* glr.c:783  */
+#line 6343 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 48:
-#line 1917 "vtkParse.y" /* glr.c:783  */
+#line 1984 "vtkParse.y" /* glr.c:783  */
     {
       start_class((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.integer));
       currentClass->IsFinal = (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer);
     }
-#line 6285 "vtkParse.tab.c" /* glr.c:783  */
+#line 6352 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 49:
-#line 1922 "vtkParse.y" /* glr.c:783  */
+#line 1989 "vtkParse.y" /* glr.c:783  */
     {
       start_class(NULL, (((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.integer));
     }
-#line 6293 "vtkParse.tab.c" /* glr.c:783  */
+#line 6360 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 51:
-#line 1927 "vtkParse.y" /* glr.c:783  */
+#line 1994 "vtkParse.y" /* glr.c:783  */
     {
       start_class(NULL, (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.integer));
     }
-#line 6301 "vtkParse.tab.c" /* glr.c:783  */
+#line 6368 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 52:
-#line 1932 "vtkParse.y" /* glr.c:783  */
+#line 1999 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 0; }
-#line 6307 "vtkParse.tab.c" /* glr.c:783  */
+#line 6374 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 53:
-#line 1933 "vtkParse.y" /* glr.c:783  */
+#line 2000 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 1; }
-#line 6313 "vtkParse.tab.c" /* glr.c:783  */
+#line 6380 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 54:
-#line 1934 "vtkParse.y" /* glr.c:783  */
+#line 2001 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 2; }
-#line 6319 "vtkParse.tab.c" /* glr.c:783  */
+#line 6386 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 55:
-#line 1938 "vtkParse.y" /* glr.c:783  */
+#line 2005 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str)); }
-#line 6325 "vtkParse.tab.c" /* glr.c:783  */
+#line 6392 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 56:
-#line 1940 "vtkParse.y" /* glr.c:783  */
+#line 2007 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat3("::", (((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str)); }
-#line 6331 "vtkParse.tab.c" /* glr.c:783  */
+#line 6398 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 60:
-#line 1948 "vtkParse.y" /* glr.c:783  */
+#line 2015 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 0; }
-#line 6337 "vtkParse.tab.c" /* glr.c:783  */
+#line 6404 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 61:
-#line 1949 "vtkParse.y" /* glr.c:783  */
+#line 2016 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = (strcmp((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str), "final") == 0); }
-#line 6343 "vtkParse.tab.c" /* glr.c:783  */
+#line 6410 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 63:
-#line 1953 "vtkParse.y" /* glr.c:783  */
+#line 2020 "vtkParse.y" /* glr.c:783  */
     {
       startSig();
       clearType();
@@ -6351,97 +6418,97 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
       clearTemplate();
       closeComment();
     }
-#line 6355 "vtkParse.tab.c" /* glr.c:783  */
+#line 6422 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 66:
-#line 1965 "vtkParse.y" /* glr.c:783  */
+#line 2032 "vtkParse.y" /* glr.c:783  */
     { access_level = VTK_ACCESS_PUBLIC; }
-#line 6361 "vtkParse.tab.c" /* glr.c:783  */
+#line 6428 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 67:
-#line 1966 "vtkParse.y" /* glr.c:783  */
+#line 2033 "vtkParse.y" /* glr.c:783  */
     { access_level = VTK_ACCESS_PRIVATE; }
-#line 6367 "vtkParse.tab.c" /* glr.c:783  */
+#line 6434 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 68:
-#line 1967 "vtkParse.y" /* glr.c:783  */
+#line 2034 "vtkParse.y" /* glr.c:783  */
     { access_level = VTK_ACCESS_PROTECTED; }
-#line 6373 "vtkParse.tab.c" /* glr.c:783  */
+#line 6440 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 93:
-#line 1998 "vtkParse.y" /* glr.c:783  */
+#line 2065 "vtkParse.y" /* glr.c:783  */
     { output_friend_function(); }
-#line 6379 "vtkParse.tab.c" /* glr.c:783  */
+#line 6446 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 96:
-#line 2006 "vtkParse.y" /* glr.c:783  */
+#line 2073 "vtkParse.y" /* glr.c:783  */
     { add_base_class(currentClass, (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), access_level, (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 6385 "vtkParse.tab.c" /* glr.c:783  */
+#line 6452 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 97:
-#line 2008 "vtkParse.y" /* glr.c:783  */
+#line 2075 "vtkParse.y" /* glr.c:783  */
     { add_base_class(currentClass, (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.integer),
                      (VTK_PARSE_VIRTUAL | (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer))); }
-#line 6392 "vtkParse.tab.c" /* glr.c:783  */
+#line 6459 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 98:
-#line 2011 "vtkParse.y" /* glr.c:783  */
+#line 2078 "vtkParse.y" /* glr.c:783  */
     { add_base_class(currentClass, (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.integer),
                      ((((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.integer) | (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer))); }
-#line 6399 "vtkParse.tab.c" /* glr.c:783  */
+#line 6466 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 99:
-#line 2015 "vtkParse.y" /* glr.c:783  */
+#line 2082 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 0; }
-#line 6405 "vtkParse.tab.c" /* glr.c:783  */
+#line 6472 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 100:
-#line 2016 "vtkParse.y" /* glr.c:783  */
+#line 2083 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = VTK_PARSE_VIRTUAL; }
-#line 6411 "vtkParse.tab.c" /* glr.c:783  */
+#line 6478 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 101:
-#line 2019 "vtkParse.y" /* glr.c:783  */
+#line 2086 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = access_level; }
-#line 6417 "vtkParse.tab.c" /* glr.c:783  */
+#line 6484 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 103:
-#line 2023 "vtkParse.y" /* glr.c:783  */
+#line 2090 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = VTK_ACCESS_PUBLIC; }
-#line 6423 "vtkParse.tab.c" /* glr.c:783  */
+#line 6490 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 104:
-#line 2024 "vtkParse.y" /* glr.c:783  */
+#line 2091 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = VTK_ACCESS_PRIVATE; }
-#line 6429 "vtkParse.tab.c" /* glr.c:783  */
+#line 6496 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 105:
-#line 2025 "vtkParse.y" /* glr.c:783  */
+#line 2092 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = VTK_ACCESS_PROTECTED; }
-#line 6435 "vtkParse.tab.c" /* glr.c:783  */
+#line 6502 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 111:
-#line 2047 "vtkParse.y" /* glr.c:783  */
+#line 2114 "vtkParse.y" /* glr.c:783  */
     { pushType(); }
-#line 6441 "vtkParse.tab.c" /* glr.c:783  */
+#line 6508 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 112:
-#line 2048 "vtkParse.y" /* glr.c:783  */
+#line 2115 "vtkParse.y" /* glr.c:783  */
     {
       popType();
       clearTypeId();
@@ -6452,103 +6519,103 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
         }
       end_enum();
     }
-#line 6456 "vtkParse.tab.c" /* glr.c:783  */
+#line 6523 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 113:
-#line 2061 "vtkParse.y" /* glr.c:783  */
+#line 2128 "vtkParse.y" /* glr.c:783  */
     {
       start_enum((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.integer), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer), getTypeId());
       clearTypeId();
       ((*yyvalp).str) = (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str);
     }
-#line 6466 "vtkParse.tab.c" /* glr.c:783  */
+#line 6533 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 114:
-#line 2067 "vtkParse.y" /* glr.c:783  */
+#line 2134 "vtkParse.y" /* glr.c:783  */
     {
       start_enum(NULL, (((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.integer), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer), getTypeId());
       clearTypeId();
       ((*yyvalp).str) = NULL;
     }
-#line 6476 "vtkParse.tab.c" /* glr.c:783  */
+#line 6543 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 115:
-#line 2074 "vtkParse.y" /* glr.c:783  */
+#line 2141 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 0; }
-#line 6482 "vtkParse.tab.c" /* glr.c:783  */
+#line 6549 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 116:
-#line 2075 "vtkParse.y" /* glr.c:783  */
+#line 2142 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 1; }
-#line 6488 "vtkParse.tab.c" /* glr.c:783  */
+#line 6555 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 117:
-#line 2076 "vtkParse.y" /* glr.c:783  */
+#line 2143 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 1; }
-#line 6494 "vtkParse.tab.c" /* glr.c:783  */
+#line 6561 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 118:
-#line 2079 "vtkParse.y" /* glr.c:783  */
+#line 2146 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 0; }
-#line 6500 "vtkParse.tab.c" /* glr.c:783  */
+#line 6567 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 119:
-#line 2080 "vtkParse.y" /* glr.c:783  */
+#line 2147 "vtkParse.y" /* glr.c:783  */
     { pushType(); }
-#line 6506 "vtkParse.tab.c" /* glr.c:783  */
+#line 6573 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 120:
-#line 2081 "vtkParse.y" /* glr.c:783  */
+#line 2148 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = getType(); popType(); }
-#line 6512 "vtkParse.tab.c" /* glr.c:783  */
+#line 6579 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 124:
-#line 2088 "vtkParse.y" /* glr.c:783  */
-    { add_enum((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str), NULL); }
-#line 6518 "vtkParse.tab.c" /* glr.c:783  */
+#line 2155 "vtkParse.y" /* glr.c:783  */
+    { closeComment(); add_enum((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str), NULL); }
+#line 6585 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 125:
-#line 2089 "vtkParse.y" /* glr.c:783  */
-    { postSig("="); markSig(); }
-#line 6524 "vtkParse.tab.c" /* glr.c:783  */
+#line 2156 "vtkParse.y" /* glr.c:783  */
+    { postSig("="); markSig(); closeComment(); }
+#line 6591 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 126:
-#line 2090 "vtkParse.y" /* glr.c:783  */
+#line 2157 "vtkParse.y" /* glr.c:783  */
     { chopSig(); add_enum((((yyGLRStackItem const *)yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.str), copySig()); }
-#line 6530 "vtkParse.tab.c" /* glr.c:783  */
+#line 6597 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 149:
-#line 2150 "vtkParse.y" /* glr.c:783  */
+#line 2217 "vtkParse.y" /* glr.c:783  */
     { pushFunction(); postSig("("); }
-#line 6536 "vtkParse.tab.c" /* glr.c:783  */
+#line 6603 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 150:
-#line 2151 "vtkParse.y" /* glr.c:783  */
+#line 2218 "vtkParse.y" /* glr.c:783  */
     { postSig(")"); }
-#line 6542 "vtkParse.tab.c" /* glr.c:783  */
+#line 6609 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 151:
-#line 2152 "vtkParse.y" /* glr.c:783  */
+#line 2219 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = (VTK_PARSE_FUNCTION | (((yyGLRStackItem const *)yyvsp)[YYFILL (-7)].yystate.yysemantics.yysval.integer)); popFunction(); }
-#line 6548 "vtkParse.tab.c" /* glr.c:783  */
+#line 6615 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 152:
-#line 2156 "vtkParse.y" /* glr.c:783  */
+#line 2223 "vtkParse.y" /* glr.c:783  */
     {
       ValueInfo *item = (ValueInfo *)malloc(sizeof(ValueInfo));
       vtkParse_InitValue(item);
@@ -6581,59 +6648,59 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
         vtkParse_AddTypedefToNamespace(currentNamespace, item);
         }
     }
-#line 6585 "vtkParse.tab.c" /* glr.c:783  */
+#line 6652 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 153:
-#line 2195 "vtkParse.y" /* glr.c:783  */
+#line 2262 "vtkParse.y" /* glr.c:783  */
     { add_using((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), 0); }
-#line 6591 "vtkParse.tab.c" /* glr.c:783  */
+#line 6658 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 155:
-#line 2199 "vtkParse.y" /* glr.c:783  */
+#line 2266 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str); }
-#line 6597 "vtkParse.tab.c" /* glr.c:783  */
+#line 6664 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 156:
-#line 2201 "vtkParse.y" /* glr.c:783  */
+#line 2268 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 6603 "vtkParse.tab.c" /* glr.c:783  */
+#line 6670 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 157:
-#line 2203 "vtkParse.y" /* glr.c:783  */
+#line 2270 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 6609 "vtkParse.tab.c" /* glr.c:783  */
+#line 6676 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 158:
-#line 2205 "vtkParse.y" /* glr.c:783  */
+#line 2272 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat3((((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 6615 "vtkParse.tab.c" /* glr.c:783  */
+#line 6682 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 159:
-#line 2207 "vtkParse.y" /* glr.c:783  */
+#line 2274 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat3((((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 6621 "vtkParse.tab.c" /* glr.c:783  */
+#line 6688 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 160:
-#line 2210 "vtkParse.y" /* glr.c:783  */
+#line 2277 "vtkParse.y" /* glr.c:783  */
     { add_using((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), 1); }
-#line 6627 "vtkParse.tab.c" /* glr.c:783  */
+#line 6694 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 161:
-#line 2213 "vtkParse.y" /* glr.c:783  */
+#line 2280 "vtkParse.y" /* glr.c:783  */
     { markSig(); }
-#line 6633 "vtkParse.tab.c" /* glr.c:783  */
+#line 6700 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 162:
-#line 2215 "vtkParse.y" /* glr.c:783  */
+#line 2282 "vtkParse.y" /* glr.c:783  */
     {
       ValueInfo *item = (ValueInfo *)malloc(sizeof(ValueInfo));
       vtkParse_InitValue(item);
@@ -6657,17 +6724,17 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
         vtkParse_AddTypedefToNamespace(currentNamespace, item);
         }
     }
-#line 6661 "vtkParse.tab.c" /* glr.c:783  */
+#line 6728 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 163:
-#line 2245 "vtkParse.y" /* glr.c:783  */
+#line 2312 "vtkParse.y" /* glr.c:783  */
     { postSig("template<> "); clearTypeId(); }
-#line 6667 "vtkParse.tab.c" /* glr.c:783  */
+#line 6734 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 164:
-#line 2247 "vtkParse.y" /* glr.c:783  */
+#line 2314 "vtkParse.y" /* glr.c:783  */
     {
       postSig("template<");
       pushType();
@@ -6675,11 +6742,11 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
       clearTypeId();
       startTemplate();
     }
-#line 6679 "vtkParse.tab.c" /* glr.c:783  */
+#line 6746 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 165:
-#line 2255 "vtkParse.y" /* glr.c:783  */
+#line 2322 "vtkParse.y" /* glr.c:783  */
     {
       chopSig();
       if (getSig()[getSigLength()-1] == '>') { postSig(" "); }
@@ -6687,47 +6754,47 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
       clearTypeId();
       popType();
     }
-#line 6691 "vtkParse.tab.c" /* glr.c:783  */
+#line 6758 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 167:
-#line 2266 "vtkParse.y" /* glr.c:783  */
+#line 2333 "vtkParse.y" /* glr.c:783  */
     { chopSig(); postSig(", "); clearType(); clearTypeId(); }
-#line 6697 "vtkParse.tab.c" /* glr.c:783  */
+#line 6764 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 169:
-#line 2270 "vtkParse.y" /* glr.c:783  */
+#line 2337 "vtkParse.y" /* glr.c:783  */
     { markSig(); }
-#line 6703 "vtkParse.tab.c" /* glr.c:783  */
+#line 6770 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 170:
-#line 2272 "vtkParse.y" /* glr.c:783  */
+#line 2339 "vtkParse.y" /* glr.c:783  */
     { add_template_parameter(getType(), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer), copySig()); }
-#line 6709 "vtkParse.tab.c" /* glr.c:783  */
+#line 6776 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 172:
-#line 2274 "vtkParse.y" /* glr.c:783  */
+#line 2341 "vtkParse.y" /* glr.c:783  */
     { markSig(); }
-#line 6715 "vtkParse.tab.c" /* glr.c:783  */
+#line 6782 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 173:
-#line 2276 "vtkParse.y" /* glr.c:783  */
+#line 2343 "vtkParse.y" /* glr.c:783  */
     { add_template_parameter(0, (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer), copySig()); }
-#line 6721 "vtkParse.tab.c" /* glr.c:783  */
+#line 6788 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 175:
-#line 2278 "vtkParse.y" /* glr.c:783  */
+#line 2345 "vtkParse.y" /* glr.c:783  */
     { pushTemplate(); markSig(); }
-#line 6727 "vtkParse.tab.c" /* glr.c:783  */
+#line 6794 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 176:
-#line 2281 "vtkParse.y" /* glr.c:783  */
+#line 2348 "vtkParse.y" /* glr.c:783  */
     {
       unsigned long i;
       TemplateInfo *newTemplate = currentTemplate;
@@ -6736,98 +6803,98 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
       i = currentTemplate->NumberOfParameters-1;
       currentTemplate->Parameters[i]->Template = newTemplate;
     }
-#line 6740 "vtkParse.tab.c" /* glr.c:783  */
+#line 6807 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 178:
-#line 2292 "vtkParse.y" /* glr.c:783  */
+#line 2359 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 0; }
-#line 6746 "vtkParse.tab.c" /* glr.c:783  */
+#line 6813 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 179:
-#line 2293 "vtkParse.y" /* glr.c:783  */
+#line 2360 "vtkParse.y" /* glr.c:783  */
     { postSig("..."); ((*yyvalp).integer) = VTK_PARSE_PACK; }
-#line 6752 "vtkParse.tab.c" /* glr.c:783  */
+#line 6819 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 180:
-#line 2296 "vtkParse.y" /* glr.c:783  */
+#line 2363 "vtkParse.y" /* glr.c:783  */
     { postSig("class "); }
-#line 6758 "vtkParse.tab.c" /* glr.c:783  */
+#line 6825 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 181:
-#line 2297 "vtkParse.y" /* glr.c:783  */
+#line 2364 "vtkParse.y" /* glr.c:783  */
     { postSig("typename "); }
-#line 6764 "vtkParse.tab.c" /* glr.c:783  */
+#line 6831 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 184:
-#line 2303 "vtkParse.y" /* glr.c:783  */
+#line 2370 "vtkParse.y" /* glr.c:783  */
     { postSig("="); markSig(); }
-#line 6770 "vtkParse.tab.c" /* glr.c:783  */
+#line 6837 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 185:
-#line 2305 "vtkParse.y" /* glr.c:783  */
+#line 2372 "vtkParse.y" /* glr.c:783  */
     {
       unsigned long i = currentTemplate->NumberOfParameters-1;
       ValueInfo *param = currentTemplate->Parameters[i];
       chopSig();
       param->Value = copySig();
     }
-#line 6781 "vtkParse.tab.c" /* glr.c:783  */
+#line 6848 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 188:
-#line 2322 "vtkParse.y" /* glr.c:783  */
+#line 2389 "vtkParse.y" /* glr.c:783  */
     { output_function(); }
-#line 6787 "vtkParse.tab.c" /* glr.c:783  */
+#line 6854 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 189:
-#line 2323 "vtkParse.y" /* glr.c:783  */
+#line 2390 "vtkParse.y" /* glr.c:783  */
     { output_function(); }
-#line 6793 "vtkParse.tab.c" /* glr.c:783  */
+#line 6860 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 190:
-#line 2324 "vtkParse.y" /* glr.c:783  */
+#line 2391 "vtkParse.y" /* glr.c:783  */
     { reject_function(); }
-#line 6799 "vtkParse.tab.c" /* glr.c:783  */
+#line 6866 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 191:
-#line 2325 "vtkParse.y" /* glr.c:783  */
+#line 2392 "vtkParse.y" /* glr.c:783  */
     { reject_function(); }
-#line 6805 "vtkParse.tab.c" /* glr.c:783  */
+#line 6872 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 199:
-#line 2341 "vtkParse.y" /* glr.c:783  */
+#line 2408 "vtkParse.y" /* glr.c:783  */
     { output_function(); }
-#line 6811 "vtkParse.tab.c" /* glr.c:783  */
+#line 6878 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 209:
-#line 2359 "vtkParse.y" /* glr.c:783  */
+#line 2426 "vtkParse.y" /* glr.c:783  */
     {
       postSig("(");
       currentFunction->IsExplicit = ((getType() & VTK_PARSE_EXPLICIT) != 0);
       set_return(currentFunction, getType(), getTypeId(), 0);
     }
-#line 6821 "vtkParse.tab.c" /* glr.c:783  */
+#line 6888 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 210:
-#line 2364 "vtkParse.y" /* glr.c:783  */
+#line 2431 "vtkParse.y" /* glr.c:783  */
     { postSig(")"); }
-#line 6827 "vtkParse.tab.c" /* glr.c:783  */
+#line 6894 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 211:
-#line 2366 "vtkParse.y" /* glr.c:783  */
+#line 2433 "vtkParse.y" /* glr.c:783  */
     {
       postSig(";");
       closeSig();
@@ -6836,23 +6903,23 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
       currentFunction->Comment = vtkstrdup(getComment());
       vtkParseDebug("Parsed operator", "operator typecast");
     }
-#line 6840 "vtkParse.tab.c" /* glr.c:783  */
+#line 6907 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 212:
-#line 2377 "vtkParse.y" /* glr.c:783  */
+#line 2444 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = copySig(); }
-#line 6846 "vtkParse.tab.c" /* glr.c:783  */
+#line 6913 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 213:
-#line 2380 "vtkParse.y" /* glr.c:783  */
+#line 2447 "vtkParse.y" /* glr.c:783  */
     { postSig(")"); }
-#line 6852 "vtkParse.tab.c" /* glr.c:783  */
+#line 6919 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 214:
-#line 2382 "vtkParse.y" /* glr.c:783  */
+#line 2449 "vtkParse.y" /* glr.c:783  */
     {
       postSig(";");
       closeSig();
@@ -6860,33 +6927,33 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
       currentFunction->Comment = vtkstrdup(getComment());
       vtkParseDebug("Parsed operator", currentFunction->Name);
     }
-#line 6864 "vtkParse.tab.c" /* glr.c:783  */
+#line 6931 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 215:
-#line 2392 "vtkParse.y" /* glr.c:783  */
+#line 2459 "vtkParse.y" /* glr.c:783  */
     {
       postSig("(");
       currentFunction->IsOperator = 1;
       set_return(currentFunction, getType(), getTypeId(), 0);
     }
-#line 6874 "vtkParse.tab.c" /* glr.c:783  */
+#line 6941 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 217:
-#line 2401 "vtkParse.y" /* glr.c:783  */
+#line 2468 "vtkParse.y" /* glr.c:783  */
     { chopSig(); ((*yyvalp).str) = vtkstrcat(copySig(), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 6880 "vtkParse.tab.c" /* glr.c:783  */
+#line 6947 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 218:
-#line 2404 "vtkParse.y" /* glr.c:783  */
+#line 2471 "vtkParse.y" /* glr.c:783  */
     { markSig(); postSig("operator "); }
-#line 6886 "vtkParse.tab.c" /* glr.c:783  */
+#line 6953 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 219:
-#line 2408 "vtkParse.y" /* glr.c:783  */
+#line 2475 "vtkParse.y" /* glr.c:783  */
     {
       postSig(";");
       closeSig();
@@ -6894,108 +6961,108 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
       currentFunction->Comment = vtkstrdup(getComment());
       vtkParseDebug("Parsed func", currentFunction->Name);
     }
-#line 6898 "vtkParse.tab.c" /* glr.c:783  */
+#line 6965 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 222:
-#line 2420 "vtkParse.y" /* glr.c:783  */
+#line 2487 "vtkParse.y" /* glr.c:783  */
     { postSig(" throw "); }
-#line 6904 "vtkParse.tab.c" /* glr.c:783  */
+#line 6971 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 223:
-#line 2420 "vtkParse.y" /* glr.c:783  */
+#line 2487 "vtkParse.y" /* glr.c:783  */
     { chopSig(); }
-#line 6910 "vtkParse.tab.c" /* glr.c:783  */
+#line 6977 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 224:
-#line 2421 "vtkParse.y" /* glr.c:783  */
+#line 2488 "vtkParse.y" /* glr.c:783  */
     { postSig(" const"); currentFunction->IsConst = 1; }
-#line 6916 "vtkParse.tab.c" /* glr.c:783  */
+#line 6983 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 225:
-#line 2423 "vtkParse.y" /* glr.c:783  */
+#line 2490 "vtkParse.y" /* glr.c:783  */
     {
       postSig(" = 0");
       currentFunction->IsPureVirtual = 1;
       if (currentClass) { currentClass->IsAbstract = 1; }
     }
-#line 6926 "vtkParse.tab.c" /* glr.c:783  */
+#line 6993 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 226:
-#line 2429 "vtkParse.y" /* glr.c:783  */
+#line 2496 "vtkParse.y" /* glr.c:783  */
     {
       postSig(" "); postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str));
       if (strcmp((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str), "final") == 0) { currentFunction->IsFinal = 1; }
     }
-#line 6935 "vtkParse.tab.c" /* glr.c:783  */
+#line 7002 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 227:
-#line 2433 "vtkParse.y" /* glr.c:783  */
+#line 2500 "vtkParse.y" /* glr.c:783  */
     { chopSig(); }
-#line 6941 "vtkParse.tab.c" /* glr.c:783  */
+#line 7008 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 230:
-#line 2438 "vtkParse.y" /* glr.c:783  */
+#line 2505 "vtkParse.y" /* glr.c:783  */
     { postSig(" noexcept"); }
-#line 6947 "vtkParse.tab.c" /* glr.c:783  */
+#line 7014 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 231:
-#line 2441 "vtkParse.y" /* glr.c:783  */
+#line 2508 "vtkParse.y" /* glr.c:783  */
     { currentFunction->IsDeleted = 1; }
-#line 6953 "vtkParse.tab.c" /* glr.c:783  */
+#line 7020 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 235:
-#line 2448 "vtkParse.y" /* glr.c:783  */
+#line 2515 "vtkParse.y" /* glr.c:783  */
     { postSig(" -> "); clearType(); clearTypeId(); }
-#line 6959 "vtkParse.tab.c" /* glr.c:783  */
+#line 7026 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 236:
-#line 2450 "vtkParse.y" /* glr.c:783  */
+#line 2517 "vtkParse.y" /* glr.c:783  */
     {
       chopSig();
       set_return(currentFunction, getType(), getTypeId(), 0);
     }
-#line 6968 "vtkParse.tab.c" /* glr.c:783  */
+#line 7035 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 243:
-#line 2468 "vtkParse.y" /* glr.c:783  */
+#line 2535 "vtkParse.y" /* glr.c:783  */
     {
       postSig("(");
       set_return(currentFunction, getType(), getTypeId(), 0);
     }
-#line 6977 "vtkParse.tab.c" /* glr.c:783  */
+#line 7044 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 244:
-#line 2472 "vtkParse.y" /* glr.c:783  */
+#line 2539 "vtkParse.y" /* glr.c:783  */
     { postSig(")"); }
-#line 6983 "vtkParse.tab.c" /* glr.c:783  */
+#line 7050 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 245:
-#line 2479 "vtkParse.y" /* glr.c:783  */
+#line 2546 "vtkParse.y" /* glr.c:783  */
     { closeSig(); }
-#line 6989 "vtkParse.tab.c" /* glr.c:783  */
+#line 7056 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 246:
-#line 2480 "vtkParse.y" /* glr.c:783  */
+#line 2547 "vtkParse.y" /* glr.c:783  */
     { openSig(); }
-#line 6995 "vtkParse.tab.c" /* glr.c:783  */
+#line 7062 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 247:
-#line 2482 "vtkParse.y" /* glr.c:783  */
+#line 2549 "vtkParse.y" /* glr.c:783  */
     {
       postSig(";");
       closeSig();
@@ -7011,59 +7078,59 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
       currentFunction->Comment = vtkstrdup(getComment());
       vtkParseDebug("Parsed func", currentFunction->Name);
     }
-#line 7015 "vtkParse.tab.c" /* glr.c:783  */
+#line 7082 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 248:
-#line 2499 "vtkParse.y" /* glr.c:783  */
+#line 2566 "vtkParse.y" /* glr.c:783  */
     { pushType(); postSig("("); }
-#line 7021 "vtkParse.tab.c" /* glr.c:783  */
+#line 7088 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 249:
-#line 2501 "vtkParse.y" /* glr.c:783  */
+#line 2568 "vtkParse.y" /* glr.c:783  */
     { popType(); postSig(")"); }
-#line 7027 "vtkParse.tab.c" /* glr.c:783  */
+#line 7094 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 256:
-#line 2518 "vtkParse.y" /* glr.c:783  */
+#line 2585 "vtkParse.y" /* glr.c:783  */
     { clearType(); clearTypeId(); }
-#line 7033 "vtkParse.tab.c" /* glr.c:783  */
+#line 7100 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 258:
-#line 2521 "vtkParse.y" /* glr.c:783  */
+#line 2588 "vtkParse.y" /* glr.c:783  */
     { clearType(); clearTypeId(); }
-#line 7039 "vtkParse.tab.c" /* glr.c:783  */
+#line 7106 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 259:
-#line 2522 "vtkParse.y" /* glr.c:783  */
+#line 2589 "vtkParse.y" /* glr.c:783  */
     { clearType(); clearTypeId(); postSig(", "); }
-#line 7045 "vtkParse.tab.c" /* glr.c:783  */
+#line 7112 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 261:
-#line 2525 "vtkParse.y" /* glr.c:783  */
+#line 2592 "vtkParse.y" /* glr.c:783  */
     { currentFunction->IsVariadic = 1; postSig(", ..."); }
-#line 7051 "vtkParse.tab.c" /* glr.c:783  */
+#line 7118 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 262:
-#line 2527 "vtkParse.y" /* glr.c:783  */
+#line 2594 "vtkParse.y" /* glr.c:783  */
     { currentFunction->IsVariadic = 1; postSig("..."); }
-#line 7057 "vtkParse.tab.c" /* glr.c:783  */
+#line 7124 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 263:
-#line 2530 "vtkParse.y" /* glr.c:783  */
+#line 2597 "vtkParse.y" /* glr.c:783  */
     { markSig(); }
-#line 7063 "vtkParse.tab.c" /* glr.c:783  */
+#line 7130 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 264:
-#line 2532 "vtkParse.y" /* glr.c:783  */
+#line 2599 "vtkParse.y" /* glr.c:783  */
     {
       ValueInfo *param = (ValueInfo *)malloc(sizeof(ValueInfo));
       vtkParse_InitValue(param);
@@ -7078,11 +7145,11 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
 
       vtkParse_AddParameterToFunction(currentFunction, param);
     }
-#line 7082 "vtkParse.tab.c" /* glr.c:783  */
+#line 7149 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 265:
-#line 2547 "vtkParse.y" /* glr.c:783  */
+#line 2614 "vtkParse.y" /* glr.c:783  */
     {
       unsigned long i = currentFunction->NumberOfParameters-1;
       if (getVarValue())
@@ -7090,41 +7157,41 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
         currentFunction->Parameters[i]->Value = getVarValue();
         }
     }
-#line 7094 "vtkParse.tab.c" /* glr.c:783  */
+#line 7161 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 266:
-#line 2556 "vtkParse.y" /* glr.c:783  */
+#line 2623 "vtkParse.y" /* glr.c:783  */
     { clearVarValue(); }
-#line 7100 "vtkParse.tab.c" /* glr.c:783  */
+#line 7167 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 268:
-#line 2560 "vtkParse.y" /* glr.c:783  */
+#line 2627 "vtkParse.y" /* glr.c:783  */
     { postSig("="); clearVarValue(); markSig(); }
-#line 7106 "vtkParse.tab.c" /* glr.c:783  */
+#line 7173 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 269:
-#line 2561 "vtkParse.y" /* glr.c:783  */
+#line 2628 "vtkParse.y" /* glr.c:783  */
     { chopSig(); setVarValue(copySig()); }
-#line 7112 "vtkParse.tab.c" /* glr.c:783  */
+#line 7179 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 270:
-#line 2562 "vtkParse.y" /* glr.c:783  */
+#line 2629 "vtkParse.y" /* glr.c:783  */
     { clearVarValue(); markSig(); }
-#line 7118 "vtkParse.tab.c" /* glr.c:783  */
+#line 7185 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 271:
-#line 2563 "vtkParse.y" /* glr.c:783  */
+#line 2630 "vtkParse.y" /* glr.c:783  */
     { chopSig(); setVarValue(copySig()); }
-#line 7124 "vtkParse.tab.c" /* glr.c:783  */
+#line 7191 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 273:
-#line 2575 "vtkParse.y" /* glr.c:783  */
+#line 2642 "vtkParse.y" /* glr.c:783  */
     {
       unsigned int type = getType();
       ValueInfo *var = (ValueInfo *)malloc(sizeof(ValueInfo));
@@ -7192,29 +7259,29 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
           }
         }
     }
-#line 7196 "vtkParse.tab.c" /* glr.c:783  */
+#line 7263 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 277:
-#line 2647 "vtkParse.y" /* glr.c:783  */
+#line 2714 "vtkParse.y" /* glr.c:783  */
     { postSig(", "); }
-#line 7202 "vtkParse.tab.c" /* glr.c:783  */
+#line 7269 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 280:
-#line 2653 "vtkParse.y" /* glr.c:783  */
+#line 2720 "vtkParse.y" /* glr.c:783  */
     { setTypePtr(0); }
-#line 7208 "vtkParse.tab.c" /* glr.c:783  */
+#line 7275 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 281:
-#line 2654 "vtkParse.y" /* glr.c:783  */
+#line 2721 "vtkParse.y" /* glr.c:783  */
     { setTypePtr((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 7214 "vtkParse.tab.c" /* glr.c:783  */
+#line 7281 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 282:
-#line 2659 "vtkParse.y" /* glr.c:783  */
+#line 2726 "vtkParse.y" /* glr.c:783  */
     {
       if ((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer) == VTK_PARSE_FUNCTION)
         {
@@ -7225,17 +7292,17 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
         ((*yyvalp).integer) = (((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.integer);
         }
     }
-#line 7229 "vtkParse.tab.c" /* glr.c:783  */
+#line 7296 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 283:
-#line 2669 "vtkParse.y" /* glr.c:783  */
+#line 2736 "vtkParse.y" /* glr.c:783  */
     { postSig(")"); }
-#line 7235 "vtkParse.tab.c" /* glr.c:783  */
+#line 7302 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 284:
-#line 2671 "vtkParse.y" /* glr.c:783  */
+#line 2738 "vtkParse.y" /* glr.c:783  */
     {
       const char *scope = getScope();
       unsigned int parens = add_indirection((((yyGLRStackItem const *)yyvsp)[YYFILL (-5)].yystate.yysemantics.yysval.integer), (((yyGLRStackItem const *)yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.integer));
@@ -7250,29 +7317,29 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
         ((*yyvalp).integer) = add_indirection_to_array(parens);
         }
     }
-#line 7254 "vtkParse.tab.c" /* glr.c:783  */
+#line 7321 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 285:
-#line 2687 "vtkParse.y" /* glr.c:783  */
+#line 2754 "vtkParse.y" /* glr.c:783  */
     { clearVarName(); chopSig(); }
-#line 7260 "vtkParse.tab.c" /* glr.c:783  */
+#line 7327 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 287:
-#line 2693 "vtkParse.y" /* glr.c:783  */
+#line 2760 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = (((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.integer); }
-#line 7266 "vtkParse.tab.c" /* glr.c:783  */
+#line 7333 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 288:
-#line 2694 "vtkParse.y" /* glr.c:783  */
+#line 2761 "vtkParse.y" /* glr.c:783  */
     { postSig(")"); }
-#line 7272 "vtkParse.tab.c" /* glr.c:783  */
+#line 7339 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 289:
-#line 2696 "vtkParse.y" /* glr.c:783  */
+#line 2763 "vtkParse.y" /* glr.c:783  */
     {
       const char *scope = getScope();
       unsigned int parens = add_indirection((((yyGLRStackItem const *)yyvsp)[YYFILL (-4)].yystate.yysemantics.yysval.integer), (((yyGLRStackItem const *)yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.integer));
@@ -7287,876 +7354,876 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
         ((*yyvalp).integer) = add_indirection_to_array(parens);
         }
     }
-#line 7291 "vtkParse.tab.c" /* glr.c:783  */
+#line 7358 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 290:
-#line 2712 "vtkParse.y" /* glr.c:783  */
+#line 2779 "vtkParse.y" /* glr.c:783  */
     { postSig("("); scopeSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); postSig("*"); }
-#line 7297 "vtkParse.tab.c" /* glr.c:783  */
+#line 7364 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 291:
-#line 2713 "vtkParse.y" /* glr.c:783  */
+#line 2780 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer); }
-#line 7303 "vtkParse.tab.c" /* glr.c:783  */
+#line 7370 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 292:
-#line 2714 "vtkParse.y" /* glr.c:783  */
+#line 2781 "vtkParse.y" /* glr.c:783  */
     { postSig("("); scopeSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); postSig("&");
          ((*yyvalp).integer) = VTK_PARSE_REF; }
-#line 7310 "vtkParse.tab.c" /* glr.c:783  */
+#line 7377 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 293:
-#line 2718 "vtkParse.y" /* glr.c:783  */
+#line 2785 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 0; }
-#line 7316 "vtkParse.tab.c" /* glr.c:783  */
+#line 7383 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 294:
-#line 2719 "vtkParse.y" /* glr.c:783  */
+#line 2786 "vtkParse.y" /* glr.c:783  */
     { pushFunction(); postSig("("); }
-#line 7322 "vtkParse.tab.c" /* glr.c:783  */
+#line 7389 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 295:
-#line 2720 "vtkParse.y" /* glr.c:783  */
+#line 2787 "vtkParse.y" /* glr.c:783  */
     { postSig(")"); }
-#line 7328 "vtkParse.tab.c" /* glr.c:783  */
+#line 7395 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 296:
-#line 2721 "vtkParse.y" /* glr.c:783  */
+#line 2788 "vtkParse.y" /* glr.c:783  */
     {
       ((*yyvalp).integer) = VTK_PARSE_FUNCTION;
       popFunction();
     }
-#line 7337 "vtkParse.tab.c" /* glr.c:783  */
+#line 7404 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 297:
-#line 2725 "vtkParse.y" /* glr.c:783  */
+#line 2792 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = VTK_PARSE_ARRAY; }
-#line 7343 "vtkParse.tab.c" /* glr.c:783  */
+#line 7410 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 300:
-#line 2729 "vtkParse.y" /* glr.c:783  */
+#line 2796 "vtkParse.y" /* glr.c:783  */
     { currentFunction->IsConst = 1; }
-#line 7349 "vtkParse.tab.c" /* glr.c:783  */
+#line 7416 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 305:
-#line 2737 "vtkParse.y" /* glr.c:783  */
+#line 2804 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = add_indirection((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.integer), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 7355 "vtkParse.tab.c" /* glr.c:783  */
+#line 7422 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 307:
-#line 2742 "vtkParse.y" /* glr.c:783  */
+#line 2809 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = add_indirection((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.integer), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 7361 "vtkParse.tab.c" /* glr.c:783  */
+#line 7428 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 308:
-#line 2745 "vtkParse.y" /* glr.c:783  */
+#line 2812 "vtkParse.y" /* glr.c:783  */
     { setVarName((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str)); }
-#line 7367 "vtkParse.tab.c" /* glr.c:783  */
+#line 7434 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 309:
-#line 2747 "vtkParse.y" /* glr.c:783  */
+#line 2814 "vtkParse.y" /* glr.c:783  */
     { setVarName((((yyGLRStackItem const *)yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.str)); }
-#line 7373 "vtkParse.tab.c" /* glr.c:783  */
+#line 7440 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 314:
-#line 2756 "vtkParse.y" /* glr.c:783  */
+#line 2823 "vtkParse.y" /* glr.c:783  */
     { clearArray(); }
-#line 7379 "vtkParse.tab.c" /* glr.c:783  */
+#line 7446 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 316:
-#line 2760 "vtkParse.y" /* glr.c:783  */
+#line 2827 "vtkParse.y" /* glr.c:783  */
     { clearArray(); }
-#line 7385 "vtkParse.tab.c" /* glr.c:783  */
+#line 7452 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 320:
-#line 2767 "vtkParse.y" /* glr.c:783  */
+#line 2834 "vtkParse.y" /* glr.c:783  */
     { postSig("["); }
-#line 7391 "vtkParse.tab.c" /* glr.c:783  */
+#line 7458 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 321:
-#line 2768 "vtkParse.y" /* glr.c:783  */
+#line 2835 "vtkParse.y" /* glr.c:783  */
     { postSig("]"); }
-#line 7397 "vtkParse.tab.c" /* glr.c:783  */
+#line 7464 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 322:
-#line 2771 "vtkParse.y" /* glr.c:783  */
+#line 2838 "vtkParse.y" /* glr.c:783  */
     { pushArraySize(""); }
-#line 7403 "vtkParse.tab.c" /* glr.c:783  */
+#line 7470 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 323:
-#line 2772 "vtkParse.y" /* glr.c:783  */
+#line 2839 "vtkParse.y" /* glr.c:783  */
     { markSig(); }
-#line 7409 "vtkParse.tab.c" /* glr.c:783  */
+#line 7476 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 324:
-#line 2772 "vtkParse.y" /* glr.c:783  */
+#line 2839 "vtkParse.y" /* glr.c:783  */
     { chopSig(); pushArraySize(copySig()); }
-#line 7415 "vtkParse.tab.c" /* glr.c:783  */
+#line 7482 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 330:
-#line 2786 "vtkParse.y" /* glr.c:783  */
+#line 2853 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat("~", (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7421 "vtkParse.tab.c" /* glr.c:783  */
+#line 7488 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 331:
-#line 2787 "vtkParse.y" /* glr.c:783  */
+#line 2854 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat("~", (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7427 "vtkParse.tab.c" /* glr.c:783  */
+#line 7494 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 332:
-#line 2791 "vtkParse.y" /* glr.c:783  */
+#line 2858 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7433 "vtkParse.tab.c" /* glr.c:783  */
+#line 7500 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 333:
-#line 2793 "vtkParse.y" /* glr.c:783  */
+#line 2860 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7439 "vtkParse.tab.c" /* glr.c:783  */
+#line 7506 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 334:
-#line 2795 "vtkParse.y" /* glr.c:783  */
+#line 2862 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7445 "vtkParse.tab.c" /* glr.c:783  */
+#line 7512 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 335:
-#line 2799 "vtkParse.y" /* glr.c:783  */
+#line 2866 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7451 "vtkParse.tab.c" /* glr.c:783  */
+#line 7518 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 336:
-#line 2801 "vtkParse.y" /* glr.c:783  */
+#line 2868 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7457 "vtkParse.tab.c" /* glr.c:783  */
+#line 7524 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 337:
-#line 2803 "vtkParse.y" /* glr.c:783  */
+#line 2870 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7463 "vtkParse.tab.c" /* glr.c:783  */
+#line 7530 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 338:
-#line 2805 "vtkParse.y" /* glr.c:783  */
+#line 2872 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat3((((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7469 "vtkParse.tab.c" /* glr.c:783  */
+#line 7536 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 339:
-#line 2807 "vtkParse.y" /* glr.c:783  */
+#line 2874 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat3((((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7475 "vtkParse.tab.c" /* glr.c:783  */
+#line 7542 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 340:
-#line 2809 "vtkParse.y" /* glr.c:783  */
+#line 2876 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat3((((yyGLRStackItem const *)yyvsp)[YYFILL (-2)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7481 "vtkParse.tab.c" /* glr.c:783  */
+#line 7548 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 341:
-#line 2810 "vtkParse.y" /* glr.c:783  */
+#line 2877 "vtkParse.y" /* glr.c:783  */
     { postSig("template "); }
-#line 7487 "vtkParse.tab.c" /* glr.c:783  */
+#line 7554 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 342:
-#line 2812 "vtkParse.y" /* glr.c:783  */
+#line 2879 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat4((((yyGLRStackItem const *)yyvsp)[YYFILL (-4)].yystate.yysemantics.yysval.str), "template ", (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7493 "vtkParse.tab.c" /* glr.c:783  */
+#line 7560 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 343:
-#line 2815 "vtkParse.y" /* glr.c:783  */
+#line 2882 "vtkParse.y" /* glr.c:783  */
     { postSig("~"); }
-#line 7499 "vtkParse.tab.c" /* glr.c:783  */
+#line 7566 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 344:
-#line 2818 "vtkParse.y" /* glr.c:783  */
+#line 2885 "vtkParse.y" /* glr.c:783  */
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7505 "vtkParse.tab.c" /* glr.c:783  */
+#line 7572 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 345:
-#line 2821 "vtkParse.y" /* glr.c:783  */
+#line 2888 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "::"; postSig(((*yyvalp).str)); }
-#line 7511 "vtkParse.tab.c" /* glr.c:783  */
+#line 7578 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 346:
-#line 2824 "vtkParse.y" /* glr.c:783  */
+#line 2891 "vtkParse.y" /* glr.c:783  */
     { markSig(); postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str)); postSig("<"); }
-#line 7517 "vtkParse.tab.c" /* glr.c:783  */
+#line 7584 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 347:
-#line 2826 "vtkParse.y" /* glr.c:783  */
+#line 2893 "vtkParse.y" /* glr.c:783  */
     {
       chopSig(); if (getSig()[getSigLength()-1] == '>') { postSig(" "); }
       postSig(">"); ((*yyvalp).str) = copySig(); clearTypeId();
     }
-#line 7526 "vtkParse.tab.c" /* glr.c:783  */
+#line 7593 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 348:
-#line 2832 "vtkParse.y" /* glr.c:783  */
+#line 2899 "vtkParse.y" /* glr.c:783  */
     { markSig(); postSig("decltype"); }
-#line 7532 "vtkParse.tab.c" /* glr.c:783  */
+#line 7599 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 349:
-#line 2833 "vtkParse.y" /* glr.c:783  */
+#line 2900 "vtkParse.y" /* glr.c:783  */
     { chopSig(); ((*yyvalp).str) = copySig(); clearTypeId(); }
-#line 7538 "vtkParse.tab.c" /* glr.c:783  */
+#line 7605 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 350:
-#line 2840 "vtkParse.y" /* glr.c:783  */
+#line 2907 "vtkParse.y" /* glr.c:783  */
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7544 "vtkParse.tab.c" /* glr.c:783  */
+#line 7611 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 351:
-#line 2841 "vtkParse.y" /* glr.c:783  */
+#line 2908 "vtkParse.y" /* glr.c:783  */
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7550 "vtkParse.tab.c" /* glr.c:783  */
+#line 7617 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 352:
-#line 2842 "vtkParse.y" /* glr.c:783  */
+#line 2909 "vtkParse.y" /* glr.c:783  */
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7556 "vtkParse.tab.c" /* glr.c:783  */
+#line 7623 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 353:
-#line 2843 "vtkParse.y" /* glr.c:783  */
+#line 2910 "vtkParse.y" /* glr.c:783  */
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7562 "vtkParse.tab.c" /* glr.c:783  */
+#line 7629 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 354:
-#line 2844 "vtkParse.y" /* glr.c:783  */
+#line 2911 "vtkParse.y" /* glr.c:783  */
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7568 "vtkParse.tab.c" /* glr.c:783  */
+#line 7635 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 355:
-#line 2845 "vtkParse.y" /* glr.c:783  */
+#line 2912 "vtkParse.y" /* glr.c:783  */
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7574 "vtkParse.tab.c" /* glr.c:783  */
+#line 7641 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 356:
-#line 2846 "vtkParse.y" /* glr.c:783  */
+#line 2913 "vtkParse.y" /* glr.c:783  */
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7580 "vtkParse.tab.c" /* glr.c:783  */
+#line 7647 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 357:
-#line 2847 "vtkParse.y" /* glr.c:783  */
+#line 2914 "vtkParse.y" /* glr.c:783  */
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7586 "vtkParse.tab.c" /* glr.c:783  */
+#line 7653 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 358:
-#line 2848 "vtkParse.y" /* glr.c:783  */
+#line 2915 "vtkParse.y" /* glr.c:783  */
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7592 "vtkParse.tab.c" /* glr.c:783  */
+#line 7659 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 359:
-#line 2849 "vtkParse.y" /* glr.c:783  */
+#line 2916 "vtkParse.y" /* glr.c:783  */
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7598 "vtkParse.tab.c" /* glr.c:783  */
+#line 7665 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 360:
-#line 2850 "vtkParse.y" /* glr.c:783  */
+#line 2917 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "vtkTypeInt8"; postSig(((*yyvalp).str)); }
-#line 7604 "vtkParse.tab.c" /* glr.c:783  */
+#line 7671 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 361:
-#line 2851 "vtkParse.y" /* glr.c:783  */
+#line 2918 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "vtkTypeUInt8"; postSig(((*yyvalp).str)); }
-#line 7610 "vtkParse.tab.c" /* glr.c:783  */
+#line 7677 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 362:
-#line 2852 "vtkParse.y" /* glr.c:783  */
+#line 2919 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "vtkTypeInt16"; postSig(((*yyvalp).str)); }
-#line 7616 "vtkParse.tab.c" /* glr.c:783  */
+#line 7683 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 363:
-#line 2853 "vtkParse.y" /* glr.c:783  */
+#line 2920 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "vtkTypeUInt16"; postSig(((*yyvalp).str)); }
-#line 7622 "vtkParse.tab.c" /* glr.c:783  */
+#line 7689 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 364:
-#line 2854 "vtkParse.y" /* glr.c:783  */
+#line 2921 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "vtkTypeInt32"; postSig(((*yyvalp).str)); }
-#line 7628 "vtkParse.tab.c" /* glr.c:783  */
+#line 7695 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 365:
-#line 2855 "vtkParse.y" /* glr.c:783  */
+#line 2922 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "vtkTypeUInt32"; postSig(((*yyvalp).str)); }
-#line 7634 "vtkParse.tab.c" /* glr.c:783  */
+#line 7701 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 366:
-#line 2856 "vtkParse.y" /* glr.c:783  */
+#line 2923 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "vtkTypeInt64"; postSig(((*yyvalp).str)); }
-#line 7640 "vtkParse.tab.c" /* glr.c:783  */
+#line 7707 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 367:
-#line 2857 "vtkParse.y" /* glr.c:783  */
+#line 2924 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "vtkTypeUInt64"; postSig(((*yyvalp).str)); }
-#line 7646 "vtkParse.tab.c" /* glr.c:783  */
+#line 7713 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 368:
-#line 2858 "vtkParse.y" /* glr.c:783  */
+#line 2925 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "vtkTypeFloat32"; postSig(((*yyvalp).str)); }
-#line 7652 "vtkParse.tab.c" /* glr.c:783  */
+#line 7719 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 369:
-#line 2859 "vtkParse.y" /* glr.c:783  */
+#line 2926 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "vtkTypeFloat64"; postSig(((*yyvalp).str)); }
-#line 7658 "vtkParse.tab.c" /* glr.c:783  */
+#line 7725 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 370:
-#line 2860 "vtkParse.y" /* glr.c:783  */
+#line 2927 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "vtkIdType"; postSig(((*yyvalp).str)); }
-#line 7664 "vtkParse.tab.c" /* glr.c:783  */
+#line 7731 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 371:
-#line 2861 "vtkParse.y" /* glr.c:783  */
+#line 2928 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "vtkFloatingPointType"; postSig(((*yyvalp).str)); }
-#line 7670 "vtkParse.tab.c" /* glr.c:783  */
+#line 7737 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 382:
-#line 2886 "vtkParse.y" /* glr.c:783  */
+#line 2953 "vtkParse.y" /* glr.c:783  */
     { setTypeBase(buildTypeBase(getType(), (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer))); }
-#line 7676 "vtkParse.tab.c" /* glr.c:783  */
+#line 7743 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 383:
-#line 2887 "vtkParse.y" /* glr.c:783  */
+#line 2954 "vtkParse.y" /* glr.c:783  */
     { setTypeMod(VTK_PARSE_TYPEDEF); }
-#line 7682 "vtkParse.tab.c" /* glr.c:783  */
+#line 7749 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 384:
-#line 2888 "vtkParse.y" /* glr.c:783  */
+#line 2955 "vtkParse.y" /* glr.c:783  */
     { setTypeMod(VTK_PARSE_FRIEND); }
-#line 7688 "vtkParse.tab.c" /* glr.c:783  */
+#line 7755 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 387:
-#line 2895 "vtkParse.y" /* glr.c:783  */
+#line 2962 "vtkParse.y" /* glr.c:783  */
     { setTypeMod((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 7694 "vtkParse.tab.c" /* glr.c:783  */
+#line 7761 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 388:
-#line 2896 "vtkParse.y" /* glr.c:783  */
+#line 2963 "vtkParse.y" /* glr.c:783  */
     { setTypeMod((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 7700 "vtkParse.tab.c" /* glr.c:783  */
+#line 7767 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 389:
-#line 2897 "vtkParse.y" /* glr.c:783  */
+#line 2964 "vtkParse.y" /* glr.c:783  */
     { setTypeMod((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 7706 "vtkParse.tab.c" /* glr.c:783  */
+#line 7773 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 390:
-#line 2898 "vtkParse.y" /* glr.c:783  */
+#line 2965 "vtkParse.y" /* glr.c:783  */
     { postSig("constexpr "); ((*yyvalp).integer) = 0; }
-#line 7712 "vtkParse.tab.c" /* glr.c:783  */
+#line 7779 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 391:
-#line 2901 "vtkParse.y" /* glr.c:783  */
+#line 2968 "vtkParse.y" /* glr.c:783  */
     { postSig("mutable "); ((*yyvalp).integer) = VTK_PARSE_MUTABLE; }
-#line 7718 "vtkParse.tab.c" /* glr.c:783  */
+#line 7785 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 392:
-#line 2902 "vtkParse.y" /* glr.c:783  */
+#line 2969 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 0; }
-#line 7724 "vtkParse.tab.c" /* glr.c:783  */
+#line 7791 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 393:
-#line 2903 "vtkParse.y" /* glr.c:783  */
+#line 2970 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 0; }
-#line 7730 "vtkParse.tab.c" /* glr.c:783  */
+#line 7797 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 394:
-#line 2904 "vtkParse.y" /* glr.c:783  */
+#line 2971 "vtkParse.y" /* glr.c:783  */
     { postSig("static "); ((*yyvalp).integer) = VTK_PARSE_STATIC; }
-#line 7736 "vtkParse.tab.c" /* glr.c:783  */
+#line 7803 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 395:
-#line 2906 "vtkParse.y" /* glr.c:783  */
+#line 2973 "vtkParse.y" /* glr.c:783  */
     { postSig("thread_local "); ((*yyvalp).integer) = VTK_PARSE_THREAD_LOCAL; }
-#line 7742 "vtkParse.tab.c" /* glr.c:783  */
+#line 7809 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 396:
-#line 2909 "vtkParse.y" /* glr.c:783  */
+#line 2976 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = 0; }
-#line 7748 "vtkParse.tab.c" /* glr.c:783  */
+#line 7815 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 397:
-#line 2910 "vtkParse.y" /* glr.c:783  */
+#line 2977 "vtkParse.y" /* glr.c:783  */
     { postSig("virtual "); ((*yyvalp).integer) = VTK_PARSE_VIRTUAL; }
-#line 7754 "vtkParse.tab.c" /* glr.c:783  */
+#line 7821 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 398:
-#line 2911 "vtkParse.y" /* glr.c:783  */
+#line 2978 "vtkParse.y" /* glr.c:783  */
     { postSig("explicit "); ((*yyvalp).integer) = VTK_PARSE_EXPLICIT; }
-#line 7760 "vtkParse.tab.c" /* glr.c:783  */
+#line 7827 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 399:
-#line 2914 "vtkParse.y" /* glr.c:783  */
+#line 2981 "vtkParse.y" /* glr.c:783  */
     { postSig("const "); ((*yyvalp).integer) = VTK_PARSE_CONST; }
-#line 7766 "vtkParse.tab.c" /* glr.c:783  */
+#line 7833 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 400:
-#line 2915 "vtkParse.y" /* glr.c:783  */
+#line 2982 "vtkParse.y" /* glr.c:783  */
     { postSig("volatile "); ((*yyvalp).integer) = VTK_PARSE_VOLATILE; }
-#line 7772 "vtkParse.tab.c" /* glr.c:783  */
+#line 7839 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 402:
-#line 2920 "vtkParse.y" /* glr.c:783  */
+#line 2987 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = ((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.integer) | (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 7778 "vtkParse.tab.c" /* glr.c:783  */
+#line 7845 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 404:
-#line 2930 "vtkParse.y" /* glr.c:783  */
+#line 2997 "vtkParse.y" /* glr.c:783  */
     { setTypeBase((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 7784 "vtkParse.tab.c" /* glr.c:783  */
+#line 7851 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 406:
-#line 2932 "vtkParse.y" /* glr.c:783  */
+#line 2999 "vtkParse.y" /* glr.c:783  */
     { setTypeBase((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 7790 "vtkParse.tab.c" /* glr.c:783  */
+#line 7857 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 409:
-#line 2938 "vtkParse.y" /* glr.c:783  */
+#line 3005 "vtkParse.y" /* glr.c:783  */
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7796 "vtkParse.tab.c" /* glr.c:783  */
+#line 7863 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 410:
-#line 2940 "vtkParse.y" /* glr.c:783  */
+#line 3007 "vtkParse.y" /* glr.c:783  */
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str)); }
-#line 7802 "vtkParse.tab.c" /* glr.c:783  */
+#line 7869 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 412:
-#line 2945 "vtkParse.y" /* glr.c:783  */
+#line 3012 "vtkParse.y" /* glr.c:783  */
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = 0; }
-#line 7808 "vtkParse.tab.c" /* glr.c:783  */
+#line 7875 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 413:
-#line 2946 "vtkParse.y" /* glr.c:783  */
+#line 3013 "vtkParse.y" /* glr.c:783  */
     { postSig("typename "); }
-#line 7814 "vtkParse.tab.c" /* glr.c:783  */
+#line 7881 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 414:
-#line 2947 "vtkParse.y" /* glr.c:783  */
+#line 3014 "vtkParse.y" /* glr.c:783  */
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str)); }
-#line 7820 "vtkParse.tab.c" /* glr.c:783  */
+#line 7887 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 415:
-#line 2949 "vtkParse.y" /* glr.c:783  */
+#line 3016 "vtkParse.y" /* glr.c:783  */
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str)); }
-#line 7826 "vtkParse.tab.c" /* glr.c:783  */
+#line 7893 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 416:
-#line 2951 "vtkParse.y" /* glr.c:783  */
+#line 3018 "vtkParse.y" /* glr.c:783  */
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str)); }
-#line 7832 "vtkParse.tab.c" /* glr.c:783  */
+#line 7899 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 418:
-#line 2957 "vtkParse.y" /* glr.c:783  */
+#line 3024 "vtkParse.y" /* glr.c:783  */
     { setTypeBase((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 7838 "vtkParse.tab.c" /* glr.c:783  */
+#line 7905 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 420:
-#line 2959 "vtkParse.y" /* glr.c:783  */
+#line 3026 "vtkParse.y" /* glr.c:783  */
     { setTypeBase((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 7844 "vtkParse.tab.c" /* glr.c:783  */
+#line 7911 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 423:
-#line 2966 "vtkParse.y" /* glr.c:783  */
+#line 3033 "vtkParse.y" /* glr.c:783  */
     { setTypeBase((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 7850 "vtkParse.tab.c" /* glr.c:783  */
+#line 7917 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 425:
-#line 2968 "vtkParse.y" /* glr.c:783  */
+#line 3035 "vtkParse.y" /* glr.c:783  */
     { setTypeBase((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 7856 "vtkParse.tab.c" /* glr.c:783  */
+#line 7923 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 428:
-#line 2974 "vtkParse.y" /* glr.c:783  */
+#line 3041 "vtkParse.y" /* glr.c:783  */
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = 0; }
-#line 7862 "vtkParse.tab.c" /* glr.c:783  */
+#line 7929 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 429:
-#line 2976 "vtkParse.y" /* glr.c:783  */
+#line 3043 "vtkParse.y" /* glr.c:783  */
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7868 "vtkParse.tab.c" /* glr.c:783  */
+#line 7935 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 430:
-#line 2978 "vtkParse.y" /* glr.c:783  */
+#line 3045 "vtkParse.y" /* glr.c:783  */
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7874 "vtkParse.tab.c" /* glr.c:783  */
+#line 7941 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 431:
-#line 2980 "vtkParse.y" /* glr.c:783  */
+#line 3047 "vtkParse.y" /* glr.c:783  */
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7880 "vtkParse.tab.c" /* glr.c:783  */
+#line 7947 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 432:
-#line 2982 "vtkParse.y" /* glr.c:783  */
+#line 3049 "vtkParse.y" /* glr.c:783  */
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7886 "vtkParse.tab.c" /* glr.c:783  */
+#line 7953 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 433:
-#line 2984 "vtkParse.y" /* glr.c:783  */
+#line 3051 "vtkParse.y" /* glr.c:783  */
     { postSig(" "); setTypeId((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = guess_id_type((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 7892 "vtkParse.tab.c" /* glr.c:783  */
+#line 7959 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 434:
-#line 2987 "vtkParse.y" /* glr.c:783  */
+#line 3054 "vtkParse.y" /* glr.c:783  */
     { setTypeId(""); }
-#line 7898 "vtkParse.tab.c" /* glr.c:783  */
+#line 7965 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 436:
-#line 2991 "vtkParse.y" /* glr.c:783  */
+#line 3058 "vtkParse.y" /* glr.c:783  */
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_STRING; }
-#line 7904 "vtkParse.tab.c" /* glr.c:783  */
+#line 7971 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 437:
-#line 2992 "vtkParse.y" /* glr.c:783  */
+#line 3059 "vtkParse.y" /* glr.c:783  */
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_UNICODE_STRING;}
-#line 7910 "vtkParse.tab.c" /* glr.c:783  */
+#line 7977 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 438:
-#line 2993 "vtkParse.y" /* glr.c:783  */
+#line 3060 "vtkParse.y" /* glr.c:783  */
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_OSTREAM; }
-#line 7916 "vtkParse.tab.c" /* glr.c:783  */
+#line 7983 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 439:
-#line 2994 "vtkParse.y" /* glr.c:783  */
+#line 3061 "vtkParse.y" /* glr.c:783  */
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_ISTREAM; }
-#line 7922 "vtkParse.tab.c" /* glr.c:783  */
+#line 7989 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 440:
-#line 2995 "vtkParse.y" /* glr.c:783  */
+#line 3062 "vtkParse.y" /* glr.c:783  */
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_UNKNOWN; }
-#line 7928 "vtkParse.tab.c" /* glr.c:783  */
+#line 7995 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 441:
-#line 2996 "vtkParse.y" /* glr.c:783  */
+#line 3063 "vtkParse.y" /* glr.c:783  */
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_OBJECT; }
-#line 7934 "vtkParse.tab.c" /* glr.c:783  */
+#line 8001 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 442:
-#line 2997 "vtkParse.y" /* glr.c:783  */
+#line 3064 "vtkParse.y" /* glr.c:783  */
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_QOBJECT; }
-#line 7940 "vtkParse.tab.c" /* glr.c:783  */
+#line 8007 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 443:
-#line 2998 "vtkParse.y" /* glr.c:783  */
+#line 3065 "vtkParse.y" /* glr.c:783  */
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_NULLPTR_T; }
-#line 7946 "vtkParse.tab.c" /* glr.c:783  */
+#line 8013 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 444:
-#line 2999 "vtkParse.y" /* glr.c:783  */
+#line 3066 "vtkParse.y" /* glr.c:783  */
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_SSIZE_T; }
-#line 7952 "vtkParse.tab.c" /* glr.c:783  */
+#line 8019 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 445:
-#line 3000 "vtkParse.y" /* glr.c:783  */
+#line 3067 "vtkParse.y" /* glr.c:783  */
     { typeSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); ((*yyvalp).integer) = VTK_PARSE_SIZE_T; }
-#line 7958 "vtkParse.tab.c" /* glr.c:783  */
+#line 8025 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 446:
-#line 3001 "vtkParse.y" /* glr.c:783  */
+#line 3068 "vtkParse.y" /* glr.c:783  */
     { typeSig("vtkTypeInt8"); ((*yyvalp).integer) = VTK_PARSE_INT8; }
-#line 7964 "vtkParse.tab.c" /* glr.c:783  */
+#line 8031 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 447:
-#line 3002 "vtkParse.y" /* glr.c:783  */
+#line 3069 "vtkParse.y" /* glr.c:783  */
     { typeSig("vtkTypeUInt8"); ((*yyvalp).integer) = VTK_PARSE_UINT8; }
-#line 7970 "vtkParse.tab.c" /* glr.c:783  */
+#line 8037 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 448:
-#line 3003 "vtkParse.y" /* glr.c:783  */
+#line 3070 "vtkParse.y" /* glr.c:783  */
     { typeSig("vtkTypeInt16"); ((*yyvalp).integer) = VTK_PARSE_INT16; }
-#line 7976 "vtkParse.tab.c" /* glr.c:783  */
+#line 8043 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 449:
-#line 3004 "vtkParse.y" /* glr.c:783  */
+#line 3071 "vtkParse.y" /* glr.c:783  */
     { typeSig("vtkTypeUInt16"); ((*yyvalp).integer) = VTK_PARSE_UINT16; }
-#line 7982 "vtkParse.tab.c" /* glr.c:783  */
+#line 8049 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 450:
-#line 3005 "vtkParse.y" /* glr.c:783  */
+#line 3072 "vtkParse.y" /* glr.c:783  */
     { typeSig("vtkTypeInt32"); ((*yyvalp).integer) = VTK_PARSE_INT32; }
-#line 7988 "vtkParse.tab.c" /* glr.c:783  */
+#line 8055 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 451:
-#line 3006 "vtkParse.y" /* glr.c:783  */
+#line 3073 "vtkParse.y" /* glr.c:783  */
     { typeSig("vtkTypeUInt32"); ((*yyvalp).integer) = VTK_PARSE_UINT32; }
-#line 7994 "vtkParse.tab.c" /* glr.c:783  */
+#line 8061 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 452:
-#line 3007 "vtkParse.y" /* glr.c:783  */
+#line 3074 "vtkParse.y" /* glr.c:783  */
     { typeSig("vtkTypeInt64"); ((*yyvalp).integer) = VTK_PARSE_INT64; }
-#line 8000 "vtkParse.tab.c" /* glr.c:783  */
+#line 8067 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 453:
-#line 3008 "vtkParse.y" /* glr.c:783  */
+#line 3075 "vtkParse.y" /* glr.c:783  */
     { typeSig("vtkTypeUInt64"); ((*yyvalp).integer) = VTK_PARSE_UINT64; }
-#line 8006 "vtkParse.tab.c" /* glr.c:783  */
+#line 8073 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 454:
-#line 3009 "vtkParse.y" /* glr.c:783  */
+#line 3076 "vtkParse.y" /* glr.c:783  */
     { typeSig("vtkTypeFloat32"); ((*yyvalp).integer) = VTK_PARSE_FLOAT32; }
-#line 8012 "vtkParse.tab.c" /* glr.c:783  */
+#line 8079 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 455:
-#line 3010 "vtkParse.y" /* glr.c:783  */
+#line 3077 "vtkParse.y" /* glr.c:783  */
     { typeSig("vtkTypeFloat64"); ((*yyvalp).integer) = VTK_PARSE_FLOAT64; }
-#line 8018 "vtkParse.tab.c" /* glr.c:783  */
+#line 8085 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 456:
-#line 3011 "vtkParse.y" /* glr.c:783  */
+#line 3078 "vtkParse.y" /* glr.c:783  */
     { typeSig("vtkIdType"); ((*yyvalp).integer) = VTK_PARSE_ID_TYPE; }
-#line 8024 "vtkParse.tab.c" /* glr.c:783  */
+#line 8091 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 457:
-#line 3012 "vtkParse.y" /* glr.c:783  */
+#line 3079 "vtkParse.y" /* glr.c:783  */
     { typeSig("double"); ((*yyvalp).integer) = VTK_PARSE_DOUBLE; }
-#line 8030 "vtkParse.tab.c" /* glr.c:783  */
+#line 8097 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 458:
-#line 3015 "vtkParse.y" /* glr.c:783  */
+#line 3082 "vtkParse.y" /* glr.c:783  */
     { postSig("auto "); ((*yyvalp).integer) = 0; }
-#line 8036 "vtkParse.tab.c" /* glr.c:783  */
+#line 8103 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 459:
-#line 3016 "vtkParse.y" /* glr.c:783  */
+#line 3083 "vtkParse.y" /* glr.c:783  */
     { postSig("void "); ((*yyvalp).integer) = VTK_PARSE_VOID; }
-#line 8042 "vtkParse.tab.c" /* glr.c:783  */
+#line 8109 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 460:
-#line 3017 "vtkParse.y" /* glr.c:783  */
+#line 3084 "vtkParse.y" /* glr.c:783  */
     { postSig("bool "); ((*yyvalp).integer) = VTK_PARSE_BOOL; }
-#line 8048 "vtkParse.tab.c" /* glr.c:783  */
+#line 8115 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 461:
-#line 3018 "vtkParse.y" /* glr.c:783  */
+#line 3085 "vtkParse.y" /* glr.c:783  */
     { postSig("float "); ((*yyvalp).integer) = VTK_PARSE_FLOAT; }
-#line 8054 "vtkParse.tab.c" /* glr.c:783  */
+#line 8121 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 462:
-#line 3019 "vtkParse.y" /* glr.c:783  */
+#line 3086 "vtkParse.y" /* glr.c:783  */
     { postSig("double "); ((*yyvalp).integer) = VTK_PARSE_DOUBLE; }
-#line 8060 "vtkParse.tab.c" /* glr.c:783  */
+#line 8127 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 463:
-#line 3020 "vtkParse.y" /* glr.c:783  */
+#line 3087 "vtkParse.y" /* glr.c:783  */
     { postSig("char "); ((*yyvalp).integer) = VTK_PARSE_CHAR; }
-#line 8066 "vtkParse.tab.c" /* glr.c:783  */
+#line 8133 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 464:
-#line 3021 "vtkParse.y" /* glr.c:783  */
+#line 3088 "vtkParse.y" /* glr.c:783  */
     { postSig("char16_t "); ((*yyvalp).integer) = VTK_PARSE_CHAR16_T; }
-#line 8072 "vtkParse.tab.c" /* glr.c:783  */
+#line 8139 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 465:
-#line 3022 "vtkParse.y" /* glr.c:783  */
+#line 3089 "vtkParse.y" /* glr.c:783  */
     { postSig("char32_t "); ((*yyvalp).integer) = VTK_PARSE_CHAR32_T; }
-#line 8078 "vtkParse.tab.c" /* glr.c:783  */
+#line 8145 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 466:
-#line 3023 "vtkParse.y" /* glr.c:783  */
+#line 3090 "vtkParse.y" /* glr.c:783  */
     { postSig("wchar_t "); ((*yyvalp).integer) = VTK_PARSE_WCHAR_T; }
-#line 8084 "vtkParse.tab.c" /* glr.c:783  */
+#line 8151 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 467:
-#line 3024 "vtkParse.y" /* glr.c:783  */
+#line 3091 "vtkParse.y" /* glr.c:783  */
     { postSig("int "); ((*yyvalp).integer) = VTK_PARSE_INT; }
-#line 8090 "vtkParse.tab.c" /* glr.c:783  */
+#line 8157 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 468:
-#line 3025 "vtkParse.y" /* glr.c:783  */
+#line 3092 "vtkParse.y" /* glr.c:783  */
     { postSig("short "); ((*yyvalp).integer) = VTK_PARSE_SHORT; }
-#line 8096 "vtkParse.tab.c" /* glr.c:783  */
+#line 8163 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 469:
-#line 3026 "vtkParse.y" /* glr.c:783  */
+#line 3093 "vtkParse.y" /* glr.c:783  */
     { postSig("long "); ((*yyvalp).integer) = VTK_PARSE_LONG; }
-#line 8102 "vtkParse.tab.c" /* glr.c:783  */
+#line 8169 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 470:
-#line 3027 "vtkParse.y" /* glr.c:783  */
+#line 3094 "vtkParse.y" /* glr.c:783  */
     { postSig("__int64 "); ((*yyvalp).integer) = VTK_PARSE___INT64; }
-#line 8108 "vtkParse.tab.c" /* glr.c:783  */
+#line 8175 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 471:
-#line 3028 "vtkParse.y" /* glr.c:783  */
+#line 3095 "vtkParse.y" /* glr.c:783  */
     { postSig("signed "); ((*yyvalp).integer) = VTK_PARSE_INT; }
-#line 8114 "vtkParse.tab.c" /* glr.c:783  */
+#line 8181 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 472:
-#line 3029 "vtkParse.y" /* glr.c:783  */
+#line 3096 "vtkParse.y" /* glr.c:783  */
     { postSig("unsigned "); ((*yyvalp).integer) = VTK_PARSE_UNSIGNED_INT; }
-#line 8120 "vtkParse.tab.c" /* glr.c:783  */
+#line 8187 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 476:
-#line 3052 "vtkParse.y" /* glr.c:783  */
+#line 3119 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = ((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.integer) | (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer)); }
-#line 8126 "vtkParse.tab.c" /* glr.c:783  */
+#line 8193 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 477:
-#line 3056 "vtkParse.y" /* glr.c:783  */
+#line 3123 "vtkParse.y" /* glr.c:783  */
     { postSig("&"); ((*yyvalp).integer) = VTK_PARSE_REF; }
-#line 8132 "vtkParse.tab.c" /* glr.c:783  */
+#line 8199 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 478:
-#line 3060 "vtkParse.y" /* glr.c:783  */
+#line 3127 "vtkParse.y" /* glr.c:783  */
     { postSig("&&"); ((*yyvalp).integer) = (VTK_PARSE_RVALUE | VTK_PARSE_REF); }
-#line 8138 "vtkParse.tab.c" /* glr.c:783  */
+#line 8205 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 479:
-#line 3063 "vtkParse.y" /* glr.c:783  */
+#line 3130 "vtkParse.y" /* glr.c:783  */
     { postSig("*"); }
-#line 8144 "vtkParse.tab.c" /* glr.c:783  */
+#line 8211 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 480:
-#line 3064 "vtkParse.y" /* glr.c:783  */
+#line 3131 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer); }
-#line 8150 "vtkParse.tab.c" /* glr.c:783  */
+#line 8217 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 481:
-#line 3067 "vtkParse.y" /* glr.c:783  */
+#line 3134 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).integer) = VTK_PARSE_POINTER; }
-#line 8156 "vtkParse.tab.c" /* glr.c:783  */
+#line 8223 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 482:
-#line 3069 "vtkParse.y" /* glr.c:783  */
+#line 3136 "vtkParse.y" /* glr.c:783  */
     {
       if (((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer) & VTK_PARSE_CONST) != 0)
         {
@@ -8167,11 +8234,11 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
         ((*yyvalp).integer) = VTK_PARSE_BAD_INDIRECT;
         }
     }
-#line 8171 "vtkParse.tab.c" /* glr.c:783  */
+#line 8238 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 484:
-#line 3085 "vtkParse.y" /* glr.c:783  */
+#line 3152 "vtkParse.y" /* glr.c:783  */
     {
       unsigned int n;
       n = (((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.integer) << 2) | (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.integer));
@@ -8181,29 +8248,29 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
         }
       ((*yyvalp).integer) = n;
     }
-#line 8185 "vtkParse.tab.c" /* glr.c:783  */
+#line 8252 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 487:
-#line 3104 "vtkParse.y" /* glr.c:783  */
+#line 3171 "vtkParse.y" /* glr.c:783  */
     { closeSig(); }
-#line 8191 "vtkParse.tab.c" /* glr.c:783  */
+#line 8258 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 488:
-#line 3104 "vtkParse.y" /* glr.c:783  */
+#line 3171 "vtkParse.y" /* glr.c:783  */
     { openSig(); }
-#line 8197 "vtkParse.tab.c" /* glr.c:783  */
+#line 8264 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 490:
-#line 3111 "vtkParse.y" /* glr.c:783  */
+#line 3178 "vtkParse.y" /* glr.c:783  */
     {preSig("void Set"); postSig("(");}
-#line 8203 "vtkParse.tab.c" /* glr.c:783  */
+#line 8270 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 491:
-#line 3112 "vtkParse.y" /* glr.c:783  */
+#line 3179 "vtkParse.y" /* glr.c:783  */
     {
    postSig("a);");
    currentFunction->Macro = "vtkSetMacro";
@@ -8213,29 +8280,29 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
    set_return(currentFunction, VTK_PARSE_VOID, "void", 0);
    output_function();
    }
-#line 8217 "vtkParse.tab.c" /* glr.c:783  */
+#line 8284 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 492:
-#line 3121 "vtkParse.y" /* glr.c:783  */
+#line 3188 "vtkParse.y" /* glr.c:783  */
     {postSig("Get");}
-#line 8223 "vtkParse.tab.c" /* glr.c:783  */
+#line 8290 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 493:
-#line 3122 "vtkParse.y" /* glr.c:783  */
+#line 3189 "vtkParse.y" /* glr.c:783  */
     {markSig();}
-#line 8229 "vtkParse.tab.c" /* glr.c:783  */
+#line 8296 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 494:
-#line 3122 "vtkParse.y" /* glr.c:783  */
+#line 3189 "vtkParse.y" /* glr.c:783  */
     {swapSig();}
-#line 8235 "vtkParse.tab.c" /* glr.c:783  */
+#line 8302 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 495:
-#line 3123 "vtkParse.y" /* glr.c:783  */
+#line 3190 "vtkParse.y" /* glr.c:783  */
     {
    postSig("();");
    currentFunction->Macro = "vtkGetMacro";
@@ -8244,17 +8311,17 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
    set_return(currentFunction, getType(), getTypeId(), 0);
    output_function();
    }
-#line 8248 "vtkParse.tab.c" /* glr.c:783  */
+#line 8315 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 496:
-#line 3131 "vtkParse.y" /* glr.c:783  */
+#line 3198 "vtkParse.y" /* glr.c:783  */
     {preSig("void Set");}
-#line 8254 "vtkParse.tab.c" /* glr.c:783  */
+#line 8321 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 497:
-#line 3132 "vtkParse.y" /* glr.c:783  */
+#line 3199 "vtkParse.y" /* glr.c:783  */
     {
    postSig("(char *);");
    currentFunction->Macro = "vtkSetStringMacro";
@@ -8264,17 +8331,17 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
    set_return(currentFunction, VTK_PARSE_VOID, "void", 0);
    output_function();
    }
-#line 8268 "vtkParse.tab.c" /* glr.c:783  */
+#line 8335 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 498:
-#line 3141 "vtkParse.y" /* glr.c:783  */
+#line 3208 "vtkParse.y" /* glr.c:783  */
     {preSig("char *Get");}
-#line 8274 "vtkParse.tab.c" /* glr.c:783  */
+#line 8341 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 499:
-#line 3142 "vtkParse.y" /* glr.c:783  */
+#line 3209 "vtkParse.y" /* glr.c:783  */
     {
    postSig("();");
    currentFunction->Macro = "vtkGetStringMacro";
@@ -8283,23 +8350,23 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
    set_return(currentFunction, VTK_PARSE_CHAR_PTR, "char", 0);
    output_function();
    }
-#line 8287 "vtkParse.tab.c" /* glr.c:783  */
+#line 8354 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 500:
-#line 3150 "vtkParse.y" /* glr.c:783  */
+#line 3217 "vtkParse.y" /* glr.c:783  */
     {startSig(); markSig();}
-#line 8293 "vtkParse.tab.c" /* glr.c:783  */
+#line 8360 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 501:
-#line 3150 "vtkParse.y" /* glr.c:783  */
+#line 3217 "vtkParse.y" /* glr.c:783  */
     {closeSig();}
-#line 8299 "vtkParse.tab.c" /* glr.c:783  */
+#line 8366 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 502:
-#line 3152 "vtkParse.y" /* glr.c:783  */
+#line 3219 "vtkParse.y" /* glr.c:783  */
     {
    const char *typeText;
    chopSig();
@@ -8330,17 +8397,17 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
    set_return(currentFunction, getType(), getTypeId(), 0);
    output_function();
    }
-#line 8334 "vtkParse.tab.c" /* glr.c:783  */
+#line 8401 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 503:
-#line 3183 "vtkParse.y" /* glr.c:783  */
+#line 3250 "vtkParse.y" /* glr.c:783  */
     {preSig("void Set"); postSig("("); }
-#line 8340 "vtkParse.tab.c" /* glr.c:783  */
+#line 8407 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 504:
-#line 3184 "vtkParse.y" /* glr.c:783  */
+#line 3251 "vtkParse.y" /* glr.c:783  */
     {
    postSig("*);");
    currentFunction->Macro = "vtkSetObjectMacro";
@@ -8350,29 +8417,29 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
    set_return(currentFunction, VTK_PARSE_VOID, "void", 0);
    output_function();
    }
-#line 8354 "vtkParse.tab.c" /* glr.c:783  */
+#line 8421 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 505:
-#line 3193 "vtkParse.y" /* glr.c:783  */
+#line 3260 "vtkParse.y" /* glr.c:783  */
     {postSig("*Get");}
-#line 8360 "vtkParse.tab.c" /* glr.c:783  */
+#line 8427 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 506:
-#line 3194 "vtkParse.y" /* glr.c:783  */
+#line 3261 "vtkParse.y" /* glr.c:783  */
     {markSig();}
-#line 8366 "vtkParse.tab.c" /* glr.c:783  */
+#line 8433 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 507:
-#line 3194 "vtkParse.y" /* glr.c:783  */
+#line 3261 "vtkParse.y" /* glr.c:783  */
     {swapSig();}
-#line 8372 "vtkParse.tab.c" /* glr.c:783  */
+#line 8439 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 508:
-#line 3195 "vtkParse.y" /* glr.c:783  */
+#line 3262 "vtkParse.y" /* glr.c:783  */
     {
    postSig("();");
    currentFunction->Macro = "vtkGetObjectMacro";
@@ -8381,11 +8448,11 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
    set_return(currentFunction, VTK_PARSE_OBJECT_PTR, getTypeId(), 0);
    output_function();
    }
-#line 8385 "vtkParse.tab.c" /* glr.c:783  */
+#line 8452 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 509:
-#line 3204 "vtkParse.y" /* glr.c:783  */
+#line 3271 "vtkParse.y" /* glr.c:783  */
     {
    currentFunction->Macro = "vtkBooleanMacro";
    currentFunction->Name = vtkstrcat((((yyGLRStackItem const *)yyvsp)[YYFILL (-3)].yystate.yysemantics.yysval.str), "On");
@@ -8403,137 +8470,137 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
    set_return(currentFunction, VTK_PARSE_VOID, "void", 0);
    output_function();
    }
-#line 8407 "vtkParse.tab.c" /* glr.c:783  */
+#line 8474 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 510:
-#line 3221 "vtkParse.y" /* glr.c:783  */
+#line 3288 "vtkParse.y" /* glr.c:783  */
     {startSig(); markSig();}
-#line 8413 "vtkParse.tab.c" /* glr.c:783  */
+#line 8480 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 511:
-#line 3222 "vtkParse.y" /* glr.c:783  */
+#line 3289 "vtkParse.y" /* glr.c:783  */
     {
    chopSig();
    outputSetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL (-4)].yystate.yysemantics.yysval.str), getType(), copySig(), 2);
    }
-#line 8422 "vtkParse.tab.c" /* glr.c:783  */
+#line 8489 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 512:
-#line 3226 "vtkParse.y" /* glr.c:783  */
+#line 3293 "vtkParse.y" /* glr.c:783  */
     {startSig(); markSig();}
-#line 8428 "vtkParse.tab.c" /* glr.c:783  */
+#line 8495 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 513:
-#line 3227 "vtkParse.y" /* glr.c:783  */
+#line 3294 "vtkParse.y" /* glr.c:783  */
     {
    chopSig();
    outputGetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL (-4)].yystate.yysemantics.yysval.str), getType(), copySig(), 2);
    }
-#line 8437 "vtkParse.tab.c" /* glr.c:783  */
+#line 8504 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 514:
-#line 3231 "vtkParse.y" /* glr.c:783  */
+#line 3298 "vtkParse.y" /* glr.c:783  */
     {startSig(); markSig();}
-#line 8443 "vtkParse.tab.c" /* glr.c:783  */
+#line 8510 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 515:
-#line 3232 "vtkParse.y" /* glr.c:783  */
+#line 3299 "vtkParse.y" /* glr.c:783  */
     {
    chopSig();
    outputSetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL (-4)].yystate.yysemantics.yysval.str), getType(), copySig(), 3);
    }
-#line 8452 "vtkParse.tab.c" /* glr.c:783  */
+#line 8519 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 516:
-#line 3236 "vtkParse.y" /* glr.c:783  */
+#line 3303 "vtkParse.y" /* glr.c:783  */
     {startSig(); markSig();}
-#line 8458 "vtkParse.tab.c" /* glr.c:783  */
+#line 8525 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 517:
-#line 3237 "vtkParse.y" /* glr.c:783  */
+#line 3304 "vtkParse.y" /* glr.c:783  */
     {
    chopSig();
    outputGetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL (-4)].yystate.yysemantics.yysval.str), getType(), copySig(), 3);
    }
-#line 8467 "vtkParse.tab.c" /* glr.c:783  */
+#line 8534 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 518:
-#line 3241 "vtkParse.y" /* glr.c:783  */
+#line 3308 "vtkParse.y" /* glr.c:783  */
     {startSig(); markSig();}
-#line 8473 "vtkParse.tab.c" /* glr.c:783  */
+#line 8540 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 519:
-#line 3242 "vtkParse.y" /* glr.c:783  */
+#line 3309 "vtkParse.y" /* glr.c:783  */
     {
    chopSig();
    outputSetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL (-4)].yystate.yysemantics.yysval.str), getType(), copySig(), 4);
    }
-#line 8482 "vtkParse.tab.c" /* glr.c:783  */
+#line 8549 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 520:
-#line 3246 "vtkParse.y" /* glr.c:783  */
+#line 3313 "vtkParse.y" /* glr.c:783  */
     {startSig(); markSig();}
-#line 8488 "vtkParse.tab.c" /* glr.c:783  */
+#line 8555 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 521:
-#line 3247 "vtkParse.y" /* glr.c:783  */
+#line 3314 "vtkParse.y" /* glr.c:783  */
     {
    chopSig();
    outputGetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL (-4)].yystate.yysemantics.yysval.str), getType(), copySig(), 4);
    }
-#line 8497 "vtkParse.tab.c" /* glr.c:783  */
+#line 8564 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 522:
-#line 3251 "vtkParse.y" /* glr.c:783  */
+#line 3318 "vtkParse.y" /* glr.c:783  */
     {startSig(); markSig();}
-#line 8503 "vtkParse.tab.c" /* glr.c:783  */
+#line 8570 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 523:
-#line 3252 "vtkParse.y" /* glr.c:783  */
+#line 3319 "vtkParse.y" /* glr.c:783  */
     {
    chopSig();
    outputSetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL (-4)].yystate.yysemantics.yysval.str), getType(), copySig(), 6);
    }
-#line 8512 "vtkParse.tab.c" /* glr.c:783  */
+#line 8579 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 524:
-#line 3256 "vtkParse.y" /* glr.c:783  */
+#line 3323 "vtkParse.y" /* glr.c:783  */
     {startSig(); markSig();}
-#line 8518 "vtkParse.tab.c" /* glr.c:783  */
+#line 8585 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 525:
-#line 3257 "vtkParse.y" /* glr.c:783  */
+#line 3324 "vtkParse.y" /* glr.c:783  */
     {
    chopSig();
    outputGetVectorMacro((((yyGLRStackItem const *)yyvsp)[YYFILL (-4)].yystate.yysemantics.yysval.str), getType(), copySig(), 6);
    }
-#line 8527 "vtkParse.tab.c" /* glr.c:783  */
+#line 8594 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 526:
-#line 3261 "vtkParse.y" /* glr.c:783  */
+#line 3328 "vtkParse.y" /* glr.c:783  */
     {startSig(); markSig();}
-#line 8533 "vtkParse.tab.c" /* glr.c:783  */
+#line 8600 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 527:
-#line 3263 "vtkParse.y" /* glr.c:783  */
+#line 3330 "vtkParse.y" /* glr.c:783  */
     {
    const char *typeText;
    chopSig();
@@ -8549,17 +8616,17 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
    set_return(currentFunction, VTK_PARSE_VOID, "void", 0);
    output_function();
    }
-#line 8553 "vtkParse.tab.c" /* glr.c:783  */
+#line 8620 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 528:
-#line 3278 "vtkParse.y" /* glr.c:783  */
+#line 3345 "vtkParse.y" /* glr.c:783  */
     {startSig();}
-#line 8559 "vtkParse.tab.c" /* glr.c:783  */
+#line 8626 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 529:
-#line 3280 "vtkParse.y" /* glr.c:783  */
+#line 3347 "vtkParse.y" /* glr.c:783  */
     {
    chopSig();
    currentFunction->Macro = "vtkGetVectorMacro";
@@ -8572,11 +8639,11 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
               getTypeId(), (int)strtol((((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), NULL, 0));
    output_function();
    }
-#line 8576 "vtkParse.tab.c" /* glr.c:783  */
+#line 8643 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 530:
-#line 3293 "vtkParse.y" /* glr.c:783  */
+#line 3360 "vtkParse.y" /* glr.c:783  */
     {
      currentFunction->Macro = "vtkViewportCoordinateMacro";
      currentFunction->Name = vtkstrcat3("Get", (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), "Coordinate");
@@ -8613,11 +8680,11 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
      set_return(currentFunction, VTK_PARSE_DOUBLE_PTR, "double", 2);
      output_function();
    }
-#line 8617 "vtkParse.tab.c" /* glr.c:783  */
+#line 8684 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 531:
-#line 3330 "vtkParse.y" /* glr.c:783  */
+#line 3397 "vtkParse.y" /* glr.c:783  */
     {
      currentFunction->Macro = "vtkWorldCoordinateMacro";
      currentFunction->Name = vtkstrcat3("Get", (((yyGLRStackItem const *)yyvsp)[YYFILL (-1)].yystate.yysemantics.yysval.str), "Coordinate");
@@ -8655,11 +8722,11 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
      set_return(currentFunction, VTK_PARSE_DOUBLE_PTR, "double", 3);
      output_function();
    }
-#line 8659 "vtkParse.tab.c" /* glr.c:783  */
+#line 8726 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 532:
-#line 3368 "vtkParse.y" /* glr.c:783  */
+#line 3435 "vtkParse.y" /* glr.c:783  */
     {
    currentFunction->Macro = "vtkTypeMacro";
    currentFunction->Name = "GetClassName";
@@ -8695,479 +8762,479 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
               (((yyGLRStackItem const *)yyvsp)[YYFILL (-4)].yystate.yysemantics.yysval.str), 0);
    output_function();
    }
-#line 8699 "vtkParse.tab.c" /* glr.c:783  */
+#line 8766 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 535:
-#line 3412 "vtkParse.y" /* glr.c:783  */
+#line 3479 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "()"; }
-#line 8705 "vtkParse.tab.c" /* glr.c:783  */
+#line 8772 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 536:
-#line 3413 "vtkParse.y" /* glr.c:783  */
+#line 3480 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "[]"; }
-#line 8711 "vtkParse.tab.c" /* glr.c:783  */
+#line 8778 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 537:
-#line 3414 "vtkParse.y" /* glr.c:783  */
+#line 3481 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = " new[]"; }
-#line 8717 "vtkParse.tab.c" /* glr.c:783  */
+#line 8784 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 538:
-#line 3415 "vtkParse.y" /* glr.c:783  */
+#line 3482 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = " delete[]"; }
-#line 8723 "vtkParse.tab.c" /* glr.c:783  */
+#line 8790 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 539:
-#line 3416 "vtkParse.y" /* glr.c:783  */
+#line 3483 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "<"; }
-#line 8729 "vtkParse.tab.c" /* glr.c:783  */
+#line 8796 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 540:
-#line 3417 "vtkParse.y" /* glr.c:783  */
+#line 3484 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = ">"; }
-#line 8735 "vtkParse.tab.c" /* glr.c:783  */
+#line 8802 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 541:
-#line 3418 "vtkParse.y" /* glr.c:783  */
+#line 3485 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = ","; }
-#line 8741 "vtkParse.tab.c" /* glr.c:783  */
+#line 8808 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 542:
-#line 3419 "vtkParse.y" /* glr.c:783  */
+#line 3486 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "="; }
-#line 8747 "vtkParse.tab.c" /* glr.c:783  */
+#line 8814 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 543:
-#line 3420 "vtkParse.y" /* glr.c:783  */
+#line 3487 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = ">>"; }
-#line 8753 "vtkParse.tab.c" /* glr.c:783  */
+#line 8820 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 544:
-#line 3421 "vtkParse.y" /* glr.c:783  */
+#line 3488 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = ">>"; }
-#line 8759 "vtkParse.tab.c" /* glr.c:783  */
+#line 8826 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 545:
-#line 3422 "vtkParse.y" /* glr.c:783  */
+#line 3489 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = vtkstrcat("\"\" ", (((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); }
-#line 8765 "vtkParse.tab.c" /* glr.c:783  */
+#line 8832 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 547:
-#line 3426 "vtkParse.y" /* glr.c:783  */
+#line 3493 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "%"; }
-#line 8771 "vtkParse.tab.c" /* glr.c:783  */
+#line 8838 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 548:
-#line 3427 "vtkParse.y" /* glr.c:783  */
+#line 3494 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "*"; }
-#line 8777 "vtkParse.tab.c" /* glr.c:783  */
+#line 8844 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 549:
-#line 3428 "vtkParse.y" /* glr.c:783  */
+#line 3495 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "/"; }
-#line 8783 "vtkParse.tab.c" /* glr.c:783  */
+#line 8850 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 550:
-#line 3429 "vtkParse.y" /* glr.c:783  */
+#line 3496 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "-"; }
-#line 8789 "vtkParse.tab.c" /* glr.c:783  */
+#line 8856 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 551:
-#line 3430 "vtkParse.y" /* glr.c:783  */
+#line 3497 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "+"; }
-#line 8795 "vtkParse.tab.c" /* glr.c:783  */
+#line 8862 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 552:
-#line 3431 "vtkParse.y" /* glr.c:783  */
+#line 3498 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "!"; }
-#line 8801 "vtkParse.tab.c" /* glr.c:783  */
+#line 8868 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 553:
-#line 3432 "vtkParse.y" /* glr.c:783  */
+#line 3499 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "~"; }
-#line 8807 "vtkParse.tab.c" /* glr.c:783  */
+#line 8874 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 554:
-#line 3433 "vtkParse.y" /* glr.c:783  */
+#line 3500 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "&"; }
-#line 8813 "vtkParse.tab.c" /* glr.c:783  */
+#line 8880 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 555:
-#line 3434 "vtkParse.y" /* glr.c:783  */
+#line 3501 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "|"; }
-#line 8819 "vtkParse.tab.c" /* glr.c:783  */
+#line 8886 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 556:
-#line 3435 "vtkParse.y" /* glr.c:783  */
+#line 3502 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "^"; }
-#line 8825 "vtkParse.tab.c" /* glr.c:783  */
+#line 8892 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 557:
-#line 3436 "vtkParse.y" /* glr.c:783  */
+#line 3503 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = " new"; }
-#line 8831 "vtkParse.tab.c" /* glr.c:783  */
+#line 8898 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 558:
-#line 3437 "vtkParse.y" /* glr.c:783  */
+#line 3504 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = " delete"; }
-#line 8837 "vtkParse.tab.c" /* glr.c:783  */
+#line 8904 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 559:
-#line 3438 "vtkParse.y" /* glr.c:783  */
+#line 3505 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "<<="; }
-#line 8843 "vtkParse.tab.c" /* glr.c:783  */
+#line 8910 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 560:
-#line 3439 "vtkParse.y" /* glr.c:783  */
+#line 3506 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = ">>="; }
-#line 8849 "vtkParse.tab.c" /* glr.c:783  */
+#line 8916 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 561:
-#line 3440 "vtkParse.y" /* glr.c:783  */
+#line 3507 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "<<"; }
-#line 8855 "vtkParse.tab.c" /* glr.c:783  */
+#line 8922 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 562:
-#line 3441 "vtkParse.y" /* glr.c:783  */
+#line 3508 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = ".*"; }
-#line 8861 "vtkParse.tab.c" /* glr.c:783  */
+#line 8928 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 563:
-#line 3442 "vtkParse.y" /* glr.c:783  */
+#line 3509 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "->*"; }
-#line 8867 "vtkParse.tab.c" /* glr.c:783  */
+#line 8934 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 564:
-#line 3443 "vtkParse.y" /* glr.c:783  */
+#line 3510 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "->"; }
-#line 8873 "vtkParse.tab.c" /* glr.c:783  */
+#line 8940 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 565:
-#line 3444 "vtkParse.y" /* glr.c:783  */
+#line 3511 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "+="; }
-#line 8879 "vtkParse.tab.c" /* glr.c:783  */
+#line 8946 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 566:
-#line 3445 "vtkParse.y" /* glr.c:783  */
+#line 3512 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "-="; }
-#line 8885 "vtkParse.tab.c" /* glr.c:783  */
+#line 8952 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 567:
-#line 3446 "vtkParse.y" /* glr.c:783  */
+#line 3513 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "*="; }
-#line 8891 "vtkParse.tab.c" /* glr.c:783  */
+#line 8958 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 568:
-#line 3447 "vtkParse.y" /* glr.c:783  */
+#line 3514 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "/="; }
-#line 8897 "vtkParse.tab.c" /* glr.c:783  */
+#line 8964 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 569:
-#line 3448 "vtkParse.y" /* glr.c:783  */
+#line 3515 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "%="; }
-#line 8903 "vtkParse.tab.c" /* glr.c:783  */
+#line 8970 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 570:
-#line 3449 "vtkParse.y" /* glr.c:783  */
+#line 3516 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "++"; }
-#line 8909 "vtkParse.tab.c" /* glr.c:783  */
+#line 8976 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 571:
-#line 3450 "vtkParse.y" /* glr.c:783  */
+#line 3517 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "--"; }
-#line 8915 "vtkParse.tab.c" /* glr.c:783  */
+#line 8982 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 572:
-#line 3451 "vtkParse.y" /* glr.c:783  */
+#line 3518 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "&="; }
-#line 8921 "vtkParse.tab.c" /* glr.c:783  */
+#line 8988 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 573:
-#line 3452 "vtkParse.y" /* glr.c:783  */
+#line 3519 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "|="; }
-#line 8927 "vtkParse.tab.c" /* glr.c:783  */
+#line 8994 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 574:
-#line 3453 "vtkParse.y" /* glr.c:783  */
+#line 3520 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "^="; }
-#line 8933 "vtkParse.tab.c" /* glr.c:783  */
+#line 9000 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 575:
-#line 3454 "vtkParse.y" /* glr.c:783  */
+#line 3521 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "&&"; }
-#line 8939 "vtkParse.tab.c" /* glr.c:783  */
+#line 9006 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 576:
-#line 3455 "vtkParse.y" /* glr.c:783  */
+#line 3522 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "||"; }
-#line 8945 "vtkParse.tab.c" /* glr.c:783  */
+#line 9012 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 577:
-#line 3456 "vtkParse.y" /* glr.c:783  */
+#line 3523 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "=="; }
-#line 8951 "vtkParse.tab.c" /* glr.c:783  */
+#line 9018 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 578:
-#line 3457 "vtkParse.y" /* glr.c:783  */
+#line 3524 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "!="; }
-#line 8957 "vtkParse.tab.c" /* glr.c:783  */
+#line 9024 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 579:
-#line 3458 "vtkParse.y" /* glr.c:783  */
+#line 3525 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "<="; }
-#line 8963 "vtkParse.tab.c" /* glr.c:783  */
+#line 9030 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 580:
-#line 3459 "vtkParse.y" /* glr.c:783  */
+#line 3526 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = ">="; }
-#line 8969 "vtkParse.tab.c" /* glr.c:783  */
+#line 9036 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 581:
-#line 3462 "vtkParse.y" /* glr.c:783  */
+#line 3529 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "typedef"; }
-#line 8975 "vtkParse.tab.c" /* glr.c:783  */
+#line 9042 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 582:
-#line 3463 "vtkParse.y" /* glr.c:783  */
+#line 3530 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "typename"; }
-#line 8981 "vtkParse.tab.c" /* glr.c:783  */
+#line 9048 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 583:
-#line 3464 "vtkParse.y" /* glr.c:783  */
+#line 3531 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "class"; }
-#line 8987 "vtkParse.tab.c" /* glr.c:783  */
+#line 9054 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 584:
-#line 3465 "vtkParse.y" /* glr.c:783  */
+#line 3532 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "struct"; }
-#line 8993 "vtkParse.tab.c" /* glr.c:783  */
+#line 9060 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 585:
-#line 3466 "vtkParse.y" /* glr.c:783  */
+#line 3533 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "union"; }
-#line 8999 "vtkParse.tab.c" /* glr.c:783  */
+#line 9066 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 586:
-#line 3467 "vtkParse.y" /* glr.c:783  */
+#line 3534 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "template"; }
-#line 9005 "vtkParse.tab.c" /* glr.c:783  */
+#line 9072 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 587:
-#line 3468 "vtkParse.y" /* glr.c:783  */
+#line 3535 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "public"; }
-#line 9011 "vtkParse.tab.c" /* glr.c:783  */
+#line 9078 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 588:
-#line 3469 "vtkParse.y" /* glr.c:783  */
+#line 3536 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "protected"; }
-#line 9017 "vtkParse.tab.c" /* glr.c:783  */
+#line 9084 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 589:
-#line 3470 "vtkParse.y" /* glr.c:783  */
+#line 3537 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "private"; }
-#line 9023 "vtkParse.tab.c" /* glr.c:783  */
+#line 9090 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 590:
-#line 3471 "vtkParse.y" /* glr.c:783  */
+#line 3538 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "const"; }
-#line 9029 "vtkParse.tab.c" /* glr.c:783  */
+#line 9096 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 591:
-#line 3472 "vtkParse.y" /* glr.c:783  */
+#line 3539 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "static"; }
-#line 9035 "vtkParse.tab.c" /* glr.c:783  */
+#line 9102 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 592:
-#line 3473 "vtkParse.y" /* glr.c:783  */
+#line 3540 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "thread_local"; }
-#line 9041 "vtkParse.tab.c" /* glr.c:783  */
+#line 9108 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 593:
-#line 3474 "vtkParse.y" /* glr.c:783  */
+#line 3541 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "constexpr"; }
-#line 9047 "vtkParse.tab.c" /* glr.c:783  */
+#line 9114 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 594:
-#line 3475 "vtkParse.y" /* glr.c:783  */
+#line 3542 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "inline"; }
-#line 9053 "vtkParse.tab.c" /* glr.c:783  */
+#line 9120 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 595:
-#line 3476 "vtkParse.y" /* glr.c:783  */
+#line 3543 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "virtual"; }
-#line 9059 "vtkParse.tab.c" /* glr.c:783  */
+#line 9126 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 596:
-#line 3477 "vtkParse.y" /* glr.c:783  */
+#line 3544 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "explicit"; }
-#line 9065 "vtkParse.tab.c" /* glr.c:783  */
+#line 9132 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 597:
-#line 3478 "vtkParse.y" /* glr.c:783  */
+#line 3545 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "decltype"; }
-#line 9071 "vtkParse.tab.c" /* glr.c:783  */
+#line 9138 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 598:
-#line 3479 "vtkParse.y" /* glr.c:783  */
+#line 3546 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "default"; }
-#line 9077 "vtkParse.tab.c" /* glr.c:783  */
+#line 9144 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 599:
-#line 3480 "vtkParse.y" /* glr.c:783  */
+#line 3547 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "extern"; }
-#line 9083 "vtkParse.tab.c" /* glr.c:783  */
+#line 9150 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 600:
-#line 3481 "vtkParse.y" /* glr.c:783  */
+#line 3548 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "using"; }
-#line 9089 "vtkParse.tab.c" /* glr.c:783  */
+#line 9156 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 601:
-#line 3482 "vtkParse.y" /* glr.c:783  */
+#line 3549 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "namespace"; }
-#line 9095 "vtkParse.tab.c" /* glr.c:783  */
+#line 9162 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 602:
-#line 3483 "vtkParse.y" /* glr.c:783  */
+#line 3550 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "operator"; }
-#line 9101 "vtkParse.tab.c" /* glr.c:783  */
+#line 9168 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 603:
-#line 3484 "vtkParse.y" /* glr.c:783  */
+#line 3551 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "enum"; }
-#line 9107 "vtkParse.tab.c" /* glr.c:783  */
+#line 9174 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 604:
-#line 3485 "vtkParse.y" /* glr.c:783  */
+#line 3552 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "throw"; }
-#line 9113 "vtkParse.tab.c" /* glr.c:783  */
+#line 9180 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 605:
-#line 3486 "vtkParse.y" /* glr.c:783  */
+#line 3553 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "noexcept"; }
-#line 9119 "vtkParse.tab.c" /* glr.c:783  */
+#line 9186 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 606:
-#line 3487 "vtkParse.y" /* glr.c:783  */
+#line 3554 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "const_cast"; }
-#line 9125 "vtkParse.tab.c" /* glr.c:783  */
+#line 9192 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 607:
-#line 3488 "vtkParse.y" /* glr.c:783  */
+#line 3555 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "dynamic_cast"; }
-#line 9131 "vtkParse.tab.c" /* glr.c:783  */
+#line 9198 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 608:
-#line 3489 "vtkParse.y" /* glr.c:783  */
+#line 3556 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "static_cast"; }
-#line 9137 "vtkParse.tab.c" /* glr.c:783  */
+#line 9204 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 609:
-#line 3490 "vtkParse.y" /* glr.c:783  */
+#line 3557 "vtkParse.y" /* glr.c:783  */
     { ((*yyvalp).str) = "reinterpret_cast"; }
-#line 9143 "vtkParse.tab.c" /* glr.c:783  */
+#line 9210 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 623:
-#line 3514 "vtkParse.y" /* glr.c:783  */
+#line 3581 "vtkParse.y" /* glr.c:783  */
     { postSig("< "); }
-#line 9149 "vtkParse.tab.c" /* glr.c:783  */
+#line 9216 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 624:
-#line 3515 "vtkParse.y" /* glr.c:783  */
+#line 3582 "vtkParse.y" /* glr.c:783  */
     { postSig("> "); }
-#line 9155 "vtkParse.tab.c" /* glr.c:783  */
+#line 9222 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 626:
-#line 3516 "vtkParse.y" /* glr.c:783  */
+#line 3583 "vtkParse.y" /* glr.c:783  */
     { postSig(">"); }
-#line 9161 "vtkParse.tab.c" /* glr.c:783  */
+#line 9228 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 628:
-#line 3520 "vtkParse.y" /* glr.c:783  */
+#line 3587 "vtkParse.y" /* glr.c:783  */
     { chopSig(); postSig("::"); }
-#line 9167 "vtkParse.tab.c" /* glr.c:783  */
+#line 9234 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 632:
-#line 3527 "vtkParse.y" /* glr.c:783  */
+#line 3594 "vtkParse.y" /* glr.c:783  */
     {
       if ((((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str))[0] == '+' || ((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str))[0] == '-' ||
            ((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str))[0] == '*' || ((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str))[0] == '&') &&
@@ -9197,35 +9264,35 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
         postSig(" ");
         }
     }
-#line 9201 "vtkParse.tab.c" /* glr.c:783  */
+#line 9268 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 633:
-#line 3556 "vtkParse.y" /* glr.c:783  */
+#line 3623 "vtkParse.y" /* glr.c:783  */
     { postSig(":"); postSig(" "); }
-#line 9207 "vtkParse.tab.c" /* glr.c:783  */
+#line 9274 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 634:
-#line 3556 "vtkParse.y" /* glr.c:783  */
+#line 3623 "vtkParse.y" /* glr.c:783  */
     { postSig("."); }
-#line 9213 "vtkParse.tab.c" /* glr.c:783  */
+#line 9280 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 635:
-#line 3557 "vtkParse.y" /* glr.c:783  */
+#line 3624 "vtkParse.y" /* glr.c:783  */
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); postSig(" "); }
-#line 9219 "vtkParse.tab.c" /* glr.c:783  */
+#line 9286 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 636:
-#line 3558 "vtkParse.y" /* glr.c:783  */
+#line 3625 "vtkParse.y" /* glr.c:783  */
     { postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); postSig(" "); }
-#line 9225 "vtkParse.tab.c" /* glr.c:783  */
+#line 9292 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 638:
-#line 3561 "vtkParse.y" /* glr.c:783  */
+#line 3628 "vtkParse.y" /* glr.c:783  */
     {
       int c1 = 0;
       size_t l;
@@ -9247,151 +9314,151 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
         }
       postSig(" ");
     }
-#line 9251 "vtkParse.tab.c" /* glr.c:783  */
+#line 9318 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 642:
-#line 3588 "vtkParse.y" /* glr.c:783  */
+#line 3655 "vtkParse.y" /* glr.c:783  */
     { postSig("< "); }
-#line 9257 "vtkParse.tab.c" /* glr.c:783  */
+#line 9324 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 643:
-#line 3589 "vtkParse.y" /* glr.c:783  */
+#line 3656 "vtkParse.y" /* glr.c:783  */
     { postSig("> "); }
-#line 9263 "vtkParse.tab.c" /* glr.c:783  */
+#line 9330 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 644:
-#line 3590 "vtkParse.y" /* glr.c:783  */
+#line 3657 "vtkParse.y" /* glr.c:783  */
     { postSig(">"); }
-#line 9269 "vtkParse.tab.c" /* glr.c:783  */
+#line 9336 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 646:
-#line 3594 "vtkParse.y" /* glr.c:783  */
+#line 3661 "vtkParse.y" /* glr.c:783  */
     { postSig("= "); }
-#line 9275 "vtkParse.tab.c" /* glr.c:783  */
+#line 9342 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 647:
-#line 3595 "vtkParse.y" /* glr.c:783  */
+#line 3662 "vtkParse.y" /* glr.c:783  */
     { chopSig(); postSig(", "); }
-#line 9281 "vtkParse.tab.c" /* glr.c:783  */
+#line 9348 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 649:
-#line 3599 "vtkParse.y" /* glr.c:783  */
+#line 3666 "vtkParse.y" /* glr.c:783  */
     { chopSig(); postSig(";"); }
-#line 9287 "vtkParse.tab.c" /* glr.c:783  */
+#line 9354 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 657:
-#line 3613 "vtkParse.y" /* glr.c:783  */
+#line 3680 "vtkParse.y" /* glr.c:783  */
     { postSig("= "); }
-#line 9293 "vtkParse.tab.c" /* glr.c:783  */
+#line 9360 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 658:
-#line 3614 "vtkParse.y" /* glr.c:783  */
+#line 3681 "vtkParse.y" /* glr.c:783  */
     { chopSig(); postSig(", "); }
-#line 9299 "vtkParse.tab.c" /* glr.c:783  */
+#line 9366 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 659:
-#line 3618 "vtkParse.y" /* glr.c:783  */
+#line 3685 "vtkParse.y" /* glr.c:783  */
     {
       chopSig();
       if (getSig()[getSigLength()-1] == '<') { postSig(" "); }
       postSig("<");
     }
-#line 9309 "vtkParse.tab.c" /* glr.c:783  */
+#line 9376 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 660:
-#line 3624 "vtkParse.y" /* glr.c:783  */
+#line 3691 "vtkParse.y" /* glr.c:783  */
     {
       chopSig();
       if (getSig()[getSigLength()-1] == '>') { postSig(" "); }
       postSig("> ");
     }
-#line 9319 "vtkParse.tab.c" /* glr.c:783  */
+#line 9386 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 663:
-#line 3635 "vtkParse.y" /* glr.c:783  */
+#line 3702 "vtkParse.y" /* glr.c:783  */
     { postSig("["); }
-#line 9325 "vtkParse.tab.c" /* glr.c:783  */
+#line 9392 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 664:
-#line 3636 "vtkParse.y" /* glr.c:783  */
+#line 3703 "vtkParse.y" /* glr.c:783  */
     { chopSig(); postSig("] "); }
-#line 9331 "vtkParse.tab.c" /* glr.c:783  */
+#line 9398 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 665:
-#line 3637 "vtkParse.y" /* glr.c:783  */
+#line 3704 "vtkParse.y" /* glr.c:783  */
     { postSig("[["); }
-#line 9337 "vtkParse.tab.c" /* glr.c:783  */
+#line 9404 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 666:
-#line 3638 "vtkParse.y" /* glr.c:783  */
+#line 3705 "vtkParse.y" /* glr.c:783  */
     { chopSig(); postSig("]] "); }
-#line 9343 "vtkParse.tab.c" /* glr.c:783  */
+#line 9410 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 667:
-#line 3641 "vtkParse.y" /* glr.c:783  */
+#line 3708 "vtkParse.y" /* glr.c:783  */
     { postSig("("); }
-#line 9349 "vtkParse.tab.c" /* glr.c:783  */
+#line 9416 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 668:
-#line 3642 "vtkParse.y" /* glr.c:783  */
+#line 3709 "vtkParse.y" /* glr.c:783  */
     { chopSig(); postSig(") "); }
-#line 9355 "vtkParse.tab.c" /* glr.c:783  */
+#line 9422 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 669:
-#line 3643 "vtkParse.y" /* glr.c:783  */
+#line 3710 "vtkParse.y" /* glr.c:783  */
     { postSig("("); postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); postSig("*"); }
-#line 9361 "vtkParse.tab.c" /* glr.c:783  */
+#line 9428 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 670:
-#line 3644 "vtkParse.y" /* glr.c:783  */
+#line 3711 "vtkParse.y" /* glr.c:783  */
     { chopSig(); postSig(") "); }
-#line 9367 "vtkParse.tab.c" /* glr.c:783  */
+#line 9434 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 671:
-#line 3645 "vtkParse.y" /* glr.c:783  */
+#line 3712 "vtkParse.y" /* glr.c:783  */
     { postSig("("); postSig((((yyGLRStackItem const *)yyvsp)[YYFILL (0)].yystate.yysemantics.yysval.str)); postSig("&"); }
-#line 9373 "vtkParse.tab.c" /* glr.c:783  */
+#line 9440 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 672:
-#line 3646 "vtkParse.y" /* glr.c:783  */
+#line 3713 "vtkParse.y" /* glr.c:783  */
     { chopSig(); postSig(") "); }
-#line 9379 "vtkParse.tab.c" /* glr.c:783  */
+#line 9446 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 673:
-#line 3649 "vtkParse.y" /* glr.c:783  */
+#line 3716 "vtkParse.y" /* glr.c:783  */
     { postSig("{ "); }
-#line 9385 "vtkParse.tab.c" /* glr.c:783  */
+#line 9452 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
   case 674:
-#line 3649 "vtkParse.y" /* glr.c:783  */
+#line 3716 "vtkParse.y" /* glr.c:783  */
     { postSig("} "); }
-#line 9391 "vtkParse.tab.c" /* glr.c:783  */
+#line 9458 "vtkParse.tab.c" /* glr.c:783  */
     break;
 
 
-#line 9395 "vtkParse.tab.c" /* glr.c:783  */
+#line 9462 "vtkParse.tab.c" /* glr.c:783  */
       default: break;
     }
 
@@ -9439,7 +9506,7 @@ yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep)
 }
 
 /** Number of symbols composing the right hand side of rule #RULE.  */
-static inline int
+static int
 yyrhsLength (yyRuleNum yyrule)
 {
   return yyr2[yyrule];
@@ -9478,7 +9545,7 @@ yydestroyGLRState (char const *yymsg, yyGLRState *yys)
 }
 
 /** Left-hand-side symbol for rule #YYRULE.  */
-static inline yySymbol
+static yySymbol
 yylhsNonterm (yyRuleNum yyrule)
 {
   return yyr1[yyrule];
@@ -9489,14 +9556,14 @@ yylhsNonterm (yyRuleNum yyrule)
 
 /** True iff LR state YYSTATE has only a default reduction (regardless
  *  of token).  */
-static inline yybool
+static yybool
 yyisDefaultedState (yyStateNum yystate)
 {
   return yypact_value_is_default (yypact[yystate]);
 }
 
 /** The default reduction for YYSTATE, assuming it has one.  */
-static inline yyRuleNum
+static yyRuleNum
 yydefaultAction (yyStateNum yystate)
 {
   return yydefact[yystate];
@@ -9513,7 +9580,7 @@ yydefaultAction (yyStateNum yystate)
  *  Set *YYCONFLICTS to a pointer into yyconfl to a 0-terminated list
  *  of conflicting reductions.
  */
-static inline void
+static void
 yygetLRActions (yyStateNum yystate, int yytoken,
                 int* yyaction, const short int** yyconflicts)
 {
@@ -9540,7 +9607,7 @@ yygetLRActions (yyStateNum yystate, int yytoken,
  * \param yystate   the current state
  * \param yysym     the nonterminal to push on the stack
  */
-static inline yyStateNum
+static yyStateNum
 yyLRgotoState (yyStateNum yystate, yySymbol yysym)
 {
   int yyr = yypgoto[yysym - YYNTOKENS] + yystate;
@@ -9550,13 +9617,13 @@ yyLRgotoState (yyStateNum yystate, yySymbol yysym)
     return yydefgoto[yysym - YYNTOKENS];
 }
 
-static inline yybool
+static yybool
 yyisShiftAction (int yyaction)
 {
   return 0 < yyaction;
 }
 
-static inline yybool
+static yybool
 yyisErrorAction (int yyaction)
 {
   return yyaction == 0;
@@ -9569,7 +9636,7 @@ yyisErrorAction (int yyaction)
  *  YY_RESERVE_GLRSTACK afterwards to make sure there is sufficient
  *  headroom.  */
 
-static inline yyGLRStackItem*
+static yyGLRStackItem*
 yynewGLRStackItem (yyGLRStack* yystackp, yybool yyisState)
 {
   yyGLRStackItem* yynewItem = yystackp->yynextFree;
@@ -9729,7 +9796,7 @@ yyfreeGLRStack (yyGLRStack* yystackp)
 /** Assuming that YYS is a GLRState somewhere on *YYSTACKP, update the
  *  splitpoint of *YYSTACKP, if needed, so that it is at least as deep as
  *  YYS.  */
-static inline void
+static void
 yyupdateSplit (yyGLRStack* yystackp, yyGLRState* yys)
 {
   if (yystackp->yysplitPoint != YY_NULLPTR && yystackp->yysplitPoint > yys)
@@ -9737,7 +9804,7 @@ yyupdateSplit (yyGLRStack* yystackp, yyGLRState* yys)
 }
 
 /** Invalidate stack #YYK in *YYSTACKP.  */
-static inline void
+static void
 yymarkStackDeleted (yyGLRStack* yystackp, size_t yyk)
 {
   if (yystackp->yytops.yystates[yyk] != YY_NULLPTR)
@@ -9759,7 +9826,7 @@ yyundeleteLastStack (yyGLRStack* yystackp)
   yystackp->yylastDeleted = YY_NULLPTR;
 }
 
-static inline void
+static void
 yyremoveDeletes (yyGLRStack* yystackp)
 {
   size_t yyi, yyj;
@@ -9798,7 +9865,7 @@ yyremoveDeletes (yyGLRStack* yystackp)
 /** Shift to a new state on stack #YYK of *YYSTACKP, corresponding to LR
  * state YYLRSTATE, at input position YYPOSN, with (resolved) semantic
  * value *YYVALP and source location *YYLOCP.  */
-static inline void
+static void
 yyglrShift (yyGLRStack* yystackp, size_t yyk, yyStateNum yylrState,
             size_t yyposn,
             YYSTYPE* yyvalp)
@@ -9818,7 +9885,7 @@ yyglrShift (yyGLRStack* yystackp, size_t yyk, yyStateNum yylrState,
 /** Shift stack #YYK of *YYSTACKP, to a new state corresponding to LR
  *  state YYLRSTATE, at input position YYPOSN, with the (unresolved)
  *  semantic value of YYRHS under the action for YYRULE.  */
-static inline void
+static void
 yyglrShiftDefer (yyGLRStack* yystackp, size_t yyk, yyStateNum yylrState,
                  size_t yyposn, yyGLRState* yyrhs, yyRuleNum yyrule)
 {
@@ -9849,7 +9916,7 @@ do {                                    \
 | Report that stack #YYK of *YYSTACKP is going to be reduced by YYRULE. |
 `----------------------------------------------------------------------*/
 
-static inline void
+static void
 yy_reduce_print (int yynormal, yyGLRStackItem* yyvsp, size_t yyk,
                  yyRuleNum yyrule)
 {
@@ -9881,7 +9948,7 @@ yy_reduce_print (int yynormal, yyGLRStackItem* yyvsp, size_t yyk,
  *  have been previously resolved.  Set *YYVALP to the resulting value,
  *  and *YYLOCP to the computed location (if any).  Return value is as
  *  for userAction.  */
-static inline YYRESULTTAG
+static YYRESULTTAG
 yydoAction (yyGLRStack* yystackp, size_t yyk, yyRuleNum yyrule,
             YYSTYPE* yyvalp)
 {
@@ -9930,7 +9997,7 @@ yydoAction (yyGLRStack* yystackp, size_t yyk, yyRuleNum yyrule,
  *  *YYSTACKP.  In this case, the semantic value is
  *  added to the options for the existing state's semantic value.
  */
-static inline YYRESULTTAG
+static YYRESULTTAG
 yyglrReduce (yyGLRStack* yystackp, size_t yyk, yyRuleNum yyrule,
              yybool yyforceEval)
 {
@@ -11073,7 +11140,7 @@ yypdumpstack (yyGLRStack* yystackp)
 
 
 
-#line 3696 "vtkParse.y" /* glr.c:2551  */
+#line 3763 "vtkParse.y" /* glr.c:2551  */
 
 #include <string.h>
 #include "lex.yy.c"
