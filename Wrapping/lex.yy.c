@@ -5135,14 +5135,15 @@ void doxygen_comment()
             }
           else if (linetext[i] != ' ')
             {
-            if (i > yyleng-3 && linetext[i-1] == ' ')
-              {
-              i--;
-              }
-            base = i;
             break;
             }
           }
+        if (i > yyleng-3 && i < l &&
+            linetext[i] != ' ' && linetext[i-1] == ' ')
+          {
+          i--;
+          }
+        base = i;
         }
       if (l > base)
         {
