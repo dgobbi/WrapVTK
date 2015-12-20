@@ -547,6 +547,7 @@ void addCommentLine(const char *line, size_t n, int type)
               {
               --commentGroupDepth;
               }
+            closeComment();
             return;
             }
           else
@@ -759,9 +760,17 @@ void commentBreak()
     {
     clearComment();
     }
-  else if (commentState != DoxygenComment)
+  else if (commentState == DoxygenComment)
     {
-    /* blank lines end of VTK comments, buy not doxygen comments */
+    /* blank lines only end targeted doxygen comments */
+    if (commentType != DOX_COMMAND_OTHER)
+      {
+      closeComment();
+      }
+    }
+  else
+    {
+    /* blank lines end VTK comments */
     closeComment();
     }
 }
