@@ -605,6 +605,8 @@ void addCommentLine(const char *line, size_t n, int type)
                 i++;
                 }
               commentTarget = vtkstrndup(&line[j], i-j);
+              /* remove this line from the comment */
+              n = 0;
               }
             }
           }
