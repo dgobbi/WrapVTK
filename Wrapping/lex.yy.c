@@ -5154,7 +5154,7 @@ void doxygen_comment()
         l -= base;
         addCommentLine(&linetext[i], l, type);
         }
-      else if (!isfirstline && (c1 != '*' || c2 != '/'))
+      else if (c1 != '*' || c2 != '/')
         {
         addCommentLine("", 0, type);
         }
