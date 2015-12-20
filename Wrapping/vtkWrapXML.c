@@ -405,7 +405,7 @@ void vtkWrapXML_FileFooter(wrapxml_state_t *w, const FileInfo *data)
 {
   const char *elementName = "file";
   /* avoid warning */
-  data = NULL;
+  (void)data;
 
   w->indentation++;
   vtkWrapXML_ElementEnd(w, elementName);
