@@ -2237,6 +2237,7 @@ typedef_declarator_id:
       if (getVarName())
         {
         item->Name = getVarName();
+        item->Comment = vtkstrdup(getComment());
         }
 
       if (item->TypeName == NULL)
@@ -2288,6 +2289,7 @@ alias_declaration:
       handle_complex_type(item, getType(), $<integer>6, copySig());
 
       item->Name = $<str>2;
+      item->Comment = vtkstrdup(getComment());
 
       if (currentTemplate)
         {
@@ -2655,6 +2657,7 @@ init_declarator_id:
         }
 
       var->Name = getVarName();
+      var->Comment = vtkstrdup(getComment());
 
       if (getVarValue())
         {
@@ -3972,6 +3975,7 @@ void start_enum(const char *name, int is_scoped,
     item = (EnumInfo *)malloc(sizeof(EnumInfo));
     vtkParse_InitEnum(item);
     item->Name = name;
+    item->Comment = vtkstrdup(getComment());
     item->Access = access_level;
 
     if (currentClass)
@@ -4255,6 +4259,7 @@ void add_constant(const char *name, const char *value,
   vtkParse_InitValue(con);
   con->ItemType = VTK_CONSTANT_INFO;
   con->Name = name;
+  con->Comment = vtkstrdup(getComment());
   con->Value = value;
   con->Type = type;
   con->TypeName = type_class(type, typeclass);
