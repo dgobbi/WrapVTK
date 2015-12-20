@@ -12499,6 +12499,9 @@ FileInfo *vtkParse_ParseFile(
     }
   free(main_class);
 
+  /* assign doxygen comments to their targets */
+  assignComments(data->Contents);
+
   vtkParsePreprocess_Free(preprocessor);
   preprocessor = NULL;
   macroName = NULL;
