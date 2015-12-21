@@ -106,7 +106,7 @@ ID [a-zA-Z_\x80-\xff][0-9a-zA-Z_\x80-\xff]*
       skip_ahead_until("@end");
     }
 
-"//"[/!]"<".* { doxygen_cpp_comment(); } 
+"//"[/!]"<".* { doxygen_cpp_comment(); }
 
 ^[\t ]*"//"[/!].* { doxygen_cpp_comment(); }
 ^[\t ]*"//@{".* { doxygen_group_start(); }
@@ -1714,26 +1714,30 @@ void preprocessor_directive(const char *text, size_t l)
       exit(1);
       }
     }
-  else if (n == 6 && strncmp(directive, "define", n) == 0 &&
-           ep - cp > 4 && strncmp(cp, "VTK", 3) == 0)
+  else if (n == 6 && strncmp(directive, "define", n) == 0)
     {
-    /* macros that start with "VTK" */
-    MacroInfo *macro;
-
-    macro = vtkParsePreprocess_GetMacro(preprocessor, cp);
-    if (macro && macro->Definition && !macro->IsFunction)
+    closeComment();
+    if (ep - cp > 4 && strncmp(cp, "VTK", 3) == 0)
       {
-      /* if macro evaluates to a constant, add it as a constant */
-      macro->IsExcluded = 1;
-      if (guess_constant_type(macro->Definition) == 0)
+      /* macros that start with "VTK" */
+      MacroInfo *macro;
+
+      macro = vtkParsePreprocess_GetMacro(preprocessor, cp);
+      if (macro && macro->Definition && !macro->IsFunction)
         {
-        result = VTK_PARSE_MACRO_UNDEFINED;
-        }
-      macro->IsExcluded = 0;
-      if (result < VTK_PARSE_MACRO_UNDEFINED)
-        {
-        add_constant(
-          vtkstrdup(macro->Name), vtkstrdup(macro->Definition), 0, NULL, 1);
+        /* if macro evaluates to a constant, add it as a constant */
+        macro->IsExcluded = 1;
+        if (guess_constant_type(macro->Definition) == 0)
+          {
+          result = VTK_PARSE_MACRO_UNDEFINED;
+          }
+        macro->IsExcluded = 0;
+        if (result < VTK_PARSE_MACRO_UNDEFINED)
+          {
+          add_constant(
+            vtkstrdup(macro->Name), vtkstrdup(macro->Definition),
+            0, NULL, 1);
+          }
         }
       }
     }
