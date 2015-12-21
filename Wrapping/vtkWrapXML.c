@@ -457,8 +457,13 @@ void vtkWrapXML_FileDoc(wrapxml_state_t *w, FileInfo *data)
       {
       cp++;
       }
-    fprintf(w->file, "%s .NAME %s\n", indent(w->indentation),
-            vtkWrapXML_Quote(cp,500));
+    strncpy(temp, " .NAME ", 7);
+    n = strlen(cp) + 7;
+    n = (n >= 500-1 ? 500-2 : n);
+    strncpy(&temp[7], cp, n-7);
+    temp[n] = '\n';
+    temp[n+1] = '\0';
+    vtkWrapXML_MultiLineText(w, temp);
     }
 
   if (data->Description)
