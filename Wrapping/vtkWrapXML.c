@@ -151,10 +151,11 @@ static const char *vtkWrapXML_Quote(const char *comment, size_t maxlen)
  */
 static void vtkWrapXML_MultiLineText(wrapxml_state_t *w, const char *cp)
 {
-  size_t i, j;
+  size_t i = 0;
+  size_t j;
   char temp[512];
 
-  for (i = 0; cp && cp[i] != '\0'; i++)
+  while (cp && cp[i] != '\0')
     {
     for (j = 0; j < 200 && cp[i] != '\0' && cp[i] != '\n'; j++)
       {
@@ -177,6 +178,10 @@ static void vtkWrapXML_MultiLineText(wrapxml_state_t *w, const char *cp)
     else
       {
       fprintf(w->file, "\n");
+      }
+    if (cp[i] == '\n')
+      {
+      i++;
       }
     }
 }
@@ -459,10 +464,9 @@ void vtkWrapXML_FileDoc(wrapxml_state_t *w, FileInfo *data)
       }
     strncpy(temp, " .NAME ", 7);
     n = strlen(cp) + 7;
-    n = (n >= 500-1 ? 500-2 : n);
+    n = (n >= 500 ? 500-1 : n);
     strncpy(&temp[7], cp, n-7);
-    temp[n] = '\n';
-    temp[n+1] = '\0';
+    temp[n] = '\0';
     vtkWrapXML_MultiLineText(w, temp);
     }
 
