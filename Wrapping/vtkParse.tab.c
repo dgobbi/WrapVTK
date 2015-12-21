@@ -418,11 +418,12 @@ enum comment_enum
   StickyComment = -1,
   NoComment = 0,
   NormalComment = 1,
-  DescriptionComment = 2,
-  SeeAlsoComment = 3,
-  CaveatsComment = 4,
-  DoxygenComment = 5,
-  TrailingComment = 6
+  NameComment = 2,
+  DescriptionComment = 3,
+  SeeAlsoComment = 4,
+  CaveatsComment = 5,
+  DoxygenComment = 6,
+  TrailingComment = 7
 };
 
 /* "private" variables */
@@ -443,7 +444,7 @@ struct DoxygenCommandInfo
   parse_dox_t type;
 };
 
-/* List of doxygen commands (for now, just list ones to skip) */
+/* List of doxygen commands (@cond is not handled yet) */
 struct DoxygenCommandInfo doxygenCommands[] = {
   { "def", 3, DOX_COMMAND_DEF },
   { "category", 8, DOX_COMMAND_CATEGORY },
@@ -746,6 +747,9 @@ void applyComment(ClassInfo *cls)
 /* This is called when a comment block ends */
 void closeComment()
 {
+  const char *cp;
+  size_t l;
+
   switch (commentState)
     {
     case ClosedComment:
@@ -754,6 +758,18 @@ void closeComment()
     case NormalComment:
       /* Make comment persist until a new comment starts */
       commentState = StickyComment;
+      break;
+    case NameComment:
+      /* For NameComment, strip the comment */
+      cp = getComment();
+      l = strlen(cp);
+      while (l > 0 &&
+             (cp[l-1] == '\n' || cp[l-1] == '\r' || cp[l-1] == ' '))
+        {
+        l--;
+        }
+      data->NameComment = vtkstrndup(cp, l);
+      clearComment();
       break;
     case DescriptionComment:
       data->Description = vtkstrdup(getComment());

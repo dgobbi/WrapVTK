@@ -5228,7 +5228,8 @@ void vtk_name_comment()
     pos++;
     }
   pos++;
-  data->NameComment = vtkstrndup(&yytext[pos], yyleng - pos);
+  setCommentState(NameComment);
+  addCommentLine(&yytext[pos], yyleng - pos, NormalComment);
 }
 
 /*
