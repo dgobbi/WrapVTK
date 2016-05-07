@@ -19,7 +19,7 @@ about all accessible methods and variables of the VTK classes
 and then dumps the information into a separate xml file for each
 class.
 
-See http://www.cognitive-antics.net/mw/index.php?title=VTK/vtkWrapXML
+See http://www.cognitive-antics.net/?page_id=1047
 for a description of the XML format that it produces.
 
 =================
