@@ -379,6 +379,9 @@ FileInfo *vtkParse_Main(int argc, char *argv[])
   /* set the command name for diagnostics */
   vtkParse_SetCommandName(parse_exename(argv[0]));
 
+  /* pre-define the __VTK_WRAP__ macro */
+  vtkParse_DefineMacro("__VTK_WRAP__", 0);
+
   /* expand any "@file" args */
   vtkParse_InitStringCache(&strings);
   parse_expand_args(&strings, argc, argv, &argn, &args);

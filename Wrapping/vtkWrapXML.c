@@ -1555,6 +1555,9 @@ int main(int argc, char *argv[])
   /* recurse through included headers (off for now) */
   vtkParse_SetRecursive(0);
 
+  /* pre-define a macro to identify the language */
+  vtkParse_DefineMacro("__VTK_WRAP_XML__", 0);
+
   /* handle args, parse header, get output file handle */
   data = vtkParse_Main(argc, argv);
 
