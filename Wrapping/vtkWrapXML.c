@@ -583,6 +583,11 @@ void vtkWrapXML_TypeAttributes(wrapxml_state_t *w, ValueInfo *val)
     vtkWrapXML_Flag(w, "reference", 1);
     }
 
+  if ((type & VTK_PARSE_NEWINSTANCE) != 0)
+    {
+    vtkWrapXML_Flag(w, "newinstance", 1);
+    }
+
   vtkWrapXML_Pointer(w, val);
   vtkWrapXML_Size(w, val);
 }
