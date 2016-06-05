@@ -1629,27 +1629,27 @@ FunctionInfo *getFunction()
  * Attributes
  */
 
-int attributeType = 0;
+int attributeRole = 0;
 int attributeStack[20];
 unsigned long attributeDepth = 0;
 
 /* Set kind of attributes to collect in attribute_specifier_seq */
 void pushAttributeRole(int x)
 {
-  attributeStack[attributeDepth++] = attributeType;
-  attributeType = x;
+  attributeStack[attributeDepth++] = attributeRole;
+  attributeRole = x;
 }
 
 /* Go back to the previous kind of attributes */
 void popAttributeRole()
 {
-  attributeType = attributeStack[--attributeDepth];
+  attributeRole = attributeStack[--attributeDepth];
 }
 
 /* Get the current kind of attribute */
 int getAttributeRole()
 {
-  return attributeType;
+  return attributeRole;
 }
 
 /*----------------------------------------------------------------
