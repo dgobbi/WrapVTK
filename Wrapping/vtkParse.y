@@ -184,7 +184,7 @@ enum
   VTK_PARSE_ATTRIB_REF,   /* modify *, &, or && */
   VTK_PARSE_ATTRIB_FUNC,  /* modify a function or method */
   VTK_PARSE_ATTRIB_ARRAY, /* modify an array size specifier */
-  VTK_PARSE_ATTRIB_KEY    /* modify class, struct, union, or enum */
+  VTK_PARSE_ATTRIB_CLASS  /* modify class, struct, union, or enum */
   };
 
 #define vtkParseDebug(s1, s2) \
@@ -1630,26 +1630,23 @@ FunctionInfo *getFunction()
  */
 
 int attributeRole = 0;
-int attributeStack[20];
-unsigned long attributeDepth = 0;
 
 /* Set kind of attributes to collect in attribute_specifier_seq */
-void pushAttributeRole(int x)
+void setAttributeRole(int x)
 {
-  attributeStack[attributeDepth++] = attributeRole;
   attributeRole = x;
-}
-
-/* Go back to the previous kind of attributes */
-void popAttributeRole()
-{
-  attributeRole = attributeStack[--attributeDepth];
 }
 
 /* Get the current kind of attribute */
 int getAttributeRole()
 {
   return attributeRole;
+}
+
+/* Ignore attributes until further notice */
+void clearAttributeRole()
+{
+  attributeRole = 0;
 }
 
 /*----------------------------------------------------------------
@@ -2042,9 +2039,9 @@ forward_declaration:
   | template_head simple_forward_declaration
 
 simple_forward_declaration:
-    class_key key_attribute_specifier_seq class_head_name ';'
-  | class_key key_attribute_specifier_seq ';'
-  | decl_specifier_seq class_key key_attribute_specifier_seq class_head_name ';'
+    class_key class_attribute_specifier_seq class_head_name ';'
+  | class_key class_attribute_specifier_seq ';'
+  | decl_specifier_seq class_key class_attribute_specifier_seq class_head_name ';'
 
 class_definition:
     class_specifier opt_decl_specifier_seq opt_declarator_list ';'
@@ -2065,23 +2062,23 @@ class_specifier:
     }
 
 class_head:
-    class_key key_attribute_specifier_seq class_head_name opt_final ':'
+    class_key class_attribute_specifier_seq class_head_name opt_final ':'
     {
       start_class($<str>3, $<integer>1);
       currentClass->IsFinal = $<integer>4;
     }
     base_specifier_list
-  | class_key key_attribute_specifier_seq class_head_name opt_final
+  | class_key class_attribute_specifier_seq class_head_name opt_final
     {
       start_class($<str>3, $<integer>1);
       currentClass->IsFinal = $<integer>4;
     }
-  | class_key key_attribute_specifier_seq ':'
+  | class_key class_attribute_specifier_seq ':'
     {
       start_class(NULL, $<integer>1);
     }
     base_specifier_list
-  | class_key key_attribute_specifier_seq
+  | class_key class_attribute_specifier_seq
     {
       start_class(NULL, $<integer>1);
     }
@@ -2092,11 +2089,11 @@ class_key:
   | UNION { $<integer>$ = 2; }
 
 class_head_name:
-    nested_name_specifier class_name id_attribute_specifier_seq
+    nested_name_specifier class_name decl_attribute_specifier_seq
     { $<str>$ = vtkstrcat($<str>1, $<str>2); }
-  | scope_operator_sig nested_name_specifier class_name id_attribute_specifier_seq
+  | scope_operator_sig nested_name_specifier class_name decl_attribute_specifier_seq
     { $<str>$ = vtkstrcat3("::", $<str>2, $<str>3); }
-  | class_name id_attribute_specifier_seq
+  | class_name decl_attribute_specifier_seq
 
 class_name:
     simple_id
@@ -2191,9 +2188,9 @@ access_specifier:
  */
 
 opaque_enum_declaration:
-    enum_key key_attribute_specifier_seq id_expression opt_enum_base ';'
-  | enum_key key_attribute_specifier_seq ';'
-  | decl_specifier_seq enum_key key_attribute_specifier_seq
+    enum_key class_attribute_specifier_seq id_expression opt_enum_base ';'
+  | enum_key class_attribute_specifier_seq ';'
+  | decl_specifier_seq enum_key class_attribute_specifier_seq
     id_expression opt_enum_base ';'
 
 enum_definition:
@@ -2215,13 +2212,13 @@ enum_specifier:
     }
 
 enum_head:
-    enum_key key_attribute_specifier_seq id_expression opt_enum_base
+    enum_key class_attribute_specifier_seq id_expression opt_enum_base
     {
       start_enum($<str>3, $<integer>1, $<integer>4, getTypeId());
       clearTypeId();
       $<str>$ = $<str>3;
     }
-  | enum_key key_attribute_specifier_seq opt_enum_base
+  | enum_key class_attribute_specifier_seq opt_enum_base
     {
       start_enum(NULL, $<integer>1, $<integer>3, getTypeId());
       clearTypeId();
@@ -2260,12 +2257,12 @@ ignored_initializer:
   | ignored_braces
 
 ignored_class:
-    class_key key_attribute_specifier_seq
+    class_key class_attribute_specifier_seq
     class_head_name opt_final ignored_class_body
-  | decl_specifier_seq class_key key_attribute_specifier_seq
+  | decl_specifier_seq class_key class_attribute_specifier_seq
     class_head_name opt_final ignored_class_body
-  | class_key key_attribute_specifier_seq ignored_class_body
-  | decl_specifier_seq class_key key_attribute_specifier_seq ignored_class_body
+  | class_key class_attribute_specifier_seq ignored_class_body
+  | decl_specifier_seq class_key class_attribute_specifier_seq ignored_class_body
 
 ignored_class_body:
     '{' ignored_items '}' ignored_expression ';'
@@ -3103,9 +3100,9 @@ store_type_specifier:
 
 type_specifier:
     trailing_type_specifier
-  | class_key key_attribute_specifier_seq class_head_name
+  | class_key class_attribute_specifier_seq class_head_name
     { postSig(" "); setTypeId($<str>3); $<integer>$ = guess_id_type($<str>3); }
-  | enum_key key_attribute_specifier_seq id_expression id_attribute_specifier_seq
+  | enum_key class_attribute_specifier_seq id_expression decl_attribute_specifier_seq
     { postSig(" "); setTypeId($<str>3); $<integer>$ = guess_id_type($<str>3); }
 
 trailing_type_specifier:
@@ -3113,11 +3110,11 @@ trailing_type_specifier:
   | decltype_specifier
     { postSig(" "); setTypeId($<str>1); $<integer>$ = 0; }
   | TYPENAME { postSig("typename "); }
-    id_expression id_attribute_specifier_seq
+    id_expression decl_attribute_specifier_seq
     { postSig(" "); setTypeId($<str>3); $<integer>$ = guess_id_type($<str>3); }
-  | template_id id_attribute_specifier_seq
+  | template_id decl_attribute_specifier_seq
     { postSig(" "); setTypeId($<str>1); $<integer>$ = guess_id_type($<str>1); }
-  | qualified_id id_attribute_specifier_seq
+  | qualified_id decl_attribute_specifier_seq
     { postSig(" "); setTypeId($<str>1); $<integer>$ = guess_id_type($<str>1); }
 
 trailing_type_specifier_seq:
@@ -3154,8 +3151,8 @@ tparam_type_specifier:
     { postSig(" "); setTypeId($<str>2); $<integer>$ = guess_id_type($<str>2); }
 
 simple_type_specifier:
-    primitive_type id_attribute_specifier_seq { setTypeId(""); }
-  | type_name id_attribute_specifier_seq
+    primitive_type decl_attribute_specifier_seq { setTypeId(""); }
+  | type_name decl_attribute_specifier_seq
 
 type_name:
     StdString { typeSig($<str>1); $<integer>$ = VTK_PARSE_STRING; }
@@ -3276,28 +3273,28 @@ pointer_seq:
  */
 
 decl_attribute_specifier_seq:
-  { pushAttributeRole(VTK_PARSE_ATTRIB_DECL); }
-  attribute_specifier_seq { popAttributeRole(); }
+  { setAttributeRole(VTK_PARSE_ATTRIB_DECL); }
+  attribute_specifier_seq { clearAttributeRole(); }
 
 id_attribute_specifier_seq:
-  { pushAttributeRole(VTK_PARSE_ATTRIB_ID); }
-  attribute_specifier_seq { popAttributeRole(); }
+  { setAttributeRole(VTK_PARSE_ATTRIB_ID); }
+  attribute_specifier_seq { clearAttributeRole(); }
 
 ref_attribute_specifier_seq:
-  { pushAttributeRole(VTK_PARSE_ATTRIB_REF); }
-  attribute_specifier_seq { popAttributeRole(); }
+  { setAttributeRole(VTK_PARSE_ATTRIB_REF); }
+  attribute_specifier_seq { clearAttributeRole(); }
 
 func_attribute_specifier_seq:
-  { pushAttributeRole(VTK_PARSE_ATTRIB_FUNC); }
-  attribute_specifier_seq { popAttributeRole(); }
+  { setAttributeRole(VTK_PARSE_ATTRIB_FUNC); }
+  attribute_specifier_seq { clearAttributeRole(); }
 
 array_attribute_specifier_seq:
-  { pushAttributeRole(VTK_PARSE_ATTRIB_ARRAY); }
-  attribute_specifier_seq { popAttributeRole(); }
+  { setAttributeRole(VTK_PARSE_ATTRIB_ARRAY); }
+  attribute_specifier_seq { clearAttributeRole(); }
 
-key_attribute_specifier_seq:
-  { pushAttributeRole(VTK_PARSE_ATTRIB_KEY); }
-  attribute_specifier_seq { popAttributeRole(); }
+class_attribute_specifier_seq:
+  { setAttributeRole(VTK_PARSE_ATTRIB_CLASS); }
+  attribute_specifier_seq { clearAttributeRole(); }
 
 attribute_specifier_seq:
   | attribute_specifier_seq attribute_specifier
