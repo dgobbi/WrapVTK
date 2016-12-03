@@ -796,7 +796,7 @@ static int methodMatchesProperty(
     }
 
   /* make sure the method name contains the property name */
-  if (!strncmp(name, propertyName, n) == 0)
+  if (strncmp(name, propertyName, n) != 0)
     {
     return 0;
     }
