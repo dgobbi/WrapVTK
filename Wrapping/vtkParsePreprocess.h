@@ -87,14 +87,7 @@ typedef struct _PreprocessInfo
  * Platforms.  Always choose native unless crosscompiling.
  */
 enum _preproc_platform_t {
-  VTK_PARSE_NATIVE = 0,
-  VTK_PARSE_WIN32,
-  VTK_PARSE_BORLAND,
-  VTK_PARSE_MINGW,
-  VTK_PARSE_CYGWIN,
-  VTK_PARSE_LINUX,
-  VTK_PARSE_APPLE,
-  VTK_PARSE_UNIX
+  VTK_PARSE_NATIVE = 0
 };
 
 /**
