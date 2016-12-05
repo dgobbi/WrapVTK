@@ -2398,6 +2398,9 @@ void vtkParsePreprocess_AddStandardMacros(
 #ifdef __LP64__
     PREPROC_ADD_MACRO(info, __LP64__);
 #endif
+#ifdef __64BIT__
+    PREPROC_ADD_MACRO(info, __64BIT__);
+#endif
 
     /*------------------------------
      * macros for the signedness of the char type
