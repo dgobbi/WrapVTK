@@ -2414,6 +2414,12 @@ void vtkParsePreprocess_AddStandardMacros(
 #ifdef __CHAR_SIGNED__
     PREPROC_ADD_MACRO(info, __CHAR_SIGNED__);
 #endif
+#ifdef __WCHAR_UNSIGNED__
+    PREPROC_ADD_MACRO(info, __WCHAR_UNSIGNED__);
+#endif
+#ifdef __WCHAR_SIGNED__
+    PREPROC_ADD_MACRO(info, __WCHAR_SIGNED__);
+#endif
 
     /*------------------------------
      * macros that declare the endianness
@@ -2736,14 +2742,20 @@ void vtkParsePreprocess_AddStandardMacros(
     PREPROC_ADD_MACRO(info, __APPLE_CC__);
 #endif
 
+#ifdef __xlc__
+    PREPROC_ADD_MACRO(info, __xlc__);
+#endif
 #ifdef __xlC__
     PREPROC_ADD_MACRO(info, __xlC__);
 #endif
-#ifdef __xl__
-    PREPROC_ADD_MACRO(info, __xl__);
-#endif
 #ifdef __xlC_ver__
     PREPROC_ADD_MACRO(info, __xlC_ver__);
+#endif
+#ifdef __IBMC__
+    PREPROC_ADD_MACRO(info, __IBMC__);
+#endif
+#ifdef __IBMCPP__
+    PREPROC_ADD_MACRO(info, __IBMCPP__);
 #endif
 #ifdef __HP_cc
     PREPROC_ADD_MACRO(info, __HP_cc);
