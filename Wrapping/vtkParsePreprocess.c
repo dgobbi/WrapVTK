@@ -2408,11 +2408,20 @@ void vtkParsePreprocess_AddStandardMacros(
 #ifdef _CHAR_SIGNED
     PREPROC_ADD_MACRO(info, _CHAR_SIGNED);
 #endif
+#ifdef _CHAR_IS_UNSIGNED
+    PREPROC_ADD_MACRO(info, _CHAR_IS_UNSIGNED);
+#endif
+#ifdef _CHAR_IS_SIGNED
+    PREPROC_ADD_MACRO(info, _CHAR_IS_SIGNED);
+#endif
 #ifdef __CHAR_UNSIGNED__
     PREPROC_ADD_MACRO(info, __CHAR_UNSIGNED__);
 #endif
 #ifdef __CHAR_SIGNED__
     PREPROC_ADD_MACRO(info, __CHAR_SIGNED__);
+#endif
+#ifdef __SIGNED_CHARS__
+    PREPROC_ADD_MACRO(info, __SIGNED_CHARS__);
 #endif
 #ifdef __WCHAR_UNSIGNED__
     PREPROC_ADD_MACRO(info, __WCHAR_UNSIGNED__);
