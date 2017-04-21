@@ -163,7 +163,7 @@ typedef struct yy_buffer_state *YY_BUFFER_STATE;
 typedef size_t yy_size_t;
 #endif
 
-extern yy_size_t yyleng;
+extern int yyleng;
 
 extern FILE *yyin, *yyout;
 
@@ -180,7 +180,7 @@ extern FILE *yyin, *yyout;
      */
     #define  YY_LESS_LINENO(n) \
             do { \
-                yy_size_t yyl;\
+                int yyl;\
                 for ( yyl = n; yyl < yyleng; ++yyl )\
                     if ( yytext[yyl] == '\n' )\
                         --yylineno;\
@@ -290,7 +290,7 @@ static YY_BUFFER_STATE * yy_buffer_stack = 0; /**< Stack as an array. */
 /* yy_hold_char holds the character lost when yytext is formed. */
 static char yy_hold_char;
 static yy_size_t yy_n_chars;                /* number of characters read into yy_ch_buf */
-yy_size_t yyleng;
+int yyleng;
 
 /* Points to current character in buffer. */
 static char *yy_c_buf_p = (char *) 0;
@@ -2289,7 +2289,7 @@ yy_find_action:
 
                 if ( yy_act != YY_END_OF_BUFFER && yy_rule_can_match_eol[yy_act] )
                         {
-                        yy_size_t yyl;
+                        int yyl;
                         for ( yyl = 0; yyl < yyleng; ++yyl )
                                 if ( yytext[yyl] == '\n' )
 
@@ -5087,7 +5087,7 @@ void doxygen_comment()
   int savelineno = yylineno;
   int asterisk, isfirstline = 1;
   int type = DoxygenComment;
-  size_t l = 0, i = 0, base = yyleng;
+  int l = 0, i = 0, base = yyleng;
   int c1 = 0, c2 = input();
   for (l = 0; l < yyleng; l++)
     {
@@ -5179,7 +5179,7 @@ void doxygen_comment()
 void doxygen_cpp_comment()
 {
   int type = DoxygenComment;
-  size_t pos = 2;
+  int pos = 2;
   while (yytext[pos-2] != '/' || yytext[pos-1] != '/') pos++;
   while (pos < yyleng && yytext[pos-1] == '/' && yytext[pos] == '/') pos++;
   if (pos < yyleng && yytext[pos] == '!') pos++;
@@ -5222,7 +5222,7 @@ void vtk_comment()
  */
 void vtk_name_comment()
 {
-  size_t pos = 1;
+  int pos = 1;
   while (yytext[pos-1] != 'M' || yytext[pos] != 'E')
     {
     pos++;
@@ -5237,7 +5237,7 @@ void vtk_name_comment()
  */
 void vtk_section_comment()
 {
-  size_t pos = 1;
+  int pos = 1;
   while (yytext[pos-1] != 'O' || yytext[pos] != 'N')
     {
     pos++;

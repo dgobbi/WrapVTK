@@ -13,7 +13,6 @@ Modify lex.yy.c:
   - convert tabs to spaces (8 spaces per tab)
   - remove extra space from end of lines
   - remove blank lines from end of file
-  - replace "int yyl;" with "yy_size_t yyl;"
   - compile with gcc and "-Wsign-compare", there should be no warnings
 
 */
@@ -1050,7 +1049,7 @@ void doxygen_comment()
   int savelineno = yylineno;
   int asterisk, isfirstline = 1;
   int type = DoxygenComment;
-  size_t l = 0, i = 0, base = yyleng;
+  int l = 0, i = 0, base = yyleng;
   int c1 = 0, c2 = input();
   for (l = 0; l < yyleng; l++)
     {
@@ -1142,7 +1141,7 @@ void doxygen_comment()
 void doxygen_cpp_comment()
 {
   int type = DoxygenComment;
-  size_t pos = 2;
+  int pos = 2;
   while (yytext[pos-2] != '/' || yytext[pos-1] != '/') pos++;
   while (pos < yyleng && yytext[pos-1] == '/' && yytext[pos] == '/') pos++;
   if (pos < yyleng && yytext[pos] == '!') pos++;
@@ -1185,7 +1184,7 @@ void vtk_comment()
  */
 void vtk_name_comment()
 {
-  size_t pos = 1;
+  int pos = 1;
   while (yytext[pos-1] != 'M' || yytext[pos] != 'E')
     {
     pos++;
@@ -1200,7 +1199,7 @@ void vtk_name_comment()
  */
 void vtk_section_comment()
 {
-  size_t pos = 1;
+  int pos = 1;
   while (yytext[pos-1] != 'O' || yytext[pos] != 'N')
     {
     pos++;
@@ -1239,7 +1238,7 @@ void vtk_section_comment()
  */
 void cpp_comment_line()
 {
-  size_t pos = 2;
+  int pos = 2;
   while (yytext[pos-2] != '/' || yytext[pos-1] != '/') pos++;
   addCommentLine(&yytext[pos], yyleng - pos, NormalComment);
 }
