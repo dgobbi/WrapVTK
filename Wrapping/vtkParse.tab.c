@@ -12183,6 +12183,11 @@ void handle_attribute(const char *att, int pack)
       {
       setTypeMod(VTK_PARSE_NEWINSTANCE);
       }
+    else if (strcmp(att, "vtk::zerocopy") == 0 &&
+             role == VTK_PARSE_ATTRIB_DECL)
+      {
+      setTypeMod(VTK_PARSE_ZEROCOPY);
+      }
     else
       {
       print_parser_error("attribute cannot be used here", att, l);
