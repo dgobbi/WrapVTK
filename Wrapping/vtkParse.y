@@ -4464,11 +4464,13 @@ void add_constant(const char *name, const char *value,
     }
 }
 
-/* if the name is a const in this namespace, the scope it */
+/* if the name is a const in this namespace, then scope it */
 const char *add_const_scope(const char *name)
 {
   static char text[256];
   NamespaceInfo *scope = currentNamespace;
+  TemplateInfo *tparams;
+  const char *classname;
   unsigned long i, j;
   int addscope = 0;
 
@@ -4480,8 +4482,24 @@ const char *add_const_scope(const char *name)
       {
       if (strcmp(currentClass->Constants[j]->Name, text) == 0)
         {
-        prepend_scope(text, currentClass->Name);
+        classname = currentClass->Name;
+        tparams = currentClass->Template;
+        if (tparams)
+          {
+          classname = vtkstrcat(classname, "<");
+          for (i = 0; i < tparams->NumberOfParameters; i++)
+            {
+            if (i != 0)
+              {
+              classname = vtkstrcat(classname, ",");
+              }
+            classname = vtkstrcat(classname, tparams->Parameters[i]->Name);
+            }
+          classname = vtkstrcat(classname, ">");
+          }
+        prepend_scope(text, classname);
         addscope = 1;
+        break;
         }
       }
     }
@@ -4500,6 +4518,7 @@ const char *add_const_scope(const char *name)
           {
           prepend_scope(text, scope->Name);
           addscope = 1;
+          break;
           }
         }
       }
