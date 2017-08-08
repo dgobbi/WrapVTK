@@ -2014,7 +2014,7 @@ static const char *raw_string(const char *begin);
 
 static void preprocessor_directive(const char *text, size_t l);
 static void print_preprocessor_error(int result, const char *cp, size_t n);
-static const char *get_macro_arguments();
+static char *get_macro_arguments();
 
 static void push_buffer();
 static int pop_buffer();
@@ -2439,8 +2439,8 @@ case 22:
 YY_RULE_SETUP
 #line 149 "vtkParse.l"
 {
-      const char *args = NULL;
-      const char *cp;
+      char *args = NULL;
+      char *cp;
       size_t l = 0;
       args = get_macro_arguments();
       if (args)
@@ -2452,10 +2452,10 @@ YY_RULE_SETUP
         if (l)
           {
           yylval.str = vtkstrndup(cp, l);
-          free((char *)args);
+          free(args);
           return(ID);
           }
-        free((char *)args);
+        free(args);
         }
     }
         YY_BREAK
@@ -3253,7 +3253,7 @@ YY_RULE_SETUP
       int expanded = 0;
       if (macro)
         {
-        const char *args = NULL;
+        char *args = NULL;
         const char *emacro = NULL;
 
         /* make sure that vtkNotUsed is never expanded */
@@ -3280,7 +3280,7 @@ YY_RULE_SETUP
               print_preprocessor_error(VTK_PARSE_MACRO_NUMARGS, NULL, 0);
               exit(1);
               }
-            free((char *)args);
+            free(args);
             }
           }
         else if (macro->Definition && macro->Definition[0])
@@ -4628,7 +4628,7 @@ void yyfree (void * ptr )
 /*
  * Return a parenthetical macro arg list as a new string.
  */
-const char *get_macro_arguments()
+char *get_macro_arguments()
 {
   char *cp = NULL;
   size_t i = 0;
