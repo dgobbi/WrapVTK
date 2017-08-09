@@ -63,10 +63,10 @@ static int isSetMethod(const char *name)
 static int isSetNthMethod(const char *name)
 {
   if (isSetMethod(name))
-    {
+  {
     return (name[3] == 'N' && name[4] == 't' && name[5] == 'h' &&
             isupper(name[6]));
-    }
+  }
 
   return 0;
 }
@@ -76,13 +76,13 @@ static int isSetNumberOfMethod(const char *name)
   size_t n;
 
   if (isSetMethod(name))
-    {
+  {
     n = strlen(name);
     return (name[3] == 'N' && name[4] == 'u' && name[5] == 'm' &&
             name[6] == 'b' && name[7] == 'e' && name[8] == 'r' &&
             name[9] == 'O' && name[10] == 'f' && isupper(name[11]) &&
             name[n-1] == 's');
-    }
+  }
 
   return 0;
 }
@@ -96,10 +96,10 @@ static int isGetMethod(const char *name)
 static int isGetNthMethod(const char *name)
 {
   if (isGetMethod(name))
-    {
+  {
     return (name[3] == 'N' && name[4] == 't' && name[5] == 'h' &&
             isupper(name[6]));
-    }
+  }
 
   return 0;
 }
@@ -109,13 +109,13 @@ static int isGetNumberOfMethod(const char *name)
   size_t n;
 
   if (isGetMethod(name))
-    {
+  {
     n = strlen(name);
     return (name[3] == 'N' && name[4] == 'u' && name[5] == 'm' &&
             name[6] == 'b' && name[7] == 'e' && name[8] == 'r' &&
             name[9] == 'O' && name[10] == 'f' && isupper(name[11]) &&
             name[n-1] == 's');
-    }
+  }
 
   return 0;
 }
@@ -125,14 +125,14 @@ static int isBooleanMethod(const char *name)
   size_t n;
 
   if (name)
-    {
+  {
     n = strlen(name);
     if ((n > 2 && name[n-2] == 'O' && name[n-1] == 'n') ||
         (n > 3 && name[n-3] == 'O' && name[n-2] == 'f' && name[n-1] == 'f'))
-      {
+    {
       return 1;
-      }
     }
+  }
 
   return 0;
 }
@@ -142,17 +142,17 @@ static int isEnumeratedMethod(const char *name)
   size_t i, n;
 
   if (isSetMethod(name))
-    {
+  {
     n = strlen(name) - 3;
     for (i = 3; i < n; i++)
-      {
+    {
       if (name[i+0] == 'T' && name[i+1] == 'o' &&
           (isupper(name[i+2]) || isdigit(name[i+2])))
-        {
+      {
         return 1;
-        }
       }
     }
+  }
 
   return 0;
 }
@@ -162,18 +162,18 @@ static int isAsStringMethod(const char *name)
   size_t n;
 
   if (isGetMethod(name))
-    {
+  {
     n = strlen(name);
     if (n > 11)
-      {
+    {
       if (name[n-8] == 'A' && name[n-7] == 's' && name[n-6] == 'S' &&
           name[n-5] == 't' && name[n-4] == 'r' && name[n-3] == 'i' &&
           name[n-2] == 'n' && name[n-1] == 'g')
-        {
+      {
         return 1;
-        }
       }
     }
+  }
 
   return 0;
 }
@@ -196,11 +196,11 @@ static int isRemoveAllMethod(const char *name)
   size_t n;
 
   if (isRemoveMethod(name))
-    {
+  {
     n = strlen(name);
     return (name[6] == 'A' && name[7] == 'l' && name[8] == 'l' &&
             isupper(name[9]) && name[n-1] == 's');
-    }
+  }
 
   return 0;
 }
@@ -210,13 +210,13 @@ static int isGetMinValueMethod(const char *name)
   size_t n;
 
   if (isGetMethod(name))
-    {
+  {
     n = strlen(name);
     if (n > 11 && strcmp("MinValue", &name[n-8]) == 0)
-      {
+    {
       return 1;
-      }
     }
+  }
 
   return 0;
 }
@@ -226,13 +226,13 @@ static int isGetMaxValueMethod(const char *name)
   size_t n;
 
   if (isGetMethod(name))
-    {
+  {
     n = strlen(name);
     if (n > 11 && strcmp("MaxValue", &name[n-8]) == 0)
-      {
+    {
       return 1;
-      }
     }
+  }
 
   return 0;
 }
@@ -250,130 +250,130 @@ static unsigned int methodCategory(MethodAttributes *meth, int shortForm)
   name = meth->Name;
 
   if (isSetMethod(name))
-    {
+  {
     if (meth->IsEnumerated)
-      {
+    {
       return VTK_METHOD_SET_VALUE_TO;
-      }
+    }
     else if (meth->IsIndexed)
-      {
+    {
       if (isSetNthMethod(name))
-        {
+      {
         return VTK_METHOD_SET_NTH;
-        }
+      }
       else
-        {
+      {
         return VTK_METHOD_SET_IDX;
-        }
-      }
-    else if (meth->IsMultiValue)
-      {
-      return VTK_METHOD_SET_MULTI;
-      }
-    else if (shortForm && isSetNumberOfMethod(name))
-      {
-      return VTK_METHOD_SET_NUMBER_OF;
-      }
-    else
-      {
-      return VTK_METHOD_SET;
       }
     }
-  else if (meth->IsBoolean)
+    else if (meth->IsMultiValue)
     {
+      return VTK_METHOD_SET_MULTI;
+    }
+    else if (shortForm && isSetNumberOfMethod(name))
+    {
+      return VTK_METHOD_SET_NUMBER_OF;
+    }
+    else
+    {
+      return VTK_METHOD_SET;
+    }
+  }
+  else if (meth->IsBoolean)
+  {
     n = strlen(name);
     if (name[n-1] == 'n')
-      {
+    {
       return VTK_METHOD_BOOL_ON;
-      }
+    }
     else
-      {
+    {
       return VTK_METHOD_BOOL_OFF;
-      }
     }
+  }
   else if (isGetMethod(name))
-    {
+  {
     if (shortForm && isGetMinValueMethod(name))
-      {
+    {
       return VTK_METHOD_GET_MIN_VALUE;
-      }
+    }
     else if (shortForm && isGetMaxValueMethod(name))
-      {
+    {
       return VTK_METHOD_GET_MAX_VALUE;
-      }
+    }
     else if (shortForm && isAsStringMethod(name))
-      {
+    {
       return VTK_METHOD_GET_AS_STRING;
-      }
+    }
     else if (meth->IsIndexed && meth->IsRHS)
-      {
+    {
       if (isGetNthMethod(name))
-        {
+      {
         return VTK_METHOD_GET_NTH_RHS;
-        }
+      }
       else
-        {
+      {
         return VTK_METHOD_GET_IDX_RHS;
-        }
       }
+    }
     else if (meth->IsIndexed)
-      {
+    {
       if (isGetNthMethod(name))
-        {
+      {
         return VTK_METHOD_GET_NTH;
-        }
+      }
       else
-        {
+      {
         return VTK_METHOD_GET_IDX;
-        }
       }
+    }
     else if (meth->IsMultiValue)
-      {
+    {
       return VTK_METHOD_GET_MULTI;
-      }
+    }
     else if (meth->IsRHS)
-      {
+    {
       return VTK_METHOD_GET_RHS;
-      }
+    }
     else if (shortForm && isGetNumberOfMethod(name))
-      {
+    {
       return VTK_METHOD_GET_NUMBER_OF;
-      }
+    }
     else
-      {
+    {
       return VTK_METHOD_GET;
-      }
     }
+  }
   else if (isRemoveMethod(name))
-    {
+  {
     if (isRemoveAllMethod(name))
-      {
-      return VTK_METHOD_REMOVE_ALL;
-      }
-    else if (meth->IsIndexed)
-      {
-      return VTK_METHOD_REMOVE_IDX;
-      }
-    else
-      {
-      return VTK_METHOD_REMOVE;
-      }
-    }
-  else if (isAddMethod(name))
     {
-    if (meth->IsIndexed)
-      {
-      return VTK_METHOD_ADD_IDX;
-      }
-    else if (meth->IsMultiValue)
-      {
-      return VTK_METHOD_ADD_MULTI;
-      }
-    else
-      {
-      return VTK_METHOD_ADD;
-      }
+      return VTK_METHOD_REMOVE_ALL;
     }
+    else if (meth->IsIndexed)
+    {
+      return VTK_METHOD_REMOVE_IDX;
+    }
+    else
+    {
+      return VTK_METHOD_REMOVE;
+    }
+  }
+  else if (isAddMethod(name))
+  {
+    if (meth->IsIndexed)
+    {
+      return VTK_METHOD_ADD_IDX;
+    }
+    else if (meth->IsMultiValue)
+    {
+      return VTK_METHOD_ADD_MULTI;
+    }
+    else
+    {
+      return VTK_METHOD_ADD;
+    }
+  }
 
   return 0;
 }
@@ -385,21 +385,21 @@ static unsigned int methodCategory(MethodAttributes *meth, int shortForm)
 static const char *nameWithoutPrefix(const char *name)
 {
   if (isGetNthMethod(name) || isSetNthMethod(name))
-    {
+  {
     return &name[6];
-    }
+  }
   else if (isGetMethod(name) || isSetMethod(name) || isAddMethod(name))
-    {
+  {
     return &name[3];
-    }
+  }
   else if (isRemoveAllMethod(name))
-    {
+  {
     return &name[9];
-    }
+  }
   else if (isRemoveMethod(name))
-    {
+  {
     return &name[6];
-    }
+  }
 
   return name;
 }
@@ -413,16 +413,16 @@ static int isValidSuffix(
   if ((suffix[0] == 'O' && suffix[1] == 'n' && suffix[2] == '\0') ||
       (suffix[0] == 'O' && suffix[1] == 'f' && suffix[2] == 'f' &&
        suffix[3] == '\0'))
-    {
+  {
     return 1;
-    }
+  }
 
   else if (isSetMethod(methName) &&
       suffix[0] == 'T' && suffix[1] == 'o' &&
       (isupper(suffix[2]) || isdigit(suffix[2])))
-    {
+  {
     return 1;
-    }
+  }
 
   else if (isGetMethod(methName) &&
       ((suffix[0] == 'A' && suffix[1] == 's' &&
@@ -431,31 +431,31 @@ static int isValidSuffix(
         (suffix[0] == 'M' && suffix[1] == 'i' && suffix[2] == 'n')) &&
        (suffix[3] == 'V' && suffix[4] == 'a' && suffix[5] == 'l' &&
         suffix[6] == 'u' && suffix[7] == 'e' && suffix[8] == '\0'))))
-    {
+  {
     return 1;
-    }
+  }
 
   else if (isRemoveAllMethod(methName))
-    {
+  {
     return (suffix[0] == 's' && suffix[1] == '\0');
-    }
+  }
 
   else if (isGetNumberOfMethod(methName) ||
            isSetNumberOfMethod(methName))
-    {
+  {
     if (strncmp(propertyName, "NumberOf", 8) == 0)
-      {
-      return (suffix[0] == '\0');
-      }
-    else
-      {
-      return (suffix[0] == 's' && suffix[1] == '\0');
-      }
-    }
-  else if (suffix[0] == '\0')
     {
-    return 1;
+      return (suffix[0] == '\0');
     }
+    else
+    {
+      return (suffix[0] == 's' && suffix[1] == '\0');
+    }
+  }
+  else if (suffix[0] == '\0')
+  {
+    return 1;
+  }
 
   return 0;
 }
@@ -495,33 +495,33 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   if (!func->Name || func->IsOperator ||
       (func->ReturnValue && func->ReturnValue->Function) ||
       (func->ReturnValue && func->ReturnValue->NumberOfDimensions > 1))
-    {
+  {
     return 0;
-    }
+  }
   for (i = 0; i < func->NumberOfParameters; i++)
-    {
+  {
     if (func->Parameters[i]->Function ||
         func->Parameters[i]->NumberOfDimensions > 1)
-      {
+    {
       return 0;
-      }
     }
+  }
 
   /* check for indexed methods: the first argument will be an integer */
   if (func->NumberOfParameters > 0 &&
       ((func->Parameters[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_INT ||
        (func->Parameters[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_SIZE_T ||
        (func->Parameters[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_ID_TYPE))
-    {
+  {
     /* methods of the form "void SetValue(int i, type value)" */
     if ((!func->ReturnValue ||
          (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID) &&
         func->NumberOfParameters == 2)
-      {
+    {
       indexed = 1;
 
       if (!isSetNumberOfMethod(func->Name))
-        {
+      {
         /* make sure this isn't a multi-value int method */
         tmptype = func->Parameters[0]->Type;
         tmpclass = func->Parameters[0]->TypeName;
@@ -529,34 +529,34 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
 
         n = func->NumberOfParameters;
         for (i = 0; i < n; i++)
-          {
+        {
           if (func->Parameters[i]->Type != tmptype)
-            {
+          {
             allSame = 0;
-            }
           }
-        indexed = !allSame;
         }
+        indexed = !allSame;
       }
+    }
     /* methods of the form "type GetValue(int i)" */
     if ((!func->ReturnValue ||
         (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) != VTK_PARSE_VOID) &&
         func->NumberOfParameters == 1)
-      {
+    {
       indexed = 1;
-      }
+    }
 
     attrs->IsIndexed = indexed;
-    }
+  }
 
   /* if return type is not void and no parameters or 1 index */
   if ((func->ReturnValue &&
        (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) != VTK_PARSE_VOID) &&
       func->NumberOfParameters == (unsigned long)indexed)
-    {
+  {
     /* methods of the form "type GetValue()" or "type GetValue(i)" */
     if (isGetMethod(func->Name))
-      {
+    {
       attrs->HasProperty = 1;
       attrs->Type = func->ReturnValue->Type;
       attrs->Count = func->ReturnValue->Count;
@@ -564,17 +564,17 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       attrs->ClassName = func->ReturnValue->TypeName;
 
       return 1;
-      }
     }
+  }
 
   /* if return type is void and 1 arg or 1 index and 1 arg */
   if ((!func->ReturnValue ||
        (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID) &&
       func->NumberOfParameters == (unsigned long)(1 + indexed))
-    {
+  {
     /* "void SetValue(type)" or "void SetValue(int, type)" */
     if (isSetMethod(func->Name))
-      {
+    {
       attrs->HasProperty = 1;
       attrs->IsRHS = 1;
       attrs->Type = func->Parameters[indexed]->Type;
@@ -582,14 +582,14 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       attrs->ClassName = func->Parameters[indexed]->TypeName;
 
       return 1;
-      }
+    }
     /* "void GetValue(type *)" or "void GetValue(int, type *)" */
     else if (isGetMethod(func->Name) &&
              /* func->Parameters[indexed]->Count > 0 && */
              (func->Parameters[indexed]->Type & VTK_PARSE_INDIRECT) ==
               VTK_PARSE_POINTER &&
              (func->Parameters[indexed]->Type & VTK_PARSE_CONST) == 0)
-      {
+    {
       attrs->HasProperty = 1;
       attrs->IsRHS = 1;
       attrs->Type = func->Parameters[indexed]->Type;
@@ -597,12 +597,12 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       attrs->ClassName = func->Parameters[indexed]->TypeName;
 
       return 1;
-      }
+    }
     /* "void AddValue(vtkObject *)" or "void RemoveValue(vtkObject *)" */
     else if ((isAddMethod(func->Name) || isRemoveMethod(func->Name)) &&
              (func->Parameters[indexed]->Type & VTK_PARSE_UNQUALIFIED_TYPE) ==
               VTK_PARSE_OBJECT_PTR)
-      {
+    {
       attrs->HasProperty = 1;
       attrs->IsRHS = 1;
       attrs->Type = func->Parameters[indexed]->Type;
@@ -610,33 +610,33 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       attrs->ClassName = func->Parameters[indexed]->TypeName;
 
       return 1;
-      }
     }
+  }
 
   /* check for multiple arguments of the same type */
   if (func->NumberOfParameters > 1 && !indexed)
-    {
+  {
     tmptype = func->Parameters[0]->Type;
     tmpclass = func->Parameters[0]->TypeName;
     allSame = 1;
 
     n = func->NumberOfParameters;
     for (i = 0; i < n; i++)
-      {
+    {
       if (func->Parameters[i]->Type != tmptype)
-        {
+      {
         allSame = 0;
-        }
       }
+    }
 
     if (allSame)
-      {
+    {
       /* "void SetValue(type x, type y, type z)" */
       if (isSetMethod(func->Name) &&
           (tmptype & VTK_PARSE_INDIRECT) == 0 &&
           (!func->ReturnValue ||
            (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID))
-        {
+      {
         attrs->HasProperty = 1;
         attrs->Type = tmptype;
         attrs->ClassName = tmpclass;
@@ -644,14 +644,14 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
         attrs->IsMultiValue = 1;
 
         return 1;
-        }
+      }
       /* "void GetValue(type& x, type& x, type& x)" */
       else if (isGetMethod(func->Name) &&
                (tmptype & VTK_PARSE_REF) != 0 &&
                (tmptype & VTK_PARSE_CONST) == 0 &&
                (!func->ReturnValue ||
                 (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID))
-        {
+      {
         attrs->HasProperty = 1;
         attrs->Type = tmptype;
         attrs->ClassName = tmpclass;
@@ -659,7 +659,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
         attrs->IsMultiValue = 1;
 
         return 1;
-        }
+      }
       /* "void AddValue(type x, type y, type z)" */
       else if (isAddMethod(func->Name) &&
                (tmptype & VTK_PARSE_INDIRECT) == 0 &&
@@ -672,7 +672,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
                   VTK_PARSE_SIZE_T ||
                 (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) ==
                   VTK_PARSE_ID_TYPE))
-        {
+      {
         attrs->HasProperty = 1;
         attrs->Type = tmptype;
         attrs->ClassName = tmpclass;
@@ -680,39 +680,39 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
         attrs->IsMultiValue = 1;
 
         return 1;
-        }
       }
     }
+  }
 
   /* if return type is void, and there are no arguments */
   if ((!func->ReturnValue ||
        (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID) &&
       func->NumberOfParameters == 0)
-    {
+  {
     attrs->Type = VTK_PARSE_VOID;
     attrs->ClassName = "void";
 
     /* "void ValueOn()" or "void ValueOff()" */
     if (isBooleanMethod(func->Name))
-      {
+    {
       attrs->HasProperty = 1;
       attrs->IsBoolean = 1;
       return 1;
-      }
+    }
     /* "void SetValueToEnum()" */
     else if (isEnumeratedMethod(func->Name))
-      {
+    {
       attrs->HasProperty = 1;
       attrs->IsEnumerated = 1;
       return 1;
-      }
+    }
     /* "void RemoveAllValues()" */
     else if (isRemoveAllMethod(func->Name))
-      {
+    {
       attrs->HasProperty = 1;
       return 1;
-      }
     }
+  }
 
   return 0;
 }
@@ -735,78 +735,78 @@ static int methodMatchesProperty(
 
   /* get the bitfield containing all found methods for this property */
   if (meth->Access == VTK_ACCESS_PUBLIC)
-    {
+  {
     methodBitfield = property->PublicMethods;
-    }
+  }
   else if (meth->Access == VTK_ACCESS_PROTECTED)
-    {
+  {
     methodBitfield = property->ProtectedMethods;
-    }
+  }
   else
-    {
+  {
     methodBitfield = property->PrivateMethods;
-    }
+  }
 
   /* get the property name and compare it to the method name */
   propertyName = property->Name;
   name = nameWithoutPrefix(meth->Name);
 
   if (name == 0 || propertyName == 0)
-    {
+  {
     return 0;
-    }
+  }
 
   /* longMatch is only set for full matches of GetNumberOf(),
    * SetNumberOf(), GetVarMinValue(), GetVarMaxValue() methods */
   *longMatch = 0;
   n = strlen(propertyName);
   if (isGetNumberOfMethod(meth->Name) || isSetNumberOfMethod(meth->Name))
-    {
+  {
     if (strncmp(propertyName, "NumberOf", 8) == 0 && isupper(propertyName[8]))
-      {
+    {
       /* longer match */
       *longMatch = 1;
-      }
+    }
     else
-      {
+    {
       /* longer prefix */
       name = &meth->Name[11];
-      }
     }
+  }
   else if (isGetMinValueMethod(meth->Name))
-    {
+  {
     if (n >= 8 && strcmp(&propertyName[n-8], "MinValue") == 0)
-      {
+    {
       *longMatch = 1;
-      }
     }
+  }
   else if (isGetMaxValueMethod(meth->Name))
-    {
+  {
     if (n >= 8 && strcmp(&propertyName[n-8], "MaxValue") == 0)
-      {
-      *longMatch = 1;
-      }
-    }
-  else if (isAsStringMethod(meth->Name))
     {
-    if (n >= 8 && strcmp(&propertyName[n-8], "AsString") == 0)
-      {
       *longMatch = 1;
-      }
     }
+  }
+  else if (isAsStringMethod(meth->Name))
+  {
+    if (n >= 8 && strcmp(&propertyName[n-8], "AsString") == 0)
+    {
+      *longMatch = 1;
+    }
+  }
 
   /* make sure the method name contains the property name */
   if (strncmp(name, propertyName, n) != 0)
-    {
+  {
     return 0;
-    }
+  }
 
   /* make sure that any non-matching bits are valid suffixes */
   methSuffix = &name[n];
   if (!isValidSuffix(meth->Name, propertyName, methSuffix))
-    {
+  {
     return 0;
-    }
+  }
 
   /* check for type match */
   methType = meth->Type;
@@ -820,9 +820,9 @@ static int methodMatchesProperty(
       methType == VTK_PARSE_VOID &&
       (methType & VTK_PARSE_INDIRECT) == 0 &&
       ((methodBitfield & (VTK_METHOD_ADD | VTK_METHOD_ADD_MULTI)) != 0))
-    {
+  {
     return 1;
-    }
+  }
 
   /* check for GetNumberOf and SetNumberOf for indexed properties */
   if (isGetNumberOfMethod(meth->Name) &&
@@ -831,9 +831,9 @@ static int methodMatchesProperty(
        methType == VTK_PARSE_ID_TYPE) &&
       (methType & VTK_PARSE_INDIRECT) == 0 &&
       ((methodBitfield & (VTK_METHOD_GET_IDX | VTK_METHOD_GET_NTH)) != 0))
-    {
+  {
     return 1;
-    }
+  }
 
   if (isSetNumberOfMethod(meth->Name) &&
       (methType == VTK_PARSE_INT ||
@@ -841,9 +841,9 @@ static int methodMatchesProperty(
        methType == VTK_PARSE_ID_TYPE) &&
       (methType & VTK_PARSE_INDIRECT) == 0 &&
       ((methodBitfield & (VTK_METHOD_SET_IDX | VTK_METHOD_SET_NTH)) != 0))
-    {
+  {
     return 1;
-    }
+  }
 
   /* remove ampersands i.e. "ref" */
   methType = (methType & ~VTK_PARSE_REF);
@@ -851,55 +851,55 @@ static int methodMatchesProperty(
   /* if method is multivalue, e.g. SetColor(r,g,b), then the
    * referenced property is a pointer */
   if (meth->IsMultiValue)
-    {
+  {
     if ((methType & VTK_PARSE_POINTER_MASK) == VTK_PARSE_POINTER)
-      {
+    {
       methType = (methType & ~VTK_PARSE_INDIRECT);
       methType = (methType | VTK_PARSE_POINTER_POINTER);
-      }
-    else if ((methType & VTK_PARSE_POINTER_MASK) == 0)
-      {
-      methType = (methType | VTK_PARSE_POINTER);
-      }
-    else
-      {
-      return 0;
-      }
     }
+    else if ((methType & VTK_PARSE_POINTER_MASK) == 0)
+    {
+      methType = (methType | VTK_PARSE_POINTER);
+    }
+    else
+    {
+      return 0;
+    }
+  }
 
   /* promote "void" to enumerated type for e.g. boolean methods, and */
   /* check for GetValueAsString method, assume it has matching enum */
   if (meth->IsBoolean || meth->IsEnumerated ||
       (isAsStringMethod(meth->Name) &&
        (methType & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_CHAR_PTR))
-    {
+  {
     if ((propertyType & VTK_PARSE_INDIRECT) == 0 &&
         (propertyType == VTK_PARSE_INT ||
          propertyType == VTK_PARSE_UNSIGNED_INT ||
          propertyType == VTK_PARSE_UNSIGNED_CHAR ||
          (meth->IsBoolean && propertyType == VTK_PARSE_BOOL)))
-      {
+    {
       methType = propertyType;
-      }
     }
+  }
 
   /* check for matched type and count */
   if (methType != propertyType || meth->Count != property->Count)
-    {
+  {
     return 0;
-    }
+  }
 
   /* if vtkObject, check that classes match */
   if ((methType & VTK_PARSE_BASE_TYPE) == VTK_PARSE_OBJECT)
-    {
+  {
     if (meth->IsMultiValue || (methType & VTK_PARSE_POINTER_MASK) == 0 ||
         meth->Count != 0 ||
         meth->ClassName == 0 || property->ClassName == 0 ||
         strcmp(meth->ClassName, property->ClassName) != 0)
-      {
+    {
       return 0;
-      }
     }
+  }
 
   /* done, match was found! */
   return 1;
@@ -920,10 +920,10 @@ static void initializePropertyInfo(
 
   /* for ValueOn()/Off() or SetValueToEnum() methods, set type to int */
   if (meth->IsBoolean || meth->IsEnumerated)
-    {
+  {
     type = VTK_PARSE_INT;
     typeClass = "int";
-    }
+  }
 
   property->Name = nameWithoutPrefix(meth->Name);
 
@@ -935,22 +935,22 @@ static void initializePropertyInfo(
        (type & VTK_PARSE_POINTER_MASK) == VTK_PARSE_POINTER) ||
       (meth->IsMultiValue &&
        (type & VTK_PARSE_POINTER_MASK) == 0))
-    {
+  {
     property->Type = (property->Type | VTK_PARSE_POINTER);
-    }
+  }
   else if ((!meth->IsMultiValue &&
        (type & VTK_PARSE_POINTER_MASK) == VTK_PARSE_POINTER))
-    {
+  {
     property->Type = (property->Type | VTK_PARSE_POINTER);
     property->Type = (property->Type | (type & VTK_PARSE_CONST));
-    }
+  }
   else if (((type & VTK_PARSE_POINTER_MASK) == VTK_PARSE_POINTER &&
              meth->IsMultiValue) ||
             (type & VTK_PARSE_POINTER_MASK) == VTK_PARSE_POINTER_POINTER)
-    {
+  {
     property->Type = (property->Type | VTK_PARSE_POINTER_POINTER);
     property->Type = (property->Type | (type & VTK_PARSE_CONST));
-    }
+  }
 
   property->ClassName = meth->ClassName;
   property->Count = meth->Count;
@@ -963,22 +963,22 @@ static void initializePropertyInfo(
   property->Comment = meth->Comment;
 
   if (meth->Access == VTK_ACCESS_PUBLIC)
-    {
+  {
     property->PublicMethods = methodBit;
-    }
+  }
   else if (meth->Access == VTK_ACCESS_PROTECTED)
-    {
+  {
     property->ProtectedMethods = methodBit;
-    }
+  }
   else
-    {
+  {
     property->PrivateMethods = methodBit;
-    }
+  }
 
   if (meth->IsLegacy)
-    {
+  {
     property->LegacyMethods = methodBit;
-    }
+  }
 }
 
 /*-------------------------------------------------------------------
@@ -1002,24 +1002,24 @@ static void findAllMatches(
 
   /* loop repeatedly until no more matches are found */
   while (!foundNoMatches)
-    {
+  {
     foundNoMatches = 1;
 
     for (i = 0; i < n; i++)
-      {
+    {
       if (matchedMethods[i]) { continue; }
 
       meth = methods->Methods[i];
       if (methodMatchesProperty(property, meth, &longMatch))
-        {
+      {
         matchedMethods[i] = 1;
         foundNoMatches = 0;
 
         /* if any method is static, the property is static */
         if (meth->IsStatic)
-          {
+        {
           property->IsStatic = 1;
-          }
+        }
 
         /* add this as a member of the method bitfield, and consider method
          * suffixes like On, MaxValue, etc. while doing the categorization */
@@ -1029,56 +1029,56 @@ static void findAllMatches(
         methodProperties[i] = propertyId;
 
         if (meth->Access == VTK_ACCESS_PUBLIC)
-          {
+        {
           property->PublicMethods |= methodBit;
-          }
+        }
         else if (meth->Access == VTK_ACCESS_PROTECTED)
-          {
+        {
           property->ProtectedMethods |= methodBit;
-          }
+        }
         else
-          {
+        {
           property->PrivateMethods |= methodBit;
-          }
+        }
 
         if (meth->IsLegacy)
-          {
+        {
           property->LegacyMethods |= methodBit;
-          }
+        }
 
         if (meth->IsEnumerated)
-          {
+        {
           m = strlen(property->Name);
           if (meth->Name[3+m] == 'T' && meth->Name[4+m] == 'o' &&
               (isdigit(meth->Name[5+m]) || isupper(meth->Name[5+m])))
-            {
+          {
             if (property->EnumConstantNames == 0)
-              {
+            {
               property->EnumConstantNames =
                 (const char **)malloc(sizeof(char *)*8);
               property->EnumConstantNames[0] = 0;
-              }
+            }
 
             j = 0;
             while (property->EnumConstantNames[j] != 0) { j++; }
             property->EnumConstantNames[j++] = &meth->Name[5+m];
             if (j % 8 == 0)
-              {
+            {
               const char **savenames = property->EnumConstantNames;
               property->EnumConstantNames =
                 (const char **)malloc(sizeof(char *)*(j+8));
               for (k = 0; k < j; k++)
-                {
+              {
                 property->EnumConstantNames[k] = savenames[k];
-                }
-              free((void *)savenames);
               }
-            property->EnumConstantNames[j] = 0;
+              free((void *)savenames);
             }
+            property->EnumConstantNames[j] = 0;
           }
         }
       }
     }
+  }
 }
 
 /*-------------------------------------------------------------------
@@ -1095,7 +1095,7 @@ static int searchForRepeatedMethods(
   attrs = methods->Methods[j];
 
   for (i = 0; i < n; i++)
-    {
+  {
     meth = methods->Methods[i];
 
     /* check whether the function name and basic structure are matched */
@@ -1108,7 +1108,7 @@ static int searchForRepeatedMethods(
         attrs->IsIndexed == meth->IsIndexed &&
         attrs->IsEnumerated == meth->IsEnumerated &&
         attrs->IsBoolean == meth->IsBoolean)
-      {
+    {
       /* check to see if the types are compatible:
        * prefer "double" over "float",
        * prefer higher-counted arrays,
@@ -1120,17 +1120,17 @@ static int searchForRepeatedMethods(
              (meth->Type & VTK_PARSE_BASE_TYPE) &&
            attrs->Count < meth->Count) ||
           (attrs->IsLegacy && !meth->IsLegacy))
-        {
+      {
         /* keep existing method */
         attrs->IsRepeat = 1;
         if (properties)
-          {
+        {
           properties->MethodTypes[j] = properties->MethodTypes[i];
           properties->MethodHasProperty[j] = properties->MethodHasProperty[i];
           properties->MethodProperties[j] = properties->MethodProperties[i];
-          }
-        return 0;
         }
+        return 0;
+      }
 
       if (((attrs->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_DOUBLE &&
            (meth->Type & VTK_PARSE_BASE_TYPE) == VTK_PARSE_FLOAT) ||
@@ -1138,19 +1138,19 @@ static int searchForRepeatedMethods(
              (meth->Type & VTK_PARSE_BASE_TYPE) &&
            attrs->Count > meth->Count) ||
           (!attrs->IsLegacy && meth->IsLegacy))
-        {
+      {
         /* keep this method */
         meth->IsRepeat = 1;
         if (properties)
-          {
+        {
           properties->MethodTypes[i] = properties->MethodTypes[j];
           properties->MethodHasProperty[i] = properties->MethodHasProperty[j];
           properties->MethodProperties[i] = properties->MethodProperties[j];
-          }
-        return 0;
         }
+        return 0;
       }
     }
+  }
 
   /* no matches */
   return 1;
@@ -1202,70 +1202,70 @@ static void categorizeProperties(
   n = methods->NumberOfMethods;
   matchedMethods = (int *)malloc(sizeof(int)*n);
   for (i = 0; i < n; i++)
-    {
+  {
     /* "matchedMethods" are methods removed from consideration */
     matchedMethods[i] = 0;
     if (!methods->Methods[i]->HasProperty || methods->Methods[i]->IsRepeat)
-      {
+    {
       matchedMethods[i] = 1;
-      }
     }
+  }
 
   /* start with the set methods */
   for (i = 0; i < n; i++)
-    {
+  {
     /* all set methods except for SetValueToEnum() methods
      * and SetNumberOf() methods */
     if (!matchedMethods[i] && isSetMethod(methods->Methods[i]->Name) &&
         !methods->Methods[i]->IsEnumerated &&
         !isSetNumberOfMethod(methods->Methods[i]->Name))
-      {
+    {
       addProperty(properties, methods, i, matchedMethods);
-      }
     }
+  }
 
   /* next do the get methods that didn't have matching set methods */
   for (i = 0; i < n; i++)
-    {
+  {
     /* all get methods except for GetValueAs() methods
      * and GetNumberOf() methods */
     if (!matchedMethods[i] && isGetMethod(methods->Methods[i]->Name) &&
         !isAsStringMethod(methods->Methods[i]->Name) &&
         !isGetNumberOfMethod(methods->Methods[i]->Name))
-      {
+    {
       addProperty(properties, methods, i, matchedMethods);
-      }
     }
+  }
 
   /* sweep SetNumberOf() methods that didn't have
    * matching indexed Set methods */
   for (i = 0; i < n; i++)
-    {
+  {
     if (!matchedMethods[i] && isSetNumberOfMethod(methods->Methods[i]->Name))
-      {
+    {
       addProperty(properties, methods, i, matchedMethods);
-      }
     }
+  }
 
   /* sweep the GetNumberOf() methods that didn't have
    * matching indexed Get methods */
   for (i = 0; i < n; i++)
-    {
+  {
     if (!matchedMethods[i] && isGetNumberOfMethod(methods->Methods[i]->Name))
-      {
+    {
       addProperty(properties, methods, i, matchedMethods);
-      }
     }
+  }
 
   /* finally do the add methods */
   for (i = 0; i < n; i++)
-    {
+  {
     /* all add methods */
     if (!matchedMethods[i] && isAddMethod(methods->Methods[i]->Name))
-      {
+    {
       addProperty(properties, methods, i, matchedMethods);
-      }
     }
+  }
 
   free(matchedMethods);
 }
@@ -1285,18 +1285,18 @@ static void categorizePropertyMethods(
   /* build up the ClassPropertyMethods struct */
   n = data->NumberOfFunctions;
   for (i = 0; i < n; i++)
-    {
+  {
     func = data->Functions[i];
     attrs = (MethodAttributes *)malloc(sizeof(MethodAttributes));
     methods->Methods[methods->NumberOfMethods++] = attrs;
 
     /* copy the func into a MethodAttributes struct if possible */
     if (getMethodAttributes(func, attrs))
-      {
+    {
       /* check for repeats e.g. SetPoint(float *), SetPoint(double *) */
       searchForRepeatedMethods(0, methods, i);
-      }
     }
+  }
 }
 
 /*-------------------------------------------------------------------
@@ -1329,19 +1329,19 @@ ClassProperties *vtkParseProperties_Create(ClassInfo *data)
     (unsigned long *)malloc(sizeof(unsigned long)*methods->NumberOfMethods);
 
   for (i = 0; i < methods->NumberOfMethods; i++)
-    {
+  {
     properties->MethodTypes[i] = 0;
     properties->MethodHasProperty[i] = 0;
     properties->MethodProperties[i] = 0;
-    }
+  }
 
   /* synthesize a list of properties from the list of methods */
   categorizeProperties(methods, properties);
 
   for (i = 0; i < methods->NumberOfMethods; i++)
-    {
+  {
     free(methods->Methods[i]);
-    }
+  }
 
   free(methods->Methods);
   free(methods);
@@ -1358,9 +1358,9 @@ void vtkParseProperties_Free(ClassProperties *properties)
 
   n = properties->NumberOfProperties;
   for (i = 0; i < n; i++)
-    {
+  {
     free(properties->Properties[i]);
-    }
+  }
 
   free(properties->Properties);
   free(properties->MethodTypes);
@@ -1375,7 +1375,7 @@ void vtkParseProperties_Free(ClassProperties *properties)
 const char *vtkParseProperties_MethodTypeAsString(unsigned int methodType)
 {
   switch (methodType)
-    {
+  {
     case VTK_METHOD_SET_CLAMP:
       return "SET_CLAMP";
     case VTK_METHOD_SET_BOOL:
@@ -1432,7 +1432,7 @@ const char *vtkParseProperties_MethodTypeAsString(unsigned int methodType)
       return "REMOVE_ALL";
     default:
       return "UNKNOWN";
-    }
+  }
 
   return "";
 }

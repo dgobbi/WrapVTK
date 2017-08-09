@@ -318,7 +318,7 @@ static void yy_init_buffer (YY_BUFFER_STATE b,FILE *file  );
 
 YY_BUFFER_STATE yy_scan_buffer (char *base,yy_size_t size  );
 YY_BUFFER_STATE yy_scan_string (yyconst char *yy_str  );
-YY_BUFFER_STATE yy_scan_bytes (yyconst char *bytes,yy_size_t len  );
+YY_BUFFER_STATE yy_scan_bytes (yyconst char *bytes, int len  );
 
 void *yyalloc (yy_size_t  );
 void *yyrealloc (void *,yy_size_t  );
@@ -1959,7 +1959,6 @@ Modify lex.yy.c:
   - convert tabs to spaces (8 spaces per tab)
   - remove extra space from end of lines
   - remove blank lines from end of file
-  - replace "int yyl;" with "yy_size_t yyl;"
   - compile with gcc and "-Wsign-compare", there should be no warnings
 
 */
@@ -2026,7 +2025,7 @@ static void push_macro(MacroInfo *macro);
 static void pop_macro();
 static int in_macro();
 
-#line 2028 "lex.yy.c"
+#line 2025 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -2211,10 +2210,10 @@ YY_DECL
         char *yy_cp, *yy_bp;
         int yy_act;
 
-#line 91 "vtkParse.l"
+#line 88 "vtkParse.l"
 
 
-#line 2216 "lex.yy.c"
+#line 2213 "lex.yy.c"
 
         if ( !(yy_init) )
                 {
@@ -2310,22 +2309,22 @@ do_action:        /* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 93 "vtkParse.l"
+#line 90 "vtkParse.l"
 { doxygen_comment(); }
         YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 95 "vtkParse.l"
+#line 92 "vtkParse.l"
 { doxygen_comment(); }
         YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 97 "vtkParse.l"
+#line 94 "vtkParse.l"
 { skip_comment(); }
         YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 99 "vtkParse.l"
+#line 96 "vtkParse.l"
 {
       if (!IgnoreBTX) {
         skip_ahead_until("//ETX");
@@ -2334,71 +2333,71 @@ YY_RULE_SETUP
         YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 105 "vtkParse.l"
+#line 102 "vtkParse.l"
 /* eat mismatched ETX */
         YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 107 "vtkParse.l"
+#line 104 "vtkParse.l"
 {
       skip_ahead_until("@end");
     }
         YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 111 "vtkParse.l"
+#line 108 "vtkParse.l"
 { doxygen_cpp_comment(); }
         YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 113 "vtkParse.l"
+#line 110 "vtkParse.l"
 { doxygen_cpp_comment(); }
         YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 114 "vtkParse.l"
+#line 111 "vtkParse.l"
 { doxygen_group_start(); }
         YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 115 "vtkParse.l"
+#line 112 "vtkParse.l"
 { doxygen_group_end(); }
         YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 117 "vtkParse.l"
+#line 114 "vtkParse.l"
 { vtk_comment(); }
         YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 118 "vtkParse.l"
+#line 115 "vtkParse.l"
 { vtk_name_comment(); }
         YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 119 "vtkParse.l"
+#line 116 "vtkParse.l"
 { vtk_section_comment(); }
         YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 121 "vtkParse.l"
+#line 118 "vtkParse.l"
 { cpp_comment_line(); }
         YY_BREAK
 case 15:
 /* rule 15 can match eol */
 YY_RULE_SETUP
-#line 123 "vtkParse.l"
+#line 120 "vtkParse.l"
 { blank_line(); }
         YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 125 "vtkParse.l"
+#line 122 "vtkParse.l"
 /* eat trailing C++ comments */
         YY_BREAK
 case 17:
 /* rule 17 can match eol */
 YY_RULE_SETUP
-#line 127 "vtkParse.l"
+#line 124 "vtkParse.l"
 {
       skip_trailing_comment(yytext, yyleng);
       preprocessor_directive(yytext, yyleng);
@@ -2407,7 +2406,7 @@ YY_RULE_SETUP
 case 18:
 /* rule 18 can match eol */
 YY_RULE_SETUP
-#line 132 "vtkParse.l"
+#line 129 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(STRING_LITERAL);
@@ -2416,7 +2415,7 @@ YY_RULE_SETUP
 case 19:
 /* rule 19 can match eol */
 YY_RULE_SETUP
-#line 137 "vtkParse.l"
+#line 134 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(CHAR_LITERAL);
@@ -2424,7 +2423,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 142 "vtkParse.l"
+#line 139 "vtkParse.l"
 {
       yylval.str = raw_string(yytext);
       return(STRING_LITERAL);
@@ -2432,106 +2431,106 @@ YY_RULE_SETUP
         YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 147 "vtkParse.l"
+#line 144 "vtkParse.l"
 /* ignore EXPORT macros */
         YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 149 "vtkParse.l"
+#line 146 "vtkParse.l"
 {
       char *args = NULL;
       char *cp;
       size_t l = 0;
       args = get_macro_arguments();
       if (args)
-        {
+      {
         cp = args;
         if (*cp == '(') { cp++; }
         while (*cp == ' ' || *cp == '\t') { cp++; }
         l = vtkParse_SkipId(cp);
         if (l)
-          {
+        {
           yylval.str = vtkstrndup(cp, l);
           free(args);
           return(ID);
-          }
-        free(args);
         }
+        free(args);
+      }
     }
         YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 170 "vtkParse.l"
+#line 167 "vtkParse.l"
 return(AUTO);
         YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 172 "vtkParse.l"
+#line 169 "vtkParse.l"
 return(DOUBLE);
         YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 173 "vtkParse.l"
+#line 170 "vtkParse.l"
 return(FLOAT);
         YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 174 "vtkParse.l"
+#line 171 "vtkParse.l"
 return(INT64__);
         YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 175 "vtkParse.l"
+#line 172 "vtkParse.l"
 return(SHORT);
         YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 176 "vtkParse.l"
+#line 173 "vtkParse.l"
 return(LONG);
         YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 177 "vtkParse.l"
+#line 174 "vtkParse.l"
 return(CHAR);
         YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 178 "vtkParse.l"
+#line 175 "vtkParse.l"
 return(INT);
         YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 180 "vtkParse.l"
+#line 177 "vtkParse.l"
 return(UNSIGNED);
         YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 181 "vtkParse.l"
+#line 178 "vtkParse.l"
 return(SIGNED);
         YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 183 "vtkParse.l"
+#line 180 "vtkParse.l"
 return(VOID);
         YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 184 "vtkParse.l"
+#line 181 "vtkParse.l"
 return(BOOL);
         YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 186 "vtkParse.l"
+#line 183 "vtkParse.l"
 return(CHAR16_T);
         YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 187 "vtkParse.l"
+#line 184 "vtkParse.l"
 return(CHAR32_T);
         YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 188 "vtkParse.l"
+#line 185 "vtkParse.l"
 return(WCHAR_T);
         YY_BREAK
 case 38:
@@ -2540,7 +2539,7 @@ case 38:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 190 "vtkParse.l"
+#line 187 "vtkParse.l"
 {
       yylval.str = (yytext[3] == ':' ? "std::size_t" : "size_t");
       return(SIZE_T);
@@ -2552,7 +2551,7 @@ case 39:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 195 "vtkParse.l"
+#line 192 "vtkParse.l"
 {
       yylval.str = (yytext[3] == ':' ? "std::ssize_t" : "ssize_t");
       return(SSIZE_T);
@@ -2564,7 +2563,7 @@ case 40:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 200 "vtkParse.l"
+#line 197 "vtkParse.l"
 {
       yylval.str = (yytext[3] == ':' ? "std::nullptr_t" : "nullptr_t");
       return(NULLPTR_T);
@@ -2572,7 +2571,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 205 "vtkParse.l"
+#line 202 "vtkParse.l"
 /* ignore the Q_OBJECT macro from Qt */
         YY_BREAK
 case 42:
@@ -2581,7 +2580,7 @@ case 42:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 206 "vtkParse.l"
+#line 203 "vtkParse.l"
 return(PUBLIC);
         YY_BREAK
 case 43:
@@ -2590,7 +2589,7 @@ case 43:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 207 "vtkParse.l"
+#line 204 "vtkParse.l"
 return(PRIVATE);
         YY_BREAK
 case 44:
@@ -2599,7 +2598,7 @@ case 44:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 208 "vtkParse.l"
+#line 205 "vtkParse.l"
 return(PROTECTED);
         YY_BREAK
 case 45:
@@ -2608,443 +2607,443 @@ case 45:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 209 "vtkParse.l"
+#line 206 "vtkParse.l"
 return(PROTECTED);
         YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 211 "vtkParse.l"
+#line 208 "vtkParse.l"
 return(CLASS);
         YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 212 "vtkParse.l"
+#line 209 "vtkParse.l"
 return(STRUCT);
         YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 213 "vtkParse.l"
+#line 210 "vtkParse.l"
 return(PUBLIC);
         YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 214 "vtkParse.l"
+#line 211 "vtkParse.l"
 return(PRIVATE);
         YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 215 "vtkParse.l"
+#line 212 "vtkParse.l"
 return(PROTECTED);
         YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 216 "vtkParse.l"
+#line 213 "vtkParse.l"
 return(ENUM);
         YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 217 "vtkParse.l"
+#line 214 "vtkParse.l"
 return(UNION);
         YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 218 "vtkParse.l"
+#line 215 "vtkParse.l"
 return(VIRTUAL);
         YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 219 "vtkParse.l"
+#line 216 "vtkParse.l"
 return(CONST);
         YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 220 "vtkParse.l"
+#line 217 "vtkParse.l"
 return(VOLATILE);
         YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 221 "vtkParse.l"
+#line 218 "vtkParse.l"
 return(MUTABLE);
         YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 222 "vtkParse.l"
+#line 219 "vtkParse.l"
 return(OPERATOR);
         YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 223 "vtkParse.l"
+#line 220 "vtkParse.l"
 return(FRIEND);
         YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 224 "vtkParse.l"
+#line 221 "vtkParse.l"
 return(INLINE);
         YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 225 "vtkParse.l"
+#line 222 "vtkParse.l"
 return(CONSTEXPR);
         YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 226 "vtkParse.l"
+#line 223 "vtkParse.l"
 return(STATIC);
         YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 227 "vtkParse.l"
+#line 224 "vtkParse.l"
 return(THREAD_LOCAL);
         YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 228 "vtkParse.l"
+#line 225 "vtkParse.l"
 return(EXTERN);
         YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 229 "vtkParse.l"
+#line 226 "vtkParse.l"
 return(TEMPLATE);
         YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 230 "vtkParse.l"
+#line 227 "vtkParse.l"
 return(TYPENAME);
         YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 231 "vtkParse.l"
+#line 228 "vtkParse.l"
 return(TYPEDEF);
         YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 232 "vtkParse.l"
+#line 229 "vtkParse.l"
 return(NAMESPACE);
         YY_BREAK
 case 68:
 YY_RULE_SETUP
-#line 233 "vtkParse.l"
+#line 230 "vtkParse.l"
 return(USING);
         YY_BREAK
 case 69:
 YY_RULE_SETUP
-#line 234 "vtkParse.l"
+#line 231 "vtkParse.l"
 return(NEW);
         YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 235 "vtkParse.l"
+#line 232 "vtkParse.l"
 return(DELETE);
         YY_BREAK
 case 71:
 YY_RULE_SETUP
-#line 236 "vtkParse.l"
+#line 233 "vtkParse.l"
 return(EXPLICIT);
         YY_BREAK
 case 72:
 YY_RULE_SETUP
-#line 237 "vtkParse.l"
+#line 234 "vtkParse.l"
 return(THROW);
         YY_BREAK
 case 73:
 YY_RULE_SETUP
-#line 238 "vtkParse.l"
+#line 235 "vtkParse.l"
 return(TRY);
         YY_BREAK
 case 74:
 YY_RULE_SETUP
-#line 239 "vtkParse.l"
+#line 236 "vtkParse.l"
 return(CATCH);
         YY_BREAK
 case 75:
 YY_RULE_SETUP
-#line 240 "vtkParse.l"
+#line 237 "vtkParse.l"
 return(NOEXCEPT);
         YY_BREAK
 case 76:
 YY_RULE_SETUP
-#line 241 "vtkParse.l"
+#line 238 "vtkParse.l"
 return(DECLTYPE);
         YY_BREAK
 case 77:
 YY_RULE_SETUP
-#line 242 "vtkParse.l"
+#line 239 "vtkParse.l"
 return(DEFAULT);
         YY_BREAK
 case 78:
 YY_RULE_SETUP
-#line 244 "vtkParse.l"
+#line 241 "vtkParse.l"
 return(STATIC_CAST);
         YY_BREAK
 case 79:
 YY_RULE_SETUP
-#line 245 "vtkParse.l"
+#line 242 "vtkParse.l"
 return(DYNAMIC_CAST);
         YY_BREAK
 case 80:
 YY_RULE_SETUP
-#line 246 "vtkParse.l"
+#line 243 "vtkParse.l"
 return(CONST_CAST);
         YY_BREAK
 case 81:
 YY_RULE_SETUP
-#line 247 "vtkParse.l"
+#line 244 "vtkParse.l"
 return(REINTERPRET_CAST);
         YY_BREAK
 case 82:
 YY_RULE_SETUP
-#line 249 "vtkParse.l"
+#line 246 "vtkParse.l"
 /* irrelevant to wrappers */
         YY_BREAK
 case 83:
 YY_RULE_SETUP
-#line 251 "vtkParse.l"
+#line 248 "vtkParse.l"
 return(OP_LOGIC_AND);
         YY_BREAK
 case 84:
 YY_RULE_SETUP
-#line 252 "vtkParse.l"
+#line 249 "vtkParse.l"
 return(OP_AND_EQ);
         YY_BREAK
 case 85:
 YY_RULE_SETUP
-#line 253 "vtkParse.l"
+#line 250 "vtkParse.l"
 return(OP_LOGIC_OR);
         YY_BREAK
 case 86:
 YY_RULE_SETUP
-#line 254 "vtkParse.l"
+#line 251 "vtkParse.l"
 return(OP_OR_EQ);
         YY_BREAK
 case 87:
 YY_RULE_SETUP
-#line 255 "vtkParse.l"
+#line 252 "vtkParse.l"
 return('!');
         YY_BREAK
 case 88:
 YY_RULE_SETUP
-#line 256 "vtkParse.l"
+#line 253 "vtkParse.l"
 return(OP_LOGIC_NEQ);
         YY_BREAK
 case 89:
 YY_RULE_SETUP
-#line 257 "vtkParse.l"
+#line 254 "vtkParse.l"
 return('^');
         YY_BREAK
 case 90:
 YY_RULE_SETUP
-#line 258 "vtkParse.l"
+#line 255 "vtkParse.l"
 return(OP_XOR_EQ);
         YY_BREAK
 case 91:
 YY_RULE_SETUP
-#line 259 "vtkParse.l"
+#line 256 "vtkParse.l"
 return('&');
         YY_BREAK
 case 92:
 YY_RULE_SETUP
-#line 260 "vtkParse.l"
+#line 257 "vtkParse.l"
 return('|');
         YY_BREAK
 case 93:
 YY_RULE_SETUP
-#line 261 "vtkParse.l"
+#line 258 "vtkParse.l"
 return('~');
         YY_BREAK
 case 94:
 YY_RULE_SETUP
-#line 263 "vtkParse.l"
+#line 260 "vtkParse.l"
 return(FloatType);
         YY_BREAK
 case 95:
 YY_RULE_SETUP
-#line 264 "vtkParse.l"
+#line 261 "vtkParse.l"
 return(IdType);
         YY_BREAK
 case 96:
 YY_RULE_SETUP
-#line 265 "vtkParse.l"
+#line 262 "vtkParse.l"
 return(SetMacro);
         YY_BREAK
 case 97:
 YY_RULE_SETUP
-#line 266 "vtkParse.l"
+#line 263 "vtkParse.l"
 return(GetMacro);
         YY_BREAK
 case 98:
 YY_RULE_SETUP
-#line 267 "vtkParse.l"
+#line 264 "vtkParse.l"
 return(SetStringMacro);
         YY_BREAK
 case 99:
 YY_RULE_SETUP
-#line 268 "vtkParse.l"
+#line 265 "vtkParse.l"
 return(GetStringMacro);
         YY_BREAK
 case 100:
 YY_RULE_SETUP
-#line 269 "vtkParse.l"
+#line 266 "vtkParse.l"
 return(SetClampMacro);
         YY_BREAK
 case 101:
 YY_RULE_SETUP
-#line 270 "vtkParse.l"
+#line 267 "vtkParse.l"
 return(SetObjectMacro);
         YY_BREAK
 case 102:
 YY_RULE_SETUP
-#line 271 "vtkParse.l"
+#line 268 "vtkParse.l"
 return(GetObjectMacro);
         YY_BREAK
 case 103:
 YY_RULE_SETUP
-#line 272 "vtkParse.l"
+#line 269 "vtkParse.l"
 return(BooleanMacro);
         YY_BREAK
 case 104:
 YY_RULE_SETUP
-#line 273 "vtkParse.l"
+#line 270 "vtkParse.l"
 return(SetVector2Macro);
         YY_BREAK
 case 105:
 YY_RULE_SETUP
-#line 274 "vtkParse.l"
+#line 271 "vtkParse.l"
 return(SetVector3Macro);
         YY_BREAK
 case 106:
 YY_RULE_SETUP
-#line 275 "vtkParse.l"
+#line 272 "vtkParse.l"
 return(SetVector4Macro);
         YY_BREAK
 case 107:
 YY_RULE_SETUP
-#line 276 "vtkParse.l"
+#line 273 "vtkParse.l"
 return(SetVector6Macro);
         YY_BREAK
 case 108:
 YY_RULE_SETUP
-#line 277 "vtkParse.l"
+#line 274 "vtkParse.l"
 return(GetVector2Macro);
         YY_BREAK
 case 109:
 YY_RULE_SETUP
-#line 278 "vtkParse.l"
+#line 275 "vtkParse.l"
 return(GetVector3Macro);
         YY_BREAK
 case 110:
 YY_RULE_SETUP
-#line 279 "vtkParse.l"
+#line 276 "vtkParse.l"
 return(GetVector4Macro);
         YY_BREAK
 case 111:
 YY_RULE_SETUP
-#line 280 "vtkParse.l"
+#line 277 "vtkParse.l"
 return(GetVector6Macro);
         YY_BREAK
 case 112:
 YY_RULE_SETUP
-#line 281 "vtkParse.l"
+#line 278 "vtkParse.l"
 return(SetVectorMacro);
         YY_BREAK
 case 113:
 YY_RULE_SETUP
-#line 282 "vtkParse.l"
+#line 279 "vtkParse.l"
 return(GetVectorMacro);
         YY_BREAK
 case 114:
 YY_RULE_SETUP
-#line 283 "vtkParse.l"
+#line 280 "vtkParse.l"
 return(ViewportCoordinateMacro);
         YY_BREAK
 case 115:
 YY_RULE_SETUP
-#line 284 "vtkParse.l"
+#line 281 "vtkParse.l"
 return(WorldCoordinateMacro);
         YY_BREAK
 case 116:
 YY_RULE_SETUP
-#line 285 "vtkParse.l"
+#line 282 "vtkParse.l"
 return(TypeMacro);
         YY_BREAK
 case 117:
 YY_RULE_SETUP
-#line 286 "vtkParse.l"
+#line 283 "vtkParse.l"
 return(TypeMacro);
         YY_BREAK
 case 118:
 YY_RULE_SETUP
-#line 287 "vtkParse.l"
+#line 284 "vtkParse.l"
 return(TypeMacro);
         YY_BREAK
 case 119:
 YY_RULE_SETUP
-#line 288 "vtkParse.l"
+#line 285 "vtkParse.l"
 return(TypeMacro);
         YY_BREAK
 case 120:
 YY_RULE_SETUP
-#line 289 "vtkParse.l"
+#line 286 "vtkParse.l"
 ;
         YY_BREAK
 case 121:
 YY_RULE_SETUP
-#line 290 "vtkParse.l"
+#line 287 "vtkParse.l"
 return(VTK_BYTE_SWAP_DECL);
         YY_BREAK
 case 122:
 YY_RULE_SETUP
-#line 291 "vtkParse.l"
+#line 288 "vtkParse.l"
 return(TypeInt8);
         YY_BREAK
 case 123:
 YY_RULE_SETUP
-#line 292 "vtkParse.l"
+#line 289 "vtkParse.l"
 return(TypeUInt8);
         YY_BREAK
 case 124:
 YY_RULE_SETUP
-#line 293 "vtkParse.l"
+#line 290 "vtkParse.l"
 return(TypeInt16);
         YY_BREAK
 case 125:
 YY_RULE_SETUP
-#line 294 "vtkParse.l"
+#line 291 "vtkParse.l"
 return(TypeUInt16);
         YY_BREAK
 case 126:
 YY_RULE_SETUP
-#line 295 "vtkParse.l"
+#line 292 "vtkParse.l"
 return(TypeInt32);
         YY_BREAK
 case 127:
 YY_RULE_SETUP
-#line 296 "vtkParse.l"
+#line 293 "vtkParse.l"
 return(TypeUInt32);
         YY_BREAK
 case 128:
 YY_RULE_SETUP
-#line 297 "vtkParse.l"
+#line 294 "vtkParse.l"
 return(TypeInt64);
         YY_BREAK
 case 129:
 YY_RULE_SETUP
-#line 298 "vtkParse.l"
+#line 295 "vtkParse.l"
 return(TypeUInt64);
         YY_BREAK
 case 130:
 YY_RULE_SETUP
-#line 299 "vtkParse.l"
+#line 296 "vtkParse.l"
 return(TypeFloat32);
         YY_BREAK
 case 131:
 YY_RULE_SETUP
-#line 300 "vtkParse.l"
+#line 297 "vtkParse.l"
 return(TypeFloat64);
         YY_BREAK
 case 132:
 /* rule 132 can match eol */
 YY_RULE_SETUP
-#line 302 "vtkParse.l"
+#line 299 "vtkParse.l"
 {
       size_t i = 1;
       size_t j;
@@ -3059,7 +3058,7 @@ YY_RULE_SETUP
 case 133:
 /* rule 133 can match eol */
 YY_RULE_SETUP
-#line 313 "vtkParse.l"
+#line 310 "vtkParse.l"
 {
       size_t i = 1;
       size_t j;
@@ -3074,7 +3073,7 @@ YY_RULE_SETUP
 case 134:
 /* rule 134 can match eol */
 YY_RULE_SETUP
-#line 324 "vtkParse.l"
+#line 321 "vtkParse.l"
 {
       yylval.str = "";
       return(LP);
@@ -3083,7 +3082,7 @@ YY_RULE_SETUP
 case 135:
 /* rule 135 can match eol */
 YY_RULE_SETUP
-#line 329 "vtkParse.l"
+#line 326 "vtkParse.l"
 {
       yylval.str = "";
       return(LP);
@@ -3092,7 +3091,7 @@ YY_RULE_SETUP
 case 136:
 /* rule 136 can match eol */
 YY_RULE_SETUP
-#line 334 "vtkParse.l"
+#line 331 "vtkParse.l"
 {
       yylval.str = "";
       return(LP);
@@ -3100,12 +3099,12 @@ YY_RULE_SETUP
         YY_BREAK
 case 137:
 YY_RULE_SETUP
-#line 339 "vtkParse.l"
+#line 336 "vtkParse.l"
 return('*');
         YY_BREAK
 case 138:
 YY_RULE_SETUP
-#line 341 "vtkParse.l"
+#line 338 "vtkParse.l"
 /* misc unused win32 macros */
         YY_BREAK
 case 139:
@@ -3114,7 +3113,7 @@ case 139:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 343 "vtkParse.l"
+#line 340 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(OSTREAM);
@@ -3126,7 +3125,7 @@ case 140:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 348 "vtkParse.l"
+#line 345 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(ISTREAM);
@@ -3138,7 +3137,7 @@ case 141:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 353 "vtkParse.l"
+#line 350 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(StdString);
@@ -3146,7 +3145,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 142:
 YY_RULE_SETUP
-#line 358 "vtkParse.l"
+#line 355 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(StdString);
@@ -3154,7 +3153,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 143:
 YY_RULE_SETUP
-#line 363 "vtkParse.l"
+#line 360 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(UnicodeString);
@@ -3162,7 +3161,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 144:
 YY_RULE_SETUP
-#line 368 "vtkParse.l"
+#line 365 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(VTK_ID);
@@ -3170,7 +3169,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 145:
 YY_RULE_SETUP
-#line 373 "vtkParse.l"
+#line 370 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(QT_ID);
@@ -3178,67 +3177,67 @@ YY_RULE_SETUP
         YY_BREAK
 case 146:
 YY_RULE_SETUP
-#line 378 "vtkParse.l"
+#line 375 "vtkParse.l"
 get_macro_arguments(); /* C++11 */
         YY_BREAK
 case 147:
 YY_RULE_SETUP
-#line 380 "vtkParse.l"
+#line 377 "vtkParse.l"
 get_macro_arguments(); /* C++11 */
         YY_BREAK
 case 148:
 YY_RULE_SETUP
-#line 382 "vtkParse.l"
+#line 379 "vtkParse.l"
 get_macro_arguments(); /* C11 */
         YY_BREAK
 case 149:
 YY_RULE_SETUP
-#line 384 "vtkParse.l"
+#line 381 "vtkParse.l"
 get_macro_arguments(); /* C11 */
         YY_BREAK
 case 150:
 YY_RULE_SETUP
-#line 386 "vtkParse.l"
+#line 383 "vtkParse.l"
 return(THREAD_LOCAL); /* C11 */
         YY_BREAK
 case 151:
 YY_RULE_SETUP
-#line 388 "vtkParse.l"
+#line 385 "vtkParse.l"
 /* C11 */
         YY_BREAK
 case 152:
 YY_RULE_SETUP
-#line 390 "vtkParse.l"
+#line 387 "vtkParse.l"
 /* C11 */
         YY_BREAK
 case 153:
 YY_RULE_SETUP
-#line 392 "vtkParse.l"
+#line 389 "vtkParse.l"
 get_macro_arguments(); /* gcc attributes */
         YY_BREAK
 case 154:
 YY_RULE_SETUP
-#line 394 "vtkParse.l"
+#line 391 "vtkParse.l"
 get_macro_arguments(); /* Windows linkage */
         YY_BREAK
 case 155:
 YY_RULE_SETUP
-#line 396 "vtkParse.l"
+#line 393 "vtkParse.l"
 /* Windows */
         YY_BREAK
 case 156:
 YY_RULE_SETUP
-#line 398 "vtkParse.l"
+#line 395 "vtkParse.l"
 /* gcc/clang/other extension */
         YY_BREAK
 case 157:
 YY_RULE_SETUP
-#line 400 "vtkParse.l"
+#line 397 "vtkParse.l"
 /* MSVC extension */
         YY_BREAK
 case 158:
 YY_RULE_SETUP
-#line 402 "vtkParse.l"
+#line 399 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(NULLPTR);
@@ -3246,13 +3245,13 @@ YY_RULE_SETUP
         YY_BREAK
 case 159:
 YY_RULE_SETUP
-#line 407 "vtkParse.l"
+#line 404 "vtkParse.l"
 {
       const char *name = vtkstrndup(yytext, yyleng);
       MacroInfo *macro = vtkParsePreprocess_GetMacro(preprocessor, name);
       int expanded = 0;
       if (macro)
-        {
+      {
         char *args = NULL;
         const char *emacro = NULL;
 
@@ -3260,31 +3259,31 @@ YY_RULE_SETUP
         MacroInfo *ex;
         ex = vtkParsePreprocess_GetMacro(preprocessor, "vtkNotUsed");
         if (ex)
-          {
+        {
           ex->IsExcluded = 1;
-          }
+        }
         ex = vtkParsePreprocess_GetMacro(preprocessor, "itkNotUsed");
         if (ex)
-          {
+        {
           ex->IsExcluded = 1;
-          }
+        }
 
         if (macro->IsFunction)
-          {
+        {
           args = get_macro_arguments();
           if (args)
-            {
+          {
             emacro = vtkParsePreprocess_ExpandMacro(preprocessor, macro, args);
             if (!emacro)
-              {
+            {
               print_preprocessor_error(VTK_PARSE_MACRO_NUMARGS, NULL, 0);
               exit(1);
-              }
-            free(args);
             }
+            free(args);
           }
+        }
         else if (macro->Definition && macro->Definition[0])
-          {
+        {
           /* first see if macro evaluates to a constant value */
           preproc_int_t val;
           int is_unsigned;
@@ -3295,52 +3294,52 @@ YY_RULE_SETUP
           macro->IsExcluded = 0;
           /* if it isn't a constant expression, then expand it */
           if (r >= VTK_PARSE_MACRO_UNDEFINED)
-            {
+          {
             emacro = vtkParsePreprocess_ExpandMacro(preprocessor, macro, NULL);
             if (!emacro)
-              {
+            {
               print_preprocessor_error(r, NULL, 0);
               exit(1);
-              }
             }
           }
+        }
         else
-          {
+        {
           /* macros with no definition expand to nothing */
           expanded = 1;
-          }
+        }
         if (emacro)
-          {
+        {
           /* invoke the parser on any expanded macros */
           push_macro(macro);
           push_buffer();
           yy_switch_to_buffer(yy_scan_string(emacro));
           vtkParsePreprocess_FreeMacroExpansion(preprocessor, macro, emacro);
           expanded = 1;
-          }
         }
+      }
       if (!expanded)
-        {
+      {
         /* if no macro expansion occurred, return the ID */
         yylval.str = name;
         if (yyleng > 3 && name[0] == 'v' && name[1] == 't' && name[2] == 'k')
-          {
+        {
           return(VTK_ID);
-          }
-        else if (name[0] == 'Q')
-          {
-          return(QT_ID);
-          }
-        else
-          {
-          return(ID);
-          }
         }
+        else if (name[0] == 'Q')
+        {
+          return(QT_ID);
+        }
+        else
+        {
+          return(ID);
+        }
+      }
     }
         YY_BREAK
 case 160:
 YY_RULE_SETUP
-#line 498 "vtkParse.l"
+#line 495 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(FLOAT_LITERAL);
@@ -3348,7 +3347,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 161:
 YY_RULE_SETUP
-#line 503 "vtkParse.l"
+#line 500 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(FLOAT_LITERAL);
@@ -3356,7 +3355,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 162:
 YY_RULE_SETUP
-#line 508 "vtkParse.l"
+#line 505 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(FLOAT_LITERAL);
@@ -3364,7 +3363,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 163:
 YY_RULE_SETUP
-#line 513 "vtkParse.l"
+#line 510 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(FLOAT_LITERAL);
@@ -3372,7 +3371,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 164:
 YY_RULE_SETUP
-#line 518 "vtkParse.l"
+#line 515 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(HEX_LITERAL);
@@ -3380,7 +3379,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 165:
 YY_RULE_SETUP
-#line 523 "vtkParse.l"
+#line 520 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(BIN_LITERAL);
@@ -3388,7 +3387,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 166:
 YY_RULE_SETUP
-#line 528 "vtkParse.l"
+#line 525 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(OCT_LITERAL);
@@ -3396,7 +3395,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 167:
 YY_RULE_SETUP
-#line 533 "vtkParse.l"
+#line 530 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(INT_LITERAL);
@@ -3404,7 +3403,7 @@ YY_RULE_SETUP
         YY_BREAK
 case 168:
 YY_RULE_SETUP
-#line 538 "vtkParse.l"
+#line 535 "vtkParse.l"
 {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(ZERO);
@@ -3413,49 +3412,49 @@ YY_RULE_SETUP
 case 169:
 /* rule 169 can match eol */
 YY_RULE_SETUP
-#line 543 "vtkParse.l"
+#line 540 "vtkParse.l"
 /* escaped newlines */
         YY_BREAK
 case 170:
 YY_RULE_SETUP
-#line 544 "vtkParse.l"
+#line 541 "vtkParse.l"
 /* whitespace */
         YY_BREAK
 case 171:
 /* rule 171 can match eol */
 YY_RULE_SETUP
-#line 545 "vtkParse.l"
+#line 542 "vtkParse.l"
 /* whitespace */
         YY_BREAK
 case 172:
 /* rule 172 can match eol */
 YY_RULE_SETUP
-#line 547 "vtkParse.l"
+#line 544 "vtkParse.l"
 return(BEGIN_ATTRIB);
         YY_BREAK
 case 173:
 YY_RULE_SETUP
-#line 549 "vtkParse.l"
+#line 546 "vtkParse.l"
 return('{');
         YY_BREAK
 case 174:
 YY_RULE_SETUP
-#line 550 "vtkParse.l"
+#line 547 "vtkParse.l"
 return('}');
         YY_BREAK
 case 175:
 YY_RULE_SETUP
-#line 551 "vtkParse.l"
+#line 548 "vtkParse.l"
 return('[');
         YY_BREAK
 case 176:
 YY_RULE_SETUP
-#line 552 "vtkParse.l"
+#line 549 "vtkParse.l"
 return(']');
         YY_BREAK
 case 177:
 YY_RULE_SETUP
-#line 553 "vtkParse.l"
+#line 550 "vtkParse.l"
 return('#');
         YY_BREAK
 case 178:
@@ -3463,159 +3462,159 @@ case 178:
 (yy_c_buf_p) = yy_cp = yy_bp + 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 555 "vtkParse.l"
+#line 552 "vtkParse.l"
 return(OP_RSHIFT_A);
         YY_BREAK
 case 179:
 YY_RULE_SETUP
-#line 557 "vtkParse.l"
+#line 554 "vtkParse.l"
 return(OP_LSHIFT_EQ);
         YY_BREAK
 case 180:
 YY_RULE_SETUP
-#line 558 "vtkParse.l"
+#line 555 "vtkParse.l"
 return(OP_RSHIFT_EQ);
         YY_BREAK
 case 181:
 YY_RULE_SETUP
-#line 559 "vtkParse.l"
+#line 556 "vtkParse.l"
 return(OP_LSHIFT);
         YY_BREAK
 case 182:
 YY_RULE_SETUP
-#line 560 "vtkParse.l"
+#line 557 "vtkParse.l"
 return(OP_DOT_POINTER);
         YY_BREAK
 case 183:
 YY_RULE_SETUP
-#line 561 "vtkParse.l"
+#line 558 "vtkParse.l"
 return(OP_ARROW_POINTER);
         YY_BREAK
 case 184:
 YY_RULE_SETUP
-#line 562 "vtkParse.l"
+#line 559 "vtkParse.l"
 return(OP_ARROW);
         YY_BREAK
 case 185:
 YY_RULE_SETUP
-#line 563 "vtkParse.l"
+#line 560 "vtkParse.l"
 return(OP_INCR);
         YY_BREAK
 case 186:
 YY_RULE_SETUP
-#line 564 "vtkParse.l"
+#line 561 "vtkParse.l"
 return(OP_DECR);
         YY_BREAK
 case 187:
 YY_RULE_SETUP
-#line 565 "vtkParse.l"
+#line 562 "vtkParse.l"
 return(OP_PLUS_EQ);
         YY_BREAK
 case 188:
 YY_RULE_SETUP
-#line 566 "vtkParse.l"
+#line 563 "vtkParse.l"
 return(OP_MINUS_EQ);
         YY_BREAK
 case 189:
 YY_RULE_SETUP
-#line 567 "vtkParse.l"
+#line 564 "vtkParse.l"
 return(OP_TIMES_EQ);
         YY_BREAK
 case 190:
 YY_RULE_SETUP
-#line 568 "vtkParse.l"
+#line 565 "vtkParse.l"
 return(OP_DIVIDE_EQ);
         YY_BREAK
 case 191:
 YY_RULE_SETUP
-#line 569 "vtkParse.l"
+#line 566 "vtkParse.l"
 return(OP_REMAINDER_EQ);
         YY_BREAK
 case 192:
 YY_RULE_SETUP
-#line 570 "vtkParse.l"
+#line 567 "vtkParse.l"
 return(OP_AND_EQ);
         YY_BREAK
 case 193:
 YY_RULE_SETUP
-#line 571 "vtkParse.l"
+#line 568 "vtkParse.l"
 return(OP_OR_EQ);
         YY_BREAK
 case 194:
 YY_RULE_SETUP
-#line 572 "vtkParse.l"
+#line 569 "vtkParse.l"
 return(OP_XOR_EQ);
         YY_BREAK
 case 195:
 YY_RULE_SETUP
-#line 573 "vtkParse.l"
+#line 570 "vtkParse.l"
 return(OP_LOGIC_AND);
         YY_BREAK
 case 196:
 YY_RULE_SETUP
-#line 574 "vtkParse.l"
+#line 571 "vtkParse.l"
 return(OP_LOGIC_OR);
         YY_BREAK
 case 197:
 YY_RULE_SETUP
-#line 575 "vtkParse.l"
+#line 572 "vtkParse.l"
 return(OP_LOGIC_EQ);
         YY_BREAK
 case 198:
 YY_RULE_SETUP
-#line 576 "vtkParse.l"
+#line 573 "vtkParse.l"
 return(OP_LOGIC_NEQ);
         YY_BREAK
 case 199:
 YY_RULE_SETUP
-#line 577 "vtkParse.l"
+#line 574 "vtkParse.l"
 return(OP_LOGIC_LEQ);
         YY_BREAK
 case 200:
 YY_RULE_SETUP
-#line 578 "vtkParse.l"
+#line 575 "vtkParse.l"
 return(OP_LOGIC_GEQ);
         YY_BREAK
 case 201:
 YY_RULE_SETUP
-#line 579 "vtkParse.l"
+#line 576 "vtkParse.l"
 return(ELLIPSIS);
         YY_BREAK
 case 202:
 YY_RULE_SETUP
-#line 580 "vtkParse.l"
+#line 577 "vtkParse.l"
 return(DOUBLE_COLON);
         YY_BREAK
 case 203:
 YY_RULE_SETUP
-#line 582 "vtkParse.l"
+#line 579 "vtkParse.l"
 return('[');
         YY_BREAK
 case 204:
 YY_RULE_SETUP
-#line 583 "vtkParse.l"
+#line 580 "vtkParse.l"
 return(']');
         YY_BREAK
 case 205:
 YY_RULE_SETUP
-#line 585 "vtkParse.l"
+#line 582 "vtkParse.l"
 return(yytext[0]);
         YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 587 "vtkParse.l"
+#line 584 "vtkParse.l"
 { if (!pop_buffer()) { yyterminate(); } }
         YY_BREAK
 case 206:
 YY_RULE_SETUP
-#line 589 "vtkParse.l"
+#line 586 "vtkParse.l"
 { return(OTHER); }
         YY_BREAK
 case 207:
 YY_RULE_SETUP
-#line 591 "vtkParse.l"
+#line 588 "vtkParse.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
         YY_BREAK
-#line 3617 "lex.yy.c"
+#line 3614 "lex.yy.c"
 
         case YY_END_OF_BUFFER:
                 {
@@ -4383,12 +4382,12 @@ YY_BUFFER_STATE yy_scan_string (yyconst char * yystr )
  *
  * @return the newly allocated buffer state object.
  */
-YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes_len )
+YY_BUFFER_STATE yy_scan_bytes  (yyconst char * yybytes, int  _yybytes_len )
 {
         YY_BUFFER_STATE b;
         char *buf;
-        yy_size_t n;
-        yy_size_t i;
+        int n;
+        int i;
 
         /* Get memory for full buffer, including space for trailing EOB's. */
         n = _yybytes_len + 2;
@@ -4621,7 +4620,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 591 "vtkParse.l"
+#line 588 "vtkParse.l"
 
 
 
@@ -4638,146 +4637,146 @@ char *get_macro_arguments()
   int c1 = input();
 
   if (c1 == '\0')
-    {
+  {
     if (pop_buffer() == 0)
-      {
+    {
       return NULL;
-      }
     }
+  }
 
   while (c1 == ' ' || c1 == '\t' || c1 == '\r' || c1 == '\n')
-    {
+  {
     c1 = input();
-    }
+  }
 
   cp = (char *)malloc(4);
 
   if (c1 != '(')
-    {
+  {
     unput(c1);
     return NULL;
-    }
+  }
 
   cp[i++] = '(';
   depth = 1;
   c1 = input();
 
   for (;;)
-    {
+  {
     ws = 0;
     sl = 0;
     /* skip all whitespace */
     while (c1 == ' ' || c1 == '\t' || c1 == '\r' || c1 == '\n')
-      {
+    {
       ws = 1;
       c1 = input();
-      }
+    }
     if (c1 == '/')
-      {
+    {
       c1 = input();
       if (c1 == '*')
-        {
+      {
         /* skip a C style comment */
         ws = 1;
         if (skip_comment() == 0)
-          {
-          return NULL;
-          }
-        c1 = input();
-        }
-      else if (c1 == '/')
         {
+          return NULL;
+        }
+        c1 = input();
+      }
+      else if (c1 == '/')
+      {
         /* skip a C++ style comment */
         ws = 1;
         do { c1 = input(); }
         while (c1 != '\n' && c1 != '\0');
         if (c1 == '\0')
-          {
-          return NULL;
-          }
-        c1 = input();
-        }
-      else
         {
-        sl = 1;
+          return NULL;
         }
+        c1 = input();
       }
-    if (ws)
+      else
       {
+        sl = 1;
+      }
+    }
+    if (ws)
+    {
       /* add a single space to replace any whitespace */
       cp[i++] = ' ';
       if (i >= 4 && (i & (i-1)) == 0)
-        {
-        cp = (char *)realloc(cp, 2*i);
-        }
-      }
-    if (sl)
       {
+        cp = (char *)realloc(cp, 2*i);
+      }
+    }
+    if (sl)
+    {
       /* add a single space to replace any whitespace */
       cp[i++] = '/';
       if (i >= 4 && (i & (i-1)) == 0)
-        {
-        cp = (char *)realloc(cp, 2*i);
-        }
-      }
-    if (c1 == '\"' || c1 == '\'')
       {
+        cp = (char *)realloc(cp, 2*i);
+      }
+    }
+    if (c1 == '\"' || c1 == '\'')
+    {
       int c2 = c1;
       int escaped = 2;
       int firstloop = 1;
       do
-        {
+      {
         if (escaped)
-          {
+        {
           --escaped;
-          }
+        }
         if (!firstloop)
-          {
+        {
           c1 = input();
-          }
+        }
         firstloop = 0;
         if (c1 == '\0')
-          {
+        {
           break;
-          }
+        }
         if (escaped == 0 && c1 == '\\')
-          {
+        {
           escaped = 2;
-          }
+        }
         cp[i++] = (char)c1;
         if (i >= 4 && (i & (i-1)) == 0)
-          {
+        {
           cp = (char *)realloc(cp, 2*i);
-          }
         }
-      while (c1 != c2 || escaped);
       }
+      while (c1 != c2 || escaped);
+    }
     else if (c1 != '\0')
-      {
+    {
       cp[i++] = (char)c1;
       if (i >= 4 && (i & (i-1)) == 0)
-        {
+      {
         cp = (char *)realloc(cp, 2*i);
-        }
+      }
       cp[i] = '\0';
       if (c1 == '(')
-        {
-        depth++;
-        }
-      if (c1 == ')')
-        {
-        if (--depth == 0)
-          {
-          break;
-          }
-        }
-      }
-    else
       {
-      return NULL;
+        depth++;
       }
-    c1 = input();
+      if (c1 == ')')
+      {
+        if (--depth == 0)
+        {
+          break;
+        }
+      }
     }
+    else
+    {
+      return NULL;
+    }
+    c1 = input();
+  }
 
   return cp;
 }
@@ -4790,17 +4789,17 @@ int skip_comment()
    int savelineno = yylineno;
    int c1 = 0, c2 = input();
    for (;;)
-     {
+   {
      if (c2 == 0 || c2 == EOF)
-       {
+     {
        yylineno = savelineno;
        print_preprocessor_error(VTK_PARSE_SYNTAX_ERROR,
          "Cannot find end of comment.", 27);
        exit(1);
-       }
+     }
      if (c1 == '*' && c2 == '/') break;
      c1 = c2; c2 = input();
-     }
+   }
    return 1;
 }
 
@@ -4814,58 +4813,58 @@ int skip_trailing_comment(const char *text, size_t l)
   int incomment = 0;
 
   while (cp < ep)
-    {
+  {
     while (cp < ep && *cp != '/' && *cp != '\"') { cp++; };
     if (cp >= ep)
-      {
+    {
       break;
-      }
+    }
     else if (cp[0] == '/' && cp[1] == '*')
-      {
+    {
       incomment = 1;
       cp += 2;
       while (cp < ep && *cp != '*') { cp++; };
       if (cp[0] == '*' && cp[1] == '/')
-        {
+      {
         incomment = 0;
         cp += 2;
-        }
-      else
-        {
-        cp++;
-        }
       }
-    else if (cp[0] == '\"')
+      else
       {
+        cp++;
+      }
+    }
+    else if (cp[0] == '\"')
+    {
       cp++;
       while (cp < ep)
-        {
+      {
         while (cp < ep && *cp != '\\' && *cp != '\"') { cp++; };
         if (cp >= ep)
-          {
+        {
           break;
-          }
+        }
         else if (*cp == '\"')
-          {
+        {
           cp++;
           break;
-          }
+        }
         else /* if (*cp == '\\') */
-          {
+        {
           cp += 2;
-          }
         }
       }
-    else
-      {
-      cp++;
-      }
     }
+    else
+    {
+      cp++;
+    }
+  }
 
   if (incomment)
-    {
+  {
     return skip_comment();
-    }
+  }
 
   return 1;
 }
@@ -4884,58 +4883,58 @@ int skip_to_next_directive()
   c = input();
 
   while (c != 0 && c != EOF)
-    {
+  {
     /* whitespace */
     if (c == ' ' || c == '\t')
-      {
+    {
       c = input();
-      }
+    }
     /* newline renews the start-of-line state */
     else if (c == '\n')
-      {
+    {
       state = 0;
       c = input();
-      }
+    }
     /* skip comments */
     else if (c == '/')
-      {
+    {
       state = 1;
       if ( (c = input()) == '*')
-        {
+      {
         if (skip_comment() == 0)
-          {
+        {
           return 0;
-          }
+        }
         c = input();
-        }
-      }
-    /* skip escaped characters */
-    else if (c == '\\')
-      {
-      state = 1;
-      if ( (c = input()) == '\r')
-        {
-        if ( (c = input()) == '\n')
-          {
-          c = input();
-          }
-        }
-      else if (c != 0 && c != EOF)
-        {
-        c = input();
-        }
-      }
-    /* any other chars except '#' at start of line */
-    else if (c != '#' || state != 0)
-      {
-      state = 1;
-      c = input();
-      }
-    else
-      {
-      break;
       }
     }
+    /* skip escaped characters */
+    else if (c == '\\')
+    {
+      state = 1;
+      if ( (c = input()) == '\r')
+      {
+        if ( (c = input()) == '\n')
+        {
+          c = input();
+        }
+      }
+      else if (c != 0 && c != EOF)
+      {
+        c = input();
+      }
+    }
+    /* any other chars except '#' at start of line */
+    else if (c != '#' || state != 0)
+    {
+      state = 1;
+      c = input();
+    }
+    else
+    {
+      break;
+    }
+  }
 
   return c;
 }
@@ -4952,62 +4951,62 @@ int skip_conditional_block()
   int result;
 
   if (linebuf == 0)
-    {
+  {
     linebuf = (char *)malloc(linemaxlen);
-    }
+  }
 
   for (;;)
-    {
+  {
     if (skip_to_next_directive() == 0)
-      {
+    {
       return 0;
-      }
+    }
     c = input();
     while (c == ' ' || c == '\t')
-      {
+    {
       c = input();
-      }
+    }
     if (c == 0 || c == EOF)
-      {
+    {
       return 0;
-      }
+    }
 
     /* eat the whole line */
     i = 0;
     linebuf[i++] = '#';
     while (c != 0 && c != EOF && c != '\n')
-      {
+    {
       if (i >= linemaxlen-5)
-        {
+      {
         linemaxlen += i+5;
         linebuf = (char *)realloc(linebuf, linemaxlen);
-        }
+      }
       linebuf[i++] = c;
       /* be sure to skip escaped newlines */
       if (c == '\\')
-        {
+      {
         c = input();
         linebuf[i++] = c;
         if (c == '\r')
-          {
+        {
           c = input();
           linebuf[i++] = c;
-          }
         }
-      c = input();
       }
+      c = input();
+    }
     linebuf[i++] = c;
 
     result = vtkParsePreprocess_HandleDirective(preprocessor, linebuf);
     if (result != VTK_PARSE_SKIP && result != VTK_PARSE_OK)
-      {
+    {
       print_preprocessor_error(result, linebuf, i);
-      }
-    else if (result != VTK_PARSE_SKIP)
-      {
-      break;
-      }
     }
+    else if (result != VTK_PARSE_SKIP)
+    {
+      break;
+    }
+  }
 
   return 1;
 }
@@ -5023,44 +5022,44 @@ int skip_ahead_multi(const char *strings[])
   size_t i;
 
   for (i = 0; i < (SKIP_MATCH_MAXLEN+1); i++)
-    {
+  {
     textbuf[i] = '\0';
-    }
+  }
 
   for (;;)
-    {
+  {
     for (i = 0; i < SKIP_MATCH_MAXLEN; i++)
-      {
+    {
       textbuf[i] = textbuf[i+1];
-      }
+    }
 
     c = input();
     if (c == 0 || c == EOF)
-      {
+    {
       print_preprocessor_error(VTK_PARSE_SYNTAX_ERROR, NULL, 0);
       return 0;
-      }
+    }
 
     textbuf[SKIP_MATCH_MAXLEN-1] = c;
 
     for (i = 0; strings[i]; i++)
-      {
+    {
       if (strcmp(&textbuf[SKIP_MATCH_MAXLEN-strlen(strings[i])],
                  strings[i]) == 0)
-        {
-        break;
-        }
-      }
-    if (strings[i])
       {
-      break;
+        break;
       }
     }
+    if (strings[i])
+    {
+      break;
+    }
+  }
 
   while (c != 0 && c != EOF && c != '\n')
-    {
+  {
     c = input();
-    }
+  }
 
   return 1;
 }
@@ -5090,87 +5089,87 @@ void doxygen_comment()
   int l = 0, i = 0, base = yyleng;
   int c1 = 0, c2 = input();
   for (l = 0; l < yyleng; l++)
-    {
+  {
     linetext[l] = yytext[l];
-    }
+  }
   if (l > 0 && yytext[l-1] == '<')
-    {
+  {
     type = TrailingComment;
-    }
+  }
   for (;;)
-    {
+  {
     if (c2 == 0 || c2 == EOF)
-      {
+    {
       yylineno = savelineno;
       print_preprocessor_error(VTK_PARSE_SYNTAX_ERROR,
         "Cannot find end of comment.", 27);
       exit(1);
-      }
+    }
     if (l < 256)
-      {
+    {
       linetext[l++] = c2;
-      }
+    }
     if (c2 == '\n' || (c1 == '*' && c2 == '/'))
-      {
+    {
       if (l >= 2 &&
           linetext[l-2] == '*' &&
           linetext[l-1] == '/')
-        {
+      {
         l -= 2;
-        }
+      }
       while (l > 0 &&
              (linetext[l-1] == '\n' ||
               linetext[l-1] == '\r' ||
               linetext[l-1] == '\t' ||
               linetext[l-1] == ' '))
-        {
+      {
         l--;
-        }
+      }
       if (!isfirstline)
-        {
+      {
         /* reduce the base indentation if chars occur before base */
         asterisk = 0;
         for (i = yyleng-3; i < base && i < l; i++)
-          {
+        {
           if (linetext[i] == '*' && asterisk == 0)
-            {
+          {
             asterisk = 1;
-            }
-          else if (linetext[i] != ' ')
-            {
-            break;
-            }
           }
+          else if (linetext[i] != ' ')
+          {
+            break;
+          }
+        }
         if (i > yyleng-3 && i < l &&
             linetext[i] != ' ' && linetext[i-1] == ' ')
-          {
-          i--;
-          }
-        base = i;
-        }
-      if (l > base)
         {
+          i--;
+        }
+        base = i;
+      }
+      if (l > base)
+      {
         i = base;
         l -= base;
         addCommentLine(&linetext[i], l, type);
-        }
+      }
       else if (c1 != '*' || c2 != '/')
-        {
+      {
         addCommentLine("", 0, type);
-        }
+      }
       if (isfirstline)
-        {
+      {
         isfirstline = 0;
         base = 256;
-        }
+      }
       l = 0;
       if (c1 == '*' && c2 == '/')
-        {
+      {
         break;
-        }
       }
-    c1 = c2; c2 = input();
     }
+    c1 = c2; c2 = input();
+  }
 }
 
 /*
@@ -5184,10 +5183,10 @@ void doxygen_cpp_comment()
   while (pos < yyleng && yytext[pos-1] == '/' && yytext[pos] == '/') pos++;
   if (pos < yyleng && yytext[pos] == '!') pos++;
   if (pos < yyleng && yytext[pos] == '<')
-    {
+  {
     pos++;
     type = TrailingComment;
-    }
+  }
   addCommentLine(&yytext[pos], yyleng - pos, type);
 }
 
@@ -5224,9 +5223,9 @@ void vtk_name_comment()
 {
   int pos = 1;
   while (yytext[pos-1] != 'M' || yytext[pos] != 'E')
-    {
+  {
     pos++;
-    }
+  }
   pos++;
   setCommentState(NameComment);
   addCommentLine(&yytext[pos], yyleng - pos, NormalComment);
@@ -5239,35 +5238,35 @@ void vtk_section_comment()
 {
   int pos = 1;
   while (yytext[pos-1] != 'O' || yytext[pos] != 'N')
-    {
+  {
     pos++;
-    }
+  }
   pos++;
   if (pos < yyleng && yytext[pos] == ' ')
-    {
+  {
     pos++;
-    }
+  }
 
   if (yyleng - pos >= 11 &&
       strncmp(&yytext[pos], "Description", 11) == 0)
-    {
+  {
     setCommentState(DescriptionComment);
-    }
+  }
   else if (yyleng - pos >= 8 &&
            (strncmp(&yytext[pos], "See Also", 8) == 0 ||
             strncmp(&yytext[pos], "see also", 8) == 0))
-    {
+  {
     setCommentState(SeeAlsoComment);
-    }
+  }
   else if (yyleng - pos >= 7 &&
            strncmp(&yytext[pos], "Caveats", 7) == 0)
-    {
+  {
     setCommentState(CaveatsComment);
-    }
+  }
   else
-    {
+  {
     cpp_comment_line();
-    }
+  }
 }
 
 /*
@@ -5276,7 +5275,7 @@ void vtk_section_comment()
  */
 void cpp_comment_line()
 {
-  size_t pos = 2;
+  int pos = 2;
   while (yytext[pos-2] != '/' || yytext[pos-1] != '/') pos++;
   addCommentLine(&yytext[pos], yyleng - pos, NormalComment);
 }
@@ -5309,49 +5308,49 @@ const char *raw_string(const char *begin)
   dp = result;
 
   while (*cp != '\"')
-    {
+  {
     *dp++ = *cp++;
-    }
+  }
   --dp;
   *dp++ = *cp++;
 
   delim = cp;
 
   for (n = 0;; n++)
-    {
+  {
     if (delim[n] == '(') { break; }
-    }
+  }
 
   textbuf = (char *)malloc(n+1);
 
   for (i = 0; i < n+1; i++)
-    {
+  {
     c = input();
     textbuf[i] = c;
-    }
+  }
 
   while (c != EOF)
-    {
+  {
     if (textbuf[0] == ')' && (n == 0 || strncmp(&textbuf[1], delim, n) == 0))
-      {
+    {
       break;
-      }
+    }
 
     j = dp - result;
     if (j > m - 8)
-      {
+    {
       m += 1024;
       result = (char *)realloc(result, m);
       dp = result + j;
-      }
+    }
 
     if ((*textbuf >= ' ' && *textbuf <= '~') ||
         (*textbuf & 0x80) != 0)
-      {
+    {
       *dp++ = *textbuf;
-      }
+    }
     else switch (*textbuf)
-      {
+    {
       case '\a': *dp++ = '\\'; *dp++ = 'a'; break;
       case '\b': *dp++ = '\\'; *dp++ = 'b'; break;
       case '\f': *dp++ = '\\'; *dp++ = 'f'; break;
@@ -5366,37 +5365,37 @@ const char *raw_string(const char *begin)
         sprintf(dp, "\\%3.3o", *textbuf);
         dp += 4;
         break;
-      }
+    }
 
     for (i = 0; i < n; i++)
-      {
+    {
       textbuf[i] = textbuf[i+1];
-      }
+    }
 
     c = input();
     textbuf[n] = c;
-    }
+  }
 
   if (c == EOF || '\"' != input())
-    {
+  {
     yylineno = savelineno;
     print_preprocessor_error(VTK_PARSE_SYNTAX_ERROR,
       "Unterminated raw string.", 24);
     exit(1);
-    }
+  }
 
   *dp++ = '\"';
 
   c = input();
   if (c == '_')
-    {
+  {
     do
-      {
+    {
       *dp++ = c;
       c = input();
-      }
-    while (vtkParse_CharType(c, CPRE_XID));
     }
+    while (vtkParse_CharType(c, CPRE_XID));
+  }
   unput(c);
 
   *dp = '\0';
@@ -5420,15 +5419,15 @@ void push_buffer()
 {
   size_t n = buffer_stack_size;
   if (buffer_stack == NULL)
-    {
+  {
     buffer_stack = (YY_BUFFER_STATE *)malloc(4*sizeof(YY_BUFFER_STATE));
-    }
+  }
   /* grow the stack whenever size reaches a power of two */
   else if (n >= 4 && (n & (n-1)) == 0)
-    {
+  {
     buffer_stack = (YY_BUFFER_STATE *)realloc(
       buffer_stack, 2*n*sizeof(YY_BUFFER_STATE));
-    }
+  }
   buffer_stack[buffer_stack_size++] = YY_CURRENT_BUFFER;
 }
 
@@ -5438,17 +5437,17 @@ void push_buffer()
 int pop_buffer()
 {
   if (in_macro())
-    {
+  {
     pop_macro();
-    }
+  }
   else
-    {
+  {
     pop_include();
-    }
+  }
   if (buffer_stack_size == 0)
-    {
+  {
     return 0;
-    }
+  }
   yy_delete_buffer(YY_CURRENT_BUFFER);
   yy_switch_to_buffer(buffer_stack[--buffer_stack_size]);
   return 1;
@@ -5471,19 +5470,19 @@ void push_include(const char *filename)
   size_t n = include_stack_size;
 
   if (include_stack == NULL)
-    {
+  {
     include_stack = (FileInfo **)malloc(4*sizeof(FileInfo *));
     lineno_stack = (int *)malloc(4*sizeof(int));
-    }
+  }
 
   /* grow the stack whenever size reaches a power of two */
   else if (n >= 4 && (n & (n-1)) == 0)
-    {
+  {
     include_stack = (FileInfo **)realloc(
       include_stack, 2*n*sizeof(FileInfo *));
     lineno_stack = (int *)realloc(
       lineno_stack, 2*n*sizeof(int));
-    }
+  }
 
   lineno_stack[include_stack_size] = yyget_lineno();
   yyset_lineno(0);
@@ -5493,15 +5492,15 @@ void push_include(const char *filename)
   if (filename == data->FileName ||
       (filename != 0 && data->FileName != 0 &&
        strcmp(filename, data->FileName) == 0))
-    {
+  {
     same_file = 1;
-    }
+  }
 
   /* make a new fileinfo, but only if we are in the base namespace
    * and only if the only items added so far are constants */
   if (!same_file && currentNamespace == data->Contents &&
       data->Contents->NumberOfItems == data->Contents->NumberOfConstants)
-    {
+  {
     file_info = (FileInfo *)malloc(sizeof(FileInfo));
     vtkParse_InitFile(file_info);
     file_info->FileName = vtkstrdup(filename);
@@ -5511,7 +5510,7 @@ void push_include(const char *filename)
     file_info->Strings = data->Strings;
     data = file_info;
     currentNamespace = file_info->Contents;
-    }
+  }
 }
 
 /*
@@ -5520,16 +5519,16 @@ void push_include(const char *filename)
 void pop_include()
 {
   if (include_stack_size > 0)
-    {
+  {
     --include_stack_size;
     fclose(yyin);
     yyset_lineno(lineno_stack[include_stack_size]);
     if (data != include_stack[include_stack_size])
-      {
+    {
       data = include_stack[include_stack_size];
       currentNamespace = data->Contents;
-      }
     }
+  }
 }
 
 
@@ -5546,26 +5545,26 @@ void push_macro(MacroInfo *macro)
 {
   size_t n = macro_stack_size;
   if (macro_stack == NULL)
-    {
+  {
     macro_stack = (MacroInfo **)malloc(4*sizeof(MacroInfo *));
-    }
+  }
   /* grow the stack whenever size reaches a power of two */
   else if (n >= 4 && (n & (n-1)) == 0)
-    {
+  {
     macro_stack = (MacroInfo **)realloc(
       macro_stack, 2*n*sizeof(MacroInfo *));
-    }
+  }
   macro_stack[macro_stack_size++] = macro;
   if (macro)
-    {
+  {
     macro->IsExcluded = 1;
     if (macro_stack_size == 1)
-      {
+    {
       macroName = macro->Name;
       macroUsed = 0;
       macroEnded = 0;
-      }
     }
+  }
 }
 
 /*
@@ -5576,13 +5575,13 @@ void pop_macro()
   MacroInfo *macro;
 
   if (macro_stack_size > 0)
-    {
+  {
     macro = macro_stack[--macro_stack_size];
     if (macro)
-      {
+    {
       macro->IsExcluded = 0;
-      }
     }
+  }
   macroEnded = 1;
 }
 
@@ -5602,7 +5601,7 @@ void print_preprocessor_error(int result, const char *cp, size_t n)
   const char *text = "";
 
   switch (result)
-    {
+  {
     case VTK_PARSE_OK:
     case VTK_PARSE_SKIP:
       return;
@@ -5636,13 +5635,13 @@ void print_preprocessor_error(int result, const char *cp, size_t n)
     case VTK_PARSE_SYNTAX_ERROR:
       text = "syntax error";
       break;
-    }
+  }
 
   /* be silent about missing include files */
   if (result == VTK_PARSE_FILE_NOT_FOUND)
-    {
+  {
     return;
-    }
+  }
 
   print_parser_error(text, cp, n);
 }
@@ -5656,34 +5655,34 @@ void print_parser_error(const char *text, const char *cp, size_t n)
   const char *fn = "(none)";
 
   if (CommandName)
-    {
+  {
     fprintf(yyout, "%s: ", CommandName);
-    }
+  }
 
   if (data->FileName)
-    {
+  {
     fn = data->FileName;
-    }
+  }
   fprintf(yyout, "In %s:", fn);
   for (j = 0; j < include_stack_size; j++)
-    {
+  {
     fprintf(yyout, "%i:\nIn %s:",
             lineno_stack[j], include_stack[j]->FileName);
-    }
+  }
   fprintf(yyout, "%i:", yylineno);
 
   if (cp)
-    {
+  {
     fprintf(yyout, " %s: %*.*s\n", text, (int)n, (int)n, cp);
-    }
+  }
   else if (text)
-    {
+  {
     fprintf(yyout, " %s.\n", text);
-    }
+  }
   else
-    {
+  {
     fprintf(yyout, "\n");
-    }
+  }
 }
 
 /*
@@ -5707,31 +5706,31 @@ void preprocessor_directive(const char *text, size_t l)
   while ((*cp == ' ' || *cp == '\t') && cp < ep) { cp++; }
 
   if (n == 7 && strncmp(directive, "include", n) == 0)
-    {
+  {
     /* include files */
     int already_loaded = 0;
     if (*cp == '<' || *cp == '\"')
-      {
+    {
       /* if asked to recurse into header files */
       if (Recursive && ep - cp > 3)
-        {
+      {
         const char *dp;
         dp = vtkParsePreprocess_FindIncludeFile(preprocessor,
           &cp[1], (*cp != '\"'), &already_loaded);
         if (dp)
-          {
+        {
           yyin = fopen(dp, "r");
           if (yyin)
-            {
+          {
             push_include(dp);
             push_buffer();
             yy_switch_to_buffer(yy_create_buffer(yyin,YY_BUF_SIZE));
             return;
-            }
           }
         }
       }
     }
+  }
 
   /* force removal of this macro (might not be necessary anymore) */
   vtkParsePreprocess_RemoveMacro(preprocessor,
@@ -5741,42 +5740,42 @@ void preprocessor_directive(const char *text, size_t l)
   result = vtkParsePreprocess_HandleDirective(preprocessor, text);
 
   if (result == VTK_PARSE_SKIP)
-    {
+  {
     skip_conditional_block();
-    }
+  }
   else if (result != VTK_PARSE_OK)
-    {
+  {
     print_preprocessor_error(result, text, l);
     if ((result & VTK_PARSE_FATAL_ERROR) != 0)
-      {
-      exit(1);
-      }
-    }
-  else if (n == 6 && strncmp(directive, "define", n) == 0)
     {
+      exit(1);
+    }
+  }
+  else if (n == 6 && strncmp(directive, "define", n) == 0)
+  {
     closeComment();
     if (ep - cp > 4 && strncmp(cp, "VTK", 3) == 0)
-      {
+    {
       /* macros that start with "VTK" */
       MacroInfo *macro;
 
       macro = vtkParsePreprocess_GetMacro(preprocessor, cp);
       if (macro && macro->Definition && !macro->IsFunction)
-        {
+      {
         /* if macro evaluates to a constant, add it as a constant */
         macro->IsExcluded = 1;
         if (guess_constant_type(macro->Definition) == 0)
-          {
+        {
           result = VTK_PARSE_MACRO_UNDEFINED;
-          }
+        }
         macro->IsExcluded = 0;
         if (result < VTK_PARSE_MACRO_UNDEFINED)
-          {
+        {
           add_constant(
             vtkstrdup(macro->Name), vtkstrdup(macro->Definition),
             0, NULL, 1);
-          }
         }
       }
     }
+  }
 }

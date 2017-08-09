@@ -78,69 +78,69 @@ static const char *vtkWrapXML_Quote(const char *comment, size_t maxlen)
   size_t i, j, n;
 
   if (maxlen > oldmaxlen)
-    {
+  {
     if (result)
-      {
+    {
       free(result);
-      }
+    }
     result = (char *)malloc((size_t)(maxlen+1));
     oldmaxlen = maxlen;
-    }
+  }
 
   if (comment == NULL)
-    {
+  {
     return "";
-    }
+  }
 
   j = 0;
 
   n = (int)strlen(comment);
   for (i = 0; i < n; i++)
-    {
+  {
     if (comment[i] == '<')
-      {
+    {
       strcpy(&result[j],"&lt;");
       j += 4;
-      }
+    }
     else if (comment[i] == '>')
-      {
+    {
       strcpy(&result[j],"&gt;");
       j += 4;
-      }
+    }
     else if (comment[i] == '&')
-      {
+    {
       strcpy(&result[j],"&amp;");
       j += 5;
-      }
+    }
     else if (comment[i] == '\"')
-      {
+    {
       strcpy(&result[j],"&quot;");
       j += 6;
-      }
+    }
     else if (comment[i] == '\'')
-      {
+    {
       strcpy(&result[j],"&apos;");
       j += 6;
-      }
+    }
     else if (isprint(comment[i]))
-      {
+    {
       result[j] = comment[i];
       j++;
-      }
+    }
     else if (isspace(comment[i]))
-      { /* also copy non-printing characters */
+    { /* also copy non-printing characters */
       result[j] = comment[i];
       j++;
-      }
+    }
 
     /* add trailing ellipsis if too long */
     if (j >= maxlen - 5)
-      {
+    {
       sprintf(&result[j]," ...");
       j += (int)strlen(" ...");
       break;
-      }
     }
+  }
   result[j] = '\0';
 
   return result;
@@ -156,34 +156,34 @@ static void vtkWrapXML_MultiLineText(wrapxml_state_t *w, const char *cp)
   char temp[512];
 
   while (cp && cp[i] != '\0')
-    {
+  {
     for (j = 0; j < 200 && cp[i] != '\0' && cp[i] != '\n'; j++)
-      {
+    {
       temp[j] = cp[i++];
-      }
+    }
 
     while (j > 0 &&
            (temp[j-1] == ' ' || temp[j-1] == '\t' || temp[j-1] == '\r'))
-      {
+    {
       j--;
-      }
+    }
 
     temp[j] = '\0';
 
     if (j > 0)
-      {
+    {
       fprintf(w->file, "%s%s\n", indent(w->indentation),
               vtkWrapXML_Quote(temp, 500));
-      }
-    else
-      {
-      fprintf(w->file, "\n");
-      }
-    if (cp[i] == '\n')
-      {
-      i++;
-      }
     }
+    else
+    {
+      fprintf(w->file, "\n");
+    }
+    if (cp[i] == '\n')
+    {
+      i++;
+    }
+  }
 }
 
 /**
@@ -192,9 +192,9 @@ static void vtkWrapXML_MultiLineText(wrapxml_state_t *w, const char *cp)
 void vtkWrapXML_ElementBody(wrapxml_state_t *w)
 {
   if (w->unclosed)
-    {
+  {
     fprintf(w->file, ">\n");
-    }
+  }
   w->unclosed = 0;
 }
 
@@ -216,13 +216,13 @@ void vtkWrapXML_ElementEnd(wrapxml_state_t *w, const char *name)
 {
   w->indentation--;
   if (w->unclosed)
-    {
+  {
     fprintf(w->file, " />\n");
-    }
+  }
   else
-    {
+  {
     fprintf(w->file, "%s</%s>\n", indent(w->indentation), name);
-    }
+  }
   w->unclosed = 0;
 }
 
@@ -253,16 +253,16 @@ void vtkWrapXML_Size(wrapxml_state_t *w, ValueInfo *val)
   unsigned long j;
 
   if (ndims > 0)
-    {
+  {
     fprintf(w->file, " size=\"%s", ((ndims > 1) ? "{" : ""));
     for (j = 0; j < ndims; j++)
-      {
+    {
       fprintf(w->file, "%s%s",
         ((j > 0) ? "," : ""),
         ((val->Dimensions[j][0] == '\0') ? ":" : val->Dimensions[j]));
-      }
-    fprintf(w->file, "%s\"", ((ndims > 1) ? "}" : ""));
     }
+    fprintf(w->file, "%s\"", ((ndims > 1) ? "}" : ""));
+  }
 }
 
 void vtkWrapXML_Pointer(wrapxml_state_t *w, ValueInfo *val)
@@ -274,44 +274,44 @@ void vtkWrapXML_Pointer(wrapxml_state_t *w, ValueInfo *val)
   int i = 0;
 
   if ((type & VTK_PARSE_INDIRECT) == VTK_PARSE_BAD_INDIRECT)
-    {
+  {
     vtkWrapXML_Attribute(w, "pointer", "unknown");
     return;
-    }
+  }
 
   type = (type & VTK_PARSE_POINTER_MASK);
 
   if (ndims > 0)
-    {
+  {
     type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
-    }
+  }
 
   while (type)
-    {
+  {
     bits = (type & VTK_PARSE_POINTER_LOWMASK);
     type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
 
     if (bits == VTK_PARSE_ARRAY)
-      {
+    {
       strncpy(&text[i], "*array", 6);
       i += 6;
-      }
+    }
     else if (bits == VTK_PARSE_CONST_POINTER)
-      {
+    {
       strncpy(&text[i], "*const", 6);
       i += 6;
-      }
-    else
-      {
-      text[i++] = '*';
-      }
     }
+    else
+    {
+      text[i++] = '*';
+    }
+  }
 
   if (i > 0)
-    {
+  {
     text[i++] = '\0';
     vtkWrapXML_Attribute(w, "pointer", text);
-    }
+  }
 }
 
 /**
@@ -322,12 +322,12 @@ void vtkWrapXML_Comment(wrapxml_state_t *w, const char *comment)
   const char *elementName = "comment";
 
   if (comment)
-    {
+  {
     vtkWrapXML_ElementStart(w, elementName);
     vtkWrapXML_ElementBody(w);
     vtkWrapXML_MultiLineText(w, comment);
     vtkWrapXML_ElementEnd(w, elementName);
-    }
+  }
 }
 
 /**
@@ -338,7 +338,7 @@ void vtkWrapXML_Access(wrapxml_state_t *w, parse_access_t access)
   const char *cp = "public";
 
   switch (access)
-    {
+  {
     case VTK_ACCESS_PUBLIC:
       cp = "public";
       break;
@@ -348,7 +348,7 @@ void vtkWrapXML_Access(wrapxml_state_t *w, parse_access_t access)
     case VTK_ACCESS_PRIVATE:
       cp = "private";
       break;
-    }
+  }
 
   vtkWrapXML_Attribute(w, "access", cp);
 }
@@ -359,9 +359,9 @@ void vtkWrapXML_Access(wrapxml_state_t *w, parse_access_t access)
 void vtkWrapXML_Flag(wrapxml_state_t *w, const char *name, int value)
 {
   if (value)
-    {
+  {
     fprintf(w->file, " %s=\"1\"", name);
-    }
+  }
 }
 
 /**
@@ -391,14 +391,14 @@ void vtkWrapXML_FileHeader(wrapxml_state_t *w, const FileInfo *data)
 
   vtkWrapXML_ElementStart(w, elementName);
   if (cp)
-    {
+  {
     i = strlen(cp);
     while (i > 0 && cp[i-1] != '/' && cp[i-1] != '\\' && cp[i-1] != ':')
-      {
+    {
       i--;
-      }
-    vtkWrapXML_Name(w, &cp[i]);
     }
+    vtkWrapXML_Name(w, &cp[i]);
+  }
   vtkWrapXML_ElementBody(w);
   w->indentation--;
 }
@@ -422,15 +422,15 @@ void vtkWrapXML_FileFooter(wrapxml_state_t *w, const FileInfo *data)
 int vtkWrapXML_EmptyString(const char *cp)
 {
   if (cp)
-    {
+  {
     while (*cp != '\0')
-      {
+    {
       if (!isspace(*cp++))
-        {
+      {
         return 0;
-        }
       }
     }
+  }
 
   return 1;
 }
@@ -448,83 +448,83 @@ void vtkWrapXML_FileDoc(wrapxml_state_t *w, FileInfo *data)
       vtkWrapXML_EmptyString(data->Description) &&
       vtkWrapXML_EmptyString(data->Caveats) &&
       vtkWrapXML_EmptyString(data->SeeAlso))
-    {
+  {
     return;
-    }
+  }
 
   vtkWrapXML_ElementStart(w, "comment");
   vtkWrapXML_ElementBody(w);
 
   if (data->NameComment)
-    {
+  {
     cp = data->NameComment;
     while (*cp == ' ')
-      {
+    {
       cp++;
-      }
+    }
     strncpy(temp, " .NAME ", 7);
     n = strlen(cp) + 7;
     n = (n >= 500 ? 500-1 : n);
     strncpy(&temp[7], cp, n-7);
     temp[n] = '\0';
     vtkWrapXML_MultiLineText(w, temp);
-    }
+  }
 
   if (data->Description)
-    {
+  {
     fprintf(w->file, "\n%s .SECTION Description\n", indent(w->indentation));
     vtkWrapXML_MultiLineText(w, data->Description);
-    }
+  }
 
   if (data->Caveats && data->Caveats[0] != '\0')
-    {
+  {
     fprintf(w->file, "\n%s .SECTION Caveats\n", indent(w->indentation));
     vtkWrapXML_MultiLineText(w, data->Caveats);
-    }
+  }
 
   if (data->SeeAlso && data->SeeAlso[0] != '\0')
-    {
+  {
     fprintf(w->file, "\n%s .SECTION See also\n", indent(w->indentation));
 
     cp = data->SeeAlso;
     while(isspace(*cp))
-      {
+    {
       cp++;
-      }
+    }
     while(*cp)
-      {
+    {
       n = 0;
       while(cp[n] && !isspace(cp[n]))
-        {
+      {
         n++;
-        }
+      }
       /* There might be another section in the See also */
       if (strncmp(cp, ".SECTION", 8) == 0)
-        {
+      {
         fprintf(w->file, "\n");
 
         while(cp > data->SeeAlso && isspace(*(cp - 1)) && *(cp - 1) != '\n')
-          {
+        {
           cp--;
-          }
+        }
         vtkWrapXML_MultiLineText(w, cp);
         break;
-        }
+      }
 
       if (n > 0 && n < 400)
-        {
+      {
         strncpy(temp, cp, n);
         temp[n] = '\0';
         fprintf(w->file,"%s %s\n", indent(w->indentation),
                 vtkWrapXML_Quote(temp,500));
-        }
+      }
       cp += n;
       while(isspace(*cp))
-        {
+      {
         cp++;
-        }
       }
     }
+  }
 
   vtkWrapXML_ElementEnd(w, "comment");
 }
@@ -545,12 +545,12 @@ void vtkWrapXML_ClassInheritance(
   vtkWrapXML_ElementStart(w, elementName);
   vtkWrapXML_ElementBody(w);
   for (i = 1; i < n; i++)
-    {
+  {
     vtkWrapXML_ElementStart(w, subElementName);
     vtkWrapXML_Name(w, merge->ClassNames[i]);
     vtkWrapXML_Attribute(w, "access", "public");
     vtkWrapXML_ElementEnd(w, subElementName);
-    }
+  }
   vtkWrapXML_ElementEnd(w, elementName);
 }
 
@@ -566,27 +566,27 @@ void vtkWrapXML_TypeAttributes(wrapxml_state_t *w, ValueInfo *val)
   unsigned int type = val->Type;
 
   if ((type & VTK_PARSE_CONST) != 0)
-    {
+  {
     vtkWrapXML_AttributeWithPrefix(w, "type", "const ", val->TypeName);
-    }
+  }
   else
-    {
+  {
     vtkWrapXML_Attribute(w, "type", val->TypeName);
-    }
+  }
 
   if ((type & VTK_PARSE_RVALUE) != 0)
-    {
+  {
     vtkWrapXML_Flag(w, "rvalue_reference", 1);
-    }
+  }
   else if ((type & VTK_PARSE_REF) != 0)
-    {
+  {
     vtkWrapXML_Flag(w, "reference", 1);
-    }
+  }
 
   if ((type & VTK_PARSE_NEWINSTANCE) != 0)
-    {
+  {
     vtkWrapXML_Flag(w, "newinstance", 1);
-    }
+  }
 
   vtkWrapXML_Pointer(w, val);
   vtkWrapXML_Size(w, val);
@@ -598,21 +598,21 @@ void vtkWrapXML_TypeAttributes(wrapxml_state_t *w, ValueInfo *val)
 void vtkWrapXML_TypeElements(wrapxml_state_t *w, ValueInfo *val)
 {
   if (val->Function)
-    {
+  {
     if (val->Function->Class)
-      {
+    {
       vtkWrapXML_ElementStart(w, "method");
       vtkWrapXML_Attribute(w, "context", val->Function->Class);
       vtkWrapXML_FunctionCommon(w, val->Function, 1);
       vtkWrapXML_ElementEnd(w, "method");
-      }
+    }
     else
-      {
+    {
       vtkWrapXML_ElementStart(w, "function");
       vtkWrapXML_FunctionCommon(w, val->Function, 1);
       vtkWrapXML_ElementEnd(w, "function");
-      }
     }
+  }
 }
 
 
@@ -632,20 +632,20 @@ void vtkWrapXML_TypeSimple(
   val.Type = type;
 
   if (classname)
-    {
+  {
     strcpy(temp2, classname);
     val.TypeName = temp2;
-    }
+  }
 
   sizes[0] = 0;
   sizes[1] = 0;
   if (size > 0)
-    {
+  {
     sprintf(temp, "%lu", size);
     sizes[0] = temp;
     val.Dimensions = sizes;
     val.NumberOfDimensions = 1;
-    }
+  }
 
   vtkWrapXML_TypeAttributes(w, &val);
   vtkWrapXML_TypeElements(w, &val);
@@ -662,72 +662,72 @@ void vtkWrapXML_Template(
   unsigned long i;
 
   for (i = 0; i < info->NumberOfParameters; i++)
-    {
+  {
     vtkWrapXML_ElementStart(w, elementName);
 
     param = info->Parameters[i];
 
     if (param->Name)
-      {
+    {
       vtkWrapXML_Name(w, param->Name);
-      }
+    }
 
     if (param->Template)
-      {
+    {
       vtkWrapXML_Attribute(w, "type", "template");
-      }
+    }
     else if (param->Type)
-      {
+    {
       vtkWrapXML_Attribute(w, "type", param->TypeName);
-      }
+    }
     else
-      {
+    {
       vtkWrapXML_Attribute(w, "type", "typename");
-      }
+    }
 
     if (param->Value)
-      {
+    {
       vtkWrapXML_Value(w, param->Value);
-      }
+    }
 
     if (param->NumberOfDimensions)
-      {
+    {
       ValueInfo val;
       val.NumberOfDimensions = param->NumberOfDimensions;
       val.Dimensions = param->Dimensions;
       vtkWrapXML_Size(w, &val);
-      }
+    }
 
     if (param->IsPack)
-      {
+    {
       vtkWrapXML_Flag(w, "pack", 1);
-      }
+    }
 
     if (param->Template)
-      {
+    {
       vtkWrapXML_Flag(w, "template", 1);
       vtkWrapXML_Template(w, param->Template);
-      }
+    }
 
     if (param->Function)
-      {
+    {
       if (param->Function->Class)
-        {
+      {
         vtkWrapXML_ElementStart(w, "method");
         vtkWrapXML_Attribute(w, "context", param->Function->Class);
         vtkWrapXML_FunctionCommon(w, param->Function, 1);
         vtkWrapXML_ElementEnd(w, "method");
-        }
+      }
       else
-        {
+      {
         vtkWrapXML_ElementStart(w, "function");
         vtkWrapXML_FunctionCommon(w, param->Function, 1);
         vtkWrapXML_ElementEnd(w, "function");
-        }
       }
+    }
 
     vtkWrapXML_ElementEnd(w, elementName);
-    }
+  }
 }
 
 /* Declare prototype for use in vtkWrapXML_Enum() */
@@ -747,9 +747,9 @@ void vtkWrapXML_Enum(
   vtkWrapXML_ElementStart(w, elementName);
 
   if (inClass)
-    {
+  {
     vtkWrapXML_Access(w, item->Access);
-    }
+  }
 
   vtkWrapXML_Name(w, item->Name);
 
@@ -757,9 +757,9 @@ void vtkWrapXML_Enum(
 
   /* print all members of the class */
   for (i = 0; i < item->NumberOfConstants; i++)
-    {
+  {
     vtkWrapXML_Constant(w, item->Constants[i], 2);
-    }
+  }
 
   vtkWrapXML_ElementEnd(w, elementName);
 }
@@ -774,31 +774,31 @@ void vtkWrapXML_Constant(
 
   /* inClass will be 2 for enum class */
   if (inClass < 2)
-    {
+  {
     fprintf(w->file, "\n");
-    }
+  }
 
   vtkWrapXML_ElementStart(w, elementName);
 
   if (inClass)
-    {
+  {
     vtkWrapXML_Access(w, con->Access);
-    }
+  }
 
   if (con->IsEnum)
-    {
+  {
     vtkWrapXML_Flag(w, "enum", 1);
-    }
+  }
   if (con->Type && con->TypeName && con->TypeName[0] != '\0')
-    {
+  {
     vtkWrapXML_TypeAttributes(w, con);
-    }
+  }
   vtkWrapXML_Name(w, con->Name);
 
   if (con->Value)
-    {
+  {
     vtkWrapXML_Value(w, con->Value);
-    }
+  }
 
   vtkWrapXML_Comment(w, con->Comment);
   vtkWrapXML_TypeElements(w, con);
@@ -815,9 +815,9 @@ void vtkWrapXML_Variable(
   const char *elementName = "variable";
 
   if (inClass)
-    {
+  {
     elementName = "member";
-    }
+  }
 
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
@@ -825,22 +825,22 @@ void vtkWrapXML_Variable(
   vtkWrapXML_Name(w, var->Name);
 
   if (inClass)
-    {
+  {
     vtkWrapXML_Access(w, var->Access);
-    }
+  }
 
   vtkWrapXML_TypeAttributes(w, var);
 
   if (var->Value)
-    {
+  {
     vtkWrapXML_Value(w, var->Value);
-    }
+  }
 
   if (var->Template)
-    {
+  {
     vtkWrapXML_Flag(w, "template", 1);
     vtkWrapXML_Template(w, var->Template);
-    }
+  }
 
   vtkWrapXML_Comment(w, var->Comment);
   vtkWrapXML_TypeElements(w, var);
@@ -862,26 +862,26 @@ void vtkWrapXML_Typedef(
   vtkWrapXML_Name(w, type->Name);
 
   if (inClass)
-    {
+  {
     vtkWrapXML_Access(w, type->Access);
-    }
+  }
 
   if (type->Type)
-    {
+  {
     vtkWrapXML_TypeAttributes(w, type);
-    }
+  }
 
   if (type->Template)
-    {
+  {
     vtkWrapXML_Flag(w, "template", 1);
     vtkWrapXML_Template(w, type->Template);
-    }
+  }
 
   vtkWrapXML_Comment(w, type->Comment);
   if (type->Type)
-    {
+  {
     vtkWrapXML_TypeElements(w, type);
-    }
+  }
 
   vtkWrapXML_ElementEnd(w, elementName);
 }
@@ -896,11 +896,11 @@ void vtkWrapXML_Using(
   const char *name = "namespace";
 
   if (data && data->Scope)
-    {
+  {
     if (data->Name)
-      {
+    {
       name = data->Name;
-      }
+    }
 
     fprintf(w->file, "\n");
     vtkWrapXML_ElementStart(w, elementName);
@@ -908,7 +908,7 @@ void vtkWrapXML_Using(
     vtkWrapXML_Attribute(w, "context", data->Scope);
     vtkWrapXML_Comment(w, data->Comment);
     vtkWrapXML_ElementEnd(w, elementName);
-    }
+  }
 }
 
 /**
@@ -924,76 +924,76 @@ void vtkWrapXML_FunctionCommon(
   size_t l;
 
   if (func->IsStatic)
-    {
+  {
     vtkWrapXML_Flag(w, "static", 1);
-    }
+  }
 
   if (func->IsVariadic)
-    {
+  {
     vtkWrapXML_Flag(w, "variadic", 1);
-    }
+  }
 
   if (func->IsLegacy)
-    {
+  {
     vtkWrapXML_Flag(w, "legacy", 1);
-    }
+  }
 
   if (func->Signature)
-    {
+  {
     vtkWrapXML_ElementStart(w, "signature");
     vtkWrapXML_ElementBody(w);
 
     l = vtkParse_FunctionInfoToString(func, NULL, VTK_PARSE_EVERYTHING);
     cp = temp;
     if (l+1 > sizeof(temp))
-      {
+    {
       cp = (char *)malloc(l+1);
-      }
+    }
     vtkParse_FunctionInfoToString(func, cp, VTK_PARSE_EVERYTHING);
     fprintf(w->file, "%s %s\n", indent(w->indentation), vtkWrapXML_Quote(cp, 500));
     if (cp != temp)
-      {
+    {
       free(cp);
-      }
-    vtkWrapXML_ElementEnd(w, "signature");
     }
+    vtkWrapXML_ElementEnd(w, "signature");
+  }
 
   vtkWrapXML_Comment(w, func->Comment);
 
   n = func->NumberOfParameters;
   for (i = 0; i < n; i++)
-    {
+  {
     vtkWrapXML_ElementStart(w, "param");
     arg = func->Parameters[i];
 
     if (arg->Name)
-      {
+    {
       vtkWrapXML_Name(w, arg->Name);
-      }
+    }
 
     if (arg->Value)
-      {
+    {
       vtkWrapXML_Value(w, arg->Value);
-      }
+    }
 
     vtkWrapXML_TypeAttributes(w, arg);
 
     if (arg->IsPack)
-      {
+    {
       vtkWrapXML_Flag(w, "pack", 1);
-      }
+    }
 
     vtkWrapXML_TypeElements(w, arg);
     vtkWrapXML_ElementEnd(w, "param");
-    }
+  }
 
   if (printReturn)
-    {
+  {
     vtkWrapXML_ElementStart(w, "return");
     vtkWrapXML_TypeAttributes(w, func->ReturnValue);
     vtkWrapXML_TypeElements(w, func->ReturnValue);
     vtkWrapXML_ElementEnd(w, "return");
-    }
+  }
 }
 
 /**
@@ -1006,28 +1006,28 @@ void vtkWrapXML_Function(
   const char *name = func->Name;
 
   if (func->IsOperator)
-    {
+  {
     elementName = "operator";
     if (strncmp(name, "operator", 8) == 0)
-      {
+    {
       name = &name[8];
       while (isspace(name[0]))
-        {
+      {
         name++;
-        }
       }
     }
+  }
 
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
   vtkWrapXML_Name(w, name);
 
   if (func->Template)
-    {
+  {
     vtkWrapXML_Flag(w, "template", 1);
     vtkWrapXML_Template(w, func->Template);
     fprintf(w->file, "\n");
-    }
+  }
 
   vtkWrapXML_FunctionCommon(w, func, 1);
   vtkWrapXML_ElementEnd(w, elementName);
@@ -1046,28 +1046,28 @@ void vtkWrapXML_ClassPropertyMethods(
   fprintf(w->file, " bitfield=\"");
 
   for (i = 0; i < 32; i++)
-    {
+  {
     methodType = methodBitfield & (1U << i);
     if (methodType)
-      {
+    {
       if ((methodType & VTK_METHOD_SET_CLAMP) != 0 &&
           (methodBitfield & VTK_METHOD_SET_CLAMP) == VTK_METHOD_SET_CLAMP)
-        {
+      {
         methodType = VTK_METHOD_SET_CLAMP;
         methodBitfield &= ~VTK_METHOD_SET_CLAMP;
-        }
+      }
       else if ((methodType & VTK_METHOD_SET_BOOL) != 0 &&
           (methodBitfield & VTK_METHOD_SET_BOOL) == VTK_METHOD_SET_BOOL)
-        {
+      {
         methodType = VTK_METHOD_SET_BOOL;
         methodBitfield &= ~VTK_METHOD_SET_BOOL;
-        }
+      }
 
       fprintf(w->file, "%s%s", ((first == 0) ? "|" : ""),
         vtkParseProperties_MethodTypeAsString(methodType));
       first = 0;
-      }
     }
+  }
   fprintf(w->file, "\"");
 }
 
@@ -1083,89 +1083,89 @@ void vtkWrapXML_ClassMethod(
   int isCtrOrDtr = 0;
 
   if (func->IsDeleted)
-    {
+  {
     return;
-    }
+  }
 
   if (data && strcmp(data->Name, func->Name) == 0)
-    {
+  {
     elementName = "constructor";
     isCtrOrDtr = 1;
-    }
+  }
   else if (data && func->Name[0] == '~' &&
            strcmp(data->Name, &func->Name[1]) == 0)
-    {
+  {
     elementName = "destructor";
     isCtrOrDtr = 1;
-    }
+  }
   else if (func->IsOperator)
-    {
+  {
     elementName = "operator";
     if (strncmp(name, "operator", 8) == 0)
-      {
+    {
       name = &name[8];
       while (isspace(name[0]))
-        {
+      {
         name++;
-        }
       }
     }
+  }
 
   /* eliminate macros masquerading as class methods */
   if (!func->ReturnValue && !isCtrOrDtr)
-    {
+  {
     return;
-    }
+  }
 
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
   if (!isCtrOrDtr)
-    {
+  {
     vtkWrapXML_Name(w, name);
-    }
+  }
 
   if (classname && strcmp(classname, data->Name) != 0)
-    {
+  {
     vtkWrapXML_Attribute(w, "context", classname);
-    }
+  }
 
   if (propname)
-    {
+  {
     vtkWrapXML_Attribute(w, "property", propname);
-    }
+  }
 
   vtkWrapXML_Access(w, func->Access);
 
   if (func->IsConst)
-    {
+  {
     vtkWrapXML_Flag(w, "const", 1);
-    }
+  }
 
   if (func->Template)
-    {
+  {
     vtkWrapXML_Flag(w, "template", 1);
     vtkWrapXML_Template(w, func->Template);
-    }
+  }
 
   if (func->IsVirtual)
-    {
+  {
     vtkWrapXML_Flag(w, "virtual", 1);
-    }
+  }
 
   if (func->IsPureVirtual)
-    {
+  {
     vtkWrapXML_Flag(w, "pure", 1);
-    }
+  }
 
   if (func->IsFinal)
-    {
+  {
     vtkWrapXML_Flag(w, "final", 1);
-    }
+  }
 
   if (func->IsExplicit)
-    {
+  {
     vtkWrapXML_Flag(w, "explicit", 1);
-    }
+  }
 
   vtkWrapXML_FunctionCommon(w, func, !isCtrOrDtr);
   vtkWrapXML_ElementEnd(w, elementName);
@@ -1186,38 +1186,38 @@ void vtkWrapXML_ClassProperty(
   vtkWrapXML_Name(w, property->Name);
 
   if (classname)
-    {
+  {
     vtkWrapXML_Attribute(w, "context", classname);
-    }
+  }
 
   if (property->PublicMethods)
-    {
+  {
     access = "public";
-    }
+  }
   else if (property->ProtectedMethods)
-    {
+  {
     access = "protected";
-    }
+  }
   else if (property->PrivateMethods)
-    {
+  {
     access = "private";
-    }
+  }
 
   if (access)
-    {
+  {
     vtkWrapXML_Attribute(w, "access", access);
-    }
+  }
 
   if (property->IsStatic)
-    {
+  {
     vtkWrapXML_Flag(w, "static", 1);
-    }
+  }
 
   if (((property->PublicMethods | property->ProtectedMethods |
         property->PrivateMethods) & ~property->LegacyMethods) == 0)
-    {
+  {
     vtkWrapXML_Flag(w, "legacy", 1);
-    }
+  }
 
   vtkWrapXML_TypeSimple(w, property->Type, property->ClassName,
                         property->Count);
@@ -1225,46 +1225,46 @@ void vtkWrapXML_ClassProperty(
   vtkWrapXML_Comment(w, property->Comment);
 
   if (property->PublicMethods)
-    {
+  {
     vtkWrapXML_ElementStart(w, "methods");
     vtkWrapXML_ClassPropertyMethods(w, property->PublicMethods);
     vtkWrapXML_Attribute(w, "access", "public");
     vtkWrapXML_ElementEnd(w, "methods");
-    }
+  }
 
   if (property->ProtectedMethods)
-    {
+  {
     vtkWrapXML_ElementStart(w, "methods");
     vtkWrapXML_ClassPropertyMethods(w, property->ProtectedMethods);
     vtkWrapXML_Attribute(w, "access", "protected");
     vtkWrapXML_ElementEnd(w, "methods");
-    }
+  }
 
   if (property->PrivateMethods)
-    {
+  {
     vtkWrapXML_ElementStart(w, "methods");
     vtkWrapXML_ClassPropertyMethods(w, property->PrivateMethods);
     vtkWrapXML_Attribute(w, "access", "private");
     vtkWrapXML_ElementEnd(w, "methods");
-    }
+  }
 
   if (property->LegacyMethods)
-    {
+  {
     vtkWrapXML_ElementStart(w, "methods");
     vtkWrapXML_ClassPropertyMethods(w, property->LegacyMethods);
     vtkWrapXML_Flag(w, "legacy", 1);
     vtkWrapXML_ElementEnd(w, "methods");
-    }
+  }
 
   if (property->EnumConstantNames)
-    {
+  {
     for (i = 0; property->EnumConstantNames[i] != 0; i++)
-      {
+    {
       vtkWrapXML_ElementStart(w, "valname");
       vtkWrapXML_Attribute(w, "name", property->EnumConstantNames[i]);
       vtkWrapXML_ElementEnd(w, "valname");
-      }
     }
+  }
 
   vtkWrapXML_ElementEnd(w, elementName);
 }
@@ -1284,45 +1284,45 @@ void vtkWrapXML_MethodHelper(
   n = classInfo->NumberOfFunctions;
 
   for (i = 0; i < n; i++)
-    {
+  {
     if (classInfo->Functions[i] == funcInfo)
-      {
+    {
       break;
-      }
     }
+  }
 
   if (i < n)
-    {
+  {
     if (merge && merge->NumberOfOverrides[i])
-      {
+    {
       classname = merge->ClassNames[merge->OverrideClasses[i][0]];
       if (strcmp(classname, classInfo->Name) == 0)
-        {
-        classname = 0;
-        }
-      }
-    if (properties && properties->MethodHasProperty[i])
       {
+        classname = 0;
+      }
+    }
+    if (properties && properties->MethodHasProperty[i])
+    {
       property = properties->Properties[properties->MethodProperties[i]];
       propname = property->Name;
       for (j = 0; j < i; j++)
-        {
+      {
         /* only print property if this is the first occurrence */
         if (properties->MethodHasProperty[j] &&
             property ==
             properties->Properties[properties->MethodProperties[j]])
-          {
+        {
           property = NULL;
           break;
-          }
         }
       }
     }
+  }
 
   if (property)
-    {
+  {
     vtkWrapXML_ClassProperty(w, property, classname);
-    }
+  }
 
   vtkWrapXML_ClassMethod(w, classInfo, funcInfo,
                          classname, propname);
@@ -1342,128 +1342,128 @@ void vtkWrapXML_Class(
   /* start new XML section for class */
   fprintf(w->file, "\n");
   if (classInfo->ItemType == VTK_STRUCT_INFO)
-    {
+  {
     elementName = "struct";
-    }
+  }
   else if (classInfo->ItemType == VTK_UNION_INFO)
-    {
+  {
     elementName = "union";
-    }
+  }
 
   vtkWrapXML_ElementStart(w, elementName);
 
   vtkWrapXML_Name(w, classInfo->Name);
 
   if (inClass)
-    {
+  {
     vtkWrapXML_Access(w, classInfo->Access);
-    }
+  }
 
   if (classInfo->IsAbstract)
-    {
+  {
     vtkWrapXML_Flag(w, "abstract", 1);
-    }
+  }
 
   if (classInfo->IsFinal)
-    {
+  {
     vtkWrapXML_Flag(w, "final", 1);
-    }
+  }
 
   if (classInfo->Template)
-    {
+  {
     vtkWrapXML_Flag(w, "template", 1);
     vtkWrapXML_Template(w, classInfo->Template);
-    }
+  }
   else
-    {
+  {
     vtkWrapXML_ElementBody(w);
-    }
+  }
 
   vtkWrapXML_Comment(w, classInfo->Comment);
 
   /* actually, vtk classes never have more than one superclass */
   n = classInfo->NumberOfSuperClasses;
   for (i = 0; i < n; i++)
-    {
+  {
     vtkWrapXML_ElementStart(w, "base");
     vtkWrapXML_Name(w, classInfo->SuperClasses[i]);
     vtkWrapXML_Attribute(w, "access", "public");
     vtkWrapXML_ElementEnd(w, "base");
-    }
+  }
 
   /* merge all the superclass information */
   if (classInfo->NumberOfSuperClasses)
-    {
+  {
     //merge = vtkParseMerge_MergeSuperClasses(w->data, data, classInfo);
     vtkParseMerge_ApplyUsingDeclarations(w->data, data, classInfo);
-    }
+  }
 
   if (merge && merge->NumberOfClasses > 1)
-    {
+  {
     fprintf(w->file, "\n");
     vtkWrapXML_ClassInheritance(w, merge);
-    }
+  }
 
   /* get information about the properties */
   properties = vtkParseProperties_Create(classInfo);
 
   /* print all members of the class */
   for (i = 0; i < classInfo->NumberOfItems; i++)
-    {
+  {
     j = classInfo->Items[i].Index;
     switch (classInfo->Items[i].Type)
-      {
+    {
       case VTK_VARIABLE_INFO:
-        {
+      {
         vtkWrapXML_Variable(w, classInfo->Variables[j], 1);
         break;
-        }
+      }
       case VTK_CONSTANT_INFO:
-        {
+      {
         vtkWrapXML_Constant(w, classInfo->Constants[j], 1);
         break;
-        }
+      }
       case VTK_ENUM_INFO:
-        {
+      {
         vtkWrapXML_Enum(w, classInfo->Enums[j], 1);
         break;
-        }
+      }
       case VTK_FUNCTION_INFO:
-        {
+      {
         vtkWrapXML_MethodHelper(w, merge, properties, classInfo,
                                 classInfo->Functions[j]);
         break;
-        }
+      }
       case VTK_TYPEDEF_INFO:
-        {
+      {
         vtkWrapXML_Typedef(w, classInfo->Typedefs[j], 1);
         break;
-        }
+      }
       case VTK_USING_INFO:
-        {
+      {
         vtkWrapXML_Using(w, classInfo->Usings[j]);
         break;
-        }
+      }
       case VTK_CLASS_INFO:
       case VTK_STRUCT_INFO:
       case VTK_UNION_INFO:
-        {
+      {
         vtkWrapXML_Class(w, data, classInfo->Classes[j], 1);
         break;
-        }
+      }
       case VTK_NAMESPACE_INFO:
         break;
-      }
     }
+  }
 
   /* release the information about the properties */
   vtkParseProperties_Free(properties);
 
   /* release the info about what was merged from superclasses */
   if (merge)
-    {
+  {
     vtkParseMerge_FreeMergeInfo(merge);
-    }
+  }
 
   vtkWrapXML_ElementEnd(w, elementName);
 }
@@ -1480,54 +1480,54 @@ void vtkWrapXML_Body(wrapxml_state_t *w, NamespaceInfo *data)
 
   /* print all constants for the file or namespace */
   for (i = 0; i < data->NumberOfItems; i++)
-    {
+  {
     j = data->Items[i].Index;
     switch (data->Items[i].Type)
-      {
+    {
       case VTK_VARIABLE_INFO:
-        {
+      {
         vtkWrapXML_Variable(w, data->Variables[j], 0);
         break;
-        }
+      }
       case VTK_CONSTANT_INFO:
-        {
+      {
         vtkWrapXML_Constant(w, data->Constants[j], 0);
         break;
-        }
+      }
       case VTK_TYPEDEF_INFO:
-        {
+      {
         vtkWrapXML_Typedef(w, data->Typedefs[j], 0);
         break;
-        }
+      }
       case VTK_USING_INFO:
-        {
+      {
         vtkWrapXML_Using(w, data->Usings[j]);
         break;
-        }
+      }
       case VTK_ENUM_INFO:
-        {
+      {
         vtkWrapXML_Enum(w, data->Enums[j], 0);
         break;
-        }
+      }
       case VTK_CLASS_INFO:
       case VTK_STRUCT_INFO:
       case VTK_UNION_INFO:
-        {
+      {
         vtkWrapXML_Class(w, data, data->Classes[j], 0);
         break;
-        }
+      }
       case VTK_FUNCTION_INFO:
-        {
+      {
         vtkWrapXML_Function(w, data->Functions[j]);
         break;
-        }
+      }
       case VTK_NAMESPACE_INFO:
-        {
+      {
         vtkWrapXML_Namespace(w, data->Namespaces[j]);
         break;
-        }
       }
     }
+  }
 }
 
 /**
@@ -1568,10 +1568,10 @@ int main(int argc, char *argv[])
   fp = fopen(options->OutputFileName, "w");
 
   if (!fp)
-    {
+  {
     fprintf(stderr, "Error opening output file %s\n", options->OutputFileName);
     exit(1);
-    }
+  }
 
   /* a struct to keep track of things */
   ws.data = data;
