@@ -140,6 +140,7 @@ void vtkParse_InitFunction(FunctionInfo *func)
   func->ReturnValue = NULL;
   func->Macro = NULL;
   func->SizeHint = NULL;
+  func->Expects = NULL;
   func->IsStatic = 0;
   func->IsVirtual = 0;
   func->IsPureVirtual = 0;
@@ -212,6 +213,7 @@ void vtkParse_CopyFunction(FunctionInfo *func, const FunctionInfo *orig)
 
   func->Macro = orig->Macro;
   func->SizeHint = orig->SizeHint;
+  func->Expects = orig->Expects;
   func->IsStatic = orig->IsStatic;
   func->IsVirtual = orig->IsVirtual;
   func->IsPureVirtual = orig->IsPureVirtual;

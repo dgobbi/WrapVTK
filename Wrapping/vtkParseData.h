@@ -181,6 +181,7 @@ struct _FunctionInfo
   ValueInfo     *ReturnValue; /* NULL for constructors and destructors */
   const char    *Macro;       /* the macro that defined this function */
   const char    *SizeHint;    /* hint the size e.g. for operator[] */
+  const char    *Expects;     /* precondition */
   int            IsOperator;
   int            IsVariadic;
   int            IsLegacy;    /* marked as a legacy method or function */

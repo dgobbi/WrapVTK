@@ -3318,10 +3318,18 @@ attribute_pack:
 attribute_sig:
     attribute_token
   | attribute_token parentheses_sig
+  | attribute_token ':' { postSig(": "); } attribute_contents
 
 attribute_token:
     identifier_sig
   | identifier_sig scope_operator_sig identifier_sig
+
+attribute_contents:
+  | attribute_contents attribute_contents_item
+
+attribute_contents_item:
+    bracket_pitem
+  | '=' { postSig("= "); }
 
 
 /*
@@ -4826,6 +4834,13 @@ void handle_attribute(const char *att, int pack)
       print_parser_error("attribute cannot be used here", att, l);
       exit(1);
     }
+  }
+  else if (strncmp(att, "expects:", 8) == 0 && att[8] != ':' &&
+           role == VTK_PARSE_ATTRIB_FUNC)
+  {
+    l = 8;
+    while (att[l] == ' ') { l++; }
+    currentFunction->Expects = vtkstrdup(&att[l]);
   }
 }
 

@@ -958,6 +958,16 @@ void vtkWrapXML_FunctionCommon(
     vtkWrapXML_ElementEnd(w, "signature");
   }
 
+  if (func->Expects)
+  {
+    vtkWrapXML_ElementStart(w, "expects");
+    vtkWrapXML_ElementBody(w);
+    vtkParse_FunctionInfoToString(func, cp, VTK_PARSE_EVERYTHING);
+    fprintf(w->file, "%s %s\n", indent(w->indentation),
+            vtkWrapXML_Quote(func->Expects, 500));
+    vtkWrapXML_ElementEnd(w, "expects");
+  }
+
   vtkWrapXML_Comment(w, func->Comment);
 
   n = func->NumberOfParameters;
