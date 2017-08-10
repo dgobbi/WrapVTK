@@ -12402,9 +12402,22 @@ void handle_attribute(const char *att, int pack)
   else if (strncmp(att, "expects:", 8) == 0 && att[8] != ':' &&
            role == VTK_PARSE_ATTRIB_FUNC)
   {
-    l = 8;
-    while (att[l] == ' ') { l++; }
-    currentFunction->Expects = vtkstrdup(&att[l]);
+    att += 8;
+    while (*att == ' ') { att++; }
+    l = strlen(att);
+    while (l > 0 && att[l-1] == ' ') { l--; }
+    // create a stripped copy of the "expects:" condition
+    att = vtkstrndup(att, l);
+
+    if (currentFunction->Expects == NULL)
+    {
+      currentFunction->Expects = att;
+    }
+    else
+    {
+      currentFunction->Expects =
+        vtkstrcat3(currentFunction->Expects, ", ", att);
+    }
   }
 }
 
