@@ -1257,7 +1257,7 @@ void swapSig()
 }
 
 /* chop the last space from the signature */
-void chopSig(void)
+void chopSig()
 {
   if (signature)
   {
@@ -1268,6 +1268,39 @@ void chopSig(void)
       sigLength--;
     }
   }
+}
+
+/* chop the last space from the signature unless the preceding token
+   is an operator (used to remove spaces before argument lists) */
+void postSigLeftBracket(const char *s)
+{
+  if (signature)
+  {
+    size_t n = sigLength;
+    if (n > 1 && signature[n-1] == ' ')
+    {
+      const char *ops = "%*/-+!~&|^<>=.,:;{}";
+      char c = signature[n-2];
+      const char *cp;
+      for (cp = ops; *cp != '\0'; cp++)
+      {
+        if (*cp == c) { break; }
+      }
+      if (*cp == '\0')
+      {
+        signature[n-1] = '\0';
+        sigLength--;
+      }
+    }
+  }
+  postSig(s);
+}
+
+/* chop trailing space and add a right bracket */
+void postSigRightBracket(const char *s)
+{
+  chopSig();
+  postSig(s);
 }
 
 /*----------------------------------------------------------------
@@ -3884,18 +3917,18 @@ right_angle_bracket:
   | OP_RSHIFT_A
 
 brackets_sig:
-    '[' { postSig("["); } any_bracket_contents ']'
-    { chopSig(); postSig("] "); }
+    '[' { postSigLeftBracket("["); } any_bracket_contents ']'
+    { postSigRightBracket("] "); }
   | BEGIN_ATTRIB { postSig("[["); } any_bracket_contents ']' ']'
     { chopSig(); postSig("]] "); }
 
 parentheses_sig:
-    '(' { postSig("("); } any_bracket_contents ')'
-    { chopSig(); postSig(") "); }
-  | LP { postSig("("); postSig($<str>1); postSig("*"); }
-    any_bracket_contents ')' { chopSig(); postSig(") "); }
-  | LA { postSig("("); postSig($<str>1); postSig("&"); }
-    any_bracket_contents ')' { chopSig(); postSig(") "); }
+    '(' { postSigLeftBracket("("); } any_bracket_contents ')'
+    { postSigRightBracket(") "); }
+  | LP { postSigLeftBracket("("); postSig($<str>1); postSig("*"); }
+    any_bracket_contents ')' { postSigRightBracket(") "); }
+  | LA { postSigLeftBracket("("); postSig($<str>1); postSig("&"); }
+    any_bracket_contents ')' { postSigRightBracket(") "); }
 
 braces_sig:
     '{' { postSig("{ "); } braces_contents '}' { postSig("} "); }
