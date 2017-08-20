@@ -3810,9 +3810,9 @@ common_bracket_item_no_scope_operator:
   | braces_sig
   | operator_id_no_delim
     {
-      if ((($<str>1)[0] == '+' || ($<str>1)[0] == '-' ||
-           ($<str>1)[0] == '*' || ($<str>1)[0] == '&') &&
-          ($<str>1)[1] == '\0')
+      const char *op = $<str>1;
+      if ((op[0] == '+' || op[0] == '-' || op[0] == '*' || op[0] == '&') &&
+          op[1] == '\0')
       {
         int c1 = 0;
         size_t l;
@@ -3820,21 +3820,26 @@ common_bracket_item_no_scope_operator:
         chopSig();
         cp = getSig();
         l = getSigLength();
-        if (l != 0) { c1 = cp[l-1]; }
+        if (l > 0) { c1 = cp[l-1]; }
         if (c1 != 0 && c1 != '(' && c1 != '[' && c1 != '=')
         {
           postSig(" ");
         }
-        postSig($<str>1);
+        postSig(op);
         if (vtkParse_CharType(c1, (CPRE_XID|CPRE_QUOTE)) ||
             c1 == ')' || c1 == ']')
         {
           postSig(" ");
         }
       }
-       else
+      else if ((op[0] == '-' && op[1] == '>') || op[0] == '.')
       {
-        postSig($<str>1);
+        chopSig();
+        postSig(op);
+      }
+      else
+      {
+        postSig(op);
         postSig(" ");
       }
     }
