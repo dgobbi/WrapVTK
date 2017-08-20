@@ -140,7 +140,8 @@ void vtkParse_InitFunction(FunctionInfo *func)
   func->ReturnValue = NULL;
   func->Macro = NULL;
   func->SizeHint = NULL;
-  func->Expects = NULL;
+  func->NumberOfPreconds = 0;
+  func->Preconds = NULL;
   func->IsStatic = 0;
   func->IsVirtual = 0;
   func->IsPureVirtual = 0;
@@ -211,9 +212,19 @@ void vtkParse_CopyFunction(FunctionInfo *func, const FunctionInfo *orig)
     vtkParse_CopyValue(func->ReturnValue, orig->ReturnValue);
   }
 
+  n = orig->NumberOfPreconds;
+  func->NumberOfPreconds = n;
+  if (n)
+  {
+    func->Preconds = (const char **)malloc(n*sizeof(const char *));
+    for (i = 0; i < n; i++)
+    {
+      func->Preconds[i] = orig->Preconds[i];
+    }
+  }
+
   func->Macro = orig->Macro;
   func->SizeHint = orig->SizeHint;
-  func->Expects = orig->Expects;
   func->IsStatic = orig->IsStatic;
   func->IsVirtual = orig->IsVirtual;
   func->IsPureVirtual = orig->IsPureVirtual;
@@ -263,6 +274,11 @@ void vtkParse_FreeFunction(FunctionInfo *function_info)
   if (function_info->ReturnValue)
   {
     vtkParse_FreeValue(function_info->ReturnValue);
+  }
+
+  if (function_info->NumberOfPreconds > 0)
+  {
+    free(function_info->Preconds);
   }
 
   free(function_info);

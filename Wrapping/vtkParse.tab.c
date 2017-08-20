@@ -12343,6 +12343,7 @@ void handle_attribute(const char *att, int pack)
   int role = getAttributeRole();
 
   size_t l = 0;
+  size_t la = 0;
   const char *args = NULL;
 
   if (!att)
@@ -12365,33 +12366,41 @@ void handle_attribute(const char *att, int pack)
   }
   if (att[l] == '(')
   {
-    args = &att[l];
+    /* strip the parentheses and whitespace from the args */
+    args = &att[l+1];
+    while (*args == ' ') { args++; }
+    la = strlen(args);
+    while (la > 0 && args[la-1] == ' ') { la--; }
+    if (la > 0 && args[la-1] == ')') { la--; }
+    while (la > 0 && args[la-1] == ' ') { la--; }
   }
 
   /* check for namespace */
   if (strncmp(att, "vtk::", 5) == 0)
   {
-    if (args)
-    {
-      /* no current vtk attributes use arguments */
-      print_parser_error("attribute takes no args", att, l);
-      exit(1);
-    }
-    else if (pack)
+    if (pack)
     {
       /* no current vtk attributes use '...' */
       print_parser_error("attribute takes no ...", att, l);
       exit(1);
     }
-    else if (strcmp(att, "vtk::newinstance") == 0 &&
-             role == VTK_PARSE_ATTRIB_DECL)
+    else if (l == 16 && strncmp(att, "vtk::newinstance", l) == 0 &&
+             !args && role == VTK_PARSE_ATTRIB_DECL)
     {
       setTypeMod(VTK_PARSE_NEWINSTANCE);
     }
-    else if (strcmp(att, "vtk::zerocopy") == 0 &&
-             role == VTK_PARSE_ATTRIB_DECL)
+    else if (l == 13 && strncmp(att, "vtk::zerocopy", l) == 0 &&
+             !args && role == VTK_PARSE_ATTRIB_DECL)
     {
       setTypeMod(VTK_PARSE_ZEROCOPY);
+    }
+    else if (l == 12 && strncmp(att, "vtk::expects", l) == 0 &&
+             args && role == VTK_PARSE_ATTRIB_FUNC)
+    {
+      /* add to the preconditions */
+      vtkParse_AddStringToArray(&currentFunction->Preconds,
+                                &currentFunction->NumberOfPreconds,
+                                vtkstrndup(args, la));
     }
     else
     {
@@ -12402,22 +12411,14 @@ void handle_attribute(const char *att, int pack)
   else if (strncmp(att, "expects:", 8) == 0 && att[8] != ':' &&
            role == VTK_PARSE_ATTRIB_FUNC)
   {
-    att += 8;
-    while (*att == ' ') { att++; }
-    l = strlen(att);
-    while (l > 0 && att[l-1] == ' ') { l--; }
-    // create a stripped copy of the "expects:" condition
-    att = vtkstrndup(att, l);
-
-    if (currentFunction->Expects == NULL)
-    {
-      currentFunction->Expects = att;
-    }
-    else
-    {
-      currentFunction->Expects =
-        vtkstrcat3(currentFunction->Expects, ", ", att);
-    }
+    /* add to the preconditions */
+    args = att + 8;
+    while (*args == ' ') { args++; }
+    la = strlen(args);
+    while (la > 0 && args[la-1] == ' ') { la--; }
+    vtkParse_AddStringToArray(&currentFunction->Preconds,
+                              &currentFunction->NumberOfPreconds,
+                              vtkstrndup(args, la));
   }
 }
 

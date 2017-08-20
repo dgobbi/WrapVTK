@@ -179,9 +179,10 @@ struct _FunctionInfo
   unsigned long  NumberOfParameters;
   ValueInfo    **Parameters;
   ValueInfo     *ReturnValue; /* NULL for constructors and destructors */
+  unsigned long  NumberOfPreconds;
+  const char   **Preconds;    /* precondition */
   const char    *Macro;       /* the macro that defined this function */
   const char    *SizeHint;    /* hint the size e.g. for operator[] */
-  const char    *Expects;     /* precondition */
   int            IsOperator;
   int            IsVariadic;
   int            IsLegacy;    /* marked as a legacy method or function */
