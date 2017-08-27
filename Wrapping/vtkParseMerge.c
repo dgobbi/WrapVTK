@@ -474,7 +474,7 @@ unsigned long vtkParseMerge_Merge(
             {
               if (vtkParse_CompareFunctionSignature(f1, f2) != 0)
               {
-                merge_function(f2, func);
+                merge_function(f2, f1);
                 vtkParseMerge_PushOverride(info, j, depth);
               }
             }
