@@ -200,7 +200,8 @@ size_t vtkParse_SkipNumber(const char *text)
     {
       char c = *cp++;
       if ((*cp == '\'' && parse_chartype(cp[1], CPRE_XDIGIT)) ||
-          (parse_chartype(*cp, CPRE_SIGN) && (c == 'e' || c == 'E')))
+          (parse_chartype(*cp, CPRE_SIGN) &&
+           (c == 'e' || c == 'E' || c == 'p' || c == 'P')))
       {
         cp++;
       }

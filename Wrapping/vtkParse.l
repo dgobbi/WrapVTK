@@ -512,6 +512,16 @@ ID [a-zA-Z_\x80-\xff][0-9a-zA-Z_\x80-\xff]*
       return(FLOAT_LITERAL);
     }
 
+"0"[xX][0-9a-fA-F]([0-9a-fA-F]|\'[0-9a-fA-F])*("."([0-9a-fA-F]|\'[0-9a-fA-F])*)?*[pP][+-]?[0-9]([0-9]|\'[0-9])*{ID}?  {
+      yylval.str = vtkstrndup(yytext, yyleng);
+      return(FLOAT_LITERAL);
+    }
+
+"0"[xX]"."[0-9a-fA-F]([0-9a-fA-F]|\'[0-9a-fA-F])*[pP][+-]?[0-9]([0-9]|\'[0-9])*{ID}?  {
+      yylval.str = vtkstrndup(yytext, yyleng);
+      return(FLOAT_LITERAL);
+    }
+
 "0"[xX][0-9a-fA-F]([0-9a-fA-F]|\'[0-9a-fA-F])*{ID}?  {
       yylval.str = vtkstrndup(yytext, yyleng);
       return(HEX_LITERAL);
