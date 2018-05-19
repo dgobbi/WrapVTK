@@ -2727,6 +2727,7 @@ mem_initializer_list:
 
 mem_initializer:
     id_expression ignored_parentheses opt_ellipsis
+  | id_expression ignored_braces opt_ellipsis
 
 /*
  * Parameters
@@ -4926,7 +4927,7 @@ void handle_attribute(const char *att, int pack)
       size_t n = vtkParse_SkipId(args);
       preproc_int_t count;
       int is_unsigned;
-      int i;
+      unsignd long i;
 
       l = n;
       while (args[n] == ' ') { n++; }
