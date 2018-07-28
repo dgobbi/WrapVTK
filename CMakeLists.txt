@@ -40,6 +40,7 @@ SET(VTK_WRAP_HIERARCHY_EXE ${WrapVTK_EXECUTABLE_DIR}/vtkWrapVTKHierarchy)
 IF(VTK_WRAP_HINTS)
   SET(WrapVTK_HINTS "${VTK_WRAP_HINTS}")
 ELSE(VTK_WRAP_HINTS)
+
   # This is for compatibility with VTK 5.4.2 and earlier
   FIND_FILE(WrapVTK_HINTS hints
      PATHS "${VTK_SOURCE_DIR}/Wrapping"
