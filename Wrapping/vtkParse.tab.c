@@ -2074,7 +2074,7 @@ static YYSTYPE yyval_default;
 #endif
 
 /* Suppress unused-variable warnings by "using" E.  */
-#if ! defined lint || defined __GNUC__
+#if 1
 # define YYUSE(E) ((void) (E))
 #else
 # define YYUSE(E) /* empty */
@@ -5959,7 +5959,7 @@ yytokenName (yySymbol yytoken)
 /** Fill in YYVSP[YYLOW1 .. YYLOW0-1] from the chain of states starting
  *  at YYVSP[YYLOW0].yystate.yypred.  Leaves YYVSP[YYLOW1].yystate.yypred
  *  containing the pointer to the next state in the chain.  */
-static void yyfillin (yyGLRStackItem *, int, int) YY_ATTRIBUTE_UNUSED;
+static void yyfillin (yyGLRStackItem *, int, int);
 static void
 yyfillin (yyGLRStackItem *yyvsp, int yylow0, int yylow1)
 {
@@ -5984,8 +5984,7 @@ yyfillin (yyGLRStackItem *yyvsp, int yylow0, int yylow1)
 /* Do nothing if YYNORMAL or if *YYLOW <= YYLOW1.  Otherwise, fill in
  * YYVSP[YYLOW1 .. *YYLOW-1] as in yyfillin and set *YYLOW = YYLOW1.
  * For convenience, always return YYLOW1.  */
-static inline int yyfill (yyGLRStackItem *, int *, int, yybool)
-     YY_ATTRIBUTE_UNUSED;
+static inline int yyfill (yyGLRStackItem *, int *, int, yybool);
 static inline int
 yyfill (yyGLRStackItem *yyvsp, int *yylow, int yylow1, yybool yynormal)
 {
@@ -6007,7 +6006,7 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
               yyGLRStack* yystackp,
               YYSTYPE* yyvalp)
 {
-  yybool yynormal YY_ATTRIBUTE_UNUSED = (yystackp->yysplitPoint == YY_NULLPTR);
+  yybool yynormal = (yystackp->yysplitPoint == YY_NULLPTR);
   int yylow;
   YYUSE (yyvalp);
   YYUSE (yyrhslen);
@@ -6034,7 +6033,7 @@ yyuserAction (yyRuleNum yyn, size_t yyrhslen, yyGLRStackItem* yyvsp,
   if (yyrhslen == 0)
     *yyvalp = yyval_default;
   else
-    *yyvalp = yyvsp[YYFILL (1-yyrhslen)].yystate.yysemantics.yysval;
+    *yyvalp = yyvsp[YYFILL (1-(int)yyrhslen)].yystate.yysemantics.yysval;
   switch (yyn)
     {
         case 4:
@@ -9827,10 +9826,8 @@ yysplitStack (yyGLRStack* yystackp, size_t yyk)
       yyGLRState** yynewStates;
       yybool* yynewLookaheadNeeds;
 
-      yynewStates = YY_NULLPTR;
-
       if (yystackp->yytops.yycapacity
-          > (YYSIZEMAX / (2 * sizeof yynewStates[0])))
+          > (YYSIZEMAX / (2 * sizeof(yyGLRState*))))
         yyMemoryExhausted (yystackp);
       yystackp->yytops.yycapacity *= 2;
 
@@ -9845,7 +9842,7 @@ yysplitStack (yyGLRStack* yystackp, size_t yyk)
       yynewLookaheadNeeds =
         (yybool*) YYREALLOC (yystackp->yytops.yylookaheadNeeds,
                              (yystackp->yytops.yycapacity
-                              * sizeof yynewLookaheadNeeds[0]));
+                              * sizeof(yybool)));
       if (yynewLookaheadNeeds == YY_NULLPTR)
         yyMemoryExhausted (yystackp);
       yystackp->yytops.yylookaheadNeeds = yynewLookaheadNeeds;
@@ -10115,7 +10112,7 @@ yyresolveValue (yyGLRState* yys, yyGLRStack* yystackp)
             {
             case 0:
               return yyreportAmbiguity (yybest, yyp);
-              break;
+              /* break; */
             case 1:
               yymerge = yytrue;
               break;
