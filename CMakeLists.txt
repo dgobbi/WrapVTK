@@ -6,7 +6,11 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 # Look for a VTK build directory
 FIND_PACKAGE(VTK)
 IF (VTK_FOUND)
-  INCLUDE (${VTK_USE_FILE})
+  IF (VTK_USE_FILE)
+    INCLUDE (${VTK_USE_FILE})
+  ELSE (VTK_USE_FILE)
+    MESSAGE(WARNING "No VTK_USE_FILE, perhaps VTK is too recent?")
+  ENDIF (VTK_USE_FILE)
 ENDIF (VTK_FOUND)
 
 #-----------------------------------------------------------------------------
