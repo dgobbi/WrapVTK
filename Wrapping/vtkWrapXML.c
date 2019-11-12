@@ -33,7 +33,6 @@
 #include "vtkParseHierarchy.h"
 #include "vtkParseMerge.h"
 #include "vtkParseMain.h"
-#include "vtkConfigure.h"
 
 /* ----- XML state information ----- */
 
