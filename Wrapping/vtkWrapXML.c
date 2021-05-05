@@ -66,6 +66,22 @@ static const char *indent(int indentation)
 }
 
 /**
+ * A version of isspace that tolerates non-ascii characters
+ */
+static int vtkWrapXML_IsSpace(int c)
+{
+  return ((c & 0x80) == 0 && isspace(c));
+}
+
+/**
+ * A version of issprint that tolerates non-ascii characters
+ */
+static int vtkWrapXML_IsPrint(int c)
+{
+  return ((c & 0x80) != 0 || isprint(c));
+}
+
+/**
  * Convert special characters in a string into their escape codes,
  * so that the string can be quoted in an xml file (the specified
  * maxlen must be at least 32 chars)
@@ -121,12 +137,12 @@ static const char *vtkWrapXML_Quote(const char *comment, size_t maxlen)
       strcpy(&result[j],"&apos;");
       j += 6;
     }
-    else if (isprint(comment[i]))
+    else if (vtkWrapXML_IsPrint(comment[i]))
     {
       result[j] = comment[i];
       j++;
     }
-    else if (isspace(comment[i]))
+    else if (vtkWrapXML_IsSpace(comment[i]))
     { /* also copy non-printing characters */
       result[j] = comment[i];
       j++;
@@ -424,7 +440,7 @@ int vtkWrapXML_EmptyString(const char *cp)
   {
     while (*cp != '\0')
     {
-      if (!isspace(*cp++))
+      if (!vtkWrapXML_IsSpace(*cp++))
       {
         return 0;
       }
@@ -486,14 +502,14 @@ void vtkWrapXML_FileDoc(wrapxml_state_t *w, FileInfo *data)
     fprintf(w->file, "\n%s .SECTION See also\n", indent(w->indentation));
 
     cp = data->SeeAlso;
-    while(isspace(*cp))
+    while(vtkWrapXML_IsSpace(*cp))
     {
       cp++;
     }
     while(*cp)
     {
       n = 0;
-      while(cp[n] && !isspace(cp[n]))
+      while(cp[n] && !vtkWrapXML_IsSpace(cp[n]))
       {
         n++;
       }
@@ -502,7 +518,7 @@ void vtkWrapXML_FileDoc(wrapxml_state_t *w, FileInfo *data)
       {
         fprintf(w->file, "\n");
 
-        while(cp > data->SeeAlso && isspace(*(cp - 1)) && *(cp - 1) != '\n')
+        while(cp > data->SeeAlso && vtkWrapXML_IsSpace(*(cp - 1)) && *(cp - 1) != '\n')
         {
           cp--;
         }
@@ -518,7 +534,7 @@ void vtkWrapXML_FileDoc(wrapxml_state_t *w, FileInfo *data)
                 vtkWrapXML_Quote(temp,500));
       }
       cp += n;
-      while(isspace(*cp))
+      while(vtkWrapXML_IsSpace(*cp))
       {
         cp++;
       }
@@ -1021,7 +1037,7 @@ void vtkWrapXML_Function(
     if (strncmp(name, "operator", 8) == 0)
     {
       name = &name[8];
-      while (isspace(name[0]))
+      while (vtkWrapXML_IsSpace(name[0]))
       {
         name++;
       }
@@ -1114,7 +1130,7 @@ void vtkWrapXML_ClassMethod(
     if (strncmp(name, "operator", 8) == 0)
     {
       name = &name[8];
-      while (isspace(name[0]))
+      while (vtkWrapXML_IsSpace(name[0]))
       {
         name++;
       }
