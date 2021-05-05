@@ -95,7 +95,7 @@ typedef struct _PropertyInfo
 {
   const char   *Name;               /* property name */
   unsigned int  Type;               /* property type as VTK_PARSE constant */
-  unsigned long Count;              /* the count for array-type properties */
+  int           Count;              /* the count for array-type properties */
   const char   *ClassName;     /* VTK object type of the property, or NULL */
   const char  **EnumConstantNames;  /* the names of int enum values */
   unsigned int  PublicMethods;      /* bitfield for public methods */
@@ -111,12 +111,12 @@ typedef struct _PropertyInfo
  */
 typedef struct _ClassProperties
 {
-  unsigned long  NumberOfProperties; /* total number of properties found */
+  int            NumberOfProperties; /* total number of properties found */
   PropertyInfo **Properties;         /* info for each property */
-  unsigned long  NumberOfMethods;    /* number of methods in FunctionInfo */
+  int            NumberOfMethods;    /* number of methods in FunctionInfo */
   unsigned int  *MethodTypes;        /* discovered type of each method */
   int           *MethodHasProperty;  /* method has a property */
-  unsigned long *MethodProperties;   /* discovered property for each method */
+  int           *MethodProperties;   /* discovered property for each method */
 } ClassProperties;
 
 /* forward declaration of _ClassInfo */

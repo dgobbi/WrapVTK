@@ -28,7 +28,7 @@ typedef struct _MethodAttributes
 {
   const char *Name;       /* method name */
   unsigned int Type;      /* data type of gettable/settable value */
-  unsigned long Count;    /* count for gettable/settable value */
+  int Count;              /* count for gettable/settable value */
   const char *ClassName;  /* class name for if the type is a class */
   const char *Comment;    /* documentation for method */
   parse_access_t Access;  /* method is private, protected */
@@ -46,7 +46,7 @@ typedef struct _MethodAttributes
 
 typedef struct _ClassPropertyMethods
 {
-  unsigned long NumberOfMethods;
+  int NumberOfMethods;
   MethodAttributes **Methods;
 } ClassPropertyMethods;
 
@@ -467,7 +467,7 @@ static int isValidSuffix(
 
 static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
 {
-  unsigned long i, n;
+  int i, n;
   unsigned int tmptype = 0;
   const char *tmpclass = 0;
   int allSame = 0;
@@ -551,7 +551,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   /* if return type is not void and no parameters or 1 index */
   if ((func->ReturnValue &&
        (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) != VTK_PARSE_VOID) &&
-      func->NumberOfParameters == (unsigned long)indexed)
+      func->NumberOfParameters == indexed)
   {
     /* methods of the form "type GetValue()" or "type GetValue(i)" */
     if (isGetMethod(func->Name))
@@ -569,7 +569,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   /* if return type is void and 1 arg or 1 index and 1 arg */
   if ((!func->ReturnValue ||
        (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_VOID) &&
-      func->NumberOfParameters == (unsigned long)(1 + indexed))
+      func->NumberOfParameters == (1 + indexed))
   {
     /* "void SetValue(type)" or "void SetValue(int, type)" */
     if (isSetMethod(func->Name))
@@ -725,7 +725,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
 static int methodMatchesProperty(
   PropertyInfo *property, MethodAttributes *meth, int *longMatch)
 {
-  unsigned long n;
+  size_t n;
   int propertyType, methType;
   const char *propertyName;
   const char *name;
@@ -985,12 +985,12 @@ static void initializePropertyInfo(
  * flags to the PropertyInfo struct */
 
 static void findAllMatches(
-  PropertyInfo *property, unsigned long propertyId,
+  PropertyInfo *property, int propertyId,
   ClassPropertyMethods *methods, int matchedMethods[],
   unsigned int methodCategories[],
-  int methodHasProperty[], unsigned long methodProperties[])
+  int methodHasProperty[], int methodProperties[])
 {
-  unsigned long i, j, k, n;
+  int i, j, k, n;
   size_t m;
   MethodAttributes *meth;
   unsigned int methodBit;
@@ -1083,10 +1083,9 @@ static void findAllMatches(
 /*-------------------------------------------------------------------
  * search for methods that are repeated with minor variations */
 static int searchForRepeatedMethods(
-  ClassProperties *properties, ClassPropertyMethods *methods,
-  unsigned long j)
+  ClassProperties *properties, ClassPropertyMethods *methods, int j)
 {
-  unsigned long i, n;
+  int i, n;
   MethodAttributes *attrs;
   MethodAttributes *meth;
   n = methods->NumberOfMethods;
@@ -1160,7 +1159,7 @@ static int searchForRepeatedMethods(
 
 static void addProperty(
   ClassProperties *properties, ClassPropertyMethods *methods,
-  unsigned long i, int matchedMethods[])
+  int i, int matchedMethods[])
 {
   MethodAttributes *meth = methods->Methods[i];
   PropertyInfo *property;
@@ -1193,7 +1192,7 @@ static void addProperty(
 static void categorizeProperties(
   ClassPropertyMethods *methods, ClassProperties *properties)
 {
-  unsigned long i, n;
+  int i, n;
   int *matchedMethods;
 
   properties->NumberOfProperties = 0;
@@ -1275,7 +1274,7 @@ static void categorizeProperties(
 static void categorizePropertyMethods(
   ClassInfo *data, ClassPropertyMethods *methods)
 {
-  unsigned long i, n;
+  int i, n;
   FunctionInfo *func;
   MethodAttributes *attrs;
 
@@ -1303,7 +1302,7 @@ static void categorizePropertyMethods(
 
 ClassProperties *vtkParseProperties_Create(ClassInfo *data)
 {
-  unsigned long i;
+  int i;
   ClassProperties *properties;
   ClassPropertyMethods *methods;
 
@@ -1325,7 +1324,7 @@ ClassProperties *vtkParseProperties_Create(ClassInfo *data)
   properties->MethodHasProperty =
     (int *)malloc(sizeof(int)*methods->NumberOfMethods);
   properties->MethodProperties =
-    (unsigned long *)malloc(sizeof(unsigned long)*methods->NumberOfMethods);
+    (int *)malloc(sizeof(int)*methods->NumberOfMethods);
 
   for (i = 0; i < methods->NumberOfMethods; i++)
   {
@@ -1353,7 +1352,7 @@ ClassProperties *vtkParseProperties_Create(ClassInfo *data)
 
 void vtkParseProperties_Free(ClassProperties *properties)
 {
-  unsigned long i, n;
+  int i, n;
 
   n = properties->NumberOfProperties;
   for (i = 0; i < n; i++)

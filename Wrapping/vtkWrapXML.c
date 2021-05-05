@@ -248,8 +248,8 @@ void vtkWrapXML_AttributeWithPrefix(
  */
 void vtkWrapXML_Size(wrapxml_state_t *w, ValueInfo *val)
 {
-  unsigned long ndims = val->NumberOfDimensions;
-  unsigned long j;
+  int ndims = val->NumberOfDimensions;
+  int j;
 
   if (ndims > 0)
   {
@@ -266,7 +266,7 @@ void vtkWrapXML_Size(wrapxml_state_t *w, ValueInfo *val)
 
 void vtkWrapXML_Pointer(wrapxml_state_t *w, ValueInfo *val)
 {
-  unsigned long ndims = val->NumberOfDimensions;
+  int ndims = val->NumberOfDimensions;
   unsigned int type = val->Type;
   unsigned int bits;
   char text[128];
@@ -536,7 +536,7 @@ void vtkWrapXML_ClassInheritance(
 {
   const char *elementName = "inheritance";
   const char *subElementName = "context";
-  unsigned long i, n;
+  int i, n;
 
   /* show the geneology */
   n = merge->NumberOfClasses;
@@ -619,7 +619,7 @@ void vtkWrapXML_TypeElements(wrapxml_state_t *w, ValueInfo *val)
  * Print out a simple type types
  */
 void vtkWrapXML_TypeSimple(
-  wrapxml_state_t *w, unsigned int type, const char *classname, unsigned long size)
+  wrapxml_state_t *w, unsigned int type, const char *classname, int size)
 {
   char temp[256];
   char temp2[512];
@@ -640,7 +640,7 @@ void vtkWrapXML_TypeSimple(
   sizes[1] = 0;
   if (size > 0)
   {
-    sprintf(temp, "%lu", size);
+    sprintf(temp, "%d", size);
     sizes[0] = temp;
     val.Dimensions = sizes;
     val.NumberOfDimensions = 1;
@@ -658,7 +658,7 @@ void vtkWrapXML_Template(
 {
   const char *elementName = "tparam";
   ValueInfo *param;
-  unsigned long i;
+  int i;
 
   for (i = 0; i < info->NumberOfParameters; i++)
   {
@@ -739,7 +739,7 @@ void vtkWrapXML_Constant(
 void vtkWrapXML_Enum(
   wrapxml_state_t *w, EnumInfo *item, int inClass)
 {
-  unsigned long i;
+  int i;
   const char *elementName = "enum";
 
   fprintf(w->file, "\n");
@@ -917,7 +917,7 @@ void vtkWrapXML_FunctionCommon(
   wrapxml_state_t *w, FunctionInfo *func, int printReturn)
 {
   ValueInfo *arg;
-  unsigned long i, n;
+  int i, n;
   char temp[500];
   char *cp = 0;
   size_t l;
@@ -1189,7 +1189,7 @@ void vtkWrapXML_ClassProperty(
 {
   const char *elementName = "property";
   const char *access = 0;
-  unsigned long i;
+  int i;
 
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
@@ -1289,7 +1289,7 @@ void vtkWrapXML_MethodHelper(
   const char *classname = 0;
   const char *propname = 0;
   PropertyInfo *property = NULL;
-  unsigned long i, j, n;
+  int i, j, n;
 
   n = classInfo->NumberOfFunctions;
 
@@ -1347,7 +1347,7 @@ void vtkWrapXML_Class(
   const char *elementName = "class";
   ClassProperties *properties;
   MergeInfo *merge = NULL;
-  unsigned long i, j, n;
+  int i, j, n;
 
   /* start new XML section for class */
   fprintf(w->file, "\n");
@@ -1486,7 +1486,7 @@ void vtkWrapXML_Namespace(wrapxml_state_t *w, NamespaceInfo *data);
  */
 void vtkWrapXML_Body(wrapxml_state_t *w, NamespaceInfo *data)
 {
-  unsigned long i, j;
+  int i, j;
 
   /* print all constants for the file or namespace */
   for (i = 0; i < data->NumberOfItems; i++)
