@@ -566,11 +566,11 @@ void vtkWrapXML_TypeAttributes(wrapxml_state_t *w, ValueInfo *val)
 
   if ((type & VTK_PARSE_CONST) != 0)
   {
-    vtkWrapXML_AttributeWithPrefix(w, "type", "const ", val->TypeName);
+    vtkWrapXML_AttributeWithPrefix(w, "type", "const ", val->Class);
   }
   else
   {
-    vtkWrapXML_Attribute(w, "type", val->TypeName);
+    vtkWrapXML_Attribute(w, "type", val->Class);
   }
 
   if ((type & VTK_PARSE_RVALUE) != 0)
@@ -633,7 +633,7 @@ void vtkWrapXML_TypeSimple(
   if (classname)
   {
     strcpy(temp2, classname);
-    val.TypeName = temp2;
+    val.Class = temp2;
   }
 
   sizes[0] = 0;
@@ -677,7 +677,7 @@ void vtkWrapXML_Template(
     }
     else if (param->Type)
     {
-      vtkWrapXML_Attribute(w, "type", param->TypeName);
+      vtkWrapXML_Attribute(w, "type", param->Class);
     }
     else
     {
@@ -788,7 +788,7 @@ void vtkWrapXML_Constant(
   {
     vtkWrapXML_Flag(w, "enum", 1);
   }
-  if (con->Type && con->TypeName && con->TypeName[0] != '\0')
+  if (con->Type && con->Class && con->Class[0] != '\0')
   {
     vtkWrapXML_TypeAttributes(w, con);
   }
@@ -1405,7 +1405,7 @@ void vtkWrapXML_Class(
   if (classInfo->NumberOfSuperClasses)
   {
     //merge = vtkParseMerge_MergeSuperClasses(w->data, data, classInfo);
-    vtkParseMerge_ApplyUsingDeclarations(w->data, data, classInfo);
+    // XXX vtkParseMerge_ApplyUsingDeclarations(w->data, data, classInfo);
   }
 
   if (merge && merge->NumberOfClasses > 1)
@@ -1561,9 +1561,6 @@ int main(int argc, char *argv[])
   FileInfo *data;
   OptionInfo *options;
   wrapxml_state_t ws;
-
-  /* recurse through included headers (off for now) */
-  vtkParse_SetRecursive(0);
 
   /* pre-define a macro to identify the language */
   vtkParse_DefineMacro("__VTK_WRAP_XML__", 0);

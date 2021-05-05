@@ -523,7 +523,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       {
         /* make sure this isn't a multi-value int method */
         tmptype = func->Parameters[0]->Type;
-        tmpclass = func->Parameters[0]->TypeName;
+        tmpclass = func->Parameters[0]->Class;
         allSame = 1;
 
         n = func->NumberOfParameters;
@@ -560,7 +560,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       attrs->Type = func->ReturnValue->Type;
       attrs->Count = func->ReturnValue->Count;
       attrs->IsHinted = (attrs->Count > 0);
-      attrs->ClassName = func->ReturnValue->TypeName;
+      attrs->ClassName = func->ReturnValue->Class;
 
       return 1;
     }
@@ -578,7 +578,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       attrs->IsRHS = 1;
       attrs->Type = func->Parameters[indexed]->Type;
       attrs->Count = func->Parameters[indexed]->Count;
-      attrs->ClassName = func->Parameters[indexed]->TypeName;
+      attrs->ClassName = func->Parameters[indexed]->Class;
 
       return 1;
     }
@@ -593,7 +593,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       attrs->IsRHS = 1;
       attrs->Type = func->Parameters[indexed]->Type;
       attrs->Count = func->Parameters[indexed]->Count;
-      attrs->ClassName = func->Parameters[indexed]->TypeName;
+      attrs->ClassName = func->Parameters[indexed]->Class;
 
       return 1;
     }
@@ -606,7 +606,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       attrs->IsRHS = 1;
       attrs->Type = func->Parameters[indexed]->Type;
       attrs->Count = func->Parameters[indexed]->Count;
-      attrs->ClassName = func->Parameters[indexed]->TypeName;
+      attrs->ClassName = func->Parameters[indexed]->Class;
 
       return 1;
     }
@@ -616,7 +616,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   if (func->NumberOfParameters > 1 && !indexed)
   {
     tmptype = func->Parameters[0]->Type;
-    tmpclass = func->Parameters[0]->TypeName;
+    tmpclass = func->Parameters[0]->Class;
     allSame = 1;
 
     n = func->NumberOfParameters;
