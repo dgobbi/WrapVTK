@@ -21,6 +21,7 @@
 #ifndef VTK_PARSE_PROPERTIES_H
 #define VTK_PARSE_PROPERTIES_H
 
+#include "vtkParseData.h"
 #include "vtkParseType.h"
 
 /**
@@ -91,7 +92,7 @@
  * A struct that contains all the property information that
  * can be ascertained from the vtkParse info
  */
-typedef struct _PropertyInfo
+typedef struct PropertyInfo_
 {
   const char   *Name;               /* property name */
   unsigned int  Type;               /* property type as VTK_PARSE constant */
@@ -109,7 +110,7 @@ typedef struct _PropertyInfo
 /**
  * List of methods for accessing/changing properties
  */
-typedef struct _ClassProperties
+typedef struct ClassProperties_
 {
   int            NumberOfProperties; /* total number of properties found */
   PropertyInfo **Properties;         /* info for each property */
@@ -129,7 +130,7 @@ extern "C" {
 /**
  * Build the ClassProperties struct from a ClassInfo struct
  */
-ClassProperties *vtkParseProperties_Create(struct _ClassInfo *data);
+ClassProperties *vtkParseProperties_Create(ClassInfo *data);
 
 /**
  * Free a ClassProperties struct
