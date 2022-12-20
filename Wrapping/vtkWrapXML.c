@@ -579,6 +579,7 @@ void vtkWrapXML_FunctionCommon(
 void vtkWrapXML_TypeAttributes(wrapxml_state_t *w, ValueInfo *val)
 {
   unsigned int type = val->Type;
+  unsigned int attrs = val->Attributes;
 
   if ((type & VTK_PARSE_CONST) != 0)
   {
@@ -598,9 +599,29 @@ void vtkWrapXML_TypeAttributes(wrapxml_state_t *w, ValueInfo *val)
     vtkWrapXML_Flag(w, "reference", 1);
   }
 
-  if ((type & VTK_PARSE_NEWINSTANCE) != 0)
+  if ((attrs & VTK_PARSE_NEWINSTANCE) != 0)
   {
     vtkWrapXML_Flag(w, "newinstance", 1);
+  }
+
+  if ((attrs & VTK_PARSE_ZEROCOPY) != 0)
+  {
+    vtkWrapXML_Flag(w, "zerocopy", 1);
+  }
+
+  if ((attrs & VTK_PARSE_FILEPATH) != 0)
+  {
+    vtkWrapXML_Flag(w, "filepath", 1);
+  }
+
+  if ((attrs & VTK_PARSE_WRAPEXCLUDE) != 0)
+  {
+    vtkWrapXML_Flag(w, "wrapexclude", 1);
+  }
+
+  if ((attrs & VTK_PARSE_DEPRECATED) != 0)
+  {
+    vtkWrapXML_Flag(w, "deprecated", 1);
   }
 
   vtkWrapXML_Pointer(w, val);
