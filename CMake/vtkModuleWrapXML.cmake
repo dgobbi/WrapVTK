@@ -332,7 +332,9 @@ function (vtk_module_wrap_xml)
     _vtk_module_get_module_property("${_vtk_xml_module}"
       PROPERTY  "library_name"
       VARIABLE  _vtk_xml_library_name)
-
+    if (NOT _vtk_xml_library_name)
+      continue()
+    endif ()
     set(_vtk_xml_TARGET_NAME "${_vtk_xml_library_name}XML")
 
     # Wrap the module independently of the other VTK modules in the XML
