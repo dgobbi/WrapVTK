@@ -16,5 +16,5 @@ about all accessible methods and variables of the VTK classes
 and then dumps the information into a separate xml file for each
 class.
 
-See [WrapVTK XML](Doc/WrapVTK_XML.md) for a description of the XML
+See [WrapVTK XML](Documentation/WrapVTK_XML.md) for a description of the XML
 that it produces.
