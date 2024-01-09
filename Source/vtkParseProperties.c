@@ -1431,6 +1431,4 @@ const char *vtkParseProperties_MethodTypeAsString(unsigned int methodType)
     default:
       return "UNKNOWN";
   }
-
-  return "";
 }
