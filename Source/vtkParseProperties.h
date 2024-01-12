@@ -22,7 +22,7 @@
 #define VTK_PARSE_PROPERTIES_H
 
 #include "vtkParseData.h"
-#include "vtkParseType.h"
+#include "vtkParseHierarchy.h"
 
 /**
  * bitfield values to say what methods are available for a property
@@ -130,7 +130,8 @@ extern "C" {
 /**
  * Build the ClassProperties struct from a ClassInfo struct
  */
-ClassProperties *vtkParseProperties_Create(ClassInfo *data);
+ClassProperties *vtkParseProperties_Create(ClassInfo *data,
+                                           const HierarchyInfo *hinfo);
 
 /**
  * Free a ClassProperties struct
@@ -148,4 +149,3 @@ const char *vtkParseProperties_MethodTypeAsString(unsigned int methodType);
 #endif
 
 #endif
-
