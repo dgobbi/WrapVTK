@@ -28,11 +28,13 @@
 #include <string.h>
 #include <ctype.h>
 #include "vtkParse.h"
+#include "vtkParseData.h"
 #include "vtkParseExtras.h"
 #include "vtkParseProperties.h"
 #include "vtkParseHierarchy.h"
 #include "vtkParseMerge.h"
 #include "vtkParseMain.h"
+#include "vtkWrap.h"
 
 /* ----- XML state information ----- */
 
@@ -1379,7 +1381,7 @@ void vtkWrapXML_MethodHelper(
  * Print a class as xml
  */
 void vtkWrapXML_Class(
-  wrapxml_state_t *w, NamespaceInfo *data, ClassInfo *classInfo, int inClass)
+  wrapxml_state_t *w, NamespaceInfo *data, const HierarchyInfo* hinfo, ClassInfo *classInfo, int inClass)
 {
   const char *elementName = "class";
   ClassProperties *properties;
@@ -1450,9 +1452,8 @@ void vtkWrapXML_Class(
     fprintf(w->file, "\n");
     vtkWrapXML_ClassInheritance(w, merge);
   }
-
   /* get information about the properties */
-  properties = vtkParseProperties_Create(classInfo);
+  properties = vtkParseProperties_Create(classInfo, hinfo);
 
   /* print all members of the class */
   for (i = 0; i < classInfo->NumberOfItems; i++)
@@ -1495,7 +1496,7 @@ void vtkWrapXML_Class(
       case VTK_STRUCT_INFO:
       case VTK_UNION_INFO:
       {
-        vtkWrapXML_Class(w, data, classInfo->Classes[j], 1);
+        vtkWrapXML_Class(w, data, hinfo, classInfo->Classes[j], 1);
         break;
       }
       case VTK_NAMESPACE_INFO:
@@ -1516,12 +1517,12 @@ void vtkWrapXML_Class(
 }
 
 /* needed for vtkWrapXML_Body */
-void vtkWrapXML_Namespace(wrapxml_state_t *w, NamespaceInfo *data);
+void vtkWrapXML_Namespace(wrapxml_state_t *w, NamespaceInfo *data, const HierarchyInfo* hinfo);
 
 /**
  * Print the body of a file or namespace
  */
-void vtkWrapXML_Body(wrapxml_state_t *w, NamespaceInfo *data)
+void vtkWrapXML_Body(wrapxml_state_t *w, NamespaceInfo *data, const HierarchyInfo* hinfo)
 {
   int i, j;
 
@@ -1560,7 +1561,7 @@ void vtkWrapXML_Body(wrapxml_state_t *w, NamespaceInfo *data)
       case VTK_STRUCT_INFO:
       case VTK_UNION_INFO:
       {
-        vtkWrapXML_Class(w, data, data->Classes[j], 0);
+        vtkWrapXML_Class(w, data, hinfo, data->Classes[j], 0);
         break;
       }
       case VTK_FUNCTION_INFO:
@@ -1570,7 +1571,7 @@ void vtkWrapXML_Body(wrapxml_state_t *w, NamespaceInfo *data)
       }
       case VTK_NAMESPACE_INFO:
       {
-        vtkWrapXML_Namespace(w, data->Namespaces[j]);
+        vtkWrapXML_Namespace(w, data->Namespaces[j], hinfo);
         break;
       }
     }
@@ -1580,14 +1581,14 @@ void vtkWrapXML_Body(wrapxml_state_t *w, NamespaceInfo *data)
 /**
  * Print a namespace as xml
  */
-void vtkWrapXML_Namespace(wrapxml_state_t *w, NamespaceInfo *data)
+void vtkWrapXML_Namespace(wrapxml_state_t *w, NamespaceInfo *data, const HierarchyInfo* hinfo)
 {
   const char *elementName = "namespace";
   fprintf(w->file, "\n");
   vtkWrapXML_ElementStart(w, elementName);
   vtkWrapXML_Name(w, data->Name);
   vtkWrapXML_ElementBody(w);
-  vtkWrapXML_Body(w, data);
+  vtkWrapXML_Body(w, data, hinfo);
   fprintf(w->file, "\n");
   vtkWrapXML_ElementEnd(w, elementName);
 }
@@ -1596,8 +1597,10 @@ int main(int argc, char *argv[])
 {
   FILE *fp;
   FileInfo *data;
-  OptionInfo *options;
+  const OptionInfo *options = NULL;
+  HierarchyInfo* hinfo = NULL;
   wrapxml_state_t ws;
+  int i = 0;
 
   /* pre-define a macro to identify the language */
   vtkParse_DefineMacro("__VTK_WRAP_XML__", 0);
@@ -1608,6 +1611,26 @@ int main(int argc, char *argv[])
   /* get the command-line options */
   options = vtkParse_GetCommandLineOptions();
 
+  /* get the hierarchy info for accurate typing */
+  if (options->HierarchyFileNames)
+  {
+    hinfo =
+      vtkParseHierarchy_ReadFiles(options->NumberOfHierarchyFileNames, options->HierarchyFileNames);
+  }
+
+  /* use the hierarchy file to find super classes and expand typedefs */
+  NamespaceInfo* contents = data->Contents;
+  if (hinfo)
+  {
+    for (i = 0; i < contents->NumberOfClasses; i++)
+    {
+      vtkWrap_MergeSuperClasses(contents->Classes[i], data, hinfo);
+    }
+    for (i = 0; i < contents->NumberOfClasses; i++)
+    {
+      vtkWrap_ExpandTypedefs(contents->Classes[i], data, hinfo);
+    }
+  }
   /* get the output file */
   fp = fopen(options->OutputFileName, "w");
 
@@ -1630,7 +1653,7 @@ int main(int argc, char *argv[])
   vtkWrapXML_FileDoc(&ws, data);
 
   /* print the main body */
-  vtkWrapXML_Body(&ws, data->Contents);
+  vtkWrapXML_Body(&ws, data->Contents, hinfo);
 
   /* print the closing tag */
   vtkWrapXML_FileFooter(&ws, data);
