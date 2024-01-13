@@ -1443,8 +1443,12 @@ void vtkWrapXML_Class(
   /* merge all the superclass information */
   if (classInfo->NumberOfSuperClasses)
   {
-    //merge = vtkParseMerge_MergeSuperClasses(w->data, data, classInfo);
-    // XXX vtkParseMerge_ApplyUsingDeclarations(w->data, data, classInfo);
+    merge = vtkParseMerge_CreateMergeInfo(classInfo);
+    for (int i = 0; i < classInfo->NumberOfSuperClasses; i++)
+    {
+      vtkParseMerge_MergeHelper(
+        w->data, data, hinfo, classInfo->SuperClasses[i], 0, NULL, merge, classInfo);
+    }
   }
 
   if (merge && merge->NumberOfClasses > 1)
@@ -1452,6 +1456,13 @@ void vtkWrapXML_Class(
     fprintf(w->file, "\n");
     vtkWrapXML_ClassInheritance(w, merge);
   }
+
+  /* expand typedefs */
+  if (hinfo)
+  {
+    vtkWrap_ExpandTypedefs(classInfo, w->data, hinfo);
+  }
+
   /* get information about the properties */
   properties = vtkParseProperties_Create(classInfo, hinfo);
 
@@ -1618,19 +1629,6 @@ int main(int argc, char *argv[])
       vtkParseHierarchy_ReadFiles(options->NumberOfHierarchyFileNames, options->HierarchyFileNames);
   }
 
-  /* use the hierarchy file to find super classes and expand typedefs */
-  NamespaceInfo* contents = data->Contents;
-  if (hinfo)
-  {
-    for (i = 0; i < contents->NumberOfClasses; i++)
-    {
-      vtkWrap_MergeSuperClasses(contents->Classes[i], data, hinfo);
-    }
-    for (i = 0; i < contents->NumberOfClasses; i++)
-    {
-      vtkWrap_ExpandTypedefs(contents->Classes[i], data, hinfo);
-    }
-  }
   /* get the output file */
   fp = fopen(options->OutputFileName, "w");
 
