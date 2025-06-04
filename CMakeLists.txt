@@ -15,11 +15,13 @@ include("CMake/vtkModuleWrapXML.cmake")
 
 set(_modules_to_wrap)
 foreach(_module IN LISTS VTK_AVAILABLE_COMPONENTS)
-  _vtk_module_get_module_property("VTK::${_module}"
-    PROPERTY "exclude_wrap"
-    VARIABLE _vtk_module_exclude_wrap)
-  if(NOT _vtk_module_exclude_wrap)
-     list(APPEND _modules_to_wrap "VTK::${_module}")
+  if(TARGET "VTK::${_module}")
+    _vtk_module_get_module_property("VTK::${_module}"
+      PROPERTY "exclude_wrap"
+      VARIABLE _vtk_module_exclude_wrap)
+    if(NOT _vtk_module_exclude_wrap)
+       list(APPEND _modules_to_wrap "VTK::${_module}")
+    endif()
   endif()
 endforeach()
 
