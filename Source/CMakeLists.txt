@@ -4,5 +4,10 @@ if(MSVC)
   add_definitions(-D_SCL_SECURE_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
 endif()
 
-add_executable(vtkWrapXML vtkWrapXML.c vtkParseProperties.c)
+set(wrapxml_extra_sources)
+if(VTK_VERSION VERSION_LESS 9.4)
+  set(wrapxml_extra_sources vtkParseProperties.c)
+endif()
+
+add_executable(vtkWrapXML vtkWrapXML.c ${wrapxml_extra_sources})
 target_link_libraries(vtkWrapXML VTK::WrappingTools)
