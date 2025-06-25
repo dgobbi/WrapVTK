@@ -68,6 +68,34 @@ static const char *indent(int indentation)
 }
 
 /**
+ * Clear "const" modifier from a parameter type, used because the constness
+ * matters only within the function body and is not part of the API.
+ */
+void vtkWrapXML_ClearConst(ValueInfo *val)
+{
+  unsigned int type = val->Type;
+  if ((type & (VTK_PARSE_REF | VTK_PARSE_RVALUE)) == 0)
+  {
+    if ((type & VTK_PARSE_POINTER_MASK) == 0)
+    {
+      if (val->NumberOfDimensions == 0)
+      {
+        type &= type ^ VTK_PARSE_CONST;
+        val->Type = type;
+      }
+    }
+    else if ((type & VTK_PARSE_INDIRECT) != VTK_PARSE_BAD_INDIRECT)
+    {
+      if ((type & VTK_PARSE_POINTER_LOWMASK) == VTK_PARSE_CONST_POINTER)
+      {
+        type ^= VTK_PARSE_POINTER_LOWMASK ^ VTK_PARSE_POINTER;
+        val->Type = type;
+      }
+    }
+  }
+}
+
+/**
  * A version of isspace that tolerates non-ascii characters
  */
 static int vtkWrapXML_IsSpace(int c)
@@ -1061,7 +1089,9 @@ void vtkWrapXML_FunctionCommon(
   for (i = 0; i < n; i++)
   {
     vtkWrapXML_ElementStart(w, "param");
-    arg = func->Parameters[i];
+    arg = (ValueInfo*)malloc(sizeof(ValueInfo));
+    vtkParse_CopyValue(arg, func->Parameters[i]);
+    vtkWrapXML_ClearConst(arg);
 
     if (arg->Name)
     {
@@ -1081,6 +1111,7 @@ void vtkWrapXML_FunctionCommon(
     }
 
     vtkWrapXML_TypeElements(w, arg);
+    vtkParse_FreeValue(arg);
     vtkWrapXML_ElementEnd(w, "param");
   }
 
