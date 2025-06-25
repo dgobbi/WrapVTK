@@ -101,10 +101,12 @@ Each **\<class\>** element has the following attributes:
 - **"name"** the class name
 - **"abstract"** with possible value 1
 - **"template"** with possible value 1
+- **"deprecated"** with possible value 1
 
 The **\<class\>** element has the following children:
 
 - **[\<comment\>](#Comment-Element)**
+- **[\<deprecation\>](#Deprecation-Element)**
 - **[\<tparam\>](#TParam-Element)** for each template parameter
 - **[\<inheritance\>](#Inheritance-Element)** lists all of the base
   classes in the inheritance chain
@@ -252,11 +254,12 @@ Each **\<method\>** element can have the following attributes:
 - **"virtual"** with value 1 if the method is virtual
 - **"const"** with value 1 if the method can be called on a const
   instance
-- **"legacy"** with value 1 if the method is obsolete
+- **"deprecated"** with value 1 if the method is obsolete
 
 Each **\<method\>** element can have the following children:
 
 - **[\<comment\>](#Comment-Element)**
+- **[\<deprecation\>](#Deprecation-Element)**
 - **[\<signature\>](#Signature-Element)** which is the C++ method
   signature, filtered through vtkParse
 - **[\<tparam\>](#TParam-Element)** for each template arg, if the
@@ -288,11 +291,12 @@ Each **\<function\>** element can have the following attributes:
 - **"name"** which will be absent for anonymous functions
 - **"static"** with value 1 if the function is static
 - **"template"** with value 1 if the function is templated
-- **"legacy"** with value 1 if the function is obsolete
+- **"deprecated"** with value 1 if the function is obsolete
 
 Each **\<function\>** element can have the following children:
 
 - **[\<comment\>](#Comment-Element)**
+- **[\<deprecation\>](#Deprecation-Element)**
 - **[\<signature\>](#Signature-Element)** which is the C++ function
   signature, filtered through vtkParse
 - **[\<tparam\>](#TParam-Element)** for each template pamameter if the
@@ -410,6 +414,14 @@ This is a comment.
 
 The comment text may contain doxygen markup tags and even html (quoted,
 of course, for inclusion in xml).
+
+### Deprecation Element
+
+The **\<deprecation\>** element contains an indented text block that
+explains why a class or method was deprecated.  It has the following
+attribute:
+
+- **"version"** the version where the deprecation occurred
 
 ### Signature Element
 

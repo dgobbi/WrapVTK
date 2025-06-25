@@ -84,6 +84,39 @@ static int vtkWrapXML_IsPrint(int c)
 }
 
 /**
+ * For text in quotes, return a new string without the quotes.
+ */
+static const char *vtkWrapXML_RemoveQuotes(const char *text)
+{
+  static char *result;
+  static size_t maxlen = 0;
+  size_t i, j, n;
+  char delim = '\0';
+
+  if (text == NULL)
+  {
+    return "";
+  }
+
+  n = strlen(text);
+
+  if (n > 1 && text[0] == text[n-1] && (text[0] == '\'' || text[0] == '\"'))
+  {
+    if (n > maxlen)
+    {
+      free(result);
+      maxlen = n;
+      result = (char *)malloc(maxlen+1);
+    }
+    strncpy(result, &text[1], n-2);
+    result[n-2] = '\0';
+    return result;
+  }
+
+  return text;
+}
+
+/**
  * Convert special characters in a string into their escape codes,
  * so that the string can be quoted in an xml file (the specified
  * maxlen must be at least 32 chars)
@@ -971,9 +1004,9 @@ void vtkWrapXML_FunctionCommon(
     vtkWrapXML_Flag(w, "variadic", 1);
   }
 
-  if (func->IsLegacy)
+  if (func->IsDeprecated)
   {
-    vtkWrapXML_Flag(w, "legacy", 1);
+    vtkWrapXML_Flag(w, "deprecated", 1);
   }
 
   if (func->Signature)
@@ -1005,6 +1038,21 @@ void vtkWrapXML_FunctionCommon(
     fprintf(w->file, "%s %s\n", indent(w->indentation),
             vtkWrapXML_Quote(func->Preconds[i], 500));
     vtkWrapXML_ElementEnd(w, "expects");
+  }
+
+  if (func->IsDeprecated)
+  {
+    vtkWrapXML_ElementStart(w, "deprecation");
+    if (func->DeprecatedVersion)
+    {
+      vtkWrapXML_Attribute(w, "version",
+        vtkWrapXML_RemoveQuotes(func->DeprecatedVersion));
+    }
+    vtkWrapXML_ElementBody(w);
+    fprintf(w->file, "%s %s\n", indent(w->indentation),
+      vtkWrapXML_Quote(
+         vtkWrapXML_RemoveQuotes(func->DeprecatedReason), 500));
+    vtkWrapXML_ElementEnd(w, "deprecation");
   }
 
   vtkWrapXML_Comment(w, func->Comment);
@@ -1418,6 +1466,11 @@ void vtkWrapXML_Class(
     vtkWrapXML_Flag(w, "final", 1);
   }
 
+  if (classInfo->IsDeprecated)
+  {
+    vtkWrapXML_Flag(w, "deprecated", 1);
+  }
+
   if (classInfo->Template)
   {
     vtkWrapXML_Flag(w, "template", 1);
@@ -1426,6 +1479,21 @@ void vtkWrapXML_Class(
   else
   {
     vtkWrapXML_ElementBody(w);
+  }
+
+  if (classInfo->IsDeprecated)
+  {
+    vtkWrapXML_ElementStart(w, "deprecation");
+    if (classInfo->DeprecatedVersion)
+    {
+      vtkWrapXML_Attribute(w, "version",
+        vtkWrapXML_RemoveQuotes(classInfo->DeprecatedVersion));
+    }
+    vtkWrapXML_ElementBody(w);
+    fprintf(w->file, "%s %s\n", indent(w->indentation),
+      vtkWrapXML_Quote(
+         vtkWrapXML_RemoveQuotes(classInfo->DeprecatedReason), 500));
+    vtkWrapXML_ElementEnd(w, "deprecation");
   }
 
   vtkWrapXML_Comment(w, classInfo->Comment);
