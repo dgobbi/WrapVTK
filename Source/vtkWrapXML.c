@@ -1044,6 +1044,11 @@ void vtkWrapXML_FunctionCommon(
     vtkWrapXML_Flag(w, "deprecated", 1);
   }
 
+  if (func->IsExcluded)
+  {
+    vtkWrapXML_Flag(w, "wrapexclude", 1);
+  }
+
   if (func->Signature)
   {
     vtkWrapXML_ElementStart(w, "signature");
@@ -1507,6 +1512,11 @@ void vtkWrapXML_Class(
   if (classInfo->IsDeprecated)
   {
     vtkWrapXML_Flag(w, "deprecated", 1);
+  }
+
+  if (classInfo->IsExcluded)
+  {
+    vtkWrapXML_Flag(w, "wrapexclude", 1);
   }
 
   if (classInfo->Template)

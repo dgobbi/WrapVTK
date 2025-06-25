@@ -102,6 +102,7 @@ Each **\<class\>** element has the following attributes:
 - **"abstract"** with possible value 1
 - **"template"** with possible value 1
 - **"deprecated"** with possible value 1
+- **"wrapexclude"** with possible value 1
 
 The **\<class\>** element has the following children:
 
@@ -255,6 +256,7 @@ Each **\<method\>** element can have the following attributes:
 - **"const"** with value 1 if the method can be called on a const
   instance
 - **"deprecated"** with value 1 if the method is obsolete
+- **"wrapexclude"** with value 1 if the method is to be excluded
 
 Each **\<method\>** element can have the following children:
 
@@ -292,6 +294,7 @@ Each **\<function\>** element can have the following attributes:
 - **"static"** with value 1 if the function is static
 - **"template"** with value 1 if the function is templated
 - **"deprecated"** with value 1 if the function is obsolete
+- **"wrapexclude"** with value 1 if the method is to be excluded
 
 Each **\<function\>** element can have the following children:
 
