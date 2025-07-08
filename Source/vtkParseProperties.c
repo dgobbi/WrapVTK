@@ -510,7 +510,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
   if (func->NumberOfParameters > 0 &&
       ((func->Parameters[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_INT ||
        (func->Parameters[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_SIZE_T ||
-       (func->Parameters[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_ID_TYPE))
+       (func->Parameters[0]->Type & VTK_PARSE_UNQUALIFIED_TYPE) == VTK_PARSE_LONG_LONG))
   {
     /* methods of the form "void SetValue(int i, type value)" */
     if ((!func->ReturnValue ||
@@ -670,7 +670,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
                 (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) ==
                   VTK_PARSE_SIZE_T ||
                 (func->ReturnValue->Type & VTK_PARSE_UNQUALIFIED_TYPE) ==
-                  VTK_PARSE_ID_TYPE))
+                  VTK_PARSE_LONG_LONG))
       {
         attrs->HasProperty = 1;
         attrs->Type = tmptype;
@@ -827,7 +827,7 @@ static int methodMatchesProperty(
   if (isGetNumberOfMethod(meth->Name) &&
       (methType == VTK_PARSE_INT ||
        methType == VTK_PARSE_SIZE_T ||
-       methType == VTK_PARSE_ID_TYPE) &&
+       methType == VTK_PARSE_LONG_LONG) &&
       (methType & VTK_PARSE_INDIRECT) == 0 &&
       ((methodBitfield & (VTK_METHOD_GET_IDX | VTK_METHOD_GET_NTH)) != 0))
   {
@@ -837,7 +837,7 @@ static int methodMatchesProperty(
   if (isSetNumberOfMethod(meth->Name) &&
       (methType == VTK_PARSE_INT ||
        methType == VTK_PARSE_SIZE_T ||
-       methType == VTK_PARSE_ID_TYPE) &&
+       methType == VTK_PARSE_LONG_LONG) &&
       (methType & VTK_PARSE_INDIRECT) == 0 &&
       ((methodBitfield & (VTK_METHOD_SET_IDX | VTK_METHOD_SET_NTH)) != 0))
   {
