@@ -824,24 +824,38 @@ static int methodMatchesProperty(
   }
 
   /* check for GetNumberOf and SetNumberOf for indexed properties */
-  if (isGetNumberOfMethod(meth->Name) &&
-      (methType == VTK_PARSE_INT ||
-       methType == VTK_PARSE_SIZE_T ||
-       methType == VTK_PARSE_LONG_LONG) &&
-      (methType & VTK_PARSE_INDIRECT) == 0 &&
-      ((methodBitfield & (VTK_METHOD_GET_IDX | VTK_METHOD_GET_NTH)) != 0))
+  if (isGetNumberOfMethod(meth->Name) && *longMatch == 0)
   {
-    return 1;
+    if ((methType == VTK_PARSE_INT ||
+         methType == VTK_PARSE_SIZE_T ||
+         methType == VTK_PARSE_LONG_LONG) &&
+      (methType & VTK_PARSE_INDIRECT) == 0 &&
+      ((methodBitfield &
+         (VTK_METHOD_GET_IDX | VTK_METHOD_GET_NTH |
+          VTK_METHOD_GET_IDX_RHS | VTK_METHOD_GET_NTH_RHS)) != 0))
+    {
+      return 1;
+    }
+    else
+    {
+      return 0;
+    }
   }
 
-  if (isSetNumberOfMethod(meth->Name) &&
-      (methType == VTK_PARSE_INT ||
-       methType == VTK_PARSE_SIZE_T ||
-       methType == VTK_PARSE_LONG_LONG) &&
+  if (isSetNumberOfMethod(meth->Name) && *longMatch == 0)
+  {
+    if ((methType == VTK_PARSE_INT ||
+         methType == VTK_PARSE_SIZE_T ||
+         methType == VTK_PARSE_LONG_LONG) &&
       (methType & VTK_PARSE_INDIRECT) == 0 &&
       ((methodBitfield & (VTK_METHOD_SET_IDX | VTK_METHOD_SET_NTH)) != 0))
-  {
-    return 1;
+    {
+      return 1;
+    }
+    else
+    {
+      return 0;
+    }
   }
 
   /* remove ampersands i.e. "ref" */
