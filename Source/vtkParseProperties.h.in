@@ -88,6 +88,11 @@
 #define VTK_METHOD_SET_BOOL \
   (VTK_METHOD_BOOL_ON|VTK_METHOD_BOOL_OFF)
 
+/* API mangling to avoid conflicts with VTK's copy of these function */
+#define vtkParseProperties_Create vtkParseProperties2_Create2
+#define vtkParseProperties_Free vtkParseProperties2_Free
+#define vtkParseProperties_MethodTypeAsString vtkParseProperties2_MethodTypeAsString
+
 /**
  * A struct that contains all the property information that
  * can be ascertained from the vtkParse info
