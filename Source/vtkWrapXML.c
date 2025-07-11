@@ -348,6 +348,7 @@ void vtkWrapXML_Pointer(wrapxml_state_t *w, ValueInfo *val)
   int ndims = val->NumberOfDimensions;
   unsigned int type = val->Type;
   unsigned int bits;
+  unsigned int reverse = 0;
   char text[128];
   int i = 0;
 
@@ -366,8 +367,14 @@ void vtkWrapXML_Pointer(wrapxml_state_t *w, ValueInfo *val)
 
   while (type)
   {
-    bits = (type & VTK_PARSE_POINTER_LOWMASK);
+    reverse = ((reverse << 2) | (type & VTK_PARSE_POINTER_LOWMASK));
     type = ((type >> 2) & VTK_PARSE_POINTER_MASK);
+  }
+
+  while (reverse)
+  {
+    bits = (reverse & VTK_PARSE_POINTER_LOWMASK);
+    reverse = ((reverse >> 2) & VTK_PARSE_POINTER_MASK);
 
     if (bits == VTK_PARSE_ARRAY)
     {
