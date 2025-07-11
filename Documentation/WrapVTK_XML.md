@@ -191,7 +191,7 @@ Each **\<property\>** element can have the following attributes:
 - **"static"** with possible value 1
 - **"type"** with values like "int", "const int", or "function"
 - **"pointer"** with values like "\*" or "\*\*"
-- **"size"** with values like "3" or "{2,2}"
+- **"size"** with values like "3" or "{2,2}" or ":" for []
 
 Each **\<property\>** element can have the following children:
 
