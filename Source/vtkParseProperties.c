@@ -539,7 +539,13 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
             allSame = 0;
           }
         }
-        indexed = !allSame;
+        if (allSame && !isSetMethod(func->Name))
+        {
+          /* set to "not indexed" unless this is a Set(i,j) method, in
+           * which case we will set it to both "Indexed" and "MultiValue"
+           * and resolve the ambiguity in categorizePropertyMethods() */
+          indexed = 0;
+        }
       }
     }
     /* methods of the form "type GetValue(int i)" */
@@ -584,6 +590,7 @@ static int getMethodAttributes(FunctionInfo *func, MethodAttributes *attrs)
       attrs->Type = func->Parameters[indexed]->Type;
       attrs->Count = func->Parameters[indexed]->Count;
       attrs->ClassName = func->Parameters[indexed]->Class;
+      attrs->IsMultiValue = allSame;
 
       return 1;
     }
@@ -1312,7 +1319,7 @@ static void categorizeProperties(
 static void categorizePropertyMethods(
   ClassInfo *data, ClassPropertyMethods *methods)
 {
-  int i, n;
+  int i, j, n;
   FunctionInfo *func;
   MethodAttributes *attrs;
 
@@ -1331,6 +1338,38 @@ static void categorizePropertyMethods(
     {
       /* check for repeats e.g. SetPoint(float *), SetPoint(double *) */
       searchForRepeatedMethods(0, methods, i);
+    }
+  }
+
+  /* Look for and resolve ambiguous categorizations */
+  for (i = 0; i < n; i++)
+  {
+    attrs = methods->Methods[i];
+    if (attrs->IsMultiValue && attrs->IsIndexed)
+    {
+      /* Resolve ambiguity for "SetValue(int i, int j)" methods
+       * by checking whether there is a "int GetValue(int i)" method */
+      for (j = 0; j < n; j++)
+      {
+        if (i != j && methods->Methods[j]->IsIndexed &&
+            isGetMethod(methods->Methods[j]->Name) &&
+            attrs->Access == methods->Methods[j]->Access &&
+            strcmp(&attrs->Name[3], &methods->Methods[j]->Name[3]) == 0)
+        {
+          break;
+        }
+      }
+      if (j < n)
+      {
+        /* use IsIndexed = 1 */
+        attrs->IsMultiValue = 0;
+      }
+      else
+      {
+        /* use IsMultiValue = 1 */
+        attrs->IsIndexed = 0;
+        attrs->Count = 2;
+      }
     }
   }
 }
